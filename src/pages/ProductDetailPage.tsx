@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, ShieldCheck, Truck, ShoppingCart, ArrowLeft, Download, Check } from 'lucide-react';
+import { Star, ShieldCheck, Truck, ShoppingCart, ArrowLeft, Download, Check, Heart } from 'lucide-react';
 import { useProductDetail } from '../features/catalog/hooks/useProducts';
 import { useCartStore } from '../store/cart-store';
+import { useWishlistStore } from '../store/wishlist-store';
+import { ReviewList } from '../features/reviews/components/ReviewList';
 import { QueryState } from '../components/common/QueryState';
 import { Badge } from '../components/ui/badge';
 
@@ -11,6 +13,7 @@ export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: product, isLoading, isError, error, refetch } = useProductDetail(productId || '');
   const { addItem } = useCartStore();
+  const { isInWishlist, toggleWishlist } = useWishlistStore();
 
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -232,6 +235,29 @@ export const ProductDetailPage: React.FC = () => {
                     >
                       Buy Now
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => product && toggleWishlist(product)}
+                      className={`flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-bold border transition-all ${
+                        product && isInWishlist(product.id)
+                          ? 'border-rose-200 bg-rose-50 text-rose-600'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Heart
+                        className={`h-4 w-4 ${
+                          product && isInWishlist(product.id)
+                            ? 'fill-rose-500 text-rose-500'
+                            : 'text-slate-400'
+                        }`}
+                      />
+                      <span>
+                        {product && isInWishlist(product.id)
+                          ? 'Saved to Wishlist'
+                          : 'Add to Wishlist'}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -265,48 +291,7 @@ export const ProductDetailPage: React.FC = () => {
               </div>
 
               {/* Customer Reviews Section */}
-              <div className="card-near-solid p-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-900">Customer Reviews</h3>
-                  <Badge variant="in-stock">100% Verified Purchases</Badge>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-center">
-                  <div className="flex flex-col items-center justify-center rounded-2xl bg-amber-50/50 p-6 border border-amber-200/50 text-center">
-                    <span className="text-4xl font-extrabold text-amber-600">{product.rating}</span>
-                    <div className="mt-2 flex">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="mt-1 text-xs text-slate-500">Based on {product.reviewCount} ratings</span>
-                  </div>
-
-                  <div className="flex-1 space-y-2 text-xs">
-                    <div className="flex items-center gap-3">
-                      <span className="w-12 text-slate-500">5 stars</span>
-                      <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full bg-amber-400 w-[85%]" />
-                      </div>
-                      <span className="w-8 text-right font-medium text-slate-600">85%</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="w-12 text-slate-500">4 stars</span>
-                      <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full bg-amber-400 w-[12%]" />
-                      </div>
-                      <span className="w-8 text-right font-medium text-slate-600">12%</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="w-12 text-slate-500">3 stars</span>
-                      <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full bg-amber-400 w-[3%]" />
-                      </div>
-                      <span className="w-8 text-right font-medium text-slate-600">3%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ReviewList productId={product.id} productTitle={product.title} />
             </div>
           </div>
         )}

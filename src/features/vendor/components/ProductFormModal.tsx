@@ -1,0 +1,636 @@
+import React, { useState } from 'react';
+import type { FormEvent } from 'react';
+import {
+  Package,
+  Layers,
+  Sparkles,
+  Trash2,
+  Download,
+  Box,
+  Plus,
+  AlertCircle,
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../../components/ui/dialog';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Badge } from '../../../components/ui/badge';
+import type { Product, ProductType, Variant } from '../../../types/domain';
+import { addVendorProduct } from '../vendorData';
+import { mockDb } from '../../../mocks/db';
+import { cn } from '../../../lib/utils';
+
+export interface ProductFormModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave?: (product: Product) => void;
+  initialProduct?: Partial<Product> | null;
+}
+
+type TabType = 'details' | 'pricing' | 'variants';
+
+interface ProductFormContentProps {
+  initialProduct?: Partial<Product> | null;
+  onSave?: (product: Product) => void;
+  onClose: () => void;
+}
+
+const ProductFormContent: React.FC<ProductFormContentProps> = ({
+  initialProduct,
+  onSave,
+  onClose,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabType>('details');
+
+  // Form Fields initialized from initialProduct or sensible defaults
+  const [title, setTitle] = useState(initialProduct?.title || '');
+  const [category, setCategory] = useState(initialProduct?.category || 'cat-audio');
+  const [brand, setBrand] = useState(initialProduct?.brand || 'SoundWave Direct');
+  const [description, setDescription] = useState(initialProduct?.description || '');
+  const [imageUrl, setImageUrl] = useState(
+    initialProduct?.images?.[0] ||
+      'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
+  );
+  const [productType, setProductType] = useState<ProductType>(
+    initialProduct?.type || 'physical',
+  );
+  const [price, setPrice] = useState(
+    initialProduct?.price !== undefined ? initialProduct.price.toString() : '189.00',
+  );
+  const [compareAtPrice, setCompareAtPrice] = useState(
+    initialProduct?.compareAtPrice ? initialProduct.compareAtPrice.toString() : '',
+  );
+  const [stock, setStock] = useState(
+    initialProduct?.stock !== undefined ? initialProduct.stock.toString() : '25',
+  );
+  const [shippingFee, setShippingFee] = useState(
+    initialProduct?.shippingSettings?.standardFee !== undefined
+      ? initialProduct.shippingSettings.standardFee.toString()
+      : '8.50',
+  );
+  const [licenseType, setLicenseType] = useState(
+    initialProduct?.digitalAssetInfo?.licenseType || 'Commercial License',
+  );
+  const [downloadUrl, setDownloadUrl] = useState(
+    initialProduct?.digitalAssetInfo?.downloadUrl || '/downloads/asset.zip',
+  );
+
+  // Variant Generator State
+  const [optionName, setOptionName] = useState('Color');
+  const [optionValues, setOptionValues] = useState('Matte Black, Lunar Silver');
+  const [variants, setVariants] = useState<Variant[]>(initialProduct?.variants || []);
+
+  // Validation Error
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Handle generating variants from comma-separated input
+  const handleGenerateVariants = () => {
+    const rawValues = optionValues
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+    if (rawValues.length === 0) return;
+
+    const basePriceNum = parseFloat(price) || 0;
+    const baseStockNum = parseInt(stock, 10) || 10;
+    const optLabel = optionName.trim() || 'Option';
+
+    const generated: Variant[] = rawValues.map((val, index) => {
+      const slugVal = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return {
+        id: `var-${Date.now()}-${index}`,
+        name: `${optLabel}: ${val}`,
+        sku: `SW-${slugVal}-${index + 1}`,
+        price: basePriceNum,
+        stock: Math.max(1, Math.floor(baseStockNum / rawValues.length)),
+        attributes: { [optLabel]: val },
+      };
+    });
+
+    setVariants((prev) => [...prev, ...generated]);
+  };
+
+  const handleRemoveVariant = (id: string) => {
+    setVariants((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!title.trim()) {
+      setErrorMessage('Product title is required.');
+      setActiveTab('details');
+      return;
+    }
+
+    const priceNum = parseFloat(price);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setErrorMessage('Please enter a valid price greater than $0.');
+      setActiveTab('pricing');
+      return;
+    }
+
+    const stockNum = parseInt(stock, 10);
+    if (isNaN(stockNum) || stockNum < 0) {
+      setErrorMessage('Please enter a valid stock quantity.');
+      setActiveTab('pricing');
+      return;
+    }
+
+    const newProduct: Product = {
+      id: initialProduct?.id || `prod-${Date.now()}`,
+      title: title.trim(),
+      slug: title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      description: description.trim() || title.trim(),
+      category,
+      brand: brand.trim() || 'SoundWave Direct',
+      images: [
+        imageUrl.trim() ||
+          'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
+      ],
+      price: priceNum,
+      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : undefined,
+      type: productType,
+      sellerId: 'vendor-tech-1',
+      sellerName: 'SoundWave Direct',
+      sellerType: 'vendor',
+      variants: variants.length > 0 ? variants : [],
+      stock: stockNum,
+      shippingSettings:
+        productType === 'physical'
+          ? {
+              standardFee: parseFloat(shippingFee) || 0,
+              freeShipping: parseFloat(shippingFee) === 0,
+            }
+          : undefined,
+      digitalAssetInfo:
+        productType === 'digital'
+          ? {
+              licenseType,
+              downloadUrl: downloadUrl || '/downloads/package.zip',
+            }
+          : undefined,
+      rating: initialProduct?.rating || 5.0,
+      reviewCount: initialProduct?.reviewCount || 0,
+      status: initialProduct?.status || 'approved',
+      createdAt: initialProduct?.createdAt || new Date().toISOString(),
+    };
+
+    addVendorProduct(newProduct);
+    onSave?.(newProduct);
+    onClose();
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-[#FF7A1A]">
+            <Package className="h-4 w-4" />
+          </span>
+          <DialogTitle>
+            {initialProduct ? 'Edit Vendor Product' : 'Add New Product'}
+          </DialogTitle>
+        </div>
+        <DialogDescription>
+          Configure your catalog listing, pricing rules, physical or digital fulfillment, and SKU variants.
+        </DialogDescription>
+      </DialogHeader>
+
+      {/* Tab Navigation Pill Bar */}
+      <div className="flex items-center gap-1.5 rounded-full bg-slate-100 p-1 border border-slate-200/80">
+        <button
+          type="button"
+          onClick={() => setActiveTab('details')}
+          className={cn(
+            'flex-1 rounded-full py-1.5 text-xs font-semibold transition-all duration-150',
+            activeTab === 'details'
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900',
+          )}
+        >
+          1. Listing Details
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('pricing')}
+          className={cn(
+            'flex-1 rounded-full py-1.5 text-xs font-semibold transition-all duration-150',
+            activeTab === 'pricing'
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900',
+          )}
+        >
+          2. Pricing & Delivery
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('variants')}
+          className={cn(
+            'flex-1 rounded-full py-1.5 text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-1',
+            activeTab === 'variants'
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900',
+          )}
+        >
+          <span>3. Variant Generator</span>
+          {variants.length > 0 && (
+            <Badge variant="vendor-verified" size="sm" className="px-1.5 py-0">
+              {variants.length}
+            </Badge>
+          )}
+        </button>
+      </div>
+
+      {/* Error Alert */}
+      {errorMessage && (
+        <div className="flex items-center gap-2 rounded-2xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 pt-1">
+        {/* TAB 1: Listing Details */}
+        {activeTab === 'details' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                Product Title <span className="text-coral">*</span>
+              </label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Aura Precision Studio Reference In-Ear Monitors"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Category <span className="text-coral">*</span>
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="flex h-11 w-full rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
+                >
+                  {mockDb.categories.length > 0 ? (
+                    mockDb.categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="cat-audio">Audio & Sound</option>
+                      <option value="cat-computing">Computers & Tech</option>
+                      <option value="cat-gaming">Gaming Gear</option>
+                      <option value="cat-smart-home">Smart Home</option>
+                      <option value="cat-digital">Digital Licenses</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Brand Name
+                </label>
+                <Input
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="e.g. SoundWave Audio"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                Image URL
+              </label>
+              <Input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://images.unsplash.com/photo-..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full rounded-2xl border border-slate-200 bg-white/95 p-3 text-sm text-ink placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
+                placeholder="Describe key features, technical specifications, and acoustics..."
+              />
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: Pricing & Delivery */}
+        {activeTab === 'pricing' && (
+          <div className="space-y-4">
+            {/* Physical vs Digital Toggle */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                Fulfillment Type
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProductType('physical')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-xs font-bold border transition-all duration-150',
+                    productType === 'physical'
+                      ? 'bg-sun-orange text-white border-sun-orange shadow-md'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
+                  )}
+                >
+                  <Box className="h-4 w-4" />
+                  <span>Physical Good (Courier Pickup)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProductType('digital')}
+                  className={cn(
+                    'flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-xs font-bold border transition-all duration-150',
+                    productType === 'digital'
+                      ? 'bg-sun-orange text-white border-sun-orange shadow-md'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
+                  )}
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Digital Asset (Instant License)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Price & Stock */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Price ($) <span className="text-coral">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="189.00"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Compare At ($)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={compareAtPrice}
+                  onChange={(e) => setCompareAtPrice(e.target.value)}
+                  placeholder="220.00"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Total Stock <span className="text-coral">*</span>
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                  placeholder="25"
+                />
+              </div>
+            </div>
+
+            {/* Physical vs Digital Specific Fields */}
+            {productType === 'physical' ? (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Standard Shipping Fee ($)
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={shippingFee}
+                    onChange={(e) => setShippingFee(e.target.value)}
+                    placeholder="8.50"
+                  />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl bg-sky-50/70 border border-sky-100 p-3">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                      License Type
+                    </label>
+                    <Input
+                      value={licenseType}
+                      onChange={(e) => setLicenseType(e.target.value)}
+                      placeholder="e.g. Single Commercial License"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                      Asset Download URL
+                    </label>
+                    <Input
+                      value={downloadUrl}
+                      onChange={(e) => setDownloadUrl(e.target.value)}
+                      placeholder="/downloads/asset-package.zip"
+                    />
+                  </div>
+                </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: Variants */}
+        {activeTab === 'variants' && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-[#FF7A1A]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Quick Variant Generator
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Option Name
+                  </label>
+                  <Input
+                    value={optionName}
+                    onChange={(e) => setOptionName(e.target.value)}
+                    placeholder="e.g. Color or Size"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Values (comma-separated)
+                  </label>
+                  <Input
+                    value={optionValues}
+                    onChange={(e) => setOptionValues(e.target.value)}
+                    placeholder="e.g. Matte Black, Lunar Silver, Gold"
+                  />
+                </div>
+              </div>
+              <div className="mt-3 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateVariants}
+                  className="gap-1.5 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Generate Variants</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Variants Listing Table */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Active Product Variants ({variants.length})
+                </span>
+              </div>
+
+              {variants.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
+                  <Layers className="mx-auto h-6 w-6 text-slate-400 mb-1" />
+                  <p>No variants configured yet.</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Use the quick generator above to create color or size combinations.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3 font-semibold">Variant Name</th>
+                        <th className="py-2.5 px-3 font-semibold">SKU</th>
+                        <th className="py-2.5 px-3 font-semibold">Price ($)</th>
+                        <th className="py-2.5 px-3 font-semibold">Stock</th>
+                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {variants.map((v) => (
+                        <tr key={v.id} className="hover:bg-slate-50/50">
+                          <td className="py-2 px-3 font-medium text-slate-800">{v.name}</td>
+                          <td className="py-2 px-3 text-slate-500 font-mono text-[11px]">{v.sku}</td>
+                          <td className="py-2 px-3 text-slate-700">${v.price.toFixed(2)}</td>
+                          <td className="py-2 px-3 text-slate-700">{v.stock}</td>
+                          <td className="py-2 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariant(v.id)}
+                              className="rounded-full p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                              aria-label={`Remove variant ${v.name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="pt-3 border-t border-slate-100">
+          <div className="flex w-full items-center justify-between">
+            <div>
+              {activeTab !== 'details' && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setActiveTab(activeTab === 'variants' ? 'pricing' : 'details')
+                  }
+                >
+                  Back
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              {activeTab !== 'variants' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    setActiveTab(activeTab === 'details' ? 'pricing' : 'variants')
+                  }
+                >
+                  Next Step
+                </Button>
+              ) : null}
+              <Button
+                type="submit"
+                variant="orange-cta"
+                size="sm"
+              >
+                Save Product
+              </Button>
+            </div>
+          </div>
+        </DialogFooter>
+      </form>
+    </>
+  );
+};
+
+export const ProductFormModal: React.FC<ProductFormModalProps> = ({
+  open,
+  onOpenChange,
+  onSave,
+  initialProduct,
+}) => {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <ProductFormContent
+          key={initialProduct?.id || (open ? 'new' : 'idle')}
+          initialProduct={initialProduct}
+          onSave={onSave}
+          onClose={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+};

@@ -5,6 +5,16 @@ import { ProductsPage } from '../pages/ProductsPage';
 import { ProductDetailPage } from '../pages/ProductDetailPage';
 import { VendorStorefrontPage } from '../pages/VendorStorefrontPage';
 import { CartPage } from '../pages/CartPage';
+import { CheckoutPage } from '../pages/CheckoutPage';
+import { OrdersPage } from '../pages/OrdersPage';
+import { OrderDetailPage } from '../pages/OrderDetailPage';
+import { WishlistPage } from '../pages/WishlistPage';
+import { BecomeSellerPage } from '../pages/BecomeSellerPage';
+import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { VendorNav } from '../features/vendor/components/VendorNav';
+import { VendorDashboardPage } from '../pages/VendorDashboardPage';
+import { VendorOrdersPage } from '../pages/VendorOrdersPage';
+import { VendorProductsPage } from '../pages/VendorProductsPage';
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +42,26 @@ export const router = createBrowserRouter([
         element: <CartPage />,
       },
       {
+        path: 'checkout',
+        element: <CheckoutPage />,
+      },
+      {
+        path: 'orders',
+        element: <OrdersPage />,
+      },
+      {
+        path: 'orders/:orderId',
+        element: <OrderDetailPage />,
+      },
+      {
+        path: 'wishlist',
+        element: <WishlistPage />,
+      },
+      {
+        path: 'become-a-seller',
+        element: <BecomeSellerPage />,
+      },
+      {
         path: '*',
         element: (
           <div className="mx-auto max-w-lg px-4 py-20 text-center">
@@ -45,6 +75,33 @@ export const router = createBrowserRouter([
             </a>
           </div>
         ),
+      },
+    ],
+  },
+  // Vendor Workspace Routes
+  {
+    path: '/vendor',
+    element: <WorkspaceLayout role="vendor" sidebar={<VendorNav />} />,
+    children: [
+      {
+        index: true,
+        element: <VendorDashboardPage />,
+      },
+      {
+        path: 'orders',
+        element: <VendorOrdersPage />,
+      },
+      {
+        path: 'products',
+        element: <VendorProductsPage />,
+      },
+      {
+        path: 'earnings',
+        element: <VendorDashboardPage />,
+      },
+      {
+        path: 'store-settings',
+        element: <VendorDashboardPage />,
       },
     ],
   },
