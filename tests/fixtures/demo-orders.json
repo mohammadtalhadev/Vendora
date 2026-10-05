@@ -1,0 +1,943 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "generatedAt": "2026-10-06T02:15:00.000Z",
+  "description": "Deterministic seed test fixtures for Vendora multi-vendor marketplace, covering split orders, lifecycle transitions, commission isolation, disputes, and delivery codes.",
+  "orderGroups": [
+    {
+      "id": "ord-grp-1001",
+      "customerId": "usr-cust-001",
+      "customerEmail": "customer@demo.test",
+      "shippingAddress": {
+        "fullName": "Alice Johnson",
+        "street": "742 Evergreen Terrace",
+        "city": "Springfield",
+        "state": "OR",
+        "zipCode": "97477",
+        "country": "United States",
+        "phone": "+1-555-019-2834"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "brand": "Visa",
+        "last4": "4242"
+      },
+      "subOrderIds": [
+        "sub-ord-1001-A",
+        "sub-ord-1001-B",
+        "sub-ord-1001-C"
+      ],
+      "totals": {
+        "itemCount": 4,
+        "subtotal": 284.97,
+        "shippingTotal": 14.98,
+        "discountTotal": 0,
+        "grandTotal": 299.95
+      },
+      "derivedStatus": "processing",
+      "createdAt": "2026-10-04T10:15:00.000Z",
+      "metadata": {
+        "scenario": "Scenario 2: Multi-vendor checkout split into 2 independent vendors + 1 platform first-party item",
+        "description": "Customer checks out a combined cart containing physical gear from Vendor A, physical accessories from Vendor B, and official merchandise sold directly by Vendora."
+      }
+    },
+    {
+      "id": "ord-grp-1002",
+      "customerId": "usr-cust-001",
+      "customerEmail": "customer@demo.test",
+      "shippingAddress": {
+        "fullName": "Alice Johnson",
+        "street": "742 Evergreen Terrace",
+        "city": "Springfield",
+        "state": "OR",
+        "zipCode": "97477",
+        "country": "United States",
+        "phone": "+1-555-019-2834"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "brand": "Mastercard",
+        "last4": "5555"
+      },
+      "subOrderIds": [
+        "sub-ord-1002-A"
+      ],
+      "totals": {
+        "itemCount": 1,
+        "subtotal": 129.99,
+        "shippingTotal": 5.99,
+        "discountTotal": 0,
+        "grandTotal": 135.98
+      },
+      "derivedStatus": "completed",
+      "createdAt": "2026-10-02T08:30:00.000Z",
+      "metadata": {
+        "scenario": "Scenario 5: Complete physical order lifecycle (Vendor Packed -> Rider Out for Delivery -> Delivered with PIN)",
+        "description": "Full happy path delivery flow utilizing a 4-digit verification code '4921' confirmed by Delivery Rider."
+      }
+    },
+    {
+      "id": "ord-grp-1003",
+      "customerId": "usr-cust-002",
+      "customerEmail": "newuser@demo.test",
+      "shippingAddress": {
+        "fullName": "Marcus Vance",
+        "street": "1200 Grand Avenue, Apt 4B",
+        "city": "Seattle",
+        "state": "WA",
+        "zipCode": "98101",
+        "country": "United States",
+        "phone": "+1-555-014-9988"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "brand": "Visa",
+        "last4": "1111"
+      },
+      "subOrderIds": [
+        "sub-ord-1003-HIST",
+        "sub-ord-1003-POST"
+      ],
+      "totals": {
+        "itemCount": 2,
+        "subtotal": 450.00,
+        "shippingTotal": 12.00,
+        "discountTotal": 0,
+        "grandTotal": 462.00
+      },
+      "derivedStatus": "processing",
+      "createdAt": "2026-10-01T14:00:00.000Z",
+      "metadata": {
+        "scenario": "Scenario 4: Commission rate modification & freeze verification (Historical 10% vs New 15%)",
+        "description": "Comparative pair demonstrating immutable frozen commission rate on historical sub-order versus updated rate on subsequent sub-order."
+      }
+    },
+    {
+      "id": "ord-grp-1004",
+      "customerId": "usr-cust-001",
+      "customerEmail": "customer@demo.test",
+      "shippingAddress": {
+        "fullName": "Alice Johnson",
+        "street": "742 Evergreen Terrace",
+        "city": "Springfield",
+        "state": "OR",
+        "zipCode": "97477",
+        "country": "United States",
+        "phone": "+1-555-019-2834"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "brand": "American Express",
+        "last4": "0005"
+      },
+      "subOrderIds": [
+        "sub-ord-1004-DISPUTE"
+      ],
+      "totals": {
+        "itemCount": 1,
+        "subtotal": 89.99,
+        "shippingTotal": 4.99,
+        "discountTotal": 0,
+        "grandTotal": 94.98
+      },
+      "derivedStatus": "refunded",
+      "createdAt": "2026-09-28T11:20:00.000Z",
+      "metadata": {
+        "scenario": "Scenario 6: Customer dispute creation -> Support agent review -> Admin refund resolution",
+        "description": "Customer received damaged goods, filed dispute #dsp-501. Support agent triaged and escalated; Admin granted full refund."
+      }
+    },
+    {
+      "id": "ord-grp-1005",
+      "customerId": "usr-cust-003",
+      "customerEmail": "david.buyer@demo.test",
+      "shippingAddress": {
+        "fullName": "David Kim",
+        "street": "88 Pinecrest Road",
+        "city": "Austin",
+        "state": "TX",
+        "zipCode": "78701",
+        "country": "United States",
+        "phone": "+1-555-017-4321"
+      },
+      "paymentMethod": "cod",
+      "paymentDetails": {
+        "brand": "COD",
+        "last4": "0000"
+      },
+      "subOrderIds": [
+        "sub-ord-1005-FAIL"
+      ],
+      "totals": {
+        "itemCount": 1,
+        "subtotal": 65.00,
+        "shippingTotal": 7.50,
+        "discountTotal": 0,
+        "grandTotal": 72.50
+      },
+      "derivedStatus": "processing",
+      "createdAt": "2026-10-04T16:00:00.000Z",
+      "metadata": {
+        "scenario": "Edge Case: Delivery attempt failed (Customer unavailable for Cash on Delivery collection)",
+        "description": "Rider attempted delivery at customer premises, customer unavailable. Marked delivery_failed for re-attempt scheduling."
+      }
+    },
+    {
+      "id": "ord-grp-1006",
+      "customerId": "usr-cust-001",
+      "customerEmail": "customer@demo.test",
+      "shippingAddress": null,
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "brand": "Visa",
+        "last4": "4242"
+      },
+      "subOrderIds": [
+        "sub-ord-1006-DIGITAL"
+      ],
+      "totals": {
+        "itemCount": 1,
+        "subtotal": 49.00,
+        "shippingTotal": 0.00,
+        "discountTotal": 0,
+        "grandTotal": 49.00
+      },
+      "derivedStatus": "completed",
+      "createdAt": "2026-10-05T09:10:00.000Z",
+      "metadata": {
+        "scenario": "Edge Case: Pure digital asset purchase (instant fulfillment, zero shipping, license key unlocked)",
+        "description": "Digital-only order skips shipping accordion steps. Instantly transitions placed -> paid -> available with downloadable key."
+      }
+    },
+    {
+      "id": "ord-grp-1007",
+      "customerId": "usr-cust-004",
+      "customerEmail": "elena.r@demo.test",
+      "shippingAddress": {
+        "fullName": "Elena Rostova",
+        "street": "344 Harbor Boulevard",
+        "city": "Boston",
+        "state": "MA",
+        "zipCode": "02110",
+        "country": "United States",
+        "phone": "+1-555-018-7766"
+      },
+      "paymentMethod": "card",
+      "paymentDetails": {
+        "brand": "Visa",
+        "last4": "4000"
+      },
+      "subOrderIds": [
+        "sub-ord-1007-CANCEL"
+      ],
+      "totals": {
+        "itemCount": 1,
+        "subtotal": 199.99,
+        "shippingTotal": 9.99,
+        "discountTotal": 0,
+        "grandTotal": 209.98
+      },
+      "derivedStatus": "cancelled",
+      "createdAt": "2026-10-05T12:00:00.000Z",
+      "metadata": {
+        "scenario": "Edge Case: Pre-shipment cancellation by customer",
+        "description": "Customer changed mind while order was in confirmed status prior to packing/shipping; sub-order successfully cancelled."
+      }
+    }
+  ],
+  "subOrders": [
+    {
+      "id": "sub-ord-1001-A",
+      "orderGroupId": "ord-grp-1001",
+      "sellerId": "vnd-aurora-01",
+      "sellerName": "Aurora Artisan Tech",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-aurora-mech-keyboard-01",
+          "productId": "prod-aurora-kb",
+          "variantId": "var-kb-white-rgb",
+          "title": "Lumino Pro Mechanical Keyboard (Gateron Brown, Frosted White)",
+          "price": 149.99,
+          "quantity": 1,
+          "maxStock": 14,
+          "image": "/assets/products/keyboard-frosted.webp",
+          "sellerId": "vnd-aurora-01",
+          "sellerName": "Aurora Artisan Tech",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 149.99,
+      "shippingFee": 5.99,
+      "commissionRate": 0.10,
+      "commissionAmount": 15.00,
+      "netPayout": 134.99,
+      "status": "confirmed",
+      "riderId": null,
+      "deliveryCode": "6284",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-04T10:15:00.000Z",
+          "actor": "Customer",
+          "note": "Sub-order created as part of multi-vendor checkout"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-10-04T10:45:00.000Z",
+          "actor": "Vendor",
+          "note": "Aurora Artisan Tech confirmed inventory availability"
+        }
+      ],
+      "createdAt": "2026-10-04T10:15:00.000Z"
+    },
+    {
+      "id": "sub-ord-1001-B",
+      "orderGroupId": "ord-grp-1001",
+      "sellerId": "vnd-zenith-02",
+      "sellerName": "Zenith Studio Gear",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-zenith-desk-mat-01",
+          "productId": "prod-zenith-mat",
+          "variantId": "var-mat-charcoal-xl",
+          "title": "Zenith Felt Wool Desk Mat (XL Charcoal)",
+          "price": 44.99,
+          "quantity": 2,
+          "maxStock": 25,
+          "image": "/assets/products/desk-mat.webp",
+          "sellerId": "vnd-zenith-02",
+          "sellerName": "Zenith Studio Gear",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 89.98,
+      "shippingFee": 4.99,
+      "commissionRate": 0.08,
+      "commissionAmount": 7.20,
+      "netPayout": 82.78,
+      "status": "packed",
+      "riderId": null,
+      "deliveryCode": "8192",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-04T10:15:00.000Z",
+          "actor": "Customer",
+          "note": "Sub-order created as part of multi-vendor checkout"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-10-04T10:30:00.000Z",
+          "actor": "Vendor",
+          "note": "Zenith Studio Gear confirmed order"
+        },
+        {
+          "status": "packed",
+          "timestamp": "2026-10-04T11:20:00.000Z",
+          "actor": "Vendor",
+          "note": "Package boxed and ready for carrier dispatch labeling"
+        }
+      ],
+      "createdAt": "2026-10-04T10:15:00.000Z"
+    },
+    {
+      "id": "sub-ord-1001-C",
+      "orderGroupId": "ord-grp-1001",
+      "sellerId": "platform",
+      "sellerName": "Vendora Direct",
+      "sellerType": "platform",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-vendora-cable-wrap-01",
+          "productId": "prod-vendora-cable",
+          "variantId": "var-cable-braided-orange",
+          "title": "Vendora Signature USB-C Braided Cable (2m, Sun Orange)",
+          "price": 45.00,
+          "quantity": 1,
+          "maxStock": 100,
+          "image": "/assets/products/usb-cable-orange.webp",
+          "sellerId": "platform",
+          "sellerName": "Vendora Direct",
+          "sellerType": "platform",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 45.00,
+      "shippingFee": 4.00,
+      "commissionRate": 0.00,
+      "commissionAmount": 0.00,
+      "netPayout": 45.00,
+      "status": "shipped",
+      "riderId": "usr-rider-001",
+      "deliveryCode": "3510",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-04T10:15:00.000Z",
+          "actor": "Customer",
+          "note": "Sub-order created for first-party platform item"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-10-04T10:16:00.000Z",
+          "actor": "System",
+          "note": "First-party warehouse automated fulfillment acceptance"
+        },
+        {
+          "status": "packed",
+          "timestamp": "2026-10-04T10:40:00.000Z",
+          "actor": "Admin",
+          "note": "Platform warehouse packed item"
+        },
+        {
+          "status": "ready_for_pickup",
+          "timestamp": "2026-10-04T11:00:00.000Z",
+          "actor": "Admin",
+          "note": "Consolidated at platform fulfillment dock"
+        },
+        {
+          "status": "shipped",
+          "timestamp": "2026-10-04T11:35:00.000Z",
+          "actor": "Rider",
+          "note": "Rider John Swift picked up package from platform warehouse"
+        }
+      ],
+      "createdAt": "2026-10-04T10:15:00.000Z"
+    },
+    {
+      "id": "sub-ord-1002-A",
+      "orderGroupId": "ord-grp-1002",
+      "sellerId": "vnd-aurora-01",
+      "sellerName": "Aurora Artisan Tech",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-aurora-headphone-stand-01",
+          "productId": "prod-aurora-stand",
+          "variantId": "var-stand-walnut",
+          "title": "Sculpted Walnut & Matte Black Headphone Stand",
+          "price": 129.99,
+          "quantity": 1,
+          "maxStock": 8,
+          "image": "/assets/products/headphone-stand.webp",
+          "sellerId": "vnd-aurora-01",
+          "sellerName": "Aurora Artisan Tech",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 129.99,
+      "shippingFee": 5.99,
+      "commissionRate": 0.10,
+      "commissionAmount": 13.00,
+      "netPayout": 116.99,
+      "status": "delivered",
+      "riderId": "usr-rider-001",
+      "deliveryCode": "4921",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-02T08:30:00.000Z",
+          "actor": "Customer",
+          "note": "Order placed with credit card payment"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-10-02T09:00:00.000Z",
+          "actor": "Vendor",
+          "note": "Vendor confirmed order"
+        },
+        {
+          "status": "packed",
+          "timestamp": "2026-10-02T09:45:00.000Z",
+          "actor": "Vendor",
+          "note": "Vendor completed protective packing"
+        },
+        {
+          "status": "ready_for_pickup",
+          "timestamp": "2026-10-02T10:15:00.000Z",
+          "actor": "Vendor",
+          "note": "Marked ready for dispatch. Auto-assigned to Rider #usr-rider-001"
+        },
+        {
+          "status": "shipped",
+          "timestamp": "2026-10-02T11:00:00.000Z",
+          "actor": "Rider",
+          "note": "Package received by Rider at vendor depot"
+        },
+        {
+          "status": "out_for_delivery",
+          "timestamp": "2026-10-02T13:20:00.000Z",
+          "actor": "Rider",
+          "note": "Rider en route to customer destination"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "2026-10-02T14:05:00.000Z",
+          "actor": "Rider",
+          "note": "Delivery verified with 4-digit PIN confirmation code (PIN: 4921)"
+        }
+      ],
+      "createdAt": "2026-10-02T08:30:00.000Z"
+    },
+    {
+      "id": "sub-ord-1003-HIST",
+      "orderGroupId": "ord-grp-1003",
+      "sellerId": "vnd-nexus-03",
+      "sellerName": "Nexus Audio Labs",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-nexus-iem-01",
+          "productId": "prod-nexus-iem",
+          "variantId": "var-iem-silver",
+          "title": "Nexus Apex In-Ear Monitors (Silver Cable)",
+          "price": 200.00,
+          "quantity": 1,
+          "maxStock": 12,
+          "image": "/assets/products/iem-silver.webp",
+          "sellerId": "vnd-nexus-03",
+          "sellerName": "Nexus Audio Labs",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 200.00,
+      "shippingFee": 6.00,
+      "commissionRate": 0.10,
+      "commissionAmount": 20.00,
+      "netPayout": 180.00,
+      "status": "confirmed",
+      "riderId": null,
+      "deliveryCode": "7712",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-01T14:00:00.000Z",
+          "actor": "Customer",
+          "note": "Placed prior to admin commission policy change (Frozen at 10%)"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-10-01T14:20:00.000Z",
+          "actor": "Vendor",
+          "note": "Vendor confirmed order under baseline 10% rate"
+        }
+      ],
+      "createdAt": "2026-10-01T14:00:00.000Z"
+    },
+    {
+      "id": "sub-ord-1003-POST",
+      "orderGroupId": "ord-grp-1003",
+      "sellerId": "vnd-nexus-03",
+      "sellerName": "Nexus Audio Labs",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-nexus-dac-01",
+          "productId": "prod-nexus-dac",
+          "variantId": "var-dac-black",
+          "title": "Nexus Reference USB-C DAC/Amp (Matte Black)",
+          "price": 250.00,
+          "quantity": 1,
+          "maxStock": 9,
+          "image": "/assets/products/dac-black.webp",
+          "sellerId": "vnd-nexus-03",
+          "sellerName": "Nexus Audio Labs",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 250.00,
+      "shippingFee": 6.00,
+      "commissionRate": 0.15,
+      "commissionAmount": 37.50,
+      "netPayout": 212.50,
+      "status": "placed",
+      "riderId": null,
+      "deliveryCode": "9104",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-04T18:00:00.000Z",
+          "actor": "Customer",
+          "note": "Placed after Admin updated Nexus Audio Labs vendor commission override to 15%"
+        }
+      ],
+      "createdAt": "2026-10-04T18:00:00.000Z"
+    },
+    {
+      "id": "sub-ord-1004-DISPUTE",
+      "orderGroupId": "ord-grp-1004",
+      "sellerId": "vnd-aurora-01",
+      "sellerName": "Aurora Artisan Tech",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-aurora-wrist-rest-01",
+          "productId": "prod-aurora-rest",
+          "variantId": "var-rest-resin",
+          "title": "Aurora Handcrafted Resin Wrist Rest (Deep Ocean Blue)",
+          "price": 89.99,
+          "quantity": 1,
+          "maxStock": 5,
+          "image": "/assets/products/wrist-rest.webp",
+          "sellerId": "vnd-aurora-01",
+          "sellerName": "Aurora Artisan Tech",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 89.99,
+      "shippingFee": 4.99,
+      "commissionRate": 0.10,
+      "commissionAmount": 9.00,
+      "netPayout": 80.99,
+      "status": "refunded",
+      "riderId": "usr-rider-001",
+      "deliveryCode": "1843",
+      "returnReason": "Product arrived cracked across central resin seam due to transit stress.",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-09-28T11:20:00.000Z",
+          "actor": "Customer",
+          "note": "Order placed"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-09-28T11:50:00.000Z",
+          "actor": "Vendor",
+          "note": "Confirmed by vendor"
+        },
+        {
+          "status": "packed",
+          "timestamp": "2026-09-28T13:00:00.000Z",
+          "actor": "Vendor",
+          "note": "Packed and dispatched"
+        },
+        {
+          "status": "ready_for_pickup",
+          "timestamp": "2026-09-28T14:00:00.000Z",
+          "actor": "Vendor",
+          "note": "Ready for carrier pickup"
+        },
+        {
+          "status": "shipped",
+          "timestamp": "2026-09-28T15:30:00.000Z",
+          "actor": "Rider",
+          "note": "Collected by delivery rider"
+        },
+        {
+          "status": "out_for_delivery",
+          "timestamp": "2026-09-29T09:15:00.000Z",
+          "actor": "Rider",
+          "note": "Out for customer delivery"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "2026-09-29T11:00:00.000Z",
+          "actor": "Rider",
+          "note": "Delivered to recipient with PIN verification (1843)"
+        },
+        {
+          "status": "return_requested",
+          "timestamp": "2026-09-30T10:00:00.000Z",
+          "actor": "Customer",
+          "note": "Customer opened dispute dsp-501: Resin cracked in transit"
+        },
+        {
+          "status": "return_approved",
+          "timestamp": "2026-09-30T14:30:00.000Z",
+          "actor": "Admin",
+          "note": "Support agent triaged and escalated; Admin approved return request"
+        },
+        {
+          "status": "refunded",
+          "timestamp": "2026-10-01T09:00:00.000Z",
+          "actor": "Admin",
+          "note": "Admin authorized full refund of $94.98 to original payment method"
+        }
+      ],
+      "createdAt": "2026-09-28T11:20:00.000Z"
+    },
+    {
+      "id": "sub-ord-1005-FAIL",
+      "orderGroupId": "ord-grp-1005",
+      "sellerId": "vnd-zenith-02",
+      "sellerName": "Zenith Studio Gear",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-zenith-cable-tray-01",
+          "productId": "prod-zenith-tray",
+          "variantId": "var-tray-white",
+          "title": "Zenith Under-Desk Cable Management Spine (White)",
+          "price": 65.00,
+          "quantity": 1,
+          "maxStock": 18,
+          "image": "/assets/products/cable-tray.webp",
+          "sellerId": "vnd-zenith-02",
+          "sellerName": "Zenith Studio Gear",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 65.00,
+      "shippingFee": 7.50,
+      "commissionRate": 0.08,
+      "commissionAmount": 5.20,
+      "netPayout": 59.80,
+      "status": "delivery_failed",
+      "riderId": "usr-rider-001",
+      "deliveryCode": "5501",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-04T16:00:00.000Z",
+          "actor": "Customer",
+          "note": "Placed with Cash on Delivery (COD)"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-10-04T16:30:00.000Z",
+          "actor": "Vendor",
+          "note": "Confirmed by Zenith Studio Gear"
+        },
+        {
+          "status": "packed",
+          "timestamp": "2026-10-04T17:15:00.000Z",
+          "actor": "Vendor",
+          "note": "Packed and ready"
+        },
+        {
+          "status": "ready_for_pickup",
+          "timestamp": "2026-10-04T17:45:00.000Z",
+          "actor": "Vendor",
+          "note": "Waiting for rider"
+        },
+        {
+          "status": "shipped",
+          "timestamp": "2026-10-05T08:30:00.000Z",
+          "actor": "Rider",
+          "note": "Picked up by Rider John Swift"
+        },
+        {
+          "status": "out_for_delivery",
+          "timestamp": "2026-10-05T10:00:00.000Z",
+          "actor": "Rider",
+          "note": "Out for delivery with COD cash collection"
+        },
+        {
+          "status": "delivery_failed",
+          "timestamp": "2026-10-05T12:15:00.000Z",
+          "actor": "Rider",
+          "note": "Failed attempt #1: Customer premises closed and unreachable by phone. Rescheduled."
+        }
+      ],
+      "createdAt": "2026-10-04T16:00:00.000Z"
+    },
+    {
+      "id": "sub-ord-1006-DIGITAL",
+      "orderGroupId": "ord-grp-1006",
+      "sellerId": "vnd-nexus-03",
+      "sellerName": "Nexus Audio Labs",
+      "sellerType": "vendor",
+      "type": "digital",
+      "items": [
+        {
+          "id": "item-nexus-eq-plugin-01",
+          "productId": "prod-nexus-eq",
+          "variantId": "var-eq-commercial",
+          "title": "Nexus Spatial EQ Audio Mastering VST3/AU Plugin (Commercial License)",
+          "price": 49.00,
+          "quantity": 1,
+          "maxStock": 9999,
+          "image": "/assets/products/plugin-eq.webp",
+          "sellerId": "vnd-nexus-03",
+          "sellerName": "Nexus Audio Labs",
+          "sellerType": "vendor",
+          "type": "digital"
+        }
+      ],
+      "subtotal": 49.00,
+      "shippingFee": 0.00,
+      "commissionRate": 0.12,
+      "commissionAmount": 5.88,
+      "netPayout": 43.12,
+      "status": "available",
+      "licenseKey": "NXEQ-2026-COMM-98FA-33B1",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-05T09:10:00.000Z",
+          "actor": "Customer",
+          "note": "Instant digital license checkout"
+        },
+        {
+          "status": "paid",
+          "timestamp": "2026-10-05T09:10:02.000Z",
+          "actor": "System",
+          "note": "Simulated card payment captured instantly"
+        },
+        {
+          "status": "available",
+          "timestamp": "2026-10-05T09:10:03.000Z",
+          "actor": "System",
+          "note": "License key generated and assets added to Customer Downloads library"
+        }
+      ],
+      "createdAt": "2026-10-05T09:10:00.000Z"
+    },
+    {
+      "id": "sub-ord-1007-CANCEL",
+      "orderGroupId": "ord-grp-1007",
+      "sellerId": "vnd-aurora-01",
+      "sellerName": "Aurora Artisan Tech",
+      "sellerType": "vendor",
+      "type": "physical",
+      "items": [
+        {
+          "id": "item-aurora-artisan-keycap-set",
+          "productId": "prod-aurora-keycaps",
+          "variantId": "var-keycaps-cherry-profile",
+          "title": "Aurora Artisan Ceramic Keycap Set (ANSI 108-Key)",
+          "price": 199.99,
+          "quantity": 1,
+          "maxStock": 3,
+          "image": "/assets/products/keycaps-ceramic.webp",
+          "sellerId": "vnd-aurora-01",
+          "sellerName": "Aurora Artisan Tech",
+          "sellerType": "vendor",
+          "type": "physical"
+        }
+      ],
+      "subtotal": 199.99,
+      "shippingFee": 9.99,
+      "commissionRate": 0.10,
+      "commissionAmount": 20.00,
+      "netPayout": 179.99,
+      "status": "cancelled",
+      "deliveryCode": "7209",
+      "history": [
+        {
+          "status": "placed",
+          "timestamp": "2026-10-05T12:00:00.000Z",
+          "actor": "Customer",
+          "note": "Order placed with credit card"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "2026-10-05T12:10:00.000Z",
+          "actor": "Vendor",
+          "note": "Order confirmed by vendor"
+        },
+        {
+          "status": "cancelled",
+          "timestamp": "2026-10-05T12:25:00.000Z",
+          "actor": "Customer",
+          "note": "Cancelled by customer prior to packaging. Card authorization voided."
+        }
+      ],
+      "createdAt": "2026-10-05T12:00:00.000Z"
+    }
+  ],
+  "disputes": [
+    {
+      "id": "dsp-501",
+      "subOrderId": "sub-ord-1004-DISPUTE",
+      "orderGroupId": "ord-grp-1004",
+      "customerId": "usr-cust-001",
+      "vendorId": "vnd-aurora-01",
+      "reason": "Product arrived cracked across central resin seam due to transit stress.",
+      "status": "resolved_refund",
+      "assignedAgentId": "usr-supp-001",
+      "resolutionNote": "Admin authorized 100% refund after reviewing customer photographic evidence and carrier transit handling notes.",
+      "createdAt": "2026-09-30T10:00:00.000Z",
+      "messages": [
+        {
+          "id": "msg-dsp-501-1",
+          "senderRole": "customer",
+          "senderName": "Alice Johnson",
+          "content": "Hi, I just unboxed my Aurora Wrist Rest that was delivered yesterday. The clear resin has a hairline fracture extending right across the middle. I have uploaded photos of the packaging and damage.",
+          "isInternalNote": false,
+          "timestamp": "2026-09-30T10:00:00.000Z"
+        },
+        {
+          "id": "msg-dsp-501-2",
+          "senderRole": "support",
+          "senderName": "Sarah Jenkins (Support Specialist)",
+          "content": "Customer photos clearly indicate physical shock crack during transit. Exterior packaging carton shows corner crush damage. Escalating to Admin for immediate full refund authorization rather than return shipment.",
+          "isInternalNote": true,
+          "timestamp": "2026-09-30T11:15:00.000Z"
+        },
+        {
+          "id": "msg-dsp-501-3",
+          "senderRole": "support",
+          "senderName": "Sarah Jenkins (Support Specialist)",
+          "content": "Hello Alice, thank you for reaching out and sharing the photos. We are deeply sorry for the transit damage. I have escalated this directly to our administrative management team for expedited refund approval.",
+          "isInternalNote": false,
+          "timestamp": "2026-09-30T11:20:00.000Z"
+        },
+        {
+          "id": "msg-dsp-501-4",
+          "senderRole": "admin",
+          "senderName": "Platform Administrator",
+          "content": "Full refund of $94.98 processed to customer's American Express card ending in 0005. Vendor Aurora Artisan Tech credited return shipping allowance per seller guarantee terms.",
+          "isInternalNote": false,
+          "timestamp": "2026-10-01T09:00:00.000Z"
+        }
+      ]
+    }
+  ],
+  "commissionRules": {
+    "baselineGlobalDefaultRate": 0.10,
+    "categoryOverrides": {
+      "cat-electronics": 0.08,
+      "cat-artisan-accessories": 0.10,
+      "cat-digital-software": 0.12
+    },
+    "vendorOverrides": {
+      "vnd-aurora-01": 0.10,
+      "vnd-zenith-02": 0.08,
+      "vnd-nexus-03": 0.15
+    },
+    "rateHistoryAudit": [
+      {
+        "targetType": "vendor",
+        "targetId": "vnd-nexus-03",
+        "previousRate": 0.10,
+        "newRate": 0.15,
+        "changedBy": "usr-admin-001",
+        "effectiveTimestamp": "2026-10-03T00:00:00.000Z",
+        "reason": "Tier adjustment following quarterly performance re-evaluation. Applies strictly to new orders placed after effective timestamp."
+      }
+    ]
+  },
+  "testDeliveryCodes": [
+    {
+      "subOrderId": "sub-ord-1002-A",
+      "deliveryCode": "4921",
+      "riderId": "usr-rider-001",
+      "expectedStatusOnVerification": "delivered"
+    },
+    {
+      "subOrderId": "sub-ord-1005-FAIL",
+      "deliveryCode": "5501",
+      "riderId": "usr-rider-001",
+      "expectedStatusOnVerification": "delivered"
+    }
+  ]
+}

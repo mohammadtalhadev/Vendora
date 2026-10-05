@@ -1,0 +1,168 @@
+/**
+ * Vendora Design System Tokens
+ * Bright Glass Design Language
+ * 
+ * Invariants:
+ * 1. All pills must use rounded-full (9999px).
+ * 2. Glass surfaces use backdrop-filter: blur(16px) with solid fallbacks.
+ * 3. Card grids must use solid/near-solid surfaces (bg-white or bg-white/95) to prevent mobile GPU scroll stutter.
+ */
+
+:root {
+  /* ==========================================================================
+     1. Brand Color Palette Tokens
+     ========================================================================== */
+  --color-sun-orange: #FF7A1A;
+  --color-sun-orange-hover: #EA6C13;
+  --color-sun-orange-light: #FFF7ED;
+  --color-sun-orange-muted: rgba(255, 122, 26, 0.12);
+
+  --color-aqua: #00B8C8;
+  --color-aqua-hover: #009EAD;
+  --color-aqua-light: #ECFEFF;
+  --color-aqua-muted: rgba(0, 184, 200, 0.12);
+
+  --color-coral: #FF4D6D;
+  --color-coral-hover: #E63D5C;
+  --color-coral-light: #FFF1F2;
+  --color-coral-muted: rgba(255, 77, 109, 0.12);
+
+  --color-lemon: #FFD43B;
+  --color-lemon-hover: #ECC128;
+  --color-lemon-light: #FEFCE8;
+  --color-lemon-muted: rgba(255, 212, 59, 0.16);
+
+  --color-ink: #0F172A;
+  --color-ink-muted: #64748B;
+  --color-ink-subtle: #94A3B8;
+
+  --color-mist: #F8FAFC;
+  --color-mist-light: #FFFFFF;
+  --color-mist-dark: #F1F5F9;
+
+  /* ==========================================================================
+     2. Glassmorphism & Blur Tokens
+     ========================================================================== */
+  --glass-blur: 16px;
+  --glass-blur-sm: 8px;
+  --glass-blur-lg: 24px;
+
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.45);
+  --glass-bg-hover: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-border-subtle: rgba(255, 255, 255, 0.25);
+  --glass-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.08);
+  --glass-shadow-pill: 0 4px 16px 0 rgba(0, 0, 0, 0.06);
+  --glass-shadow-hover: 0 12px 36px 0 rgba(15, 23, 42, 0.12);
+  --glass-overlay: rgba(15, 23, 42, 0.45);
+
+  /* Solid Fallbacks (For non-supporting devices or high performance surfaces) */
+  --surface-solid: #FFFFFF;
+  --surface-near-solid: rgba(255, 255, 255, 0.95);
+  --card-solid: #FFFFFF;
+  --card-near-solid: rgba(255, 255, 255, 0.96);
+
+  /* Geometry & Radii */
+  --radius-pill: 9999px;
+  --radius-card: 1.25rem;
+  --radius-modal: 1.5rem;
+}
+
+/* ==========================================================================
+   3. Glass Recipes with Solid Fallbacks
+   ========================================================================== */
+
+/* Universal Glass Surface */
+.glass-surface {
+  background: var(--surface-solid);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Glass Pill Variant (strictly rounded-full) */
+.glass-pill {
+  background: var(--surface-solid);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-pill);
+  border-radius: var(--radius-pill);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-pill:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Frosted Dialog / Modal Overlay */
+.glass-overlay {
+  background: rgba(15, 23, 42, 0.75); /* Solid fallback */
+  background: var(--glass-overlay);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+/* Performance-Optimized Card Surfaces (No Mobile GPU Stutter) */
+.card-solid {
+  background: var(--card-solid);
+  border: 1px solid #E2E8F0;
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+.card-near-solid {
+  background: var(--card-near-solid);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+/* Fallback for environments lacking backdrop-filter support */
+@supports not ((-webkit-backdrop-filter: blur(16px)) or (backdrop-filter: blur(16px))) {
+  .glass-surface,
+  .glass-pill {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+  }
+  .glass-overlay {
+    background: rgba(15, 23, 42, 0.8) !important;
+  }
+}
+
+/* ==========================================================================
+   4. Skeleton Shimmer Keyframes & Animation
+   ========================================================================== */
+@keyframes vendora-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #F1F5F9 0%,
+    #E2E8F0 25%,
+    #F8FAFC 50%,
+    #E2E8F0 75%,
+    #F1F5F9 100%
+  );
+  background-size: 200% 100%;
+  animation: vendora-shimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none !important;
+    background: #F1F5F9 !important;
+  }
+}
