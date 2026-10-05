@@ -15,6 +15,13 @@ import { VendorNav } from '../features/vendor/components/VendorNav';
 import { VendorDashboardPage } from '../pages/VendorDashboardPage';
 import { VendorOrdersPage } from '../pages/VendorOrdersPage';
 import { VendorProductsPage } from '../pages/VendorProductsPage';
+import { AdminNav } from '../features/admin/components/AdminNav';
+import { AdminDashboardPage } from '../pages/AdminDashboardPage';
+import { AdminVendorsPage } from '../pages/AdminVendorsPage';
+import { AdminProductsPage } from '../pages/AdminProductsPage';
+import { AdminCommissionPage } from '../pages/AdminCommissionPage';
+import { AdminDisputesPage } from '../pages/AdminDisputesPage';
+import { AdminReportsPage } from '../pages/AdminReportsPage';
 
 export const router = createBrowserRouter([
   {
@@ -102,6 +109,37 @@ export const router = createBrowserRouter([
       {
         path: 'store-settings',
         element: <VendorDashboardPage />,
+      },
+    ],
+  },
+  // Admin Workspace Routes (Catmin Design System)
+  {
+    path: '/admin',
+    element: <WorkspaceLayout role="admin" sidebar={<AdminNav />} />,
+    children: [
+      {
+        index: true,
+        element: <AdminDashboardPage />,
+      },
+      {
+        path: 'vendors',
+        element: <AdminVendorsPage />,
+      },
+      {
+        path: 'products',
+        element: <AdminProductsPage />,
+      },
+      {
+        path: 'commission',
+        element: <AdminCommissionPage />,
+      },
+      {
+        path: 'disputes',
+        element: <AdminDisputesPage />,
+      },
+      {
+        path: 'reports',
+        element: <AdminReportsPage />,
       },
     ],
   },

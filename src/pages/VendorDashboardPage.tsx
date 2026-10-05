@@ -36,6 +36,7 @@ export const VendorDashboardPage: React.FC = () => {
   const [orders, setOrders] = useState<SubOrder[]>(() => getVendorSubOrders(vendorId));
   const [products, setProducts] = useState<Product[]>(() => getVendorProducts(vendorId));
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [chartRange, setChartRange] = useState<'7D' | '30D' | '90D' | '1Y'>('30D');
 
   // Status badge styling helper
   const renderStatusBadge = (status: SubOrderStatus) => {
@@ -261,6 +262,76 @@ export const VendorDashboardPage: React.FC = () => {
               <p className="mt-1 text-[11px] text-rose-600 font-semibold">
                 Items below restock threshold
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            Catmin Revenue Growth Chart Card
+            ========================================================================= */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Store Revenue & Net Payout Dynamics</h3>
+              <p className="text-xs text-slate-500">Gross store revenue vs net weekly deposit</p>
+            </div>
+
+            {/* Range Selector Tabs */}
+            <div className="flex items-center rounded-xl bg-slate-100 p-1">
+              {(['7D', '30D', '90D', '1Y'] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setChartRange(range)}
+                  className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+                    chartRange === range
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Bar Chart Visualization */}
+          <div className="mt-6 flex h-44 items-end justify-between gap-4 px-2 sm:px-6">
+            {[
+              { label: 'W1', gross: 5800, net: 5394, height: '58%' },
+              { label: 'W2', gross: 7200, net: 6696, height: '72%' },
+              { label: 'W3', gross: 6400, net: 5952, height: '64%' },
+              { label: 'W4', gross: 9100, net: 8463, height: '90%' },
+              { label: 'W5', gross: 10200, net: 9486, height: '100%' },
+            ].map((pt, idx) => (
+              <div key={idx} className="flex flex-1 flex-col items-center gap-2 h-full justify-end">
+                <div className="text-[10px] font-bold text-slate-500">
+                  ${(pt.gross / 1000).toFixed(1)}k
+                </div>
+                <div className="flex items-end gap-1.5 w-full justify-center h-28">
+                  <div
+                    className="w-4 sm:w-8 rounded-t-lg bg-orange-500 transition-all duration-500 hover:bg-orange-600"
+                    style={{ height: pt.height }}
+                    title={`Gross: $${pt.gross.toLocaleString()}`}
+                  />
+                  <div
+                    className="w-3 sm:w-5 rounded-t-lg bg-emerald-500 transition-all duration-500 hover:bg-emerald-600"
+                    style={{ height: `${parseInt(pt.height) * 0.93}%` }}
+                    title={`Net Payout: $${pt.net} (after 7% fee)`}
+                  />
+                </div>
+                <span className="text-xs font-semibold text-slate-600">{pt.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-6 border-t border-slate-100 pt-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-sm bg-orange-500" />
+              <span className="font-medium text-slate-600">Gross Volume</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-sm bg-emerald-500" />
+              <span className="font-medium text-slate-600">Net Weekly Payout (93%)</span>
             </div>
           </div>
         </div>
