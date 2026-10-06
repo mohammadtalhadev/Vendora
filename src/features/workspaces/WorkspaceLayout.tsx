@@ -10,6 +10,8 @@ import {
   User as UserIcon,
   Search,
   Bell,
+  Globe,
+  Moon,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth-store';
 import type { UserRole } from '../../types/domain';
@@ -137,33 +139,61 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <span>Storefront</span>
             </Link>
 
-            {/* Catmin Search Bar */}
-            <div className="relative hidden md:block w-56 lg:w-72 ml-2">
+            {/* Stitch Search Bar with ⌘K badge */}
+            <div className="relative hidden md:flex items-center w-60 lg:w-80 ml-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Type to search..."
-                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all text-slate-800 placeholder:text-slate-400"
+                placeholder="Search marketplace, orders, audit logs..."
+                className="w-full h-8.5 pl-8 pr-11 text-xs rounded-lg border border-slate-200 bg-slate-50/90 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all text-slate-800 placeholder:text-slate-400"
               />
+              <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-400 shadow-2xs">
+                ⌘K
+              </kbd>
             </div>
           </div>
 
-          {/* Right section: Header extra + Notification Bell + Role badge + User profile */}
+          {/* Right section: Platform Health + Lang + Theme + Notification + Role Badge + User Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
             {headerExtra && (
               <div className="hidden lg:flex items-center">{headerExtra}</div>
             )}
 
+            {/* Platform Healthy Pill */}
+            <div className="hidden xl:flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50/90 px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Platform Healthy • 99.98%</span>
+            </div>
+
             {/* Notification Bell with Badge */}
             <button
               type="button"
-              className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-xs"
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
               title="5 unread platform notifications"
             >
               <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-xs">
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-[9px] font-bold text-white shadow-2xs">
                 5
               </span>
+            </button>
+
+            {/* Language Switcher */}
+            <button
+              type="button"
+              className="hidden sm:flex h-8 items-center gap-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors text-xs font-semibold shadow-2xs"
+              title="Language selection"
+            >
+              <Globe className="h-3.5 w-3.5 text-slate-400" />
+              <span>EN</span>
+            </button>
+
+            {/* Dark Mode / Theme Toggle */}
+            <button
+              type="button"
+              className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+              title="Toggle theme"
+            >
+              <Moon className="h-3.5 w-3.5" />
             </button>
 
             {/* Current Role Badge (Invariant: rounded-full glass pill) */}
@@ -187,11 +217,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               className="glass-pill flex items-center gap-2 px-2.5 py-1 sm:pl-2 sm:pr-3"
             >
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white shadow-xs">
-                {userInitials || <UserIcon className="h-3.5 w-3.5" />}
+                {role === 'admin' ? 'EV' : (userInitials || <UserIcon className="h-3.5 w-3.5" />)}
               </div>
               <div className="hidden flex-col text-left text-xs sm:flex">
-                <span className="font-semibold text-slate-900 line-clamp-1">{userName}</span>
-                <span className="text-[10px] text-slate-500 line-clamp-1">{userEmail}</span>
+                <span className="font-semibold text-slate-900 line-clamp-1">
+                  {role === 'admin' ? (userName || 'Elena Vance') : userName}
+                </span>
+                <span className="text-[10px] text-slate-500 line-clamp-1">
+                  {role === 'admin' ? 'Lead Admin' : userEmail}
+                </span>
               </div>
             </div>
           </div>
