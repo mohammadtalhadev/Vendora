@@ -83,12 +83,11 @@ export const Footer: React.FC = () => {
             <h5 className="text-sm font-bold tracking-tight text-white">Make Money with Us</h5>
             <ul className="mt-4 space-y-2.5 text-xs text-blue-100/90 font-medium">
               <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Sell on Vendora</Link></li>
-              <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Sell Your Services</Link></li>
-              <li><Link to="/vendor" className="hover:text-white transition-colors">Sell on Business</Link></li>
+              <li><Link to="/vendor" className="font-bold text-orange-200 hover:text-white transition-colors">Seller Portal (/vendor)</Link></li>
+              <li><Link to="/admin" className="font-bold text-emerald-300 hover:text-white transition-colors">Admin Governance (/admin)</Link></li>
               <li><Link to="/products?type=digital" className="hover:text-white transition-colors">Sell Your Apps</Link></li>
               <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Become an Affiliate</Link></li>
               <li><Link to="/products" className="hover:text-white transition-colors">Advertise Your Products</Link></li>
-              <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Sell-Publish with Us</Link></li>
               <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Become a Vendora Vendor</Link></li>
             </ul>
           </div>

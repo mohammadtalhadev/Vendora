@@ -10,12 +10,9 @@ import { OrdersPage } from '../pages/OrdersPage';
 import { OrderDetailPage } from '../pages/OrderDetailPage';
 import { WishlistPage } from '../pages/WishlistPage';
 import { BecomeSellerPage } from '../pages/BecomeSellerPage';
-import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
-import { VendorNav } from '../features/vendor/components/VendorNav';
 import { VendorDashboardPage } from '../pages/VendorDashboardPage';
 import { VendorOrdersPage } from '../pages/VendorOrdersPage';
 import { VendorProductsPage } from '../pages/VendorProductsPage';
-import { AdminNav } from '../features/admin/components/AdminNav';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AdminVendorsPage } from '../pages/AdminVendorsPage';
 import { AdminProductsPage } from '../pages/AdminProductsPage';
@@ -88,7 +85,6 @@ export const router = createBrowserRouter([
   // Vendor Workspace Routes
   {
     path: '/vendor',
-    element: <WorkspaceLayout role="vendor" sidebar={<VendorNav />} />,
     children: [
       {
         index: true,
@@ -115,7 +111,6 @@ export const router = createBrowserRouter([
   // Admin Workspace Routes (Catmin Design System)
   {
     path: '/admin',
-    element: <WorkspaceLayout role="admin" sidebar={<AdminNav />} />,
     children: [
       {
         index: true,

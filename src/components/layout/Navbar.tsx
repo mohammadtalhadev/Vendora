@@ -67,6 +67,11 @@ export const Navbar: React.FC = () => {
       mergeGuestCartIntoUser(selectedUser.id);
     }
     setIsRoleMenuOpen(false);
+    if (roleKey === 'admin') {
+      navigate('/admin');
+    } else if (roleKey === 'vendor') {
+      navigate('/vendor');
+    }
   };
 
   return (
@@ -82,7 +87,24 @@ export const Navbar: React.FC = () => {
           <span className="hidden sm:inline">Free express shipping on orders over $100</span>
         </div>
 
-        <div className="relative flex items-center gap-3" ref={roleMenuRef}>
+        <div className="relative flex items-center gap-2 sm:gap-3" ref={roleMenuRef}>
+          {/* Quick Direct Workspace Links */}
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-900 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs transition-all hover:bg-slate-800"
+            title="Open Platform Admin Governance Dashboard"
+          >
+            <Shield className="h-3 w-3 text-emerald-400" />
+            <span>Admin</span>
+          </Link>
+          <Link
+            to="/vendor"
+            className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-100 px-2.5 py-0.5 text-[11px] font-bold text-[#EA6C13] shadow-xs transition-all hover:bg-orange-200"
+            title="Open Seller Partner Dashboard"
+          >
+            <span>Seller</span>
+          </Link>
+
           {/* Demo Role Switcher Badge */}
           <button
             onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
@@ -243,7 +265,7 @@ export const Navbar: React.FC = () => {
                 {user.roles.includes('vendor') && (
                   <Link
                     to="/vendor"
-                    className="hidden rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-white lg:inline-flex"
+                    className="hidden rounded-full border border-orange-200 bg-orange-50/90 px-2.5 py-1 text-xs font-semibold text-[#EA6C13] hover:bg-orange-100 md:inline-flex"
                   >
                     Vendor Hub
                   </Link>
@@ -251,7 +273,7 @@ export const Navbar: React.FC = () => {
                 {user.roles.includes('admin') && (
                   <Link
                     to="/admin"
-                    className="hidden rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-white lg:inline-flex"
+                    className="hidden rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800 md:inline-flex"
                   >
                     Admin Panel
                   </Link>
