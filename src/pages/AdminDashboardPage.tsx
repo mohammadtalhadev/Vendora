@@ -6,74 +6,211 @@ import {
   Users,
   AlertCircle,
   ArrowUpRight,
+  ArrowDownRight,
   ShieldCheck,
   ChevronRight,
+  CheckSquare,
+  Scale,
+  FileDown,
+  Settings2,
+  Eye,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { Button } from '../components/ui/button';
 
+// ─── KPI card data type ──────────────────────────────────────────────────────
+type KpiCard = {
+  label: string;
+  value: string;
+  trendValue: string;
+  trendLabel: string;
+  trendPositive: boolean;
+  progressPct: number;
+  iconBg: string;
+  iconColor: string;
+  progressColor: string;
+  icon: React.ReactNode;
+  extra?: React.ReactNode;
+};
+
 export const AdminDashboardPage: React.FC = () => {
   const [chartRange, setChartRange] = useState<'7D' | '30D' | '90D' | '1Y'>('30D');
 
-  // Catmin Simulated Revenue Data
+  // ── Revenue bar chart data ──────────────────────────────────────────────────
   const revenuePoints = [
-    { label: 'W1', sales: 68000, commission: 6800, height: '55%' },
-    { label: 'W2', sales: 94000, commission: 9400, height: '78%' },
-    { label: 'W3', sales: 82000, commission: 8200, height: '65%' },
-    { label: 'W4', sales: 112000, commission: 11200, height: '92%' },
-    { label: 'W5', sales: 126950, commission: 12695, height: '100%' },
+    { label: 'W1', sales: 68000, commission: 6800 },
+    { label: 'W2', sales: 94000, commission: 9400 },
+    { label: 'W3', sales: 82000, commission: 8200 },
+    { label: 'W4', sales: 112000, commission: 11200 },
+    { label: 'W5', sales: 126950, commission: 12695 },
   ];
 
-  // Recent Marketplace Transactions
+  const maxSales = Math.max(...revenuePoints.map((p) => p.sales));
+
+  // ── KPI cards ───────────────────────────────────────────────────────────────
+  const kpiCards: KpiCard[] = [
+    {
+      label: 'Gross Marketplace Value',
+      value: '$482,950',
+      trendValue: '+18.2%',
+      trendLabel: 'vs last month',
+      trendPositive: true,
+      progressPct: 82,
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600',
+      progressColor: 'bg-emerald-500',
+      icon: <DollarSign className="h-5 w-5" />,
+    },
+    {
+      label: 'Platform Commission Earned',
+      value: '$48,295',
+      trendValue: '+10.0%',
+      trendLabel: 'effective avg',
+      trendPositive: true,
+      progressPct: 68,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      progressColor: 'bg-blue-500',
+      icon: <Percent className="h-5 w-5" />,
+    },
+    {
+      label: 'Active Storefronts',
+      value: '142 Active',
+      trendValue: '4 Pending',
+      trendLabel: 'approvals',
+      trendPositive: false,
+      progressPct: 55,
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+      progressColor: 'bg-purple-500',
+      icon: <Users className="h-5 w-5" />,
+      extra: (
+        <Link to="/admin/vendors" className="text-[10px] font-bold text-blue-600 hover:underline">
+          Review →
+        </Link>
+      ),
+    },
+    {
+      label: 'Open Disputes',
+      value: '6 Open',
+      trendValue: '−12.5%',
+      trendLabel: 'vs last month',
+      trendPositive: true,
+      progressPct: 30,
+      iconBg: 'bg-rose-100',
+      iconColor: 'text-rose-600',
+      progressColor: 'bg-rose-500',
+      icon: <AlertCircle className="h-5 w-5" />,
+      extra: (
+        <Link to="/admin/disputes" className="text-[10px] font-bold text-blue-600 hover:underline">
+          Triage →
+        </Link>
+      ),
+    },
+  ];
+
+  // ── Transactions ─────────────────────────────────────────────────────────────
   const recentTransactions = [
     {
       id: 'VEN-98421',
       customer: 'Sarah Jenkins',
-      customerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
+      customerAvatar:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
       vendor: 'SoundWave Direct',
       date: 'Today, 14:22',
-      itemsCount: 1,
       paymentMethod: 'Card (Mastercard)',
       amount: 189.0,
-      fee: 13.23, // 7% override
-      status: 'confirmed',
+      fee: 13.23,
+      status: 'confirmed' as const,
     },
     {
       id: 'VEN-98420',
       customer: 'David Chen',
-      customerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80',
+      customerAvatar:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80',
       vendor: 'Vendora Direct',
       date: 'Today, 13:10',
-      itemsCount: 2,
       paymentMethod: 'Card (Visa)',
       amount: 328.0,
-      fee: 32.8, // 10% standard
-      status: 'placed',
+      fee: 32.8,
+      status: 'placed' as const,
     },
     {
       id: 'VEN-98418',
       customer: 'Elena Rostova',
-      customerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
+      customerAvatar:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
       vendor: 'StudioCraft Assets',
       date: 'Yesterday, 19:45',
-      itemsCount: 1,
       paymentMethod: 'Card (Visa)',
       amount: 59.0,
-      fee: 8.85, // 15% digital
-      status: 'delivered',
+      fee: 8.85,
+      status: 'delivered' as const,
     },
     {
       id: 'VEN-98415',
       customer: 'Michael Scott',
-      customerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
+      customerAvatar:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80',
       vendor: 'SoundWave Direct',
       date: 'Yesterday, 11:05',
-      itemsCount: 1,
       paymentMethod: 'Cash on Delivery',
       amount: 159.0,
       fee: 11.13,
-      status: 'in_transit',
+      status: 'in_transit' as const,
+    },
+  ];
+
+  type TxStatus = (typeof recentTransactions)[number]['status'];
+  const statusConfig: Record<TxStatus, { label: string; cls: string }> = {
+    confirmed: {
+      label: 'Confirmed',
+      cls: 'bg-blue-50 text-blue-700 border border-blue-200',
+    },
+    placed: {
+      label: 'Placed',
+      cls: 'bg-amber-50 text-amber-700 border border-amber-200',
+    },
+    delivered: {
+      label: 'Delivered',
+      cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    },
+    in_transit: {
+      label: 'In Transit',
+      cls: 'bg-purple-50 text-purple-700 border border-purple-200',
+    },
+  };
+
+  // ── Quick Actions ─────────────────────────────────────────────────────────────
+  const quickActions = [
+    {
+      label: 'Approve Vendors',
+      icon: <CheckSquare className="h-5 w-5" />,
+      href: '/admin/vendors',
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200',
+    },
+    {
+      label: 'Resolve Disputes',
+      icon: <Scale className="h-5 w-5" />,
+      href: '/admin/disputes',
+      color: 'text-rose-600',
+      bg: 'bg-rose-50 hover:bg-rose-100 border-rose-200',
+    },
+    {
+      label: 'Export Report',
+      icon: <FileDown className="h-5 w-5" />,
+      href: '/admin/reports',
+      color: 'text-blue-600',
+      bg: 'bg-blue-50 hover:bg-blue-100 border-blue-200',
+    },
+    {
+      label: 'System Settings',
+      icon: <Settings2 className="h-5 w-5" />,
+      href: '/admin/settings',
+      color: 'text-slate-600',
+      bg: 'bg-slate-50 hover:bg-slate-100 border-slate-200',
     },
   ];
 
@@ -86,9 +223,9 @@ export const AdminDashboardPage: React.FC = () => {
       sidebar={<AdminNav />}
     >
       <div className="space-y-6">
-        {/* =========================================================================
+        {/* =====================================================================
             1. Top Overview Banner & Status Alert
-            ========================================================================= */}
+            ===================================================================== */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
           <div className="flex items-center gap-3.5">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xs">
@@ -97,7 +234,7 @@ export const AdminDashboardPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-900">Vendora Central Governance</h2>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-200">
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
                   HEALTHY
                 </span>
               </div>
@@ -123,114 +260,75 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* =========================================================================
-            2. Executive KPI Cards (Catmin 4-Card Grid)
-            ========================================================================= */}
+        {/* =====================================================================
+            2. Executive KPI Cards — Catmin-style enriched
+            ===================================================================== */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Card 1: GMV */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Gross Marketplace Value
-              </span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <DollarSign className="h-4 w-4" />
-              </span>
-            </div>
-            <div className="mt-4">
-              <div className="text-2xl font-black tracking-tight text-slate-900">
-                $482,950.00
-              </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-                <span className="flex items-center gap-0.5 rounded-md bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-600">
-                  <ArrowUpRight className="h-3 w-3" />
-                  +18.2%
+          {kpiCards.map((card, i) => (
+            <div
+              key={i}
+              className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-shadow hover:shadow-md"
+            >
+              {/* Header row: label + colored icon circle */}
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 leading-tight">
+                  {card.label}
                 </span>
-                <span className="text-slate-400">vs last month</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Commission Earned */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Platform Commission Earned
-              </span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <Percent className="h-4 w-4" />
-              </span>
-            </div>
-            <div className="mt-4">
-              <div className="text-2xl font-black tracking-tight text-slate-900">
-                $48,295.00
-              </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-                <span className="font-semibold text-slate-600">Effective avg: 10.0%</span>
-                <span className="text-slate-400">• Net platform revenue</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Active Vendors */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Active Storefronts
-              </span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-                <Users className="h-4 w-4" />
-              </span>
-            </div>
-            <div className="mt-4">
-              <div className="text-2xl font-black tracking-tight text-slate-900">
-                142 Active
-              </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-                <span className="rounded-md bg-amber-50 px-1.5 py-0.5 font-bold text-amber-700">
-                  4 Pending Approvals
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${card.iconBg} ${card.iconColor}`}
+                >
+                  {card.icon}
                 </span>
-                <Link to="/admin/vendors" className="text-blue-600 hover:underline">
-                  Review →
-                </Link>
               </div>
-            </div>
-          </div>
 
-          {/* Card 4: Open Customer Disputes */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Open Disputes
-              </span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-                <AlertCircle className="h-4 w-4" />
-              </span>
-            </div>
-            <div className="mt-4">
-              <div className="text-2xl font-black tracking-tight text-slate-900">
-                6 Open
+              {/* Large bold number */}
+              <div className="mt-3 text-2xl font-black tracking-tight text-slate-900">
+                {card.value}
               </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-                <span className="rounded-md bg-rose-50 px-1.5 py-0.5 font-bold text-rose-700">
-                  2 SLA Warnings
+
+              {/* Trend pill */}
+              <div className="mt-2 flex items-center gap-1.5 text-xs">
+                <span
+                  className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-bold ${
+                    card.trendPositive
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-rose-50 text-rose-700'
+                  }`}
+                >
+                  {card.trendPositive ? (
+                    <ArrowUpRight className="h-3 w-3" />
+                  ) : (
+                    <ArrowDownRight className="h-3 w-3" />
+                  )}
+                  {card.trendValue}
                 </span>
-                <Link to="/admin/disputes" className="text-blue-600 hover:underline">
-                  Triage →
-                </Link>
+                <span className="text-slate-400">{card.trendLabel}</span>
+                {card.extra}
+              </div>
+
+              {/* Subtle progress bar */}
+              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className={`h-full rounded-full ${card.progressColor} transition-all duration-700`}
+                  style={{ width: `${card.progressPct}%` }}
+                />
               </div>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* =========================================================================
-            3. Revenue Analytics Chart & Period Range Tabs (Catmin Style)
-            ========================================================================= */}
+        {/* =====================================================================
+            3. Revenue Analytics Chart — taller bars + total labels + legend dots
+            ===================================================================== */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+          <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Marketplace Volume & Commission Growth</h3>
-              <p className="text-xs text-slate-500">Simulated multi-vendor sales split over time</p>
+              <h3 className="text-base font-bold text-slate-900">
+                Marketplace Volume & Commission Growth
+              </h3>
+              <p className="text-xs text-slate-500">
+                Simulated multi-vendor sales split over time
+              </p>
             </div>
 
             {/* Range Selector Tabs */}
@@ -251,51 +349,61 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Bar Chart Visualization */}
-          <div className="mt-6 flex h-48 items-end justify-between gap-4 px-2 sm:px-6">
-            {revenuePoints.map((pt, idx) => (
-              <div key={idx} className="flex flex-1 flex-col items-center gap-2 h-full justify-end">
-                <div className="text-[10px] font-bold text-slate-500">
-                  ${(pt.sales / 1000).toFixed(0)}k
+          {/* Bar Chart */}
+          <div className="mt-6 flex h-64 items-end justify-between gap-3 px-2 sm:px-6">
+            {revenuePoints.map((pt, idx) => {
+              const salesH = Math.round((pt.sales / maxSales) * 100);
+              const commH = Math.round((pt.commission / maxSales) * 100);
+              return (
+                <div key={idx} className="flex flex-1 flex-col items-center gap-1.5">
+                  {/* Total label above bar group */}
+                  <span className="text-[10px] font-bold text-slate-500">
+                    ${(pt.sales / 1000).toFixed(0)}k
+                  </span>
+
+                  {/* Dual bars */}
+                  <div className="flex w-full items-end justify-center gap-1.5" style={{ height: '200px' }}>
+                    <div
+                      className="w-5 rounded-t-lg bg-blue-600 transition-all duration-700 hover:bg-blue-700 sm:w-9 cursor-pointer"
+                      style={{ height: `${salesH}%` }}
+                      title={`Sales: $${pt.sales.toLocaleString()}`}
+                    />
+                    <div
+                      className="w-3 rounded-t-lg bg-emerald-500 transition-all duration-700 hover:bg-emerald-600 sm:w-6 cursor-pointer"
+                      style={{ height: `${commH}%` }}
+                      title={`Commission: $${pt.commission.toLocaleString()}`}
+                    />
+                  </div>
+
+                  <span className="text-xs font-semibold text-slate-600">{pt.label}</span>
                 </div>
-                {/* Dual Bars: Gross (Blue) + Commission (Emerald) */}
-                <div className="flex items-end gap-1.5 w-full justify-center h-32">
-                  <div
-                    className="w-5 sm:w-10 rounded-t-lg bg-blue-600 transition-all duration-500 hover:bg-blue-700"
-                    style={{ height: pt.height }}
-                    title={`Sales: $${pt.sales.toLocaleString()}`}
-                  />
-                  <div
-                    className="w-3 sm:w-6 rounded-t-lg bg-emerald-500 transition-all duration-500 hover:bg-emerald-600"
-                    style={{ height: `${parseInt(pt.height) * 0.4}%` }}
-                    title={`Commission: $${pt.commission.toLocaleString()}`}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-slate-600">{pt.label}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
+          {/* Legend with colored dots */}
           <div className="mt-4 flex items-center justify-center gap-6 border-t border-slate-100 pt-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-sm bg-blue-600" />
+              <span className="h-3 w-3 rounded-full bg-blue-600" />
               <span className="font-medium text-slate-600">Gross Marketplace Sales</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-sm bg-emerald-500" />
+              <span className="h-3 w-3 rounded-full bg-emerald-500" />
               <span className="font-medium text-slate-600">Platform Commission (avg 10%)</span>
             </div>
           </div>
         </div>
 
-        {/* =========================================================================
-            4. Recent Orders & Split Transactions Table (Catmin Style Table)
-            ========================================================================= */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+        {/* =====================================================================
+            4. Recent Marketplace Transactions — with Actions column
+            ===================================================================== */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-100 p-5">
             <div>
               <h3 className="text-base font-bold text-slate-900">Recent Marketplace Transactions</h3>
-              <p className="text-xs text-slate-500">Orders split across vendors with recorded commission deduction</p>
+              <p className="text-xs text-slate-500">
+                Orders split across vendors with recorded commission deduction
+              </p>
             </div>
             <Button variant="outline" size="sm" asChild className="gap-1 rounded-xl text-xs">
               <Link to="/admin/reports">
@@ -307,7 +415,7 @@ export const AdminDashboardPage: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+              <thead className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Order ID</th>
                   <th className="px-5 py-3">Customer</th>
@@ -316,62 +424,83 @@ export const AdminDashboardPage: React.FC = () => {
                   <th className="px-5 py-3">Gross Total</th>
                   <th className="px-5 py-3">Commission Fee</th>
                   <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {recentTransactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-3.5 font-mono font-bold text-slate-900">
-                      {tx.id}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src={tx.customerAvatar}
-                          alt={tx.customer}
-                          className="h-7 w-7 rounded-full object-cover"
-                        />
-                        <span className="font-medium text-slate-800">{tx.customer}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 font-medium text-slate-700">
-                      {tx.vendor}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500">
-                      {tx.paymentMethod}
-                    </td>
-                    <td className="px-5 py-3.5 font-bold text-slate-900">
-                      ${tx.amount.toFixed(2)}
-                    </td>
-                    <td className="px-5 py-3.5 font-bold text-emerald-600">
-                      +${tx.fee.toFixed(2)}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {tx.status === 'confirmed' && (
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
-                          Confirmed
+                {recentTransactions.map((tx) => {
+                  const s = statusConfig[tx.status];
+                  return (
+                    <tr key={tx.id} className="transition-colors hover:bg-slate-50/50">
+                      <td className="px-5 py-3.5 font-mono font-bold text-slate-900">{tx.id}</td>
+
+                      {/* Customer with avatar */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={tx.customerAvatar}
+                            alt={tx.customer}
+                            className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-sm"
+                          />
+                          <div>
+                            <div className="font-semibold text-slate-800">{tx.customer}</div>
+                            <div className="text-[10px] text-slate-400">{tx.date}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-3.5 font-medium text-slate-700">{tx.vendor}</td>
+                      <td className="px-5 py-3.5 text-slate-500">{tx.paymentMethod}</td>
+                      <td className="px-5 py-3.5 font-bold text-slate-900">
+                        ${tx.amount.toFixed(2)}
+                      </td>
+                      <td className="px-5 py-3.5 font-bold text-emerald-600">
+                        +${tx.fee.toFixed(2)}
+                      </td>
+
+                      {/* Status pill — rounded-full */}
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.cls}`}
+                        >
+                          {s.label}
                         </span>
-                      )}
-                      {tx.status === 'placed' && (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
-                          Placed
-                        </span>
-                      )}
-                      {tx.status === 'delivered' && (
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                          Delivered
-                        </span>
-                      )}
-                      {tx.status === 'in_transit' && (
-                        <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
-                          In Transit
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* Actions column — outline View button */}
+                      <td className="px-5 py-3.5">
+                        <Link
+                          to={`/admin/orders/${tx.id}`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-xs transition hover:border-slate-300 hover:bg-slate-50"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* =====================================================================
+            5. Quick Actions Row
+            ===================================================================== */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <h3 className="mb-4 text-sm font-bold text-slate-900">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {quickActions.map((action) => (
+              <Link
+                key={action.label}
+                to={action.href}
+                className={`flex flex-col items-center justify-center gap-2.5 rounded-xl border p-4 text-center transition-all ${action.bg}`}
+              >
+                <span className={`${action.color}`}>{action.icon}</span>
+                <span className={`text-xs font-bold ${action.color}`}>{action.label}</span>
+              </Link>
+            ))}
           </div>
         </div>
       </div>
