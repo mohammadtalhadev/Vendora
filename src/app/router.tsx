@@ -19,6 +19,8 @@ import { AdminProductsPage } from '../pages/AdminProductsPage';
 import { AdminCommissionPage } from '../pages/AdminCommissionPage';
 import { AdminDisputesPage } from '../pages/AdminDisputesPage';
 import { AdminReportsPage } from '../pages/AdminReportsPage';
+import { AdminUsersPage } from '../pages/AdminUsersPage';
+import { AdminOrdersPage } from '../pages/AdminOrdersPage';
 
 export const router = createBrowserRouter([
   {
@@ -125,6 +127,22 @@ export const router = createBrowserRouter([
         element: <AdminProductsPage />,
       },
       {
+        path: 'orders',
+        element: <AdminOrdersPage />,
+      },
+      {
+        path: 'users',
+        element: <AdminUsersPage />,
+      },
+      {
+        path: 'first-party',
+        element: <AdminProductsPage />,
+      },
+      {
+        path: 'categories',
+        element: <AdminProductsPage />,
+      },
+      {
         path: 'commission',
         element: <AdminCommissionPage />,
       },
@@ -135,6 +153,14 @@ export const router = createBrowserRouter([
       {
         path: 'reports',
         element: <AdminReportsPage />,
+      },
+      {
+        path: 'notifications',
+        element: <AdminDashboardPage />,
+      },
+      {
+        path: 'settings',
+        element: <AdminCommissionPage />,
       },
     ],
   },
