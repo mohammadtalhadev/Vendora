@@ -21,6 +21,7 @@ import { AdminDisputesPage } from '../pages/AdminDisputesPage';
 import { AdminReportsPage } from '../pages/AdminReportsPage';
 import { AdminUsersPage } from '../pages/AdminUsersPage';
 import { AdminOrdersPage } from '../pages/AdminOrdersPage';
+import { AdminNotificationsPage } from '../pages/AdminNotificationsPage';
 
 export const router = createBrowserRouter([
   {
@@ -156,7 +157,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'notifications',
-        element: <AdminDashboardPage />,
+        element: <AdminNotificationsPage />,
       },
       {
         path: 'settings',
