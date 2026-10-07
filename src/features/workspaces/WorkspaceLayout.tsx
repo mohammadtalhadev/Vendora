@@ -12,6 +12,7 @@ import {
   Bell,
   Globe,
   Moon,
+  LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth-store';
 import type { UserRole } from '../../types/domain';
@@ -76,7 +77,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   headerExtra,
   children,
 }) => {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Derive role and visual badge info
@@ -139,33 +140,42 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <span>Storefront</span>
             </Link>
 
-            {/* Stitch Search Bar with ⌘K badge */}
-            <div className="relative hidden md:flex items-center w-60 lg:w-80 ml-2">
+            {/* Catmin / Stitch Search Bar */}
+            <div className="relative hidden md:flex items-center w-60 lg:w-72 ml-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search marketplace, orders, audit logs..."
-                className="w-full h-8.5 pl-8 pr-11 text-xs rounded-lg border border-slate-200 bg-slate-50/90 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all text-slate-800 placeholder:text-slate-400"
+                placeholder="Type to search..."
+                className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all text-slate-800 placeholder:text-slate-400"
               />
-              <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-400 shadow-2xs">
-                ⌘K
-              </kbd>
             </div>
           </div>
 
-          {/* Right section: Platform Health + Lang + Theme + Notification + Role Badge + User Profile */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Right section: Theme + Lang + Notifications + User Avatar + LogOut + Test IDs */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
             {headerExtra && (
               <div className="hidden lg:flex items-center">{headerExtra}</div>
             )}
 
-            {/* Platform Healthy Pill */}
-            <div className="hidden xl:flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50/90 px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Platform Healthy • 99.98%</span>
-            </div>
+            {/* Dark Mode / Theme Toggle */}
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+              title="Toggle theme"
+            >
+              <Moon className="h-3.5 w-3.5" />
+            </button>
 
-            {/* Notification Bell with Badge */}
+            {/* Language Switcher */}
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+              title="Language selection"
+            >
+              <Globe className="h-3.5 w-3.5 text-slate-600" />
+            </button>
+
+            {/* Notification Bell with Badge 5 */}
             <button
               type="button"
               className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
@@ -177,30 +187,43 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               </span>
             </button>
 
-            {/* Language Switcher */}
+            {/* User Profile Avatar */}
+            <div
+              data-testid="user-profile"
+              className="flex items-center gap-1.5"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white shadow-xs overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <span className="hidden">{userInitials || <UserIcon className="h-3.5 w-3.5" />}</span>
+              </div>
+              <span className="sr-only">{userName} ({userEmail})</span>
+            </div>
+
+            {/* Logout Icon Button */}
             <button
               type="button"
-              className="hidden sm:flex h-8 items-center gap-1 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors text-xs font-semibold shadow-2xs"
-              title="Language selection"
+              onClick={() => {
+                logout();
+                window.location.href = '/';
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
+              title="Log out"
             >
-              <Globe className="h-3.5 w-3.5 text-slate-400" />
-              <span>EN</span>
+              <LogOut className="h-3.5 w-3.5" />
             </button>
 
-            {/* Dark Mode / Theme Toggle */}
-            <button
-              type="button"
-              className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
-              title="Toggle theme"
-            >
-              <Moon className="h-3.5 w-3.5" />
-            </button>
-
-            {/* Current Role Badge (Invariant: rounded-full glass pill) */}
+            {/* Current Role Badge (Invariant: rounded-full glass pill for tests & role context) */}
             <span
               data-testid="role-badge"
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold tracking-wide shadow-xs transition-colors',
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-wide shadow-xs transition-colors',
                 badgeStyle.bg,
                 badgeStyle.text,
                 badgeStyle.border,
@@ -210,24 +233,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <Shield className="h-3 w-3" />
               <span>{displayRoleBadge}</span>
             </span>
-
-            {/* User Profile display */}
-            <div
-              data-testid="user-profile"
-              className="glass-pill flex items-center gap-2 px-2.5 py-1 sm:pl-2 sm:pr-3"
-            >
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white shadow-xs">
-                {role === 'admin' ? 'EV' : (userInitials || <UserIcon className="h-3.5 w-3.5" />)}
-              </div>
-              <div className="hidden flex-col text-left text-xs sm:flex">
-                <span className="font-semibold text-slate-900 line-clamp-1">
-                  {role === 'admin' ? (userName || 'Elena Vance') : userName}
-                </span>
-                <span className="text-[10px] text-slate-500 line-clamp-1">
-                  {role === 'admin' ? 'Lead Admin' : userEmail}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
 
