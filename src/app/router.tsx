@@ -22,6 +22,7 @@ import { AdminReportsPage } from '../pages/AdminReportsPage';
 import { AdminUsersPage } from '../pages/AdminUsersPage';
 import { AdminOrdersPage } from '../pages/AdminOrdersPage';
 import { AdminNotificationsPage } from '../pages/AdminNotificationsPage';
+import { AdminSettingsPage } from '../pages/AdminSettingsPage';
 
 export const router = createBrowserRouter([
   {
@@ -161,7 +162,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <AdminCommissionPage />,
+        element: <AdminSettingsPage />,
       },
     ],
   },
