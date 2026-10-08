@@ -17,6 +17,10 @@ import { VendorReturnsPage } from '../pages/VendorReturnsPage';
 import { VendorEarningsPage } from '../pages/VendorEarningsPage';
 import { VendorPayoutsPage } from '../pages/VendorPayoutsPage';
 import { VendorPromotionsPage } from '../pages/VendorPromotionsPage';
+import { VendorMessagesPage } from '../pages/VendorMessagesPage';
+import { VendorReviewsPage } from '../pages/VendorReviewsPage';
+import { VendorSettingsPage } from '../pages/VendorSettingsPage';
+import { VendorSupportPage } from '../pages/VendorSupportPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AdminVendorsPage } from '../pages/AdminVendorsPage';
 import { AdminProductsPage } from '../pages/AdminProductsPage';
@@ -123,8 +127,20 @@ export const router = createBrowserRouter([
         element: <VendorPromotionsPage />,
       },
       {
+        path: 'messages',
+        element: <VendorMessagesPage />,
+      },
+      {
+        path: 'reviews',
+        element: <VendorReviewsPage />,
+      },
+      {
         path: 'store-settings',
-        element: <VendorDashboardPage />,
+        element: <VendorSettingsPage />,
+      },
+      {
+        path: 'support',
+        element: <VendorSupportPage />,
       },
     ],
   },

@@ -106,13 +106,15 @@ export const VendorNav: React.FC<VendorNavProps> = ({
       icon: Tag,
     },
     {
-      to: '/vendor/store-settings',
+      to: '/vendor/messages',
       label: 'Customer Messages',
       icon: MessageSquare,
+      badge: '4',
+      badgeColor: 'bg-slate-900 text-white',
     },
     {
-      to: '/vendor/store-settings',
-      label: 'Reviews',
+      to: '/vendor/reviews',
+      label: 'Reviews & Ratings',
       icon: Star,
     },
     {
@@ -122,7 +124,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
       icon: Settings,
     },
     {
-      to: '/vendor/store-settings',
+      to: '/vendor/support',
       label: 'Help & Support',
       icon: HelpCircle,
     },
