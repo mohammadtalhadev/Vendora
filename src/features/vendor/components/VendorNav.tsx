@@ -96,12 +96,12 @@ export const VendorNav: React.FC<VendorNavProps> = ({
       icon: Wallet,
     },
     {
-      to: '/vendor/earnings',
+      to: '/vendor/payouts',
       label: 'Payouts',
       icon: CreditCard,
     },
     {
-      to: '/vendor/store-settings',
+      to: '/vendor/promotions',
       label: 'Promotions & Coupons',
       icon: Tag,
     },

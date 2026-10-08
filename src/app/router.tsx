@@ -14,6 +14,9 @@ import { VendorDashboardPage } from '../pages/VendorDashboardPage';
 import { VendorOrdersPage } from '../pages/VendorOrdersPage';
 import { VendorProductsPage } from '../pages/VendorProductsPage';
 import { VendorReturnsPage } from '../pages/VendorReturnsPage';
+import { VendorEarningsPage } from '../pages/VendorEarningsPage';
+import { VendorPayoutsPage } from '../pages/VendorPayoutsPage';
+import { VendorPromotionsPage } from '../pages/VendorPromotionsPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AdminVendorsPage } from '../pages/AdminVendorsPage';
 import { AdminProductsPage } from '../pages/AdminProductsPage';
@@ -109,7 +112,15 @@ export const router = createBrowserRouter([
       },
       {
         path: 'earnings',
-        element: <VendorDashboardPage />,
+        element: <VendorEarningsPage />,
+      },
+      {
+        path: 'payouts',
+        element: <VendorPayoutsPage />,
+      },
+      {
+        path: 'promotions',
+        element: <VendorPromotionsPage />,
       },
       {
         path: 'store-settings',
