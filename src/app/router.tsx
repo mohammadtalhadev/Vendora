@@ -13,6 +13,7 @@ import { BecomeSellerPage } from '../pages/BecomeSellerPage';
 import { VendorDashboardPage } from '../pages/VendorDashboardPage';
 import { VendorOrdersPage } from '../pages/VendorOrdersPage';
 import { VendorProductsPage } from '../pages/VendorProductsPage';
+import { VendorReturnsPage } from '../pages/VendorReturnsPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AdminVendorsPage } from '../pages/AdminVendorsPage';
 import { AdminProductsPage } from '../pages/AdminProductsPage';
@@ -101,6 +102,10 @@ export const router = createBrowserRouter([
       {
         path: 'products',
         element: <VendorProductsPage />,
+      },
+      {
+        path: 'returns',
+        element: <VendorReturnsPage />,
       },
       {
         path: 'earnings',
