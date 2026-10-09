@@ -27,67 +27,67 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="mt-20 bg-[#0071DC] text-white">
-      {/* 1. Value Pillars Strip (Translucent white bar) */}
-      <div className="border-b border-white/15 bg-white/5 py-7">
+    <footer className="mt-20 bg-[#0F172A] text-slate-100">
+      {/* 1. Value Pillars Strip (Dark Navy translucent bar) */}
+      <div className="border-b border-slate-800 bg-slate-900/50 py-7">
         <div className="mx-auto grid w-full max-w-[1600px] grid-cols-2 gap-6 px-4 sm:px-6 lg:px-8 md:grid-cols-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-800 text-orange-400 shadow-xs">
               <Truck className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-bold text-white">Express Delivery</h4>
-              <p className="text-xs text-blue-100">Free shipping on orders over $100</p>
+              <p className="text-xs text-slate-400">Free shipping on orders over $100</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-800 text-orange-400 shadow-xs">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-bold text-white">Safe & Secure</h4>
-              <p className="text-xs text-blue-100">Encrypted payments & buyer escrow</p>
+              <p className="text-xs text-slate-400">Encrypted payments & buyer escrow</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-800 text-orange-400 shadow-xs">
               <RotateCcw className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-bold text-white">Buyer Protection</h4>
-              <p className="text-xs text-blue-100">Dispute triage & 30-day refund guarantee</p>
+              <p className="text-xs text-slate-400">Dispute triage & 30-day refund guarantee</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-800 text-orange-400 shadow-xs">
               <Headphones className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-bold text-white">Dedicated Support</h4>
-              <p className="text-xs text-blue-100">24/7 expert customer service</p>
+              <p className="text-xs text-slate-400">24/7 expert customer service</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* 2. Newsletter Signup Strip */}
-      <div className="border-b border-white/15 bg-black/10 py-8 backdrop-blur-xs">
+      <div className="border-b border-slate-800 bg-slate-900/80 py-8 backdrop-blur-xs">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-6 px-4 sm:px-6 lg:flex-row lg:px-8">
           <div className="flex items-center gap-4 text-center sm:text-left">
-            <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-md shadow-xs">
-              <Mail className="h-6 w-6 text-yellow-300" />
+            <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-800 text-orange-400 shadow-xs">
+              <Mail className="h-6 w-6" />
             </div>
             <div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <h3 className="text-base sm:text-lg font-extrabold text-white">Subscribe to our newsletter</h3>
-                <span className="rounded-full bg-[#FFC220] px-2.5 py-0.5 text-[10px] font-extrabold text-slate-900 uppercase tracking-wide">
+                <span className="rounded-full bg-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-extrabold text-white uppercase tracking-wide">
                   Get 15% Off
                 </span>
               </div>
-              <p className="text-xs text-blue-100/90 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 Receive weekly drops, exclusive discount vouchers, and verified merchant highlights.
               </p>
             </div>
@@ -105,16 +105,16 @@ export const Footer: React.FC = () => {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email address..."
-                className="w-full rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs text-white placeholder-blue-200/70 backdrop-blur-md outline-hidden focus:border-white focus:bg-white/20 transition-all shadow-inner"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/90 px-4 py-2.5 text-xs text-white placeholder-slate-400 outline-hidden focus:border-[#FF7A1A] focus:bg-slate-800 transition-all shadow-inner"
               />
             </div>
             <button
               type="submit"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#FFC220] hover:bg-[#eab308] px-5 py-2.5 text-xs font-extrabold text-slate-900 shadow-sm transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#FF7A1A] hover:bg-[#EA580C] px-5 py-2.5 text-xs font-extrabold text-white shadow-sm transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               {isSubscribed ? (
                 <>
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-800" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-white" />
                   <span>Subscribed!</span>
                 </>
               ) : (
@@ -134,81 +134,81 @@ export const Footer: React.FC = () => {
           {/* Column 1: Let Us Help You */}
           <div>
             <h5 className="text-sm font-bold tracking-tight text-white">Let Us Help You</h5>
-            <ul className="mt-4 space-y-2.5 text-xs text-blue-100/90 font-medium">
-              <li><Link to="/orders" className="hover:text-white transition-colors">Your Orders</Link></li>
-              <li><Link to="/orders" className="hover:text-white transition-colors">Returns &amp; Replacements</Link></li>
-              <li><Link to="/products" className="hover:text-white transition-colors">Shipping Rates &amp; Policies</Link></li>
-              <li><Link to="/orders" className="hover:text-white transition-colors">Refund &amp; Return Policy</Link></li>
-              <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
-              <li><Link to="/faq" className="hover:text-white transition-colors">Help Center &amp; FAQ</Link></li>
+            <ul className="mt-4 space-y-2.5 text-xs text-slate-400 font-medium">
+              <li><Link to="/orders" className="hover:text-[#FF7A1A] transition-colors">Your Orders</Link></li>
+              <li><Link to="/orders" className="hover:text-[#FF7A1A] transition-colors">Returns &amp; Replacements</Link></li>
+              <li><Link to="/products" className="hover:text-[#FF7A1A] transition-colors">Shipping Rates &amp; Policies</Link></li>
+              <li><Link to="/orders" className="hover:text-[#FF7A1A] transition-colors">Refund &amp; Return Policy</Link></li>
+              <li><Link to="/privacy" className="hover:text-[#FF7A1A] transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-[#FF7A1A] transition-colors">Terms &amp; Conditions</Link></li>
+              <li><Link to="/faq" className="hover:text-[#FF7A1A] transition-colors">Help Center &amp; FAQ</Link></li>
             </ul>
           </div>
 
-          {/* Column 2: Make Money with Us (Clean customer/vendor onboarding links - NO internal admin links) */}
+          {/* Column 2: Make Money with Us */}
           <div>
             <h5 className="text-sm font-bold tracking-tight text-white">Make Money with Us</h5>
-            <ul className="mt-4 space-y-2.5 text-xs text-blue-100/90 font-medium">
-              <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Sell on Vendora</Link></li>
-              <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Become an Affiliate</Link></li>
-              <li><Link to="/products" className="hover:text-white transition-colors">Advertise Your Products</Link></li>
-              <li><Link to="/products?type=digital" className="hover:text-white transition-colors">Sell Digital Downloads</Link></li>
-              <li><Link to="/about" className="hover:text-white transition-colors">Fulfillment by Vendora</Link></li>
-              <li><Link to="/become-a-seller" className="hover:text-white transition-colors">Vendor Guidelines &amp; Fees</Link></li>
+            <ul className="mt-4 space-y-2.5 text-xs text-slate-400 font-medium">
+              <li><Link to="/become-a-seller" className="hover:text-[#FF7A1A] transition-colors">Sell on Vendora</Link></li>
+              <li><Link to="/become-a-seller" className="hover:text-[#FF7A1A] transition-colors">Become an Affiliate</Link></li>
+              <li><Link to="/products" className="hover:text-[#FF7A1A] transition-colors">Advertise Your Products</Link></li>
+              <li><Link to="/products?type=digital" className="hover:text-[#FF7A1A] transition-colors">Sell Digital Downloads</Link></li>
+              <li><Link to="/about" className="hover:text-[#FF7A1A] transition-colors">Fulfillment by Vendora</Link></li>
+              <li><Link to="/become-a-seller" className="hover:text-[#FF7A1A] transition-colors">Vendor Guidelines &amp; Fees</Link></li>
             </ul>
           </div>
 
           {/* Column 3: Get to Know Us */}
           <div>
             <h5 className="text-sm font-bold tracking-tight text-white">Get to Know Us</h5>
-            <ul className="mt-4 space-y-2.5 text-xs text-blue-100/90 font-medium">
-              <li><Link to="/about" className="hover:text-white transition-colors">About Vendora</Link></li>
-              <li><Link to="/about" className="hover:text-white transition-colors">Careers &amp; Opportunities</Link></li>
-              <li><Link to="/about" className="hover:text-white transition-colors">Investor Relations</Link></li>
-              <li><Link to="/products" className="hover:text-white transition-colors">Vendora Devices</Link></li>
-              <li><Link to="/products" className="hover:text-white transition-colors">Customer Reviews</Link></li>
-              <li><Link to="/about" className="hover:text-white transition-colors">Sustainability &amp; Ethics</Link></li>
-              <li><Link to="/about" className="hover:text-white transition-colors">Store Locations</Link></li>
+            <ul className="mt-4 space-y-2.5 text-xs text-slate-400 font-medium">
+              <li><Link to="/about" className="hover:text-[#FF7A1A] transition-colors">About Vendora</Link></li>
+              <li><Link to="/about" className="hover:text-[#FF7A1A] transition-colors">Careers &amp; Opportunities</Link></li>
+              <li><Link to="/about" className="hover:text-[#FF7A1A] transition-colors">Investor Relations</Link></li>
+              <li><Link to="/products" className="hover:text-[#FF7A1A] transition-colors">Vendora Devices</Link></li>
+              <li><Link to="/products" className="hover:text-[#FF7A1A] transition-colors">Customer Reviews</Link></li>
+              <li><Link to="/about" className="hover:text-[#FF7A1A] transition-colors">Sustainability &amp; Ethics</Link></li>
+              <li><Link to="/about" className="hover:text-[#FF7A1A] transition-colors">Store Locations</Link></li>
             </ul>
           </div>
 
           {/* Column 4: Customer Support & Live Contacts */}
           <div>
             <h5 className="text-sm font-bold tracking-tight text-white">Customer Support</h5>
-            <ul className="mt-4 space-y-2.5 text-xs text-blue-100/90 font-medium">
+            <ul className="mt-4 space-y-2.5 text-xs text-slate-400 font-medium">
               <li className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5 text-blue-200 shrink-0" />
-                <a href="tel:+18005558363" className="font-bold text-white hover:underline">
+                <Phone className="h-3.5 w-3.5 text-orange-400 shrink-0" />
+                <a href="tel:+18005558363" className="font-bold text-orange-400 hover:underline">
                   +1 (800) 555-VENDORA
                 </a>
               </li>
               <li>
                 <a
                   href="mailto:support@vendora.internal"
-                  className="flex items-center gap-2 hover:text-white transition-colors"
+                  className="flex items-center gap-2 hover:text-[#FF7A1A] transition-colors"
                 >
-                  <Mail className="h-3.5 w-3.5 text-blue-200 shrink-0" />
+                  <Mail className="h-3.5 w-3.5 text-orange-400 shrink-0" />
                   <span>support@vendora.internal</span>
                 </a>
               </li>
               <li>
                 <Link
                   to="/disputes"
-                  className="flex items-center gap-2 hover:text-white transition-colors"
+                  className="flex items-center gap-2 hover:text-[#FF7A1A] transition-colors"
                 >
-                  <Headphones className="h-3.5 w-3.5 text-blue-200 shrink-0" />
+                  <Headphones className="h-3.5 w-3.5 text-orange-400 shrink-0" />
                   <span>Disputes &amp; Claims Desk</span>
                 </Link>
               </li>
               <li className="pt-1.5">
-                <div className="flex items-center gap-2 text-[11px] text-blue-200">
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span>Chat Channels:</span>
                   <div className="flex items-center gap-2">
                     <a
                       href="https://t.me"
                       target="_blank"
                       rel="noreferrer"
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all shadow-2xs"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 hover:bg-[#FF7A1A] text-white transition-all shadow-2xs"
                       title="Telegram Support"
                     >
                       <Send className="h-3.5 w-3.5" />
@@ -217,7 +217,7 @@ export const Footer: React.FC = () => {
                       href="https://whatsapp.com"
                       target="_blank"
                       rel="noreferrer"
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all shadow-2xs"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 hover:bg-[#FF7A1A] text-white transition-all shadow-2xs"
                       title="WhatsApp Support"
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
@@ -226,12 +226,12 @@ export const Footer: React.FC = () => {
                 </div>
               </li>
               <li className="pt-1">
-                <Link to="/faq" className="hover:text-white transition-colors">
+                <Link to="/faq" className="hover:text-[#FF7A1A] transition-colors">
                   Knowledge Base &amp; FAQ
                 </Link>
               </li>
               <li>
-                <Link to="/orders" className="hover:text-white transition-colors">
+                <Link to="/orders" className="hover:text-[#FF7A1A] transition-colors">
                   Track Your Package
                 </Link>
               </li>
@@ -241,7 +241,7 @@ export const Footer: React.FC = () => {
           {/* Column 5: App Download & Social Media */}
           <div className="col-span-2 md:col-span-1">
             <h5 className="text-sm font-bold tracking-tight text-white">Experience Vendora App</h5>
-            <p className="mt-2 text-xs leading-relaxed text-blue-100">
+            <p className="mt-2 text-xs leading-relaxed text-slate-400">
               Get 10% off your first mobile order with the Vendora App.
             </p>
 
@@ -250,10 +250,9 @@ export const Footer: React.FC = () => {
               {/* Apple App Store Badge */}
               <a
                 href="#app-store"
-                className="group flex items-center justify-between rounded-xl bg-slate-950 px-3.5 py-2.5 text-white border border-white/20 shadow-lg transition-transform hover:scale-[1.02] hover:border-white/40"
+                className="group flex items-center justify-between rounded-xl bg-slate-900 px-3.5 py-2.5 text-white border border-slate-700/80 shadow-md transition-transform hover:scale-[1.02] hover:border-slate-500"
               >
                 <div className="flex items-center gap-3">
-                  {/* Apple SVG Logo */}
                   <svg className="h-6 w-6 shrink-0 fill-current text-white" viewBox="0 0 24 24">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.85c.66-.8 1.1-1.92.98-3.04-.95.04-2.1.63-2.78 1.43-.6.69-1.12 1.81-.98 2.9 1.06.08 2.13-.53 2.78-1.29" />
                   </svg>
@@ -266,7 +265,7 @@ export const Footer: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="rounded-md bg-emerald-500/20 border border-emerald-400/40 px-1.5 py-0.5 text-[9px] font-extrabold text-emerald-300">
+                <span className="rounded-md bg-orange-500/20 border border-orange-400/40 px-1.5 py-0.5 text-[9px] font-extrabold text-orange-400">
                   10% OFF
                 </span>
               </a>
@@ -274,10 +273,9 @@ export const Footer: React.FC = () => {
               {/* Google Play Store Badge */}
               <a
                 href="#google-play"
-                className="group flex items-center justify-between rounded-xl bg-slate-950 px-3.5 py-2.5 text-white border border-white/20 shadow-lg transition-transform hover:scale-[1.02] hover:border-white/40"
+                className="group flex items-center justify-between rounded-xl bg-slate-900 px-3.5 py-2.5 text-white border border-slate-700/80 shadow-md transition-transform hover:scale-[1.02] hover:border-slate-500"
               >
                 <div className="flex items-center gap-3">
-                  {/* Google Play 4-Color SVG Logo */}
                   <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24">
                     <path d="M3.6 1.4c-.3.3-.5.8-.5 1.4v18.4c0 .6.2 1.1.5 1.4l9.6-9.6L3.6 1.4z" fill="#4285F4" />
                     <path d="M16.8 9.6L13.2 6 3.6 1.4c.4-.2.8-.2 1.2 0l12 8.2z" fill="#EA4335" />
@@ -293,22 +291,21 @@ export const Footer: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="rounded-md bg-emerald-500/20 border border-emerald-400/40 px-1.5 py-0.5 text-[9px] font-extrabold text-emerald-300">
+                <span className="rounded-md bg-orange-500/20 border border-orange-400/40 px-1.5 py-0.5 text-[9px] font-extrabold text-orange-400">
                   10% OFF
                 </span>
               </a>
             </div>
 
-            {/* Social Media Vector Icons (High Contrast & Sharp Render) */}
+            {/* Social Media Vector Icons */}
             <div className="mt-5">
-              <div className="text-[11px] font-bold text-blue-100/90 mb-2">Connect With Us</div>
+              <div className="text-[11px] font-bold text-slate-400 mb-2">Connect With Us</div>
               <div className="flex items-center gap-2">
-                {/* Facebook */}
                 <a
                   href="https://facebook.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0071DC] shadow-sm transition-all hover:bg-yellow-300 hover:text-slate-900 hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-200 shadow-sm transition-all hover:bg-[#FF7A1A] hover:text-white hover:scale-110"
                   aria-label="Facebook"
                   title="Facebook"
                 >
@@ -317,12 +314,11 @@ export const Footer: React.FC = () => {
                   </svg>
                 </a>
 
-                {/* X / Twitter */}
                 <a
                   href="https://x.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0071DC] shadow-sm transition-all hover:bg-yellow-300 hover:text-slate-900 hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-200 shadow-sm transition-all hover:bg-[#FF7A1A] hover:text-white hover:scale-110"
                   aria-label="X (formerly Twitter)"
                   title="X (Twitter)"
                 >
@@ -331,12 +327,11 @@ export const Footer: React.FC = () => {
                   </svg>
                 </a>
 
-                {/* Instagram */}
                 <a
                   href="https://instagram.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0071DC] shadow-sm transition-all hover:bg-yellow-300 hover:text-slate-900 hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-200 shadow-sm transition-all hover:bg-[#FF7A1A] hover:text-white hover:scale-110"
                   aria-label="Instagram"
                   title="Instagram"
                 >
@@ -345,12 +340,11 @@ export const Footer: React.FC = () => {
                   </svg>
                 </a>
 
-                {/* YouTube */}
                 <a
                   href="https://youtube.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0071DC] shadow-sm transition-all hover:bg-yellow-300 hover:text-slate-900 hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-200 shadow-sm transition-all hover:bg-[#FF7A1A] hover:text-white hover:scale-110"
                   aria-label="YouTube"
                   title="YouTube"
                 >
@@ -359,12 +353,11 @@ export const Footer: React.FC = () => {
                   </svg>
                 </a>
 
-                {/* Pinterest */}
                 <a
                   href="https://pinterest.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0071DC] shadow-sm transition-all hover:bg-yellow-300 hover:text-slate-900 hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-200 shadow-sm transition-all hover:bg-[#FF7A1A] hover:text-white hover:scale-110"
                   aria-label="Pinterest"
                   title="Pinterest"
                 >
@@ -379,9 +372,9 @@ export const Footer: React.FC = () => {
       </div>
 
       {/* 4. Payment Badges & Trust Strip */}
-      <div className="border-t border-white/15 bg-white/5 py-4">
+      <div className="border-t border-slate-800 bg-slate-950/60 py-4">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
-          <div className="text-xs font-semibold text-blue-100/90">
+          <div className="text-xs font-semibold text-slate-400">
             Accepted Payment Methods &amp; Secured Gateways:
           </div>
 
@@ -442,7 +435,7 @@ export const Footer: React.FC = () => {
 
             {/* Apple Pay */}
             <div
-              className="flex h-7 w-12 items-center justify-center rounded-md bg-slate-900 px-1 text-white shadow-xs transition-transform hover:scale-105"
+              className="flex h-7 w-12 items-center justify-center rounded-md bg-slate-900 px-1 text-white shadow-xs transition-transform hover:scale-105 border border-slate-700"
               title="Apple Pay"
             >
               <svg className="h-3.5 w-auto fill-current" viewBox="0 0 24 16">
@@ -475,12 +468,12 @@ export const Footer: React.FC = () => {
       </div>
 
       {/* 5. Bottom Copyright & Safety Notice */}
-      <div className="border-t border-white/10 bg-black/15 py-4 text-center text-xs text-blue-100/80">
+      <div className="border-t border-slate-800 bg-slate-950 py-4 text-center text-xs text-slate-500">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-2 px-4 sm:flex-row sm:px-6 lg:px-8">
           <p>
             Copyright 2026 © Vendora Multi-Vendor Marketplace. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-[11px] text-blue-200/90 font-medium">
+          <div className="flex items-center gap-4 text-[11px] text-slate-400 font-medium">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <span>•</span>
             <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>

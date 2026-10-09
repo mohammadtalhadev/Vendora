@@ -101,7 +101,7 @@ export const DownloadsPage: React.FC = () => {
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0071DC] mb-1">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#FF7A1A] mb-1">
             <Sparkles className="h-3.5 w-3.5" />
             Digital Fulfillment Library
           </div>
@@ -190,7 +190,7 @@ export const DownloadsPage: React.FC = () => {
                   type="button"
                   onClick={() => handleSimulatedDownload(item.id, item.title)}
                   disabled={downloadingId === item.id}
-                  className="flex items-center gap-2 rounded-2xl bg-[#0071DC] hover:bg-[#005bb5] text-white px-5 py-2.5 text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA580C] text-white px-5 py-2.5 text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Download className="h-4 w-4" />
                   <span>{downloadingId === item.id ? 'Downloading...' : 'Download File'}</span>
@@ -199,7 +199,7 @@ export const DownloadsPage: React.FC = () => {
                 <div className="flex items-center gap-2 text-xs">
                   <Link
                     to={`/orders/${item.orderId}`}
-                    className="text-slate-500 hover:text-[#0071DC] font-medium flex items-center gap-1"
+                    className="text-slate-500 hover:text-[#FF7A1A] font-medium flex items-center gap-1"
                   >
                     Order #{item.orderId}
                     <ExternalLink className="h-3 w-3" />
@@ -211,8 +211,8 @@ export const DownloadsPage: React.FC = () => {
         </div>
 
         {/* Protection / Help Note */}
-        <div className="mt-10 rounded-3xl border border-blue-100 bg-blue-50/60 p-6 text-slate-700 flex items-start gap-4">
-          <ShieldCheck className="h-6 w-6 text-[#0071DC] shrink-0 mt-0.5" />
+        <div className="mt-10 rounded-3xl border border-slate-200 bg-slate-50/80 p-6 text-slate-700 flex items-start gap-4">
+          <ShieldCheck className="h-6 w-6 text-[#2563EB] shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
             <h4 className="font-bold text-slate-900 text-sm">Lifetime Digital Ownership</h4>
             <p className="text-slate-600">

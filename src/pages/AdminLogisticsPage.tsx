@@ -146,7 +146,7 @@ export const AdminLogisticsPage: React.FC = () => {
         {/* Fleet Riders List */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Bike className="h-4 w-4 text-[#0071DC]" />
+            <Bike className="h-4 w-4 text-[#FF7A1A]" />
             Registered Delivery Couriers & Shift Status
           </h3>
 
@@ -170,7 +170,7 @@ export const AdminLogisticsPage: React.FC = () => {
         {/* Active Deliveries Queue Table */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4 text-xs">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Truck className="h-4 w-4 text-[#0071DC]" />
+            <Truck className="h-4 w-4 text-[#FF7A1A]" />
             Live Active Dispatch Queue
           </h3>
 
@@ -202,7 +202,7 @@ export const AdminLogisticsPage: React.FC = () => {
                     <td className="p-3 font-medium text-slate-800">{d.assignedRiderName}</td>
                     <td className="p-3">
                       {d.status === 'in_transit' && (
-                        <span className="rounded-full bg-blue-100 text-[#0071DC] px-2.5 py-0.5 text-[10px] font-bold">
+                        <span className="rounded-full bg-orange-100 text-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-bold">
                           In Transit
                         </span>
                       )}
@@ -270,7 +270,7 @@ export const AdminLogisticsPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-[#0071DC] px-4 py-2 font-bold text-white shadow-sm hover:bg-[#005bb5]"
+                    className="rounded-xl bg-[#FF7A1A] px-4 py-2 font-bold text-white shadow-sm hover:bg-[#EA580C]"
                   >
                     Confirm Re-assignment
                   </button>

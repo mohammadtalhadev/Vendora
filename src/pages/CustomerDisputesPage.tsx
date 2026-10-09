@@ -105,7 +105,7 @@ export const CustomerDisputesPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0071DC] mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#FF7A1A] mb-1">
               <Scale className="h-3.5 w-3.5" />
               Customer Protection Center
             </div>
@@ -120,7 +120,7 @@ export const CustomerDisputesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsFilingNew(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#0071DC] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-[#005bb5] transition-all cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-[#EA580C] transition-all cursor-pointer self-start sm:self-auto"
           >
             <Plus className="h-4 w-4" />
             File New Dispute
@@ -142,7 +142,7 @@ export const CustomerDisputesPage: React.FC = () => {
                 onClick={() => setSelectedDisputeId(dispute.id)}
                 className={`w-full text-left rounded-3xl p-4 sm:p-5 border transition-all cursor-pointer ${
                   activeDispute?.id === dispute.id
-                    ? 'border-[#0071DC] bg-white shadow-lg shadow-blue-500/10 ring-2 ring-[#0071DC]/10'
+                    ? 'border-[#FF7A1A] bg-white shadow-lg shadow-orange-500/10 ring-2 ring-[#FF7A1A]/10'
                     : 'border-slate-200/80 bg-white/70 hover:bg-white'
                 }`}
               >
@@ -186,7 +186,7 @@ export const CustomerDisputesPage: React.FC = () => {
 
                   <Link
                     to={`/orders/${activeDispute.orderGroupId}`}
-                    className="text-xs font-bold text-[#0071DC] hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-[#FF7A1A] hover:underline flex items-center gap-1"
                   >
                     View Order Details
                   </Link>
@@ -214,7 +214,7 @@ export const CustomerDisputesPage: React.FC = () => {
                           <div
                             className={`max-w-md rounded-2xl p-3.5 text-xs leading-relaxed ${
                               isCustomer
-                                ? 'bg-[#0071DC] text-white rounded-tr-none shadow-md shadow-blue-500/10'
+                                ? 'bg-[#FF7A1A] text-white rounded-tr-none shadow-md shadow-orange-500/10'
                                 : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200/60'
                             }`}
                           >
@@ -235,11 +235,11 @@ export const CustomerDisputesPage: React.FC = () => {
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
                     placeholder="Type your response to the seller and mediator..."
-                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0071DC] focus:ring-2 focus:ring-[#0071DC]/20"
+                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#FF7A1A] focus:ring-2 focus:ring-[#FF7A1A]/20"
                   />
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 rounded-2xl bg-[#0071DC] text-white px-4 py-2.5 text-xs font-bold hover:bg-[#005bb5] transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 rounded-2xl bg-[#FF7A1A] text-white px-4 py-2.5 text-xs font-bold hover:bg-[#EA580C] transition-colors cursor-pointer"
                   >
                     <Send className="h-3.5 w-3.5" />
                     Send
@@ -311,7 +311,7 @@ export const CustomerDisputesPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-[#0071DC] px-5 py-2 font-bold text-white shadow-md hover:bg-[#005bb5] cursor-pointer"
+                    className="rounded-xl bg-[#FF7A1A] px-5 py-2 font-bold text-white shadow-md hover:bg-[#EA580C] cursor-pointer"
                   >
                     Submit Dispute Claim
                   </button>

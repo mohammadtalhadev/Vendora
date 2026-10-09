@@ -2137,7 +2137,7 @@ export const HomePage: React.FC = () => {
             </h2>
             <Link
               to="/products"
-              className="group flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#0071DC] transition-colors"
+              className="group flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#FF7A1A] transition-colors"
             >
               <span>View All</span>
               <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -2173,7 +2173,7 @@ export const HomePage: React.FC = () => {
                       className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-xs"
                     />
                   </div>
-                  <span className="mt-3 text-xs font-bold text-slate-800 text-center tracking-tight group-hover:text-[#0071DC] transition-colors max-w-[100px] leading-tight">
+                  <span className="mt-3 text-xs font-bold text-slate-800 text-center tracking-tight group-hover:text-[#FF7A1A] transition-colors max-w-[100px] leading-tight">
                     {cat.name}
                   </span>
                 </Link>
@@ -2213,7 +2213,7 @@ export const HomePage: React.FC = () => {
                       onClick={() => setSelectedSaleCategory(cat.id)}
                       className={`cursor-pointer rounded-full px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                         isSelected
-                          ? 'border border-[#0071DC] bg-[#EBF5FF] text-[#0071DC] shadow-2xs'
+                          ? 'border border-[#FF7A1A] bg-orange-50 text-[#FF7A1A] shadow-2xs font-bold'
                           : 'border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
@@ -2226,7 +2226,7 @@ export const HomePage: React.FC = () => {
 
             <Link
               to={`/products?category=${currentSaleCategory?.slug || 'electronics'}`}
-              className="group hidden items-center gap-1 text-xs font-bold text-[#0071DC] hover:underline sm:flex shrink-0"
+              className="group hidden items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline sm:flex shrink-0"
             >
               <span>View All</span>
               <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -2507,7 +2507,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=appliances"
-                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-[#0071DC] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#005bb0] sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-[#FF7A1A] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#EA580C] sm:text-sm"
                   >
                     Shop Now
                   </Link>
@@ -2592,13 +2592,13 @@ export const HomePage: React.FC = () => {
               <Link
                 key={brand.name}
                 to="/products"
-                className="group flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-2xs hover:border-[#0071DC]/30 hover:shadow-md transition-all hover:-translate-y-0.5"
+                className="group flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-2xs hover:border-[#FF7A1A]/40 hover:shadow-md transition-all hover:-translate-y-0.5"
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-xl font-bold group-hover:bg-[#EFF6FF] transition-colors">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-xl font-bold group-hover:bg-orange-50 transition-colors">
                   {brand.logo}
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#0071DC] transition-colors truncate">
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#FF7A1A] transition-colors truncate">
                     {brand.name}
                   </h4>
                   <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">

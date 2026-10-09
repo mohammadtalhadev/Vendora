@@ -203,7 +203,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                     <span className="font-mono text-slate-400 text-xs ml-2">#{sub.id}</span>
                   </div>
 
-                  <span className="rounded-full bg-blue-100 text-[#0071DC] px-2.5 py-0.5 text-[10px] font-bold uppercase">
+                  <span className="rounded-full bg-orange-100 text-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-bold uppercase">
                     {sub.status}
                   </span>
                 </div>

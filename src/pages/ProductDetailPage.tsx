@@ -677,7 +677,7 @@ export const ProductDetailPage: React.FC = () => {
                       className={`flex w-full items-center justify-center gap-2 rounded-full py-3 text-xs font-bold text-white shadow-sm transition-all cursor-pointer active:scale-[0.99] ${
                         addedAnimation
                           ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-[#0071DC] hover:bg-[#005bb5]'
+                          : 'bg-[#FF7A1A] hover:bg-[#EA580C]'
                       }`}
                     >
                       {addedAnimation ? (

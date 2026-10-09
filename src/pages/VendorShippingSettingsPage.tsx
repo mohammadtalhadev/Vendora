@@ -138,7 +138,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
             <button
               type="submit"
               form="shipping-settings-form"
-              className="flex items-center gap-2 rounded-xl bg-[#0071DC] hover:bg-[#005bb5] text-white px-4 py-2 text-xs font-bold shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-2 rounded-xl bg-[#FF7A1A] hover:bg-[#EA580C] text-white px-4 py-2 text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
               <Save className="h-3.5 w-3.5" />
               Save Settings
@@ -154,8 +154,8 @@ export const VendorShippingSettingsPage: React.FC = () => {
         )}
 
         {resetMessage && (
-          <div className="rounded-2xl bg-blue-50 border border-blue-200 p-4 text-xs font-bold text-blue-800 flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4 text-[#0071DC]" />
+          <div className="rounded-2xl bg-orange-50 border border-orange-200 p-4 text-xs font-bold text-orange-900 flex items-center gap-2 animate-in fade-in">
+            <CheckCircle2 className="h-4 w-4 text-[#FF7A1A]" />
             Reset to marketplace standard configurations
           </div>
         )}
@@ -164,7 +164,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
           {/* Section 1: Rates & Thresholds */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4 text-xs">
             <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-              <Truck className="h-4 w-4 text-[#0071DC]" />
+              <Truck className="h-4 w-4 text-[#FF7A1A]" />
               <h3 className="text-sm font-bold text-slate-900">Buyer Shipping Rates &amp; Thresholds</h3>
             </div>
 
@@ -218,7 +218,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
                   type="checkbox"
                   checked={freeShippingEnabled}
                   onChange={(e) => setFreeShippingEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded text-[#0071DC] cursor-pointer"
+                  className="h-4 w-4 rounded text-[#FF7A1A] focus:ring-[#FF7A1A] cursor-pointer"
                 />
                 {freeShippingEnabled && (
                   <div className="flex items-center gap-1 font-bold text-slate-900">
@@ -238,7 +238,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
           {/* Section 2: Warehouse Dispatch Origin */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4 text-xs">
             <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-              <Building className="h-4 w-4 text-[#0071DC]" />
+              <Building className="h-4 w-4 text-[#FF7A1A]" />
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Warehouse Dispatch Origin</h3>
                 <span className="text-slate-400 text-[11px]">Where delivery riders and couriers arrive to collect packages</span>
@@ -353,7 +353,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
           {/* Section 3: Dispatch Handling SLA */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4 text-xs">
             <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-              <Clock className="h-4 w-4 text-[#0071DC]" />
+              <Clock className="h-4 w-4 text-[#FF7A1A]" />
               <h3 className="text-sm font-bold text-slate-900">Fulfillment Handling Window (SLA)</h3>
             </div>
 
@@ -362,7 +362,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
                 htmlFor="sla-24h"
                 className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                   slaWindow === '24h'
-                    ? 'border-[#0071DC] bg-blue-50/40 text-blue-900 shadow-xs'
+                    ? 'border-[#FF7A1A] bg-orange-50/40 text-orange-950 shadow-xs'
                     : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
                 }`}
               >
@@ -386,7 +386,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
                 htmlFor="sla-48h"
                 className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                   slaWindow === '48h'
-                    ? 'border-[#0071DC] bg-blue-50/40 text-blue-900 shadow-xs'
+                    ? 'border-[#FF7A1A] bg-orange-50/40 text-orange-950 shadow-xs'
                     : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
                 }`}
               >
@@ -410,7 +410,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
                 htmlFor="sla-custom"
                 className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                   slaWindow === 'custom'
-                    ? 'border-[#0071DC] bg-blue-50/40 text-blue-900 shadow-xs'
+                    ? 'border-[#FF7A1A] bg-orange-50/40 text-orange-950 shadow-xs'
                     : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
                 }`}
               >
@@ -435,7 +435,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-2xl bg-[#0071DC] hover:bg-[#005bb5] text-white px-6 py-3 text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA580C] text-white px-6 py-3 text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer"
             >
               <Save className="h-4 w-4" />
               Save Settings

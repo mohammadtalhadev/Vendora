@@ -314,7 +314,7 @@ export const VendorQAPage: React.FC = () => {
               onClick={() => setActiveTab('unanswered')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'unanswered'
-                  ? 'bg-[#0071DC] text-white shadow-xs'
+                  ? 'bg-[#FF7A1A] text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
@@ -325,7 +325,7 @@ export const VendorQAPage: React.FC = () => {
               onClick={() => setActiveTab('answered')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'answered'
-                  ? 'bg-[#0071DC] text-white shadow-xs'
+                  ? 'bg-[#FF7A1A] text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
@@ -336,7 +336,7 @@ export const VendorQAPage: React.FC = () => {
               onClick={() => setActiveTab('all')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'all'
-                  ? 'bg-[#0071DC] text-white shadow-xs'
+                  ? 'bg-[#FF7A1A] text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
@@ -351,7 +351,7 @@ export const VendorQAPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by question, product or user..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:border-[#0071DC]"
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:border-[#FF7A1A]"
             />
           </div>
         </div>
@@ -420,7 +420,7 @@ export const VendorQAPage: React.FC = () => {
                           rows={3}
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 focus:outline-none focus:border-[#0071DC]"
+                          className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 focus:outline-none focus:border-[#FF7A1A]"
                         />
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -433,16 +433,16 @@ export const VendorQAPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleUpdateAnswer(item.id)}
-                            className="px-4 py-1.5 text-xs font-bold bg-[#0071DC] hover:bg-[#005bb5] text-white rounded-xl shadow-xs transition-all cursor-pointer"
+                            className="px-4 py-1.5 text-xs font-bold bg-[#FF7A1A] hover:bg-[#EA580C] text-white rounded-xl shadow-xs transition-all cursor-pointer"
                           >
                             Update Answer
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start justify-between gap-4 bg-blue-50/50 border border-blue-100 rounded-xl p-3 text-xs">
+                      <div className="flex items-start justify-between gap-4 bg-orange-50/50 border border-orange-100 rounded-xl p-3 text-xs">
                         <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-[#0071DC] uppercase tracking-wider block">
+                          <span className="text-[10px] font-bold text-[#FF7A1A] uppercase tracking-wider block">
                             Merchant Response
                           </span>
                           <p className="text-slate-800 font-medium leading-relaxed">
@@ -452,7 +452,7 @@ export const VendorQAPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleStartEdit(item)}
-                          className="flex items-center gap-1 text-xs font-bold text-[#0071DC] hover:underline shrink-0 cursor-pointer pt-0.5"
+                          className="flex items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline shrink-0 cursor-pointer pt-0.5"
                         >
                           <Edit2 className="h-3 w-3" />
                           Edit Answer
@@ -469,7 +469,7 @@ export const VendorQAPage: React.FC = () => {
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           placeholder="Provide a clear, helpful response explaining product details, compatibility, or instructions..."
-                          className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 focus:outline-none focus:border-[#0071DC]"
+                          className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 focus:outline-none focus:border-[#FF7A1A]"
                         />
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -482,7 +482,7 @@ export const VendorQAPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleSubmitAnswer(item.id)}
-                            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-[#0071DC] hover:bg-[#005bb5] text-white rounded-xl shadow-xs transition-all cursor-pointer"
+                            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-[#FF7A1A] hover:bg-[#EA580C] text-white rounded-xl shadow-xs transition-all cursor-pointer"
                           >
                             <Send className="h-3.5 w-3.5" />
                             Submit Answer
@@ -494,7 +494,7 @@ export const VendorQAPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleStartCompose(item.id)}
-                          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[#0071DC] hover:bg-[#005bb5] text-white rounded-xl shadow-sm transition-all cursor-pointer"
+                          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[#FF7A1A] hover:bg-[#EA580C] text-white rounded-xl shadow-sm transition-all cursor-pointer"
                         >
                           <MessageSquare className="h-3.5 w-3.5" />
                           Compose Answer

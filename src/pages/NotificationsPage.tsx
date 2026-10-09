@@ -69,8 +69,8 @@ function getTypeDetails(type: NotificationType) {
       return {
         icon: Package,
         label: 'Order Update',
-        badgeClass: 'bg-blue-50 text-[#0071DC] border-blue-200/60',
-        iconBgClass: 'bg-blue-100 text-[#0071DC]',
+        badgeClass: 'bg-blue-50 text-[#2563EB] border-blue-200/60',
+        iconBgClass: 'bg-blue-100 text-[#2563EB]',
         actionLabel: 'View Order',
       };
     case 'dispute_update':
@@ -209,7 +209,7 @@ export const NotificationsPage: React.FC = () => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0071DC] to-blue-400 text-white shadow-md shadow-blue-500/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FF7A1A] to-amber-500 text-white shadow-md shadow-orange-500/20">
                   <Bell className="h-6 w-6 stroke-[2]" />
                 </div>
                 <div>
@@ -250,7 +250,7 @@ export const NotificationsPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search notifications by keyword..."
-                className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-[#0071DC] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0071DC]/20"
+                className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-[#FF7A1A] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#FF7A1A]/20"
               />
               {searchQuery && (
                 <button
@@ -340,7 +340,7 @@ export const NotificationsPage: React.FC = () => {
         {notifications.length === 0 ? (
           /* Global Empty State (All notifications cleared) */
           <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white py-16 px-6 text-center shadow-xs">
-            <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-50 text-[#0071DC]">
+            <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-[#FF7A1A]">
               <BellOff className="h-10 w-10 stroke-[1.5]" />
               <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xs">
                 <Check className="h-3.5 w-3.5 stroke-[3]" />
@@ -432,8 +432,8 @@ export const NotificationsPage: React.FC = () => {
 
                         {/* Unread indicator pill */}
                         {!notif.isRead && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 text-[#0071DC] px-2 py-0.5 text-[10px] font-bold">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#0071DC]" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-[#FF7A1A] px-2 py-0.5 text-[10px] font-bold">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#FF7A1A]" />
                             Unread
                           </span>
                         )}

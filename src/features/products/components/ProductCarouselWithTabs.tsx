@@ -121,7 +121,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
                     onClick={() => handleTabClick(sub.id)}
                     className={`cursor-pointer rounded-full px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                       isSelected
-                        ? 'border border-[#0071DC] bg-[#EBF5FF] text-[#0071DC] shadow-2xs'
+                        ? 'border border-[#FF7A1A] bg-orange-50 text-[#FF7A1A] shadow-2xs font-bold'
                         : 'border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
@@ -136,7 +136,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
         <div className="flex items-center gap-2 shrink-0">
           <Link
             to={computedViewAllHref}
-            className="group mr-2 hidden sm:flex items-center gap-1 text-xs font-bold text-[#0071DC] hover:underline"
+            className="group mr-2 hidden sm:flex items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline"
           >
             <span>View All</span>
             <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />

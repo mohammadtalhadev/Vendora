@@ -449,7 +449,7 @@ export const AdminOrdersPage: React.FC = () => {
                       <td className="py-3 px-4 font-mono font-bold text-slate-900 text-xs">
                         <Link
                           to={`/admin/orders/${order.orderNumber}`}
-                          className="hover:text-[#0071DC] hover:underline transition-colors"
+                          className="hover:text-[#FF7A1A] hover:underline transition-colors"
                         >
                           {order.orderNumber}
                         </Link>

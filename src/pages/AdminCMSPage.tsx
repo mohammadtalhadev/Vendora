@@ -155,7 +155,7 @@ export const AdminCMSPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddBannerOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#0071DC] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#005bb5] transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               Add Hero Banner
@@ -170,7 +170,7 @@ export const AdminCMSPage: React.FC = () => {
             onClick={() => setActiveTab('banners')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'banners'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -183,7 +183,7 @@ export const AdminCMSPage: React.FC = () => {
             onClick={() => setActiveTab('campaigns')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'campaigns'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -196,7 +196,7 @@ export const AdminCMSPage: React.FC = () => {
             onClick={() => setActiveTab('coupons')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'coupons'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -235,7 +235,7 @@ export const AdminCMSPage: React.FC = () => {
                         type="checkbox"
                         checked={b.isActive}
                         onChange={() => handleToggleBanner(b.id)}
-                        className="rounded text-[#0071DC]"
+                        className="rounded text-[#FF7A1A] focus:ring-[#FF7A1A]"
                       />
                       <span>Active on Storefront</span>
                     </label>
@@ -306,7 +306,7 @@ export const AdminCMSPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="flex items-center gap-1.5 rounded-xl bg-[#0071DC] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#005bb5]"
+                className="flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C]"
               >
                 <Save className="h-4 w-4" />
                 Update Live Campaign
@@ -361,7 +361,7 @@ export const AdminCMSPage: React.FC = () => {
                   {coupons.map((c) => (
                     <tr key={c.id}>
                       <td className="p-4 font-mono font-bold text-slate-900">{c.code}</td>
-                      <td className="p-4 font-bold text-[#0071DC]">
+                      <td className="p-4 font-bold text-[#FF7A1A]">
                         {c.discountType === 'percent' ? `${c.discountValue}% OFF` : `$${c.discountValue.toFixed(2)} OFF`}
                       </td>
                       <td className="p-4 text-slate-600">${c.minSpend}</td>
@@ -458,7 +458,7 @@ export const AdminCMSPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-[#0071DC] px-5 py-2 font-bold text-white shadow-sm hover:bg-[#005bb5]"
+                    className="rounded-xl bg-[#FF7A1A] px-5 py-2 font-bold text-white shadow-sm hover:bg-[#EA580C]"
                   >
                     Save Banner
                   </button>

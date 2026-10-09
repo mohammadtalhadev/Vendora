@@ -104,7 +104,7 @@ export const AdminBrandsPage: React.FC = () => {
             onClick={() => setActiveTab('requests')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'requests'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -117,7 +117,7 @@ export const AdminBrandsPage: React.FC = () => {
             onClick={() => setActiveTab('registry')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'registry'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -150,7 +150,7 @@ export const AdminBrandsPage: React.FC = () => {
                         <span className="font-mono text-slate-400 text-[10px]">{r.vendorId}</span>
                       </td>
                       <td className="p-4">
-                        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[#0071DC] bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
                           <FileText className="h-3.5 w-3.5" />
                           {r.invoiceFile}
                         </span>
@@ -230,7 +230,7 @@ export const AdminBrandsPage: React.FC = () => {
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>Authorized Listings: <strong>{b.activeListingsCount}</strong></span>
-                  <span className="text-[#0071DC] font-bold hover:underline cursor-pointer">Edit Rules</span>
+                  <span className="text-[#FF7A1A] font-bold hover:underline cursor-pointer">Edit Rules</span>
                 </div>
               </div>
             ))}

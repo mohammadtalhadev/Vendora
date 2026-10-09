@@ -59,7 +59,7 @@ export const InvoicePage: React.FC = () => {
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 rounded-full bg-[#0071DC] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-[#005bb5] transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-[#EA580C] transition-all cursor-pointer"
           >
             <Printer className="h-4 w-4" />
             Print Invoice
@@ -72,7 +72,7 @@ export const InvoicePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-200">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <svg className="w-8 h-8 text-[#0071DC] fill-current" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-[#FF7A1A] fill-current" viewBox="0 0 24 24">
                   <path d="M12 2a1.5 1.5 0 0 1 1.5 1.5v3.5a1.5 1.5 0 0 1-3 0v-3.5A1.5 1.5 0 0 1 12 2zm0 13.5a1.5 1.5 0 0 1 1.5 1.5v3.5a1.5 1.5 0 0 1-3 0V17a1.5 1.5 0 0 1 1.5-1.5zm8.5-4.5a1.5 1.5 0 0 1-1.5 1.5h-3.5a1.5 1.5 0 0 1 0-3H19a1.5 1.5 0 0 1 1.5 1.5zM7 12.5a1.5 1.5 0 0 1-1.5 1.5H2a1.5 1.5 0 0 1 0-3h3.5A1.5 1.5 0 0 1 7 12.5zm10.78-6.72a1.5 1.5 0 0 1 0 2.12l-2.47 2.47a1.5 1.5 0 1 1-2.12-2.12l2.47-2.47a1.5 1.5 0 0 1 2.12 0zm-8.2 8.2a1.5 1.5 0 0 1 0 2.12L7.1 18.57a1.5 1.5 0 1 1-2.12-2.12l2.47-2.47a1.5 1.5 0 0 1 2.12 0zm8.2 2.12a1.5 1.5 0 0 1-2.12 0l-2.47-2.47a1.5 1.5 0 1 1 2.12-2.12l2.47 2.47a1.5 1.5 0 0 1 0 2.12zM8.78 5.78a1.5 1.5 0 0 1-2.12 2.12L4.19 5.43a1.5 1.5 0 1 1 2.12-2.12l2.47 2.47z" />
                 </svg>
                 <span className="text-2xl font-black text-slate-900 tracking-tight">Vendora</span>
@@ -86,7 +86,7 @@ export const InvoicePage: React.FC = () => {
             </div>
 
             <div className="text-left sm:text-right">
-              <span className="inline-block rounded-md bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-[#0071DC] mb-1">
+              <span className="inline-block rounded-md bg-orange-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-[#FF7A1A] mb-1">
                 Official Receipt / Invoice
               </span>
               <h2 className="text-xl font-black text-slate-900">#{order.id}</h2>
@@ -208,7 +208,7 @@ export const InvoicePage: React.FC = () => {
               </div>
               <div className="border-t border-slate-200 pt-2 flex justify-between text-sm font-black text-slate-900">
                 <span>Grand Total:</span>
-                <span className="text-[#0071DC] text-base">${grandTotal.toFixed(2)}</span>
+                <span className="text-[#FF7A1A] text-base">${grandTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>

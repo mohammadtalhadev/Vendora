@@ -549,8 +549,8 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                   onClick={onClose}
                   className={`group flex items-center justify-between px-4 py-2.5 text-[13px] font-semibold transition-colors cursor-pointer rounded-xl mx-1.5 ${
                     isActive
-                      ? 'bg-blue-50 text-[#0071DC] font-bold'
-                      : 'text-slate-800 hover:bg-slate-50 hover:text-[#0071DC]'
+                      ? 'bg-orange-50 text-[#FF7A1A] font-bold'
+                      : 'text-slate-800 hover:bg-slate-50 hover:text-[#FF7A1A]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -562,8 +562,8 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                       xmlns="http://www.w3.org/2000/svg"
                       className={`shrink-0 transition-colors ${
                         isActive
-                          ? 'fill-[#0071DC]'
-                          : 'fill-slate-400 group-hover:fill-[#0071DC]'
+                          ? 'fill-[#FF7A1A]'
+                          : 'fill-slate-400 group-hover:fill-[#FF7A1A]'
                       }`}
                     >
                       {cat.iconPath}
@@ -575,8 +575,8 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                     <ChevronRight
                       className={`h-4 w-4 shrink-0 transition-transform ${
                         isActive
-                          ? 'text-[#0071DC] translate-x-0.5'
-                          : 'text-slate-400 group-hover:text-[#0071DC]'
+                          ? 'text-[#FF7A1A] translate-x-0.5'
+                          : 'text-slate-400 group-hover:text-[#FF7A1A]'
                       }`}
                     />
                   )}
@@ -604,7 +604,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
             <Link
               to={`/products?category=${activeCategory.slug}`}
               onClick={onClose}
-              className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-[#0071DC] hover:underline"
+              className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline"
             >
               <span>View All</span>
               <ArrowRight className="h-3 w-3" />
@@ -631,7 +631,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                           item.query
                         )}`}
                         onClick={onClose}
-                        className="hover:text-[#0071DC] hover:translate-x-0.5 transition-all block py-0.5"
+                        className="hover:text-[#FF7A1A] hover:translate-x-0.5 transition-all block py-0.5"
                       >
                         {item.label}
                       </Link>
@@ -652,7 +652,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
           <Link
             to={`/products?category=${activeCategory.slug}`}
             onClick={onClose}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0071DC] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#005bb5] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#FF7A1A] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#EA580C] transition-colors"
           >
             <span>Explore All</span>
             <ArrowRight className="h-3 w-3" />
@@ -689,7 +689,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
 
               {/* Product Title and Price matching reference image */}
               <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#0071DC] transition-colors">
+                <h4 className="text-xs font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#FF7A1A] transition-colors">
                   {prod.title}
                 </h4>
 

@@ -46,16 +46,16 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     <div className="group relative flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-3 sm:p-3.5 shadow-2xs transition-all hover:-translate-y-1 hover:shadow-md">
       <div>
         {/* Image with discount + wishlist overlays */}
-        <div className="relative flex h-36 sm:h-40 w-full items-center justify-center overflow-hidden rounded-xl bg-slate-50/60 p-2.5 sm:p-3">
+        <div className="relative flex h-36 sm:h-40 w-full items-center justify-center overflow-hidden rounded-xl bg-[#F8FAFC] p-2.5 sm:p-3">
           {product.discountPercent && (
-            <span className="absolute left-2 top-2 z-10 rounded-full bg-[#EF4444] px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            <span className="absolute left-2 top-2 z-10 rounded-full bg-[#E11D48] px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
               -{product.discountPercent}%
             </span>
           )}
           <button
             type="button"
             onClick={() => onToggleWishlist(product)}
-            className="absolute right-2 top-2 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm transition-colors hover:bg-white hover:text-rose-500"
+            className="absolute right-2 top-2 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-xs transition-colors hover:bg-white hover:text-rose-500"
             title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
@@ -74,13 +74,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         </div>
 
         {/* Category */}
-        <span className="mt-2.5 sm:mt-3 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <span className="mt-2.5 sm:mt-3 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
           {product.category}
         </span>
 
         {/* Product Title */}
         <Link to={`/products/${product.id}`} className="mt-1 block">
-          <h4 className="font-outfit line-clamp-2 min-h-[2.2rem] sm:min-h-[2.5rem] text-xs sm:text-[13px] font-semibold leading-snug text-slate-800 transition-colors group-hover:text-[#0071DC]">
+          <h4 className="font-outfit line-clamp-2 min-h-[2.2rem] sm:min-h-[2.5rem] text-xs sm:text-[13px] font-semibold leading-snug text-slate-800 transition-colors group-hover:text-[#FF7A1A]">
             {product.title}
           </h4>
         </Link>
@@ -116,11 +116,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Sold by seller + Verified Badge with hover tooltip */}
         <div className="mt-2 sm:mt-2.5 flex max-w-full items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-slate-600">
-          <Store className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-[#0071DC]" />
+          <Store className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-[#2563EB]" />
           <span className="shrink-0 font-medium text-slate-500">Sold by</span>
           <Link
             to={`/products?seller=${encodeURIComponent(product.sellerId)}`}
-            className="truncate font-bold text-slate-900 hover:text-[#0071DC] hover:underline"
+            className="truncate font-bold text-slate-900 hover:text-[#2563EB] hover:underline"
             title={product.sellerName}
           >
             {product.sellerName}
@@ -133,7 +133,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 aria-label="Verified Badge"
                 title="Verified Badge"
               >
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#0071DC] hover:scale-110 transition-transform" />
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#2563EB] hover:scale-110 transition-transform" />
               </span>
               {/* Tooltip on hover/focus */}
               <div
@@ -155,11 +155,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <span className="truncate pr-1">
             Available only: <strong className="text-slate-900">{product.stock}</strong>
           </span>
-          {lowStock && <span className="font-bold text-[#EF4444] shrink-0">Selling fast</span>}
+          {lowStock && <span className="font-bold text-[#F59E0B] shrink-0">Selling fast</span>}
         </div>
 
-        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[#E0E7FF]">
-          <div className="h-full rounded-full bg-[#EF4444]" style={{ width: `${stockPercent}%` }} />
+        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+          <div
+            className={`h-full rounded-full ${lowStock ? 'bg-[#F59E0B]' : 'bg-[#16A34A]'}`}
+            style={{ width: `${stockPercent}%` }}
+          />
         </div>
 
         {/* Add to Cart Actions */}
@@ -168,7 +171,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <button
             type="button"
             onClick={() => onAddToCart(product)}
-            className="sm:hidden flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-slate-900 py-1.5 text-[11px] font-bold text-white transition-all active:scale-95 hover:bg-[#0071DC]"
+            className="sm:hidden flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-slate-900 py-1.5 text-[11px] font-bold text-white transition-all active:scale-95 hover:bg-[#FF7A1A]"
             aria-label={`Add ${product.title} to cart`}
           >
             <ShoppingCart className="h-3 w-3" />
@@ -179,7 +182,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <button
             type="button"
             onClick={() => onAddToCart(product)}
-            className="hidden sm:flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-slate-900 py-1.5 sm:py-2 text-[11px] font-bold text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#0071DC] active:scale-95"
+            className="hidden sm:flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-slate-900 py-1.5 sm:py-2 text-[11px] font-bold text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FF7A1A] active:scale-95"
             aria-label={`Add ${product.title} to cart`}
           >
             <ShoppingCart className="h-3.5 w-3.5" />

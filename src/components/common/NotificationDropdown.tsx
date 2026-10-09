@@ -54,7 +54,7 @@ function getNotificationTypeIcon(type: NotificationType) {
     case 'order_status':
       return {
         icon: Package,
-        bgClass: 'bg-blue-50 text-[#0071DC] border-blue-200/60',
+        bgClass: 'bg-blue-50 text-[#2563EB] border-blue-200/60',
       };
     case 'dispute_update':
       return {
@@ -195,7 +195,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 Notifications
               </h3>
               {unreadCount > 0 ? (
-                <span className="rounded-full bg-blue-50 text-[#0071DC] border border-blue-200/50 px-2 py-0.5 text-[10px] font-bold">
+                <span className="rounded-full bg-orange-50 text-[#FF7A1A] border border-orange-200/50 px-2 py-0.5 text-[10px] font-bold">
                   {unreadCount} unread
                 </span>
               ) : (
@@ -211,7 +211,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               disabled={unreadCount === 0}
               className={`flex items-center gap-1 text-[11px] font-semibold transition-colors cursor-pointer ${
                 unreadCount > 0
-                  ? 'text-[#0071DC] hover:text-blue-700'
+                  ? 'text-[#FF7A1A] hover:text-[#EA580C]'
                   : 'text-slate-400 cursor-not-allowed'
               }`}
             >
@@ -309,7 +309,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     {!notif.isRead && (
                       <span
                         aria-label="Unread indicator"
-                        className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#0071DC]"
+                        className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#FF7A1A]"
                       />
                     )}
                   </button>
@@ -323,7 +323,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             <Link
               to="/notifications"
               onClick={() => setIsOpen(false)}
-              className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-[#0071DC] hover:text-blue-700 transition-colors"
+              className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-[#FF7A1A] hover:text-[#EA580C] transition-colors"
             >
               <span>View All Notifications</span>
               <ArrowRight className="h-3.5 w-3.5" />

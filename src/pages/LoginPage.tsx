@@ -80,13 +80,13 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-blue-50/50 via-slate-50 to-white">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-orange-50/40 via-slate-50 to-white">
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
             <svg
-              className="w-9 h-9 text-[#0071DC] fill-current shrink-0 transition-transform group-hover:rotate-12 duration-300"
+              className="w-9 h-9 text-[#FF7A1A] fill-current shrink-0 transition-transform group-hover:rotate-12 duration-300"
               viewBox="0 0 24 24"
             >
               <path d="M12 2a1.5 1.5 0 0 1 1.5 1.5v3.5a1.5 1.5 0 0 1-3 0v-3.5A1.5 1.5 0 0 1 12 2zm0 13.5a1.5 1.5 0 0 1 1.5 1.5v3.5a1.5 1.5 0 0 1-3 0V17a1.5 1.5 0 0 1 1.5-1.5zm8.5-4.5a1.5 1.5 0 0 1-1.5 1.5h-3.5a1.5 1.5 0 0 1 0-3H19a1.5 1.5 0 0 1 1.5 1.5zM7 12.5a1.5 1.5 0 0 1-1.5 1.5H2a1.5 1.5 0 0 1 0-3h3.5A1.5 1.5 0 0 1 7 12.5zm10.78-6.72a1.5 1.5 0 0 1 0 2.12l-2.47 2.47a1.5 1.5 0 1 1-2.12-2.12l2.47-2.47a1.5 1.5 0 0 1 2.12 0zm-8.2 8.2a1.5 1.5 0 0 1 0 2.12L7.1 18.57a1.5 1.5 0 1 1-2.12-2.12l2.47-2.47a1.5 1.5 0 0 1 2.12 0zm8.2 2.12a1.5 1.5 0 0 1-2.12 0l-2.47-2.47a1.5 1.5 0 1 1 2.12-2.12l2.47 2.47a1.5 1.5 0 0 1 0 2.12zM8.78 5.78a1.5 1.5 0 0 1-2.12 2.12L4.19 5.43a1.5 1.5 0 1 1 2.12-2.12l2.47 2.47z" />
@@ -98,7 +98,7 @@ export const LoginPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Sign in to your account</h1>
           <p className="mt-1 text-sm text-slate-500">
             Or{' '}
-            <Link to="/register" className="font-semibold text-[#0071DC] hover:underline">
+            <Link to="/register" className="font-semibold text-[#FF7A1A] hover:underline">
               create a new account for free
             </Link>
           </p>
@@ -124,7 +124,7 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#0071DC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071DC]/20 transition-all"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#FF7A1A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/20 transition-all"
                   required
                 />
               </div>
@@ -135,7 +135,7 @@ export const LoginPage: React.FC = () => {
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
                   Password
                 </label>
-                <span className="text-xs text-[#0071DC] hover:underline cursor-pointer">
+                <span className="text-xs text-[#FF7A1A] hover:underline cursor-pointer">
                   Forgot password?
                 </span>
               </div>
@@ -146,7 +146,7 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-11 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#0071DC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071DC]/20 transition-all"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-11 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#FF7A1A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/20 transition-all"
                   required
                 />
                 <button
@@ -164,7 +164,7 @@ export const LoginPage: React.FC = () => {
                 <input
                   type="checkbox"
                   defaultChecked
-                  className="rounded border-slate-300 text-[#0071DC] focus:ring-[#0071DC]"
+                  className="rounded border-slate-300 text-[#FF7A1A] focus:ring-[#FF7A1A]"
                 />
                 Remember this device
               </label>
@@ -173,7 +173,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full mt-2 flex items-center justify-center gap-2 rounded-2xl bg-[#0071DC] hover:bg-[#005bb5] text-white py-3 px-4 text-sm font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+              className="w-full mt-2 flex items-center justify-center gap-2 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA580C] text-white py-3 px-4 text-sm font-bold shadow-lg shadow-orange-500/20 transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
             >
               <span>{isSubmitting ? 'Signing in...' : 'Sign In'}</span>
               <ArrowRight className="h-4 w-4" />
@@ -194,9 +194,9 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleDemoQuickLogin('customer')}
-                className="flex flex-col items-start p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-blue-50 hover:border-blue-200 transition-colors text-left group cursor-pointer"
+                className="flex flex-col items-start p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-orange-50 hover:border-orange-200 transition-colors text-left group cursor-pointer"
               >
-                <span className="font-bold text-slate-800 group-hover:text-[#0071DC]">Customer</span>
+                <span className="font-bold text-slate-800 group-hover:text-[#FF7A1A]">Customer</span>
                 <span className="text-[10px] text-slate-400">Order history & cart</span>
               </button>
 

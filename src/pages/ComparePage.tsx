@@ -45,7 +45,7 @@ export const ComparePage: React.FC = () => {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4 py-16 bg-slate-50/50">
         <div className="max-w-md text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-100 text-[#0071DC] mb-6 shadow-lg shadow-blue-100">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-100 text-[#FF7A1A] mb-6 shadow-lg shadow-orange-100">
             <ArrowLeftRight className="h-10 w-10" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">No Products to Compare</h1>
@@ -55,7 +55,7 @@ export const ComparePage: React.FC = () => {
           <div className="mt-6">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 rounded-full bg-[#0071DC] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-[#005bb5] transition-all"
+              className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-[#EA580C] transition-all"
             >
               <span>Explore Products</span>
               <ArrowRight className="h-4 w-4" />
@@ -79,7 +79,7 @@ export const ComparePage: React.FC = () => {
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0071DC] mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#FF7A1A] mb-1">
               <Sparkles className="h-3.5 w-3.5" />
               Side-by-Side Product Comparison
             </div>
@@ -113,7 +113,7 @@ export const ComparePage: React.FC = () => {
 
             <Link
               to="/products"
-              className="inline-flex items-center gap-1 rounded-full bg-[#0071DC] px-4 py-2 text-xs font-bold text-white hover:bg-[#005bb5] transition-colors"
+              className="inline-flex items-center gap-1 rounded-full bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white hover:bg-[#EA580C] transition-colors"
             >
               + Add More
             </Link>
@@ -154,7 +154,7 @@ export const ComparePage: React.FC = () => {
 
                       <Link
                         to={`/products/${item.id}`}
-                        className="font-bold text-sm text-slate-900 hover:text-[#0071DC] line-clamp-2 leading-snug mb-2 block"
+                        className="font-bold text-sm text-slate-900 hover:text-[#FF7A1A] line-clamp-2 leading-snug mb-2 block"
                       >
                         {item.title}
                       </Link>
@@ -203,13 +203,13 @@ export const ComparePage: React.FC = () => {
                 {items.map((item) => (
                   <td key={item.id} className="p-4 font-medium text-slate-800">
                     {item.sellerType === 'platform' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-extrabold text-[#0071DC]">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-extrabold text-[#2563EB]">
                         Sold by Vendora
                       </span>
                     ) : (
                       <Link
                         to={`/vendors/${item.sellerId}`}
-                        className="text-slate-800 font-bold hover:text-[#0071DC] hover:underline"
+                        className="text-slate-800 font-bold hover:text-[#2563EB] hover:underline"
                       >
                         {item.sellerName}
                       </Link>

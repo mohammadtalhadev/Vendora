@@ -109,7 +109,7 @@ export const AdminAuditLogsPage: React.FC = () => {
       case 'vendor.suspend':
         return <span className="rounded-full bg-rose-100 text-rose-800 font-bold px-2 py-0.5 text-[10px]">vendor.suspend</span>;
       case 'commission.override':
-        return <span className="rounded-full bg-blue-100 text-[#0071DC] font-bold px-2 py-0.5 text-[10px]">commission.override</span>;
+        return <span className="rounded-full bg-orange-100 text-[#FF7A1A] font-bold px-2 py-0.5 text-[10px]">commission.override</span>;
       case 'dispute.force_refund':
         return <span className="rounded-full bg-amber-100 text-amber-800 font-bold px-2 py-0.5 text-[10px]">dispute.force_refund</span>;
       case 'product.takedown':
@@ -191,7 +191,7 @@ export const AdminAuditLogsPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by actor or resource..."
-              className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#0071DC]"
+              className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#FF7A1A] focus:ring-1 focus:ring-[#FF7A1A]/20"
             />
           </div>
         </div>

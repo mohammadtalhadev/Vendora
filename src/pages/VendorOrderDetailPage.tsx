@@ -244,7 +244,7 @@ export const VendorOrderDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleAdvanceStatus('confirmed')}
-                className="rounded-xl bg-[#0071DC] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#005bb5] transition-all cursor-pointer"
+                className="rounded-xl bg-[#FF7A1A] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
               >
                 Confirm Order
               </button>
@@ -254,7 +254,7 @@ export const VendorOrderDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleAdvanceStatus('packed')}
-                className="rounded-xl bg-[#0071DC] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#005bb5] transition-all cursor-pointer"
+                className="rounded-xl bg-[#FF7A1A] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
               >
                 Mark Packed
               </button>
@@ -503,7 +503,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                     <h3 className="text-base font-black text-slate-900">
                       Official Packing Slip & Shipping Label
                     </h3>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#0071DC]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
                       VENDORA EXPRESS • PRIORITY GROUND AIRWAY MANIFEST
                     </span>
                   </div>
@@ -584,7 +584,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#0071DC] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#005bb5]"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#EA580C]"
                 >
                   <Printer className="h-4 w-4" />
                   Print Document
@@ -709,7 +709,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                       setMessageSentToast(true);
                       setTimeout(() => setMessageSentToast(false), 3000);
                     }}
-                    className="rounded-xl bg-[#0071DC] px-4 py-2 font-bold text-white shadow-md hover:bg-[#005bb5]"
+                    className="rounded-xl bg-[#FF7A1A] px-4 py-2 font-bold text-white shadow-md hover:bg-[#EA580C]"
                   >
                     Send Message to Customer
                   </button>

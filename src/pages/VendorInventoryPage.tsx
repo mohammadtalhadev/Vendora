@@ -178,7 +178,7 @@ export const VendorInventoryPage: React.FC = () => {
             <button
               type="button"
               onClick={handleBulkSave}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0071DC] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#005bb5] transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
             >
               <Save className="h-4 w-4" />
               Save All Changes
@@ -221,7 +221,7 @@ export const VendorInventoryPage: React.FC = () => {
             onClick={() => setActiveTab('physical')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'physical'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -239,7 +239,7 @@ export const VendorInventoryPage: React.FC = () => {
             onClick={() => setActiveTab('digital')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'digital'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -273,7 +273,7 @@ export const VendorInventoryPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter by SKU or Product Title..."
-                  className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#0071DC]"
+                  className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#FF7A1A]"
                 />
               </div>
             </div>

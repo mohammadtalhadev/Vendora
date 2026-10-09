@@ -123,7 +123,7 @@ export const VendorImportExportPage: React.FC = () => {
             onClick={() => setActiveTab('import')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'import'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -136,7 +136,7 @@ export const VendorImportExportPage: React.FC = () => {
             onClick={() => setActiveTab('export')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'export'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -163,7 +163,7 @@ export const VendorImportExportPage: React.FC = () => {
                     setImportCompleted(false);
                     setUploadedFile(null);
                   }}
-                  className="rounded-xl bg-[#0071DC] px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#005bb5] cursor-pointer"
+                  className="rounded-xl bg-[#FF7A1A] px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] cursor-pointer"
                 >
                   Import Another File
                 </button>
@@ -173,14 +173,14 @@ export const VendorImportExportPage: React.FC = () => {
                 {/* Upload & Template Downloader */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Left 2 Cols: Drag & Drop Area */}
-                  <div className="md:col-span-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 text-center hover:border-[#0071DC] transition-colors relative">
+                  <div className="md:col-span-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 text-center hover:border-[#FF7A1A] transition-colors relative">
                     <input
                       type="file"
                       accept=".csv, .xlsx, .xls"
                       onChange={handleSimulatedUpload}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#0071DC] mb-3">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#FF7A1A] mb-3">
                       <FileSpreadsheet className="h-6 w-6" />
                     </div>
                     <h3 className="text-sm font-bold text-slate-900">
@@ -312,7 +312,7 @@ export const VendorImportExportPage: React.FC = () => {
                         type="button"
                         onClick={handleProcessImport}
                         disabled={isProcessing}
-                        className="flex items-center gap-2 rounded-xl bg-[#0071DC] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-[#005bb5] cursor-pointer disabled:opacity-50"
+                        className="flex items-center gap-2 rounded-xl bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-[#EA580C] cursor-pointer disabled:opacity-50"
                       >
                         {isProcessing ? (
                           <>

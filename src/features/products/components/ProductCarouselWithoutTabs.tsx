@@ -57,7 +57,7 @@ export const ProductCarouselWithoutTabs: React.FC<ProductCarouselWithoutTabsProp
         <div className="flex items-center gap-2">
           <Link
             to={computedViewAllHref}
-            className="group mr-2 hidden sm:flex items-center gap-1 text-xs font-bold text-[#0071DC] hover:underline"
+            className="group mr-2 hidden sm:flex items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline"
           >
             <span>View All</span>
             <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />

@@ -32,7 +32,7 @@ export const ForbiddenPage: React.FC = () => {
           You don't have the required administrative or staff permissions to view this workspace.
           {user ? (
             <span className="block mt-2 font-medium text-slate-800">
-              Current account role: <span className="uppercase text-[#0071DC] font-bold">{user.roles.join(', ')}</span>
+              Current account role: <span className="uppercase text-[#FF7A1A] font-bold">{user.roles.join(', ')}</span>
             </span>
           ) : (
             <span className="block mt-2 font-medium text-slate-800">
@@ -100,7 +100,7 @@ export const ForbiddenPage: React.FC = () => {
           </Link>
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 rounded-full bg-[#0071DC] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#005bb5] transition-colors"
+            className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#EA580C] transition-colors"
           >
             Sign in with another account
           </Link>

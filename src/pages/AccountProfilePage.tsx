@@ -127,7 +127,7 @@ export const AccountProfilePage: React.FC = () => {
             onClick={() => setActiveTab('profile')}
             className={`flex items-center gap-2 pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer ${
               activeTab === 'profile'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -140,7 +140,7 @@ export const AccountProfilePage: React.FC = () => {
             onClick={() => setActiveTab('addresses')}
             className={`flex items-center gap-2 pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer ${
               activeTab === 'addresses'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -153,7 +153,7 @@ export const AccountProfilePage: React.FC = () => {
             onClick={() => setActiveTab('security')}
             className={`flex items-center gap-2 pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer ${
               activeTab === 'security'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -174,7 +174,7 @@ export const AccountProfilePage: React.FC = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div className="flex items-center gap-5 pb-6 border-b border-slate-100">
-                <div className="h-20 w-20 rounded-full bg-blue-100 text-[#0071DC] flex items-center justify-center font-black text-2xl border-2 border-blue-200">
+                <div className="h-20 w-20 rounded-full bg-orange-100 text-[#FF7A1A] flex items-center justify-center font-black text-2xl border-2 border-orange-200">
                   {name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -206,7 +206,7 @@ export const AccountProfilePage: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-[#0071DC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071DC]/20"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-[#FF7A1A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/20"
                     required
                   />
                 </div>
@@ -219,7 +219,7 @@ export const AccountProfilePage: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-[#0071DC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071DC]/20"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-[#FF7A1A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/20"
                     required
                   />
                 </div>
@@ -232,7 +232,7 @@ export const AccountProfilePage: React.FC = () => {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-[#0071DC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071DC]/20"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-[#FF7A1A] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/20"
                   />
                 </div>
 
@@ -252,7 +252,7 @@ export const AccountProfilePage: React.FC = () => {
               <div className="pt-4 flex justify-end">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 rounded-2xl bg-[#0071DC] hover:bg-[#005bb5] text-white px-6 py-2.5 text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+                  className="flex items-center gap-2 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA580C] text-white px-6 py-2.5 text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer"
                 >
                   <Save className="h-4 w-4" />
                   Save Changes
@@ -270,7 +270,7 @@ export const AccountProfilePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsAddAddressOpen(true)}
-                className="flex items-center gap-1.5 rounded-full bg-[#0071DC] text-white px-4 py-2 text-xs font-bold shadow-md shadow-blue-500/20 hover:bg-[#005bb5] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 rounded-full bg-[#FF7A1A] text-white px-4 py-2 text-xs font-bold shadow-md shadow-orange-500/20 hover:bg-[#EA580C] transition-all cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
                 Add New Address
@@ -283,7 +283,7 @@ export const AccountProfilePage: React.FC = () => {
                   key={addr.id}
                   className={`rounded-3xl border p-6 transition-all ${
                     addr.isDefault
-                      ? 'border-[#0071DC] bg-blue-50/30 shadow-md shadow-blue-500/10'
+                      ? 'border-[#FF7A1A] bg-orange-50/30 shadow-md shadow-orange-500/10'
                       : 'border-slate-200/80 bg-white hover:border-slate-300'
                   }`}
                 >
@@ -293,14 +293,14 @@ export const AccountProfilePage: React.FC = () => {
                       {addr.fullName}
                     </span>
                     {addr.isDefault ? (
-                      <span className="rounded-full bg-[#0071DC] text-white px-2.5 py-0.5 text-[10px] font-bold">
+                      <span className="rounded-full bg-[#FF7A1A] text-white px-2.5 py-0.5 text-[10px] font-bold">
                         Default
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => handleSetDefaultAddress(addr.id)}
-                        className="text-[11px] font-bold text-[#0071DC] hover:underline cursor-pointer"
+                        className="text-[11px] font-bold text-[#FF7A1A] hover:underline cursor-pointer"
                       >
                         Set as Default
                       </button>
@@ -409,7 +409,7 @@ export const AccountProfilePage: React.FC = () => {
                       </button>
                       <button
                         type="submit"
-                        className="rounded-xl bg-[#0071DC] px-4 py-2 font-bold text-white shadow-md hover:bg-[#005bb5] cursor-pointer"
+                        className="rounded-xl bg-[#FF7A1A] px-4 py-2 font-bold text-white shadow-md hover:bg-[#EA580C] cursor-pointer"
                       >
                         Save Address
                       </button>
@@ -457,7 +457,7 @@ export const AccountProfilePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => alert('Password updated successfully')}
-                className="rounded-2xl bg-[#0071DC] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#005bb5] cursor-pointer"
+                className="rounded-2xl bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#EA580C] cursor-pointer"
               >
                 Update Password
               </button>

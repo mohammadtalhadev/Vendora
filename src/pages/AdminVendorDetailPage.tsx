@@ -277,7 +277,7 @@ export const AdminVendorDetailPage: React.FC = () => {
           <div className="space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4 text-xs">
               <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-                <Percent className="h-4 w-4 text-[#0071DC]" />
+                <Percent className="h-4 w-4 text-[#FF7A1A]" />
                 <h3 className="text-sm font-bold text-slate-900">Custom Commission Override</h3>
               </div>
 
@@ -289,7 +289,7 @@ export const AdminVendorDetailPage: React.FC = () => {
                 <div>
                   <div className="flex justify-between font-bold text-slate-900 mb-1">
                     <span>Effective Rate:</span>
-                    <span className="text-[#0071DC] font-black text-sm">{commissionOverride.toFixed(1)}%</span>
+                    <span className="text-[#FF7A1A] font-black text-sm">{commissionOverride.toFixed(1)}%</span>
                   </div>
                   <input
                     type="range"
@@ -298,7 +298,7 @@ export const AdminVendorDetailPage: React.FC = () => {
                     step="0.5"
                     value={commissionOverride}
                     onChange={(e) => setCommissionOverride(parseFloat(e.target.value))}
-                    className="w-full accent-[#0071DC] cursor-pointer"
+                    className="w-full accent-[#FF7A1A] cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                     <span>2% (High-volume tier)</span>
@@ -316,7 +316,7 @@ export const AdminVendorDetailPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#0071DC] text-white py-2.5 font-bold hover:bg-[#005bb5] shadow-xs cursor-pointer"
+                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#FF7A1A] text-white py-2.5 font-bold hover:bg-[#EA580C] shadow-xs cursor-pointer"
                 >
                   <Save className="h-3.5 w-3.5" />
                   Save Commission Override

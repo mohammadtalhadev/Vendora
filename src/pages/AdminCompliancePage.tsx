@@ -109,7 +109,7 @@ export const AdminCompliancePage: React.FC = () => {
             onClick={() => setActiveTab('tax')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'tax'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -122,7 +122,7 @@ export const AdminCompliancePage: React.FC = () => {
             onClick={() => setActiveTab('1099k')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === '1099k'
-                ? 'border-[#0071DC] text-[#0071DC]'
+                ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -134,8 +134,8 @@ export const AdminCompliancePage: React.FC = () => {
         {/* TAB 1: Tax Rates */}
         {activeTab === 'tax' && (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-xs text-slate-700 flex items-start gap-3">
-              <ShieldCheck className="h-5 w-5 text-[#0071DC] shrink-0 mt-0.5" />
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-xs text-slate-700 flex items-start gap-3">
+              <ShieldCheck className="h-5 w-5 text-[#2563EB] shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-slate-900 block">Marketplace Facilitator Legislation Active</span>
                 <p className="text-slate-600 mt-0.5 leading-relaxed">
@@ -238,7 +238,7 @@ export const AdminCompliancePage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleGenerateStatement(f.vendorName)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-[#0071DC] text-white px-3 py-1 font-bold hover:bg-[#005bb5] cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg bg-[#FF7A1A] text-white px-3 py-1 font-bold hover:bg-[#EA580C] cursor-pointer"
                           >
                             <Download className="h-3 w-3" />
                             Generate Form
