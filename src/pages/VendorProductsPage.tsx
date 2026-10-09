@@ -15,8 +15,8 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
-import { getVendorProducts } from '../features/vendor/vendorData';
-import { mockDb } from '../mocks/db';
+import { useMarketplaceStore } from '../store/marketplace-store';
+import { exportToCsv } from '../lib/export-csv';
 import type { Product } from '../types/domain';
 import { useAuthStore } from '../store/auth-store';
 
@@ -29,6 +29,7 @@ interface TableProduct {
   fulfillmentType: string;
   status: 'Active' | 'Low Stock' | 'Pending Review' | 'Rejected' | 'Out of Stock' | 'Draft';
   price: string;
+  priceNum: number;
   originalPrice?: string;
   inventoryCount: number;
   inventoryStatusText: string;
@@ -38,193 +39,15 @@ interface TableProduct {
   revenue: string;
 }
 
-const STITCH_PRODUCTS: TableProduct[] = [
-  {
-    id: 'prod-1',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=120&q=80',
-    title: 'Sony WH-1000XM5 Wireless Headphones',
-    sku: 'SNY-WH-1000XM5-BLK',
-    category: 'Audio',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Active',
-    price: '$349.99',
-    originalPrice: '$399.99',
-    inventoryCount: 42,
-    inventoryStatusText: '42 in stock Optimal',
-    inventoryStatusColor: 'bg-emerald-500',
-    inventoryProgress: 85,
-    salesCount: '184 sold',
-    revenue: '$64,398',
-  },
-  {
-    id: 'prod-2',
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=120&q=80',
-    title: 'Keychron Q1 Pro Wireless Custom Mechanical Keyboard',
-    sku: 'KEY-Q1P-RED',
-    category: 'Keyboards',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Active',
-    price: '$199.00',
-    inventoryCount: 18,
-    inventoryStatusText: '18 in stock Medium',
-    inventoryStatusColor: 'bg-emerald-500',
-    inventoryProgress: 50,
-    salesCount: '92 sold',
-    revenue: '$18,308',
-  },
-  {
-    id: 'prod-3',
-    image: 'https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?auto=format&fit=crop&w=120&q=80',
-    title: 'Anker 737 Power Bank (PowerCore 24K, 140W)',
-    sku: 'ANK-737-140W',
-    category: 'Power',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Low Stock',
-    price: '$109.99',
-    originalPrice: '$149.99',
-    inventoryCount: 3,
-    inventoryStatusText: '3 remaining Critical',
-    inventoryStatusColor: 'bg-rose-500',
-    inventoryProgress: 15,
-    salesCount: '312 sold',
-    revenue: '$34,316',
-  },
-  {
-    id: 'prod-4',
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=120&q=80',
-    title: 'Logitech MX Master 3S Wireless Performance Mouse',
-    sku: 'LOG-MXM3S-GR',
-    category: 'Accessories',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Active',
-    price: '$99.99',
-    inventoryCount: 64,
-    inventoryStatusText: '64 in stock Healthy',
-    inventoryStatusColor: 'bg-emerald-500',
-    inventoryProgress: 90,
-    salesCount: '540 sold',
-    revenue: '$53,994',
-  },
-  {
-    id: 'prod-5',
-    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=120&q=80',
-    title: 'BenQ ScreenBar Halo Wireless Controller LED Light',
-    sku: 'BNQ-HL-LIGHT',
-    category: 'Workspace',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Active',
-    price: '$179.00',
-    inventoryCount: 27,
-    inventoryStatusText: '27 in stock Normal',
-    inventoryStatusColor: 'bg-emerald-500',
-    inventoryProgress: 60,
-    salesCount: '78 sold',
-    revenue: '$13,962',
-  },
-  {
-    id: 'prod-6',
-    image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=120&q=80',
-    title: 'Elgato Stream Deck MK.2 White Edition (15 LCD Keys)',
-    sku: 'ELG-SDMK2-WHT',
-    category: 'Audio & Video',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Pending Review',
-    price: '$149.99',
-    inventoryCount: 50,
-    inventoryStatusText: '50 staged Awaiting Approval',
-    inventoryStatusColor: 'bg-blue-500',
-    inventoryProgress: 70,
-    salesCount: '0 sold',
-    revenue: '$0 rev',
-  },
-  {
-    id: 'prod-7',
-    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=120&q=80',
-    title: 'Magnetic Smart Folio Case for 11" M2 Tablet',
-    sku: 'APL-FOL-11M2',
-    category: 'Accessories',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Rejected',
-    price: '$49.00',
-    inventoryCount: 0,
-    inventoryStatusText: 'Blocked (15) In warehouse',
-    inventoryStatusColor: 'bg-rose-500',
-    inventoryProgress: 0,
-    salesCount: 'Unlisted',
-    revenue: '0 sold',
-  },
-  {
-    id: 'prod-8',
-    image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=120&q=80',
-    title: 'Vendora Pro 240W Braided USB-C Cable (2m)',
-    sku: 'VND-CBL-240W',
-    category: 'Cables',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Out of Stock',
-    price: '$19.99',
-    inventoryCount: 0,
-    inventoryStatusText: '0 in stock Restock ASAP',
-    inventoryStatusColor: 'bg-rose-500',
-    inventoryProgress: 0,
-    salesCount: '840 sold',
-    revenue: '$16,791',
-  },
-  {
-    id: 'prod-9',
-    image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=120&q=80',
-    title: 'Solid Walnut Ergonomic Desk Riser Shelf',
-    sku: 'GRV-SHLF-WLNT',
-    category: 'Workspace',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Active',
-    price: '$240.00',
-    inventoryCount: 11,
-    inventoryStatusText: '11 in stock Normal',
-    inventoryStatusColor: 'bg-emerald-500',
-    inventoryProgress: 40,
-    salesCount: '47 sold',
-    revenue: '$11,280',
-  },
-  {
-    id: 'prod-10',
-    image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=120&q=80',
-    title: 'Thunderbolt 4 Station 18-Port Pro Dock',
-    sku: 'CDG-TS4-PRO',
-    category: 'Hubs & Docks',
-    fulfillmentType: 'Physical Parcel',
-    status: 'Draft',
-    price: '$399.95',
-    inventoryCount: 0,
-    inventoryStatusText: 'Unpublished 0 initial',
-    inventoryStatusColor: 'bg-slate-300',
-    inventoryProgress: 0,
-    salesCount: '—',
-    revenue: '—',
-  },
-  {
-    id: 'prod-test',
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=120&q=80',
-    title: 'Aura Precision Studio Reference In-Ear Monitors',
-    sku: 'AUR-IEM-REF',
-    category: 'Audio',
-    fulfillmentType: 'Physical',
-    status: 'Active',
-    price: '$289.00',
-    inventoryCount: 35,
-    inventoryStatusText: '35 in stock Optimal',
-    inventoryStatusColor: 'bg-emerald-500',
-    inventoryProgress: 75,
-    salesCount: '42 sold',
-    revenue: '$12,138',
-  },
-];
-
 export const VendorProductsPage: React.FC = () => {
   const { user } = useAuthStore();
   const vendorId = user?.vendorId || 'vendor-tech-1';
 
-  const [products, setProducts] = useState<Product[]>(() => getVendorProducts(vendorId));
-  const [tableProducts, setTableProducts] = useState<TableProduct[]>(STITCH_PRODUCTS);
+  const storeProducts = useMarketplaceStore((state) => state.products);
+  const addProduct = useMarketplaceStore((state) => state.addProduct);
+  const updateProduct = useMarketplaceStore((state) => state.updateProduct);
+  const deleteProduct = useMarketplaceStore((state) => state.deleteProduct);
+
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
@@ -233,6 +56,63 @@ export const VendorProductsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showHealthBanner, setShowHealthBanner] = useState(true);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const showNotification = (msg: string) => {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  // Filter products belonging to this vendor (exclude platform 1P Vendora products)
+  const myStoreProducts = useMemo(() => {
+    return storeProducts.filter((p) => {
+      if (p.sellerId) {
+        return p.sellerId === vendorId || p.sellerId === user?.id;
+      }
+      return p.sellerName !== 'Vendora' && p.sellerName !== 'Vendora Direct' && p.sellerType !== 'platform';
+    });
+  }, [storeProducts, vendorId, user?.id]);
+
+  // Build reactive table items from vendor's store products
+  const tableProducts: TableProduct[] = useMemo(() => {
+    return myStoreProducts.map((p) => {
+      let statusText: TableProduct['status'] = 'Active';
+      if (p.status === 'draft') statusText = 'Draft';
+      else if (p.status === 'pending_review') statusText = 'Pending Review';
+      else if (p.status === 'rejected') statusText = 'Rejected';
+      else if (p.stock === 0) statusText = 'Out of Stock';
+      else if (p.stock <= 5) statusText = 'Low Stock';
+
+      let invColor = 'bg-emerald-500';
+      if (p.stock === 0) invColor = 'bg-rose-500';
+      else if (p.stock <= 5) invColor = 'bg-amber-500';
+
+      const progress = Math.min(100, Math.max(0, Math.round((p.stock / 50) * 100)));
+      const sku = p.variants?.[0]?.sku || `SKU-${p.id.slice(-6).toUpperCase()}`;
+
+      return {
+        id: p.id,
+        image: p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=120&q=80',
+        title: p.title,
+        sku,
+        category: p.category.replace('cat-', '').replace('-', ' ').toUpperCase(),
+        fulfillmentType: p.type === 'digital' ? 'Digital Key' : 'Physical Parcel',
+        status: statusText,
+        price: `$${p.price.toFixed(2)}`,
+        priceNum: p.price,
+        originalPrice: p.compareAtPrice ? `$${p.compareAtPrice.toFixed(2)}` : undefined,
+        inventoryCount: p.stock,
+        inventoryStatusText: p.stock === 0 ? '0 in stock (Restock)' : `${p.stock} in stock`,
+        inventoryStatusColor: invColor,
+        inventoryProgress: progress,
+        salesCount: `${p.reviewCount || 12} sold`,
+        revenue: `$${((p.reviewCount || 12) * p.price).toLocaleString()}`,
+      };
+    });
+  }, [myStoreProducts]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === tableProducts.length) {
@@ -254,52 +134,94 @@ export const VendorProductsPage: React.FC = () => {
   };
 
   const handleProductSaved = (savedProduct: Product) => {
-    setProducts((prev) => {
-      const existsIndex = prev.findIndex((p) => p.id === savedProduct.id);
-      if (existsIndex >= 0) {
-        const next = [...prev];
-        next[existsIndex] = savedProduct;
-        return next;
-      }
-      return [savedProduct, ...prev];
-    });
-
-    // Also append to table view
-    setTableProducts((prev) => [
-      {
-        id: savedProduct.id,
-        image: savedProduct.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=120&q=80',
-        title: savedProduct.title,
-        sku: savedProduct.variants[0]?.sku || 'SKU-NEW',
-        category: savedProduct.category || 'Electronics',
-        fulfillmentType: savedProduct.type === 'digital' ? 'Digital Key' : 'Physical Parcel',
-        status: 'Active',
-        price: `$${savedProduct.price.toFixed(2)}`,
-        inventoryCount: savedProduct.stock,
-        inventoryStatusText: `${savedProduct.stock} in stock`,
-        inventoryStatusColor: 'bg-emerald-500',
-        inventoryProgress: 75,
-        salesCount: '0 sold',
-        revenue: '$0 rev',
-      },
-      ...prev,
-    ]);
+    const exists = storeProducts.some((p) => p.id === savedProduct.id);
+    if (exists) {
+      updateProduct(savedProduct.id, savedProduct);
+      showNotification(`Product "${savedProduct.title}" updated successfully`);
+    } else {
+      addProduct({
+        ...savedProduct,
+        sellerId: vendorId,
+        sellerName: 'SoundWave Direct',
+        sellerType: 'vendor',
+      });
+      showNotification(`Product "${savedProduct.title}" added to inventory`);
+    }
+    setIsModalOpen(false);
+    setEditingProduct(null);
   };
 
   const handleDeleteProduct = (productId: string) => {
-    mockDb.products = mockDb.products.filter((p) => p.id !== productId);
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
-    setTableProducts((prev) => prev.filter((p) => p.id !== productId));
+    deleteProduct(productId);
+    setSelectedIds((prev) => prev.filter((i) => i !== productId));
+    showNotification('Product deleted from catalog');
+  };
+
+  const handleExportCsv = () => {
+    const exportData = filteredProducts.map((p) => ({
+      ID: p.id,
+      Title: p.title,
+      SKU: p.sku,
+      Category: p.category,
+      Fulfillment: p.fulfillmentType,
+      Price: p.price,
+      Stock: p.inventoryCount,
+      Status: p.status,
+      Sales: p.salesCount,
+      Revenue: p.revenue,
+    }));
+
+    exportToCsv(`vendor-products-${new Date().toISOString().split('T')[0]}.csv`, exportData, {
+      ID: 'Product ID',
+      Title: 'Product Title',
+      SKU: 'SKU Code',
+      Category: 'Category',
+      Fulfillment: 'Fulfillment Type',
+      Price: 'Price',
+      Stock: 'Stock Count',
+      Status: 'Moderation Status',
+      Sales: 'Estimated Sales',
+      Revenue: 'Estimated Revenue',
+    });
+    showNotification('Product catalog exported to CSV successfully');
+  };
+
+  const handleImportClick = () => {
+    showNotification('Product CSV template ready for import');
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedIds.length === 0) return;
+    for (const id of selectedIds) {
+      deleteProduct(id);
+    }
+    showNotification(`Deleted ${selectedIds.length} selected products`);
+    setSelectedIds([]);
   };
 
   const filteredProducts = useMemo(() => {
     return tableProducts.filter((product) => {
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchQuery.toLowerCase());
+        product.title.toLowerCase().includes(q) ||
+        product.sku.toLowerCase().includes(q);
 
       if (!matchesSearch) return false;
 
+      // Category filter
+      if (categoryFilter !== 'All Categories') {
+        const catNorm = categoryFilter.toLowerCase();
+        if (!product.category.toLowerCase().includes(catNorm)) {
+          return false;
+        }
+      }
+
+      // Stock Level filter
+      if (stockLevelFilter === 'In Stock' && product.inventoryCount <= 5) return false;
+      if (stockLevelFilter === 'Low Stock' && (product.inventoryCount === 0 || product.inventoryCount > 5)) return false;
+      if (stockLevelFilter === 'Out of Stock' && product.inventoryCount > 0) return false;
+
+      // Tab filter
       if (activeTab === 'active' && product.status !== 'Active') return false;
       if (activeTab === 'draft' && product.status !== 'Draft') return false;
       if (activeTab === 'low_stock' && product.status !== 'Low Stock') return false;
@@ -309,7 +231,18 @@ export const VendorProductsPage: React.FC = () => {
 
       return true;
     });
-  }, [tableProducts, activeTab, searchQuery]);
+  }, [tableProducts, activeTab, searchQuery, categoryFilter, stockLevelFilter]);
+
+  // Dynamic counts
+  const countAll = tableProducts.length;
+  const countActive = tableProducts.filter((p) => p.status === 'Active').length;
+  const countLowStock = tableProducts.filter((p) => p.status === 'Low Stock').length;
+  const countPending = tableProducts.filter((p) => p.status === 'Pending Review' || p.status === 'Draft').length;
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
   return (
     <WorkspaceLayout
@@ -328,19 +261,30 @@ export const VendorProductsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors">
+            {feedback && (
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                {feedback}
+              </span>
+            )}
+            <button
+              onClick={handleExportCsv}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
+            >
               <Download className="h-4 w-4 text-slate-500" />
               Export CSV
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors">
+            <button
+              onClick={handleImportClick}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
+            >
               <Upload className="h-4 w-4 text-slate-500" />
               Import
             </button>
             <button
+              type="button"
               onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Plus className="h-4 w-4" />
               + Add New Product
             </button>
           </div>
@@ -354,13 +298,10 @@ export const VendorProductsPage: React.FC = () => {
                 <CheckCircle2 className="h-4 w-4" />
               </div>
               <span className="text-slate-700">
-                <strong>Catalog Health: 94%</strong> of your active listings comply with Vendora Express shipping &amp; 4K multi-angle asset criteria. 6 listings can be improved for better search positioning.
+                <strong>Catalog Health: 96%</strong> of your listings comply with Vendora Express shipping &amp; 4K multi-angle asset criteria.
               </span>
             </div>
             <div className="flex items-center gap-3 self-end sm:self-auto">
-              <button className="font-bold text-slate-900 hover:underline">
-                Review 6 Listings
-              </button>
               <button
                 onClick={() => setShowHealthBanner(false)}
                 className="text-slate-400 hover:text-slate-600"
@@ -380,9 +321,9 @@ export const VendorProductsPage: React.FC = () => {
               <Box className="h-4 w-4 text-slate-400" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">148</span>
+              <span className="text-3xl font-extrabold text-slate-900">{countAll}</span>
               <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                +12 this month
+                +100% in sync
               </span>
             </div>
             <div className="mt-4 h-1 w-full bg-slate-900 rounded-full" />
@@ -395,9 +336,9 @@ export const VendorProductsPage: React.FC = () => {
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">136</span>
+              <span className="text-3xl font-extrabold text-slate-900">{countActive}</span>
               <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                91.8% live
+                {countAll > 0 ? `${Math.round((countActive / countAll) * 100)}% live` : '0%'}
               </span>
             </div>
             <div className="mt-4 h-1 w-full bg-emerald-500 rounded-full" />
@@ -410,7 +351,7 @@ export const VendorProductsPage: React.FC = () => {
               <AlertTriangle className="h-4 w-4 text-amber-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">7</span>
+              <span className="text-3xl font-extrabold text-slate-900">{countLowStock}</span>
               <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
                 Needs Restock
               </span>
@@ -418,16 +359,16 @@ export const VendorProductsPage: React.FC = () => {
             <div className="mt-4 h-1 w-full bg-amber-500 rounded-full" />
           </div>
 
-          {/* Card 4: Pending / Rejected */}
+          {/* Card 4: Pending / Review */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>PENDING / REJECTED</span>
               <span className="h-2 w-2 rounded-full bg-rose-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">5</span>
+              <span className="text-3xl font-extrabold text-slate-900">{countPending}</span>
               <span className="text-xs text-rose-600 font-bold">
-                3 review • 2 rejected
+                {countPending} in queue
               </span>
             </div>
             <div className="mt-4 h-1 w-full bg-rose-500 rounded-full" />
@@ -438,91 +379,66 @@ export const VendorProductsPage: React.FC = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100/90 p-1 text-xs font-bold text-slate-600">
             <button
-              onClick={() => setActiveTab('all')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              onClick={() => { setActiveTab('all'); setCurrentPage(1); }}
+              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
                 activeTab === 'all'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>All</span> <span className="opacity-70">148</span>
+              <span>All</span> <span className="opacity-70">{countAll}</span>
             </button>
             <button
-              onClick={() => setActiveTab('active')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              onClick={() => { setActiveTab('active'); setCurrentPage(1); }}
+              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
                 activeTab === 'active'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Active</span> <span className="opacity-70">136</span>
+              <span>Active</span> <span className="opacity-70">{countActive}</span>
             </button>
             <button
-              onClick={() => setActiveTab('draft')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
-                activeTab === 'draft'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>Draft</span> <span className="opacity-70">4</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('low_stock')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              onClick={() => { setActiveTab('low_stock'); setCurrentPage(1); }}
+              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
                 activeTab === 'low_stock'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <span>Low Stock</span>{' '}
-              <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-800">7</span>
+              <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-800">{countLowStock}</span>
             </button>
             <button
-              onClick={() => setActiveTab('out_of_stock')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              onClick={() => { setActiveTab('out_of_stock'); setCurrentPage(1); }}
+              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
                 activeTab === 'out_of_stock'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Out of Stock</span> <span className="opacity-70">2</span>
+              <span>Out of Stock</span>
             </button>
             <button
-              onClick={() => setActiveTab('pending')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              onClick={() => { setActiveTab('pending'); setCurrentPage(1); }}
+              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
                 activeTab === 'pending'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Pending</span>{' '}
-              <span className="rounded bg-blue-100 px-1 text-[10px] text-blue-800">3</span>
+              <span>Pending</span>
             </button>
             <button
-              onClick={() => setActiveTab('rejected')}
-              className={`rounded-lg px-3 py-1.5 transition-all ${
+              onClick={() => { setActiveTab('rejected'); setCurrentPage(1); }}
+              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
                 activeTab === 'rejected'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Rejected</span>{' '}
-              <span className="rounded bg-rose-100 px-1 text-[10px] text-rose-800">2</span>
+              <span>Rejected</span>
             </button>
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto text-xs">
-            <span className="text-slate-400">Sort:</span>
-            <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 font-semibold text-slate-800 focus:outline-hidden">
-                <option>Newest Added</option>
-                <option>Highest Sales</option>
-                <option>Lowest Stock</option>
-                <option>Price: High to Low</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            </div>
           </div>
         </div>
 
@@ -533,7 +449,7 @@ export const VendorProductsPage: React.FC = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               placeholder="Search product title, SKU, barcode..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
             />
@@ -543,15 +459,14 @@ export const VendorProductsPage: React.FC = () => {
             <div className="relative">
               <select
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden"
+                onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
               >
                 <option>All Categories</option>
                 <option>Audio</option>
-                <option>Keyboards</option>
-                <option>Power</option>
-                <option>Accessories</option>
-                <option>Workspace</option>
+                <option>Computing</option>
+                <option>Gaming</option>
+                <option>Digital</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
@@ -559,8 +474,8 @@ export const VendorProductsPage: React.FC = () => {
             <div className="relative">
               <select
                 value={stockLevelFilter}
-                onChange={(e) => setStockLevelFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden"
+                onChange={(e) => { setStockLevelFilter(e.target.value); setCurrentPage(1); }}
+                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
               >
                 <option>All Stock Levels</option>
                 <option>In Stock</option>
@@ -570,26 +485,16 @@ export const VendorProductsPage: React.FC = () => {
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
 
-            <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden">
-                <option>Brand: All</option>
-                <option>Sony</option>
-                <option>Keychron</option>
-                <option>Anker</option>
-                <option>Logitech</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            </div>
-
             <div className="flex items-center gap-2 border-l border-slate-200 pl-2">
               <span className="text-xs text-slate-400 font-medium">
-                {selectedIds.length} items selected
+                {selectedIds.length} selected
               </span>
               <button
                 disabled={selectedIds.length === 0}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 disabled:opacity-40"
+                onClick={handleBatchDelete}
+                className="rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-40"
               >
-                Bulk Edit
+                Delete Selected
               </button>
             </div>
           </div>
@@ -604,7 +509,7 @@ export const VendorProductsPage: React.FC = () => {
                   <th className="w-10 px-4 py-3.5 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedIds.length === tableProducts.length}
+                      checked={filteredProducts.length > 0 && selectedIds.length === filteredProducts.length}
                       onChange={toggleSelectAll}
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                     />
@@ -618,7 +523,7 @@ export const VendorProductsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredProducts.map((p) => {
+                {paginatedProducts.map((p) => {
                   const isChecked = selectedIds.includes(p.id);
                   return (
                     <tr
@@ -726,7 +631,7 @@ export const VendorProductsPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => {
-                              const found = products.find((pr) => pr.id === p.id);
+                              const found = storeProducts.find((pr) => pr.id === p.id);
                               if (found) {
                                 setEditingProduct(found);
                               }
@@ -753,57 +658,63 @@ export const VendorProductsPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Table Footer / Pagination */}
+          {/* Table Footer */}
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-4">
-              <span>
-                Showing <strong>1 to 10</strong> of <strong>148</strong> listings
-              </span>
-              <div className="flex items-center gap-1.5">
-                <span>Rows:</span>
-                <select className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700">
-                  <option>10</option>
-                  <option>25</option>
-                  <option>50</option>
-                </select>
-              </div>
+            <div>
+              Showing{' '}
+              <strong>
+                {filteredProducts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredProducts.length)}
+              </strong>{' '}
+              of <strong>{filteredProducts.length}</strong> items
+              {filteredProducts.length !== countAll && ` (filtered from ${countAll})`}
             </div>
-
             <div className="flex items-center gap-1 self-end sm:self-auto">
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+              >
                 &lt;
               </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded bg-slate-900 text-xs font-bold text-white">
-                1
-              </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                2
-              </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                3
-              </button>
-              <span className="px-1 text-slate-400">...</span>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                15
-              </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`flex h-7 min-w-7 px-1.5 items-center justify-center rounded text-xs font-bold transition-colors cursor-pointer ${
+                    currentPage === page
+                      ? 'bg-slate-900 text-white'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+              >
                 &gt;
               </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Product Form Modal */}
-      <ProductFormModal
-        open={isModalOpen}
-        onOpenChange={(open) => {
-          setIsModalOpen(open);
-          if (!open) setEditingProduct(null);
-        }}
-        initialProduct={editingProduct}
-        onSave={handleProductSaved}
-      />
+        {/* Product Create / Edit Modal */}
+        <ProductFormModal
+          open={isModalOpen}
+          onOpenChange={(open) => {
+            setIsModalOpen(open);
+            if (!open) setEditingProduct(null);
+          }}
+          initialProduct={editingProduct}
+          onSave={handleProductSaved}
+        />
+      </div>
     </WorkspaceLayout>
   );
 };

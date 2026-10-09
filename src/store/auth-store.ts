@@ -53,6 +53,8 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   loginAsDemoRole: (roleKey: 'customer' | 'newuser' | 'vendor' | 'admin' | 'support' | 'rider') => void;
+  login: (email: string, password?: string) => User;
+  register: (name: string, email: string, password?: string) => User;
   setUser: (user: User, token?: string) => void;
   logout: () => void;
   hasRole: (role: UserRole) => boolean;
@@ -74,6 +76,51 @@ export const useAuthStore = create<AuthState>()(
           token: mockToken,
           isAuthenticated: true,
         });
+      },
+
+      login: (email: string) => {
+        const normalized = email.trim().toLowerCase();
+        // Check matching demo account
+        const matchedEntry = Object.values(DEMO_ACCOUNTS).find(
+          (u) => u.email.toLowerCase() === normalized,
+        );
+
+        const authenticatedUser: User = matchedEntry || {
+          id: `usr-${Date.now()}`,
+          email: normalized,
+          name: normalized.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+          roles: ['customer'],
+          vendorStatus: 'none',
+        };
+
+        const mockToken = `mock-jwt-${authenticatedUser.id}-${Date.now()}`;
+        set({
+          user: authenticatedUser,
+          token: mockToken,
+          isAuthenticated: true,
+        });
+
+        return authenticatedUser;
+      },
+
+      register: (name: string, email: string) => {
+        const normalized = email.trim().toLowerCase();
+        const newUser: User = {
+          id: `usr-${Date.now()}`,
+          name: name.trim(),
+          email: normalized,
+          roles: ['customer'],
+          vendorStatus: 'none',
+        };
+
+        const mockToken = `mock-jwt-${newUser.id}-${Date.now()}`;
+        set({
+          user: newUser,
+          token: mockToken,
+          isAuthenticated: true,
+        });
+
+        return newUser;
       },
 
       setUser: (user, token) => {

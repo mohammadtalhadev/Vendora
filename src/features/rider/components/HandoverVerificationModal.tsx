@@ -1,0 +1,275 @@
+import React, { useState, useRef, useEffect } from 'react';
+import type { KeyboardEvent, ClipboardEvent, ChangeEvent } from 'react';
+import { ShieldCheck, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../../components/ui/dialog';
+import { Button } from '../../../components/ui/button';
+
+export interface HandoverVerificationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  expectedCode?: string;
+  subOrderId?: string;
+  customerName?: string;
+  onVerify: (code: string) => Promise<void> | void;
+}
+
+export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps> = ({
+  isOpen,
+  onClose,
+  expectedCode,
+  subOrderId,
+  customerName,
+  onVerify,
+}) => {
+  const [digits, setDigits] = useState<string[]>(['', '', '', '']);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const inputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
+
+  // Reset modal state upon opening
+  useEffect(() => {
+    if (isOpen) {
+      setDigits(['', '', '', '']);
+      setError(null);
+      setIsSubmitting(false);
+      setIsSuccess(false);
+      // Autofocus first input after brief paint
+      const timer = setTimeout(() => {
+        inputRefs[0].current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  const handleDigitChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    setError(null);
+
+    // If multiple characters entered (e.g. autofill or paste into input)
+    if (rawVal.length > 1) {
+      const cleaned = rawVal.replace(/\D/g, '').slice(0, 4);
+      if (cleaned.length > 0) {
+        const next = ['', '', '', ''];
+        for (let i = 0; i < 4; i++) {
+          next[i] = cleaned[i] || '';
+        }
+        setDigits(next);
+        const focusIdx = Math.min(cleaned.length, 3);
+        inputRefs[focusIdx].current?.focus();
+        return;
+      }
+    }
+
+    const char = rawVal.slice(-1).replace(/\D/g, '');
+    const nextDigits = [...digits];
+    nextDigits[index] = char;
+    setDigits(nextDigits);
+
+    // Auto-advance
+    if (char && index < 3) {
+      inputRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (!digits[index] && index > 0) {
+        e.preventDefault();
+        const nextDigits = [...digits];
+        nextDigits[index - 1] = '';
+        setDigits(nextDigits);
+        inputRefs[index - 1].current?.focus();
+      } else if (digits[index]) {
+        // Let normal backspace clear the digit
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      e.preventDefault();
+      inputRefs[index - 1].current?.focus();
+    } else if (e.key === 'ArrowRight' && index < 3) {
+      e.preventDefault();
+      inputRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    if (!pasteData) return;
+
+    setError(null);
+    const next = [...digits];
+    for (let i = 0; i < pasteData.length; i++) {
+      next[i] = pasteData[i];
+    }
+    setDigits(next);
+    const targetIdx = Math.min(pasteData.length, 3);
+    inputRefs[targetIdx].current?.focus();
+  };
+
+  const enteredPin = digits.join('');
+
+  const handleConfirm = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError(null);
+
+    if (enteredPin.length < 4) {
+      setError('Please enter all 4 digits of the PIN code.');
+      return;
+    }
+
+    if (expectedCode && enteredPin !== expectedCode) {
+      setError('Invalid verification code. Please check with customer.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onVerify(enteredPin);
+      setIsSuccess(true);
+      onClose();
+    } catch (err: unknown) {
+      setIsSubmitting(false);
+      const message = err instanceof Error ? err.message : 'Verification failed. Please try again.';
+      setError(message);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md p-6 sm:p-7">
+        <DialogHeader className="text-center sm:text-center items-center">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-xs">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <DialogTitle className="text-xl font-bold text-slate-900">
+            Customer Handover Verification
+          </DialogTitle>
+          <DialogDescription className="text-xs text-slate-500 max-w-xs mx-auto">
+            {customerName
+              ? `Request the 4-digit verification code from ${customerName} to finalize delivery.`
+              : 'Enter the 4-digit customer delivery PIN to verify package handover.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        {subOrderId && (
+          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 text-xs">
+            <span className="text-slate-500 font-medium">Sub-Order:</span>
+            <span className="font-mono font-bold text-slate-900">{subOrderId}</span>
+          </div>
+        )}
+
+        {/* Simulated Demo Hint */}
+        {expectedCode && (
+          <div
+            data-testid="demo-pin-hint"
+            className="rounded-xl border border-amber-200/90 bg-amber-50/80 p-3 text-xs text-amber-900 shadow-2xs"
+          >
+            <p className="font-semibold text-amber-950">Demo Simulation Hint:</p>
+            <p className="mt-0.5 text-amber-800">
+              Customer&apos;s verification code is:{' '}
+              <span className="font-mono font-black text-amber-950 tracking-widest text-sm bg-amber-100/80 px-1.5 py-0.5 rounded-md">
+                {expectedCode}
+              </span>
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleConfirm} className="space-y-4">
+          <div className="flex flex-col items-center gap-2">
+            <label htmlFor="pin-digit-0" className="text-xs font-semibold text-slate-700">
+              Enter 4-Digit Customer PIN
+            </label>
+            <div className="flex items-center justify-center gap-2.5 sm:gap-3" onPaste={handlePaste}>
+              {digits.map((digit, idx) => (
+                <input
+                  key={idx}
+                  id={idx === 0 ? 'pin-digit-0' : undefined}
+                  ref={inputRefs[idx]}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  data-testid={`pin-digit-${idx}`}
+                  aria-label={`Digit ${idx + 1}`}
+                  value={digit}
+                  disabled={isSubmitting || isSuccess}
+                  onChange={(e) => handleDigitChange(idx, e)}
+                  onKeyDown={(e) => handleKeyDown(idx, e)}
+                  className="h-14 w-12 sm:w-14 rounded-2xl border-2 border-slate-200 bg-white text-center font-mono text-2xl font-black text-slate-900 shadow-xs transition-all focus:border-[#FF7A1A] focus:outline-none focus:ring-4 focus:ring-[#FF7A1A]/15 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div
+              role="alert"
+              data-testid="verification-error"
+              className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-medium text-rose-700 animate-in fade-in duration-150"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Success Notification */}
+          {isSuccess && (
+            <div
+              data-testid="verification-success"
+              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-medium text-emerald-800 animate-in fade-in duration-150"
+            >
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+              <span>PIN verified successfully! Finalizing handover...</span>
+            </div>
+          )}
+
+          <DialogFooter className="pt-2 sm:justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting || isSuccess}
+              onClick={onClose}
+              className="w-full sm:w-auto rounded-full order-2 sm:order-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="orange-cta"
+              disabled={isSubmitting || isSuccess || enteredPin.length < 4}
+              className="w-full sm:w-auto rounded-full min-h-[44px] order-1 sm:order-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                  Verifying...
+                </>
+              ) : isSuccess ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                  Handover Confirmed
+                </>
+              ) : (
+                'Confirm Handover'
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};

@@ -1,4 +1,5 @@
 import type { PhysicalSubOrderStatus, DigitalSubOrderStatus, SubOrderStatus, UserRole } from '../types/domain';
+export type { SubOrderStatus, PhysicalSubOrderStatus, DigitalSubOrderStatus };
 
 // Valid transitions for physical goods
 export const PHYSICAL_TRANSITIONS: Record<PhysicalSubOrderStatus, PhysicalSubOrderStatus[]> = {

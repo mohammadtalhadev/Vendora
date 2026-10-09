@@ -9,145 +9,45 @@ import {
   Search,
   ChevronDown,
   Download,
-  SlidersHorizontal,
   CheckCircle2,
   Camera,
   Video,
   Lightbulb,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-
-interface ReturnItem {
-  id: string;
-  rmaId: string;
-  orderNumber: string;
-  orderTime: string;
-  customerName: string;
-  customerCity: string;
-  productImage: string;
-  productName: string;
-  productVariant: string;
-  reason: string;
-  badgeType?: 'photos' | 'video' | 'unopened' | 'dock' | 'restocked' | 'mismatch' | 'passed';
-  badgeLabel?: string;
-  serialNote?: string;
-  refundAmount: string;
-}
-
-const RETURN_ITEMS: ReturnItem[] = [
-  {
-    id: 'rma-1',
-    rmaId: 'RMA-4029',
-    orderNumber: '#ORD-9784',
-    orderTime: 'Yesterday, 4:15 PM',
-    customerName: 'Elena Rostova',
-    customerCity: 'Chicago, IL',
-    productImage: 'https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?auto=format&fit=crop&w=120&q=80',
-    productName: 'Anker 737 GaN Power Bank',
-    productVariant: '140W (24,000mAh) • Space Gray',
-    reason: 'Ports unresponsive',
-    badgeType: 'photos',
-    badgeLabel: '2 Photos',
-    serialNote: 'Serial #AK-9921',
-    refundAmount: '$89.99',
-  },
-  {
-    id: 'rma-2',
-    rmaId: 'RMA-4028',
-    orderNumber: '#ORD-9740',
-    orderTime: 'May 14, 11:20 AM',
-    customerName: 'Marcus Vance',
-    customerCity: 'Austin, TX',
-    productImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=120&q=80',
-    productName: 'Sony WH-1000XM5 ANC',
-    productVariant: 'Platinum Silver • Over-Ear',
-    reason: 'Buyer remorse / remorse',
-    badgeType: 'unopened',
-    badgeLabel: 'Unopened box',
-    refundAmount: '$348.00',
-  },
-  {
-    id: 'rma-3',
-    rmaId: 'RMA-4027',
-    orderNumber: '#ORD-9612',
-    orderTime: 'May 13, 09:04 AM',
-    customerName: 'Sophia Lin',
-    customerCity: 'Seattle, WA',
-    productImage: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=120&q=80',
-    productName: 'Keychron Q1 Pro Wireless',
-    productVariant: 'Carbon Black • Gateron Banana',
-    reason: 'Scratch on frame',
-    badgeType: 'dock',
-    badgeLabel: 'Dock Bay 4 • Arrived 2h ago',
-    refundAmount: '$198.00',
-  },
-  {
-    id: 'rma-4',
-    rmaId: 'RMA-4025',
-    orderNumber: '#ORD-9533',
-    orderTime: 'May 11, 2:40 PM',
-    customerName: 'Julian Thorne',
-    customerCity: 'Boston, MA',
-    productImage: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=120&q=80',
-    productName: 'Logitech MX Master 3S',
-    productVariant: 'Graphite • Ergonomic',
-    reason: 'Accidental double order',
-    badgeType: 'restocked',
-    badgeLabel: 'Restocked 100%',
-    refundAmount: '$99.00',
-  },
-  {
-    id: 'rma-5',
-    rmaId: 'RMA-4024',
-    orderNumber: '#ORD-9480',
-    orderTime: 'May 10, 5:12 PM',
-    customerName: 'Amara Nwosu',
-    customerCity: 'Atlanta, GA',
-    productImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=120&q=80',
-    productName: 'Belkin BoostCharge Pro 3-in-1',
-    productVariant: '15W Fast Charge • Black',
-    reason: 'Apple Watch pad not working',
-    badgeType: 'video',
-    badgeLabel: '1 Video',
-    refundAmount: '$149.99',
-  },
-  {
-    id: 'rma-6',
-    rmaId: 'RMA-4021',
-    orderNumber: '#ORD-9304',
-    orderTime: 'May 08, 1:18 PM',
-    customerName: 'David K. Miller',
-    customerCity: 'Denver, CO',
-    productImage: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=120&q=80',
-    productName: 'SanDisk Extreme 2TB SSD',
-    productVariant: '1050MB/s • USB 3.2 Gen 2',
-    reason: 'Mismatched serial code',
-    badgeType: 'mismatch',
-    badgeLabel: 'SN mismatch • Case escalated',
-    refundAmount: '$159.00',
-  },
-  {
-    id: 'rma-7',
-    rmaId: 'RMA-4019',
-    orderNumber: '#ORD-9280',
-    orderTime: 'May 06, 10:14 AM',
-    customerName: 'Rachel Green',
-    customerCity: 'New York, NY',
-    productImage: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=120&q=80',
-    productName: 'CalDigit TS4 Thunderbolt Dock',
-    productVariant: '18 Ports • 98W Power Delivery',
-    reason: 'Incompatible with host machine',
-    badgeType: 'passed',
-    badgeLabel: 'Inspected & Passed',
-    refundAmount: '$399.95',
-  },
-];
+import { useMarketplaceStore } from '../store/marketplace-store';
+import { exportToCsv } from '../lib/export-csv';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog';
 
 export const VendorReturnsPage: React.FC = () => {
+  const storeReturns = useMarketplaceStore((state) => state.returns);
+  const approveReturn = useMarketplaceStore((state) => state.approveReturn);
+  const rejectReturn = useMarketplaceStore((state) => state.rejectReturn);
+  const markReturnRestocked = useMarketplaceStore((state) => state.markReturnRestocked);
+
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'transit' | 'inspection' | 'completed' | 'disputed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIds, setSelectedIds] = useState<string[]>(['rma-1', 'rma-5']);
+  const [reasonFilter, setReasonFilter] = useState('All');
+  const [selectedIds, setSelectedIds] = useState<string[]>(['rma-1']);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const toggleSelectOne = (id: string) => {
     setSelectedIds((prev) =>
@@ -156,22 +56,75 @@ export const VendorReturnsPage: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === RETURN_ITEMS.length) {
+    if (selectedIds.length === storeReturns.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(RETURN_ITEMS.map((item) => item.id));
+      setSelectedIds(storeReturns.map((item) => item.id));
     }
   };
 
-  const filteredItems = RETURN_ITEMS.filter((item) => {
+  const handleBulkApprove = () => {
+    const pendingList = storeReturns.filter((r) => r.status === 'pending');
+    if (pendingList.length === 0) {
+      showToast('No pending returns to approve');
+      return;
+    }
+    for (const item of pendingList) {
+      approveReturn(item.rmaId);
+    }
+    showToast(`Approved ${pendingList.length} returns and issued buyer refunds`);
+  };
+
+  const handleExportCsv = () => {
+    const exportData = filteredItems.map((r) => ({
+      RMA: r.rmaId,
+      Order: r.orderNumber,
+      Customer: r.customerName,
+      Product: r.productName,
+      Reason: r.reason,
+      Refund: r.refundAmountFormatted,
+      Status: r.status,
+    }));
+
+    exportToCsv(`vendor-returns-${new Date().toISOString().split('T')[0]}.csv`, exportData, {
+      RMA: 'RMA Tracking ID',
+      Order: 'Order Number',
+      Customer: 'Buyer Name',
+      Product: 'Returned Product',
+      Reason: 'Return Reason',
+      Refund: 'Refund Amount',
+      Status: 'RMA Status',
+    });
+    showToast('Returns exported to CSV successfully');
+  };
+
+  const filteredItems = storeReturns.filter((item) => {
     const q = searchQuery.toLowerCase();
-    const match =
+    const matchSearch =
       item.rmaId.toLowerCase().includes(q) ||
       item.orderNumber.toLowerCase().includes(q) ||
       item.customerName.toLowerCase().includes(q) ||
       item.productName.toLowerCase().includes(q);
-    return match;
+
+    if (!matchSearch) return false;
+
+    if (reasonFilter !== 'All') {
+      if (!item.reason.toLowerCase().includes(reasonFilter.toLowerCase())) return false;
+    }
+
+    if (activeTab === 'pending' && item.status !== 'pending') return false;
+    if (activeTab === 'transit' && item.status !== 'in_transit') return false;
+    if (activeTab === 'completed' && item.status !== 'approved' && item.status !== 'restocked') return false;
+    if (activeTab === 'disputed' && item.status !== 'rejected') return false;
+
+    return true;
   });
+
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
@@ -194,16 +147,29 @@ export const VendorReturnsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors">
+            <button
+              onClick={() => setIsRulesModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
+            >
               <SlidersHorizontal className="h-4 w-4 text-slate-500" />
               Return Settings / Policy
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors">
+            <button
+              onClick={handleBulkApprove}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
+            >
               <Check className="h-4 w-4" />
-              Bulk Approve (2)
+              Bulk Approve Pending
             </button>
           </div>
         </div>
+
+        {toastMessage && (
+          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-xs font-bold text-emerald-800">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
 
         {/* 4 Top KPI Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -361,11 +327,15 @@ export const VendorReturnsPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden">
-                <option>All Reasons (Defective, Remorse, Damaged)</option>
-                <option>Defective</option>
-                <option>Remorse</option>
-                <option>Damaged</option>
+              <select
+                value={reasonFilter}
+                onChange={(e) => setReasonFilter(e.target.value)}
+                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden"
+              >
+                <option value="All">All Reasons (Defective, Remorse, Damaged)</option>
+                <option value="Defective">Defective</option>
+                <option value="Remorse">Remorse</option>
+                <option value="Damaged">Damaged</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
@@ -390,8 +360,9 @@ export const VendorReturnsPage: React.FC = () => {
             </div>
 
             <button
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-2xs transition-colors"
-              title="Download Report"
+              onClick={handleExportCsv}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+              title="Download Report (CSV)"
             >
               <Download className="h-4 w-4" />
             </button>
@@ -407,7 +378,7 @@ export const VendorReturnsPage: React.FC = () => {
                   <th className="w-10 px-4 py-3.5 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedIds.length === RETURN_ITEMS.length}
+                      checked={storeReturns.length > 0 && selectedIds.length === storeReturns.length}
                       onChange={toggleSelectAll}
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                     />
@@ -416,11 +387,12 @@ export const VendorReturnsPage: React.FC = () => {
                   <th className="px-4 py-3.5">CUSTOMER</th>
                   <th className="px-4 py-3.5">RETURNED PRODUCT</th>
                   <th className="px-4 py-3.5">REASON &amp; VERIFICATION</th>
-                  <th className="px-4 py-3.5 text-right">REFUND AMOUNT</th>
+                  <th className="px-4 py-3.5">REFUND AMOUNT</th>
+                  <th className="px-4 py-3.5 text-right">ACTION</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredItems.map((item) => {
+                {paginatedItems.map((item) => {
                   const isChecked = selectedIds.includes(item.id);
                   return (
                     <tr
@@ -498,16 +470,6 @@ export const VendorReturnsPage: React.FC = () => {
                               {item.badgeLabel}
                             </span>
                           )}
-                          {item.badgeType === 'mismatch' && (
-                            <span className="rounded bg-rose-50 px-1.5 py-0.2 text-[10px] font-semibold text-rose-700">
-                              {item.badgeLabel}
-                            </span>
-                          )}
-                          {item.badgeType === 'passed' && (
-                            <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-700">
-                              {item.badgeLabel}
-                            </span>
-                          )}
                           {item.serialNote && (
                             <span className="text-[10px] text-slate-400 font-mono">
                               • {item.serialNote}
@@ -517,8 +479,60 @@ export const VendorReturnsPage: React.FC = () => {
                       </td>
 
                       {/* Refund Amount */}
-                      <td className="px-4 py-3.5 text-right font-bold text-slate-900">
-                        {item.refundAmount}
+                      <td className="px-4 py-3.5 font-bold text-slate-900">
+                        {item.refundAmountFormatted}
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-4 py-3.5 text-right">
+                        {item.status === 'pending' && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => {
+                                approveReturn(item.rmaId);
+                                showToast(`Approved refund of ${item.refundAmountFormatted} for ${item.rmaId}`);
+                              }}
+                              className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                rejectReturn(item.rmaId);
+                                showToast(`Rejected return ${item.rmaId}`);
+                              }}
+                              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-600"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        {item.status === 'approved' && (
+                          <button
+                            onClick={() => {
+                              markReturnRestocked(item.rmaId);
+                              showToast(`Restocked merchandise for ${item.rmaId}`);
+                            }}
+                            className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+                          >
+                            Restock
+                          </button>
+                        )}
+                        {item.status === 'restocked' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                            Restocked ✓
+                          </span>
+                        )}
+                        {item.status === 'rejected' && (
+                          <span className="text-[11px] font-semibold text-rose-600">
+                            Rejected ✗
+                          </span>
+                        )}
+                        {item.status === 'in_transit' && (
+                          <span className="text-[11px] font-semibold text-blue-600">
+                            In Transit 🚚
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -530,23 +544,39 @@ export const VendorReturnsPage: React.FC = () => {
           {/* Table Footer */}
           <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500">
             <span>
-              Showing <strong>1-7</strong> of <strong>28</strong> return orders •{' '}
+              Showing <strong>{filteredItems.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredItems.length)}</strong> of <strong>{filteredItems.length}</strong> return orders •{' '}
               {selectedIds.length} selected
             </span>
-            <div className="flex items-center gap-1">
-              <button className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50">
+            <div className="flex items-center gap-2">
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-700 focus:outline-none"
+              >
+                <option value={5}>5 / page</option>
+                <option value={10}>10 / page</option>
+                <option value={20}>20 / page</option>
+              </select>
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
                 &lt; Prev
               </button>
-              <button className="h-6 w-6 rounded bg-slate-900 text-center font-bold text-white">
-                1
-              </button>
-              <button className="h-6 w-6 rounded border border-slate-200 bg-white text-center font-semibold text-slate-600 hover:bg-slate-50">
-                2
-              </button>
-              <button className="h-6 w-6 rounded border border-slate-200 bg-white text-center font-semibold text-slate-600 hover:bg-slate-50">
-                3
-              </button>
-              <button className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50">
+              <span className="px-2 font-medium text-slate-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
                 Next &gt;
               </button>
             </div>
@@ -616,7 +646,11 @@ export const VendorReturnsPage: React.FC = () => {
                 <Lightbulb className="h-4 w-4 text-amber-500" />
                 <span>Tip: Updating power bank specs lowered return velocity by <strong>14%</strong>.</span>
               </div>
-              <button className="font-bold text-slate-900 hover:underline self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="font-bold text-slate-900 hover:underline self-start sm:self-auto cursor-pointer"
+              >
                 Download CSV report →
               </button>
             </div>
@@ -629,7 +663,11 @@ export const VendorReturnsPage: React.FC = () => {
                 <h2 className="text-base font-bold text-slate-900">Automated Return Rules</h2>
                 <p className="text-xs text-slate-500">System rules to accelerate merchant review</p>
               </div>
-              <button className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setIsRulesModalOpen(true)}
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
                 Configure
               </button>
             </div>
@@ -686,12 +724,114 @@ export const VendorReturnsPage: React.FC = () => {
 
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
               <span>Last edited 3 days ago by vendor@demo.test</span>
-              <button className="font-semibold text-slate-600 hover:text-slate-900">
+              <button
+                type="button"
+                onClick={() => setIsAuditModalOpen(true)}
+                className="font-semibold text-slate-600 hover:text-slate-900 cursor-pointer underline"
+              >
                 View Audit Log
               </button>
             </div>
           </div>
         </div>
+
+        {/* Modal: Automated Return Rules */}
+        <Dialog open={isRulesModalOpen} onOpenChange={setIsRulesModalOpen}>
+          <DialogContent className="max-w-md bg-white p-6 rounded-2xl shadow-xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-slate-900">Automated Return Rules</DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Configure auto-approval thresholds, inspection policies, and customer return shipping costs.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 pt-2 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Auto-Approval Price Floor ($)</label>
+                <input
+                  type="text"
+                  defaultValue="30.00"
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Return Window (Days)</label>
+                <input
+                  type="text"
+                  defaultValue="30"
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Return Shipping Cost</label>
+                <select className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900">
+                  <option>Free returns (Vendor prepaid label)</option>
+                  <option>Customer pays return postage</option>
+                  <option>Deducted from refund ($5.99 fee)</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRulesModalOpen(false)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRulesModalOpen(false);
+                    showToast('Return policy rules updated successfully');
+                  }}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                >
+                  Save Rules
+                </button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal: Return Audit Log */}
+        <Dialog open={isAuditModalOpen} onOpenChange={setIsAuditModalOpen}>
+          <DialogContent className="max-w-lg bg-white p-6 rounded-2xl shadow-xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-slate-900">Return &amp; RMA Audit Log</DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Recent policy modifications and dispute audit trail.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 pt-3 max-h-80 overflow-y-auto text-xs">
+              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
+                <div className="font-bold text-slate-900">Return window calibrated to 30 days</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">vendor@demo.test • 3 days ago</div>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
+                <div className="font-bold text-slate-900">Mandatory photo proof requirement enabled</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">ops@vendora.market • 1 week ago</div>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
+                <div className="font-bold text-slate-900">Instant label threshold set to &lt;$30</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">vendor@demo.test • 2 weeks ago</div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAuditModalOpen(false)}
+                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </WorkspaceLayout>
   );

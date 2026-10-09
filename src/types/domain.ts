@@ -15,6 +15,8 @@ export interface User {
   roles: UserRole[];
   vendorStatus: VendorStatus;
   vendorId?: string;
+  /** Persisted reason shown when a seller application was rejected or suspended. */
+  rejectionReason?: string;
 }
 
 // ==========================================
@@ -71,6 +73,7 @@ export interface Category {
   name: string;
   slug: string;
   icon?: string;
+  image?: string;
   commissionRateOverride?: number;
 }
 
@@ -213,6 +216,27 @@ export interface CommissionConfig {
 }
 
 // ==========================================
+// 5b. Vendor Applications (seller onboarding lifecycle)
+// ==========================================
+export type VendorApplicationStatus = 'pending' | 'approved' | 'rejected';
+
+export interface VendorApplication {
+  id: string;
+  userId: string;
+  businessName: string;
+  description: string;
+  categoryFocus: string;
+  contactEmail: string;
+  contactPhone?: string;
+  policyAccepted: boolean;
+  status: VendorApplicationStatus;
+  /** Persisted when the admin rejects the application, shown to the applicant. */
+  rejectionReason?: string;
+  createdAt: string;
+  reviewedAt?: string;
+}
+
+// ==========================================
 // 6. Disputes & Support Tickets
 // ==========================================
 export type DisputeStatus = 'open' | 'under_review' | 'escalated' | 'resolved_refund' | 'resolved_denied';
@@ -221,9 +245,11 @@ export interface DisputeMessage {
   id: string;
   senderRole: UserRole;
   senderName: string;
+  senderAvatar?: string;
   content: string;
   isInternalNote: boolean;
   timestamp: string;
+  attachments?: string[];
 }
 
 export interface Dispute {
@@ -231,12 +257,18 @@ export interface Dispute {
   subOrderId: string;
   orderGroupId: string;
   customerId: string;
+  customerName?: string;
+  customerAvatar?: string;
   vendorId: string;
+  vendorName?: string;
   reason: string;
   status: DisputeStatus;
+  urgency?: 'urgent' | 'standard';
   messages: DisputeMessage[];
   assignedAgentId?: string;
   resolutionNote?: string;
+  resolutionAmount?: number;
+  evidencePhotos?: string[];
   createdAt: string;
 }
 

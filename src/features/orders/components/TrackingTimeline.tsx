@@ -113,6 +113,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(defaultOrientation);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [downloadStarted, setDownloadStarted] = useState(false);
   const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null);
 
   const isDigital = subOrder.type === 'digital';
@@ -332,10 +333,21 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
               <Download className="h-4 w-4 text-[#FF7A1A]" />
               <button
                 type="button"
-                onClick={() => alert('Download starting for verified digital license package.')}
+                onClick={() => {
+                  setDownloadStarted(true);
+                  const element = document.createElement('a');
+                  const content = `Vendora Verified Digital License Package\nOrder: ${subOrder.id}\nLicense Key: ${subOrder.licenseKey || 'VEN-LIC-DEMO-KEY-8942'}\nAsset: ${subOrder.items[0]?.title || 'Vendora Digital Product'}\nGenerated: ${new Date().toISOString()}`;
+                  const file = new Blob([content], { type: 'text/plain' });
+                  element.href = URL.createObjectURL(file);
+                  element.download = `license-${subOrder.id}.txt`;
+                  document.body.appendChild(element);
+                  element.click();
+                  document.body.removeChild(element);
+                  setTimeout(() => setDownloadStarted(false), 2000);
+                }}
                 className="font-semibold text-[#FF7A1A] hover:underline"
               >
-                Download Package (.ZIP)
+                {downloadStarted ? 'Downloading Package...' : 'Download Package (.ZIP)'}
               </button>
             </div>
           </div>
@@ -348,7 +360,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
             <div
               className="overflow-x-auto pb-4 pt-2 no-scrollbar"
               data-testid="horizontal-stepper"
-            >
+             data-lenis-prevent>
               <div className="min-w-[680px] px-2">
                 <ol className="flex items-center justify-between">
                   {PHYSICAL_STAGES.map((stage, idx) => {

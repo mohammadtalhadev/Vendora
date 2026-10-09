@@ -119,7 +119,7 @@ export const VendorStorefrontPage: React.FC = () => {
                       </div>
 
                       <Link to={`/products/${product.id}`} className="mt-1 block">
-                        <h4 className="line-clamp-2 text-sm font-semibold text-slate-800 group-hover:text-[#FF7A1A]">
+                        <h4 className="font-outfit line-clamp-2 text-sm font-semibold text-slate-800 group-hover:text-[#FF7A1A]">
                           {product.title}
                         </h4>
                       </Link>

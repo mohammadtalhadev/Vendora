@@ -31,16 +31,33 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     headers,
   });
 
-  if (!response.ok) {
-    let errorData: any = null;
-    try {
-      errorData = await response.json();
-    } catch {
-      // ignore
-    }
-    const message = errorData?.error || errorData?.message || `HTTP error ${response.status}`;
-    throw new ApiError(response.status, message, errorData);
+  const contentType = response.headers.get('content-type') || '';
+  const text = await response.text();
+  const isHtml =
+    contentType.includes('text/html') ||
+    text.trim().startsWith('<!doctype') ||
+    text.trim().startsWith('<!DOCTYPE') ||
+    text.trim().startsWith('<html');
+
+  if (isHtml) {
+    throw new ApiError(response.status, `Server returned HTML instead of JSON for ${endpoint}`);
   }
 
-  return response.json() as Promise<T>;
+  let data: any = null;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new ApiError(response.status, `Invalid JSON response: ${text.slice(0, 100)}`);
+  }
+
+  if (!response.ok) {
+    const message = data?.error || data?.message || `HTTP error ${response.status}`;
+    const apiError = new ApiError(response.status, message, data);
+    if (response.status === 401) {
+      console.warn('Unauthorized: Session expired or invalid token.');
+    }
+    throw apiError;
+  }
+
+  return data as T;
 }

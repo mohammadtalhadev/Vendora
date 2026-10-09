@@ -27,8 +27,11 @@ import { mockDb } from '../../../mocks/db';
 import { cn } from '../../../lib/utils';
 
 export interface ProductFormModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onSuccess?: () => void;
   onSave?: (product: Product) => void;
   initialProduct?: Partial<Product> | null;
 }
@@ -441,11 +444,19 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                       License Type
                     </label>
-                    <Input
+                    <select
                       value={licenseType}
                       onChange={(e) => setLicenseType(e.target.value)}
-                      placeholder="e.g. Single Commercial License"
-                    />
+                      className="w-full admin-select h-10"
+                    >
+                      <option value="Single Commercial License">Single Commercial License</option>
+                      <option value="Personal Single-Use License">Personal Single-Use License</option>
+                      <option value="Extended Developer License">Extended Developer License</option>
+                      <option value="Enterprise Multi-Seat License">Enterprise Multi-Seat License</option>
+                      <option value="Royalty-Free Lifetime License">Royalty-Free Lifetime License</option>
+                      <option value="Editorial / Non-Commercial License">Editorial / Non-Commercial License</option>
+                      <option value="Custom Enterprise Agreement">Custom Enterprise Agreement</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
@@ -477,11 +488,30 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                     Option Name
                   </label>
-                  <Input
+                  <select
                     value={optionName}
-                    onChange={(e) => setOptionName(e.target.value)}
-                    placeholder="e.g. Color or Size"
-                  />
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setOptionName(val);
+                      if (val === 'Color') setOptionValues('Matte Black, Lunar Silver, Alpine White');
+                      else if (val === 'Size') setOptionValues('Small, Medium, Large, XL');
+                      else if (val === 'Storage Capacity') setOptionValues('128GB, 256GB, 512GB, 1TB');
+                      else if (val === 'Material') setOptionValues('Stainless Steel, Aluminum, Leather');
+                      else if (val === 'Style') setOptionValues('Classic, Modern, Minimalist');
+                      else if (val === 'Weight') setOptionValues('500g, 1kg, 2kg');
+                      else if (val === 'Pack Quantity') setOptionValues('1-Pack, 2-Pack, 4-Pack');
+                    }}
+                    className="w-full admin-select h-10"
+                  >
+                    <option value="Color">Color (e.g. Black, White, Silver)</option>
+                    <option value="Size">Size (e.g. S, M, L, XL)</option>
+                    <option value="Storage Capacity">Storage Capacity (e.g. 128GB, 256GB)</option>
+                    <option value="Material">Material (e.g. Aluminum, Leather)</option>
+                    <option value="Style">Style (e.g. Modern, Vintage)</option>
+                    <option value="Weight">Weight (e.g. 500g, 1kg)</option>
+                    <option value="Pack Quantity">Pack Quantity (e.g. 1-Pack, 2-Pack)</option>
+                    <option value="Custom Option">Custom Option</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
@@ -618,17 +648,32 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
 export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   open,
   onOpenChange,
+  isOpen,
+  onClose,
+  onSuccess,
   onSave,
   initialProduct,
 }) => {
+  const isModalOpen = open ?? isOpen ?? false;
+  const handleOpenChange = (val: boolean) => {
+    onOpenChange?.(val);
+    if (!val) {
+      onClose?.();
+    }
+  };
+  const handleSave = (prod: Product) => {
+    onSave?.(prod);
+    onSuccess?.();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isModalOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <ProductFormContent
-          key={initialProduct?.id || (open ? 'new' : 'idle')}
+          key={initialProduct?.id || (isModalOpen ? 'new' : 'idle')}
           initialProduct={initialProduct}
-          onSave={onSave}
-          onClose={() => onOpenChange(false)}
+          onSave={handleSave}
+          onClose={() => handleOpenChange(false)}
         />
       </DialogContent>
     </Dialog>

@@ -170,7 +170,7 @@ export const OrdersPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6">
+    <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6">
       {/* 1. Header & Navigation breadcrumb */}
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
@@ -418,7 +418,7 @@ export const OrdersPage: React.FC = () => {
                       </div>
 
                       {/* Thumbnails preview */}
-                      <div className="flex items-center gap-3 overflow-x-auto pt-1 no-scrollbar">
+                      <div className="flex items-center gap-3 overflow-x-auto pt-1 no-scrollbar" data-lenis-prevent>
                         {allItems.slice(0, 4).map((item, idx) => (
                           <div
                             key={`${item.id}-${idx}`}

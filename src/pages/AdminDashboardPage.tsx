@@ -25,16 +25,62 @@ import {
   Users,
   ShoppingBag,
   ArrowRight,
+  Settings,
+  Scale,
+  Download,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { useMarketplaceStore } from '../store/marketplace-store';
+import { exportToCsv } from '../lib/export-csv';
 
 export const AdminDashboardPage: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<'30d' | '3m' | '6m' | '1y'>('3m');
+  const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
+
+  const vendors = useMarketplaceStore((state) => state.vendors);
+  const products = useMarketplaceStore((state) => state.products);
+  const disputes = useMarketplaceStore((state) => state.disputes);
+
+  const pendingVendorsCount = vendors.filter((v) => v.kycStatus === 'Pending Review' || v.kycStatus === 'Investigation').length;
+  const pendingProductsCount = products.filter((p) => p.status === 'pending_review' || (p.status as string) === 'pending').length;
+  const openDisputesCount = disputes.filter((d) => d.status !== 'resolved_refund' && d.status !== 'resolved_denied').length;
+  const activeVendorsCount = vendors.filter((v) => v.status === 'active').length;
+  const totalPendingApprovals = pendingVendorsCount + pendingProductsCount;
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 600);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      showToast('Marketplace analytics and database indexes refreshed.');
+    }, 600);
+  };
+
+  const handleExportReport = () => {
+    exportToCsv({
+      filename: `vendora_platform_executive_report_${new Date().toISOString().slice(0, 10)}.csv`,
+      data: [
+        { metric: 'Gross Merchandise Value (GMV)', value: '$184,231.89', change: '+25.1%' },
+        { metric: 'Platform Commission Earned', value: '$18,423.19', change: '+12.4%' },
+        { metric: 'Active Merchant Storefronts', value: `${activeVendorsCount}`, change: '+6.2%' },
+        { metric: 'Pending Approvals (KYC & Catalog)', value: `${totalPendingApprovals}`, change: 'Requires Attention' },
+        { metric: 'Open Disputes', value: `${openDisputesCount}`, change: 'Active arbitration' },
+        { metric: 'Settlement Payout Cycle Volume', value: '$26,540.25', change: 'Bi-weekly cycle' },
+      ],
+      columns: [
+        { header: 'Platform Metric', key: 'metric' },
+        { header: 'Current Aggregate Value', key: 'value' },
+        { header: 'Performance Status', key: 'change' },
+      ],
+    });
+    showToast('Platform Executive Summary exported to CSV.');
   };
 
   return (
@@ -80,6 +126,112 @@ export const AdminDashboardPage: React.FC = () => {
               />
             </button>
           </div>
+        </div>
+
+        {/* Floating Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {/* Quick Actions Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <Link
+            to="/admin/vendors"
+            className="group flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <Store className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 truncate">Approve Vendors</p>
+                <p className="text-[10px] text-slate-400 truncate">Merchant onboarding</p>
+              </div>
+            </div>
+            {pendingVendorsCount > 0 && (
+              <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                {pendingVendorsCount}
+              </span>
+            )}
+          </Link>
+
+          <Link
+            to="/admin/products"
+            className="group flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                <ShieldAlert className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 truncate">Product Moderation</p>
+                <p className="text-[10px] text-slate-400 truncate">Catalog verification</p>
+              </div>
+            </div>
+            {pendingProductsCount > 0 && (
+              <span className="shrink-0 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
+                {pendingProductsCount}
+              </span>
+            )}
+          </Link>
+
+          <Link
+            to="/admin/disputes"
+            className="group flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                <Scale className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 truncate">Resolve Disputes</p>
+                <p className="text-[10px] text-slate-400 truncate">Arbitration court</p>
+              </div>
+            </div>
+            {openDisputesCount > 0 && (
+              <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
+                {openDisputesCount}
+              </span>
+            )}
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleExportReport}
+            className="group flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all text-left"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <Download className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 truncate">Export Report</p>
+                <p className="text-[10px] text-slate-400 truncate">Executive CSV</p>
+              </div>
+            </div>
+            <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+              CSV
+            </span>
+          </button>
+
+          <Link
+            to="/admin/settings"
+            className="group col-span-2 sm:col-span-1 flex items-center justify-between rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                <Settings className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 truncate">System Settings</p>
+                <p className="text-[10px] text-slate-400 truncate">Global controls</p>
+              </div>
+            </div>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-slate-900 group-hover:translate-x-0.5 transition-all" />
+          </Link>
         </div>
 
         {/* =====================================================================
@@ -142,7 +294,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900">
-                248
+                {activeVendorsCount > 0 ? 240 + activeVendorsCount : 248}
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-600">
                 <TrendingUp className="h-3.5 w-3.5" />
@@ -164,12 +316,14 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900">
-                17
+                {totalPendingApprovals > 0 ? totalPendingApprovals : 17}
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-700">
                 <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
                 <span className="font-semibold">Requires attention</span>
-                <span className="text-[11px] text-slate-400 truncate">(vendors ...)</span>
+                <span className="text-[11px] text-slate-400 truncate">
+                  ({pendingVendorsCount} KYC, {pendingProductsCount} items)
+                </span>
               </div>
             </div>
           </div>
@@ -304,13 +458,52 @@ export const AdminDashboardPage: React.FC = () => {
               <h2 className="text-sm font-bold text-slate-900">Marketplace Sales</h2>
               <p className="text-xs text-slate-400">Showing total sales for the last 3 months</p>
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <span>Last 3 months</span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-            </button>
+            <div className="relative self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setIsPeriodMenuOpen(!isPeriodMenuOpen)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              >
+                <span>
+                  {selectedPeriod === '30d'
+                    ? 'Last 30 days'
+                    : selectedPeriod === '3m'
+                    ? 'Last 3 months'
+                    : selectedPeriod === '6m'
+                    ? 'Last 6 months'
+                    : 'This year'}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+              </button>
+
+              {isPeriodMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 z-30 w-36 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-in fade-in zoom-in-95">
+                  {[
+                    { id: '30d', label: 'Last 30 days' },
+                    { id: '3m', label: 'Last 3 months' },
+                    { id: '6m', label: 'Last 6 months' },
+                    { id: '1y', label: 'This year' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPeriod(p.id as '30d' | '3m' | '6m' | '1y');
+                        setIsPeriodMenuOpen(false);
+                        showToast(`Sales chart timeframe updated to ${p.label}`);
+                      }}
+                      className={`w-full px-3 py-1.5 text-left text-xs font-medium transition-colors ${
+                        selectedPeriod === p.id
+                          ? 'bg-slate-50 font-bold text-slate-900'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Dual Area Curve Chart */}
@@ -594,7 +787,11 @@ export const AdminDashboardPage: React.FC = () => {
                     bg: 'bg-teal-50',
                   },
                 ].map((v, i) => (
-                  <div key={i} className="flex items-center justify-between py-1">
+                  <Link
+                    key={i}
+                    to="/admin/vendors"
+                    className="flex items-center justify-between py-1.5 px-2 rounded-xl hover:bg-slate-50 transition-colors group"
+                  >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${v.bg}`}
@@ -602,7 +799,7 @@ export const AdminDashboardPage: React.FC = () => {
                         {v.icon}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate leading-tight">
+                        <p className="text-xs font-bold text-slate-900 truncate leading-tight group-hover:text-blue-600 transition-colors">
                           {v.name}
                         </p>
                         <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
@@ -618,7 +815,7 @@ export const AdminDashboardPage: React.FC = () => {
                         {v.status}
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -642,7 +839,8 @@ export const AdminDashboardPage: React.FC = () => {
                 {[
                   {
                     title: 'New vendor application',
-                    meta: 'Atlas Gadgets – Toda...',
+                    meta: 'Atlas Gadgets – Today, 08:30',
+                    link: '/admin/vendors',
                     icon: <Store className="h-3.5 w-3.5 text-slate-600" />,
                     badge: (
                       <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.2 text-[10px] font-medium text-slate-600">
@@ -652,31 +850,36 @@ export const AdminDashboardPage: React.FC = () => {
                   },
                   {
                     title: 'Listing approved',
-                    meta: 'Wireless Noise-...',
+                    meta: 'Wireless Noise-Cancelling IEMs',
+                    link: '/admin/products',
                     icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />,
                     badge: <span className="text-xs font-bold text-emerald-600">+$149.00 ↗</span>,
                   },
                   {
                     title: 'Dispute #1042 opened',
-                    meta: 'Customer: John ...',
+                    meta: 'Customer: John • Package SLA breach',
+                    link: '/admin/disputes',
                     icon: <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />,
                     badge: <span className="text-xs font-bold text-rose-600">-$89.50 ↗</span>,
                   },
                   {
                     title: 'Commission rate changed',
-                    meta: 'Fashion category to 12% • Yes...',
+                    meta: 'Fashion category to 12% • Yesterday',
+                    link: '/admin/commission',
                     icon: <Percent className="h-3.5 w-3.5 text-slate-600" />,
                     badge: null,
                   },
                   {
                     title: 'Refund issued',
-                    meta: 'Order #8841 – Yeste...',
+                    meta: 'Order #8841 – Yesterday, 14:10',
+                    link: '/admin/orders',
                     icon: <RotateCcw className="h-3.5 w-3.5 text-rose-600" />,
                     badge: <span className="text-xs font-bold text-rose-600">-$45.00</span>,
                   },
                   {
                     title: 'Vendor suspended',
-                    meta: 'QuickShip Co • 2 d...',
+                    meta: 'QuickShip Co • Chargeback rate high',
+                    link: '/admin/vendors',
                     icon: <ShieldAlert className="h-3.5 w-3.5 text-rose-600" />,
                     badge: (
                       <span className="rounded bg-rose-50 px-1.5 py-0.2 text-[10px] font-bold text-rose-700 border border-rose-200">
@@ -685,13 +888,17 @@ export const AdminDashboardPage: React.FC = () => {
                     ),
                   },
                 ].map((act, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 py-0.5">
+                  <Link
+                    key={i}
+                    to={act.link}
+                    className="flex items-center justify-between gap-2 py-1 px-1.5 rounded-lg hover:bg-slate-50 transition-colors group"
+                  >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 group-hover:bg-slate-100 transition-colors">
                         {act.icon}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate leading-tight">
+                        <p className="text-xs font-bold text-slate-900 truncate leading-tight group-hover:text-blue-600 transition-colors">
                           {act.title}
                         </p>
                         <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
@@ -700,7 +907,7 @@ export const AdminDashboardPage: React.FC = () => {
                       </div>
                     </div>
                     {act.badge && <div className="shrink-0">{act.badge}</div>}
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

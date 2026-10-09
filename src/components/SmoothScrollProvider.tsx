@@ -30,10 +30,12 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
     }
 
     const lenis = new Lenis({
-      duration: 1.1,
+      duration: 0.7, // Snappy & immediate response without floaty input lag
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      touchMultiplier: 1.5,
+      syncTouch: false, // Keep native 120Hz touch/trackpad momentum without lag
+      touchMultiplier: 1,
+      wheelMultiplier: 1,
     });
     lenisRef.current = lenis;
 

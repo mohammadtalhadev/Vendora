@@ -1,7 +1,7 @@
 import { http, HttpResponse, delay } from 'msw';
 import { mockDb } from './db';
 import { canTransitionSubOrder } from '../lib/order-state-machine';
-import type { UserRole, SubOrderStatus } from '../types/domain';
+import type { UserRole, SubOrderStatus, DisputeStatus } from '../types/domain';
 
 // Helper to extract bearer token role
 function getActorRoleFromHeader(request: Request): UserRole {
@@ -53,6 +53,8 @@ export const handlers = [
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '12', 10);
 
+    const subcategory = url.searchParams.get('subcategory') || url.searchParams.get('subCategory');
+
     let filtered = mockDb.products.filter((p) => p.status === 'approved');
 
     if (q) {
@@ -66,7 +68,27 @@ export const handlers = [
     }
 
     if (category) {
-      filtered = filtered.filter((p) => p.category === category);
+      const matchedCat = mockDb.categories.find(
+        (c) => c.id === category || c.slug === category,
+      );
+      const targetId = matchedCat?.id || category;
+      const targetSlug = matchedCat?.slug || category;
+      filtered = filtered.filter(
+        (p) =>
+          p.category === targetId ||
+          p.category === targetSlug ||
+          p.category.toLowerCase().includes(category.toLowerCase()) ||
+          (matchedCat && p.category.toLowerCase().includes(targetSlug.toLowerCase())),
+      );
+    }
+
+    if (subcategory) {
+      filtered = filtered.filter(
+        (p) =>
+          (p as any).subCategoryId === subcategory ||
+          p.category.toLowerCase().includes(subcategory.toLowerCase()) ||
+          p.title.toLowerCase().includes(subcategory.toLowerCase()),
+      );
     }
 
     if (type) {
@@ -88,6 +110,8 @@ export const handlers = [
       filtered.sort((a, b) => b.price - a.price);
     } else if (sort === 'rating') {
       filtered.sort((a, b) => b.rating - a.rating);
+    } else if (sort === 'best_selling' || sort === 'best-selling') {
+      filtered.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || b.rating - a.rating);
     }
 
     const total = filtered.length;
@@ -129,9 +153,64 @@ export const handlers = [
 
   http.get('/api/products/:id', async ({ params }) => {
     await delay(150);
-    const product = mockDb.products.find((p) => p.id === params.id);
+    const productId = params.id as string;
+    let product = mockDb.products.find((p) => p.id === productId || p.slug === productId);
     if (!product) {
-      return new HttpResponse(JSON.stringify({ error: 'Product not found' }), { status: 404 });
+      const cleanTitle = productId
+        .replace(/^(elec|beauty|home|deal|winter|fash|prod|groc)-/, '')
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      product = {
+        id: productId,
+        title: cleanTitle || 'Vendora Verified Product',
+        slug: productId,
+        description: `Official authentic ${cleanTitle} backed by Vendora 100% Quality Assurance Guarantee. Includes premium packaging, original accessories, and express delivery.`,
+        category: productId.startsWith('beauty')
+          ? 'cat-beauty'
+          : productId.startsWith('home')
+            ? 'cat-home'
+            : productId.startsWith('fash') || productId.startsWith('winter')
+              ? 'cat-fashion'
+              : 'cat-electronics',
+        brand: 'Vendora',
+        images: [
+          '/images/products/prod_silver_headphones.jpg',
+          '/images/products/prod_titanium_phone.jpg',
+          '/images/products/prod_smart_watch.jpg',
+          '/images/products/prod_gold_watch.jpg',
+        ],
+        price: 199.0,
+        compareAtPrice: 249.0,
+        type: 'physical',
+        sellerId: 'platform',
+        sellerName: 'Vendora',
+        sellerType: 'platform',
+        variants: [
+          {
+            id: `${productId}-var-1`,
+            name: 'Standard Edition',
+            sku: `VEN-${productId.slice(0, 6).toUpperCase()}-1`,
+            price: 199.0,
+            stock: 35,
+            attributes: { edition: 'Standard' },
+          },
+          {
+            id: `${productId}-var-2`,
+            name: 'Pro Edition',
+            sku: `VEN-${productId.slice(0, 6).toUpperCase()}-2`,
+            price: 249.0,
+            stock: 15,
+            attributes: { edition: 'Pro' },
+          },
+        ],
+        stock: 50,
+        shippingSettings: { freeShipping: true, standardFee: 0 },
+        rating: 4.9,
+        reviewCount: 388,
+        status: 'approved',
+        createdAt: new Date().toISOString(),
+      };
+      mockDb.products.push(product);
     }
     return HttpResponse.json(product);
   }),
@@ -140,7 +219,7 @@ export const handlers = [
     await delay(150);
     const vendor = mockDb.vendors.find((v) => v.id === params.id);
     if (!vendor) {
-      return new HttpResponse(JSON.stringify({ error: 'Vendor not found' }), { status: 404 });
+      return HttpResponse.json({ error: 'Vendor not found' }, { status: 404 });
     }
     const vendorProducts = mockDb.products.filter((p) => p.sellerId === vendor.id && p.status === 'approved');
     return HttpResponse.json({ ...vendor, products: vendorProducts });
@@ -244,5 +323,72 @@ export const handlers = [
       ...body,
     };
     return HttpResponse.json(mockDb.commissionConfig);
+  }),
+
+  // ==========================================
+  // Rider Deliveries Console
+  // ==========================================
+  http.get('/api/rider/deliveries', async ({ request }) => {
+    await delay(150);
+    const url = new URL(request.url);
+    const riderId = url.searchParams.get('riderId') || undefined;
+    const deliveries = mockDb.getRiderDeliveries(riderId);
+    return HttpResponse.json({ deliveries });
+  }),
+
+  http.post('/api/rider/verify-delivery', async ({ request }) => {
+    await delay(200);
+    const body = (await request.json()) as { subOrderId: string; code: string };
+    const result = mockDb.verifyRiderDelivery(body.subOrderId, body.code);
+    if (!result.success) {
+      return new HttpResponse(JSON.stringify({ error: result.message }), { status: 400 });
+    }
+    return HttpResponse.json(result);
+  }),
+
+  http.patch('/api/rider/deliveries/:id/status', async ({ params, request }) => {
+    await delay(150);
+    const body = (await request.json()) as { nextStatus: SubOrderStatus; note?: string };
+    const updated = mockDb.updateSubOrderStatus(params.id as string, body.nextStatus, 'Rider', body.note);
+    return HttpResponse.json(updated);
+  }),
+
+  // ==========================================
+  // Customer Support & Disputes Console
+  // ==========================================
+  http.get('/api/disputes', async () => {
+    await delay(150);
+    return HttpResponse.json({ disputes: mockDb.disputes });
+  }),
+
+  http.get('/api/disputes/:id', async ({ params }) => {
+    await delay(100);
+    const dispute = mockDb.disputes.find((d) => d.id === params.id);
+    if (!dispute) {
+      return new HttpResponse(JSON.stringify({ error: 'Dispute not found' }), { status: 404 });
+    }
+    return HttpResponse.json({ dispute });
+  }),
+
+  http.post('/api/disputes/:id/messages', async ({ params, request }) => {
+    await delay(150);
+    const body = (await request.json()) as {
+      senderRole: UserRole;
+      senderName: string;
+      content: string;
+      isInternalNote: boolean;
+    };
+    const updated = mockDb.addDisputeMessage(params.id as string, body);
+    return HttpResponse.json(updated);
+  }),
+
+  http.patch('/api/disputes/:id/resolve', async ({ params, request }) => {
+    await delay(200);
+    const body = (await request.json()) as {
+      status: DisputeStatus;
+      resolutionNote?: string;
+    };
+    const updated = mockDb.updateDisputeStatus(params.id as string, body.status, body.resolutionNote);
+    return HttpResponse.json(updated);
   }),
 ];

@@ -26,6 +26,14 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog';
+import { exportToCsv } from '../lib/export-csv';
 
 interface CategoryOverride {
   id: string;
@@ -94,6 +102,8 @@ interface FeeAdjustmentEvent {
   adjustmentBadgeStyle: string;
   priorRate: string;
   newRate: string;
+  effectivePeriod: string;
+  reason: string;
   authorizedBy: string;
   auditStatus: 'Verified' | 'System Audit';
 }
@@ -107,6 +117,8 @@ const RECENT_ADJUSTMENTS: FeeAdjustmentEvent[] = [
     adjustmentBadgeStyle: 'bg-slate-100 text-slate-700',
     priorRate: '12.0% + $0.30',
     newRate: '7.0% + $0.20',
+    effectivePeriod: 'Annual Contract (Exp. Oct 2027)',
+    reason: 'Exclusive multi-year seller agreement; GMV commitment exceeding $1.2M.',
     authorizedBy: 'Sarah Chen (VP Commercial)',
     auditStatus: 'Verified',
   },
@@ -117,7 +129,9 @@ const RECENT_ADJUSTMENTS: FeeAdjustmentEvent[] = [
     adjustmentType: 'Promotional Launch Grant',
     adjustmentBadgeStyle: 'bg-blue-50 text-blue-700',
     priorRate: '15.0% + $0.40',
-    newRate: '5.0% (30 Days)',
+    newRate: '5.0% + $0.25',
+    effectivePeriod: '30 Days (Exp. Nov 22)',
+    reason: 'New flagship brand launch subsidized promo campaign.',
     authorizedBy: 'Alex Mercer (Growth)',
     auditStatus: 'Verified',
   },
@@ -129,18 +143,155 @@ const RECENT_ADJUSTMENTS: FeeAdjustmentEvent[] = [
     adjustmentBadgeStyle: 'bg-amber-50 text-amber-700',
     priorRate: '15.0% + $0.40',
     newRate: '12.0% + $0.30',
+    effectivePeriod: '60 Days Grace Window',
+    reason: 'Temporary inventory supply chain disruption waiver approved by auto compliance.',
     authorizedBy: 'System (Auto Extension)',
     auditStatus: 'System Audit',
+  },
+  {
+    id: 'adj-4',
+    timestamp: 'Oct 18, 11:20 UTC',
+    merchantName: 'Vendora Soundwave',
+    adjustmentType: 'Strategic Category Override',
+    adjustmentBadgeStyle: 'bg-emerald-50 text-emerald-700',
+    priorRate: '12.0% + $0.30',
+    newRate: '8.0% + $0.30',
+    effectivePeriod: 'Ongoing Evergreen',
+    reason: 'High volume audio electronics catalog rate alignment.',
+    authorizedBy: 'David Vance (Platform Lead)',
+    auditStatus: 'Verified',
+  },
+  {
+    id: 'adj-5',
+    timestamp: 'Oct 15, 16:45 UTC',
+    merchantName: 'Aura Minimalist Wear',
+    adjustmentType: 'Volume Tier Incentive',
+    adjustmentBadgeStyle: 'bg-purple-50 text-purple-700',
+    priorRate: '15.0% + $0.40',
+    newRate: '9.5% + $0.30',
+    effectivePeriod: 'Quarterly Review (Q4)',
+    reason: 'Crossed $75,000 GMV hurdle 2 consecutive quarters.',
+    authorizedBy: 'Finance Committee',
+    auditStatus: 'Verified',
+  },
+  {
+    id: 'adj-6',
+    timestamp: 'Oct 10, 08:30 UTC',
+    merchantName: 'Quantum Craft Tools',
+    adjustmentType: 'Hardware Special Rebate',
+    adjustmentBadgeStyle: 'bg-slate-100 text-slate-700',
+    priorRate: '14.0% + $0.35',
+    newRate: '10.0% + $0.30',
+    effectivePeriod: 'Semi-Annual (Exp. Apr 2027)',
+    reason: 'Co-marketing partnership incentive for precision tool category.',
+    authorizedBy: 'Sarah Chen (VP Commercial)',
+    auditStatus: 'Verified',
   },
 ];
 
 export const AdminCommissionPage: React.FC = () => {
+  const [overrides, setOverrides] = useState<CategoryOverride[]>(CATEGORY_OVERRIDES);
   const [categorySearch, setCategorySearch] = useState('');
+  const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newSubtext, setNewSubtext] = useState('');
+  const [newOverrideRate, setNewOverrideRate] = useState('8.0%');
+  const [newFixedFee, setNewFixedFee] = useState('$0.30');
 
-  const filteredOverrides = CATEGORY_OVERRIDES.filter((cat) =>
-    cat.categoryName.toLowerCase().includes(categorySearch.toLowerCase()) ||
-    cat.subtext.toLowerCase().includes(categorySearch.toLowerCase())
+  const [isTierModalOpen, setIsTierModalOpen] = useState(false);
+  const [tierToEdit, setTierToEdit] = useState<{
+    tierName: string;
+    description: string;
+    takeRate: string;
+    fixedFee: string;
+  } | null>(null);
+
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active'>('all');
+
+  const filteredOverrides = overrides.filter((cat) => {
+    const matchesSearch =
+      cat.categoryName.toLowerCase().includes(categorySearch.toLowerCase()) ||
+      cat.subtext.toLowerCase().includes(categorySearch.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || cat.status === 'Active';
+    return matchesSearch && matchesStatus;
+  });
+
+  const categoriesPerPage = 3;
+  const totalCategoryPages = Math.ceil(filteredOverrides.length / categoriesPerPage) || 1;
+  const paginatedOverrides = filteredOverrides.slice(
+    (categoryPage - 1) * categoriesPerPage,
+    categoryPage * categoriesPerPage
   );
+
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('All');
+
+  const filteredHistory = RECENT_ADJUSTMENTS.filter((adj) => {
+    const matchesSearch =
+      adj.merchantName.toLowerCase().includes(historySearch.toLowerCase()) ||
+      adj.authorizedBy.toLowerCase().includes(historySearch.toLowerCase()) ||
+      adj.reason.toLowerCase().includes(historySearch.toLowerCase());
+    const matchesType =
+      historyTypeFilter === 'All' ||
+      adj.adjustmentType.toLowerCase().includes(historyTypeFilter.toLowerCase());
+    return matchesSearch && matchesType;
+  });
+
+  const handleExportAdjustmentHistoryCsv = () => {
+    exportToCsv({
+      filename: `vendora-fee-adjustment-history-${new Date().toISOString().slice(0, 10)}.csv`,
+      columns: [
+        { header: 'Event ID', key: 'id' },
+        { header: 'Timestamp', key: 'timestamp' },
+        { header: 'Merchant', key: 'merchantName' },
+        { header: 'Adjustment Type', key: 'adjustmentType' },
+        { header: 'Prior Rate', key: 'priorRate' },
+        { header: 'New Rate', key: 'newRate' },
+        { header: 'Effective Period', key: 'effectivePeriod' },
+        { header: 'Reason & Scope', key: 'reason' },
+        { header: 'Authorized By', key: 'authorizedBy' },
+        { header: 'Audit Status', key: 'auditStatus' },
+      ],
+      data: filteredHistory,
+    });
+  };
+
+  const handleCreateRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const newRule: CategoryOverride = {
+      id: `cat-${Date.now()}`,
+      categoryName: newCatName.trim(),
+      subtext: newSubtext.trim() || 'Custom override',
+      icon: Laptop,
+      baseTierFee: '12.0%',
+      categoryOverride: newOverrideRate.endsWith('%') ? newOverrideRate : `${newOverrideRate}%`,
+      fixedOrderFee: newFixedFee.startsWith('$') ? newFixedFee : `$${newFixedFee}`,
+      merchantsCount: 1,
+      status: 'Active',
+    };
+    setOverrides([newRule, ...overrides]);
+    setNewCatName('');
+    setNewSubtext('');
+    setIsRuleModalOpen(false);
+  };
+
+  const handleExportLedger = () => {
+    exportToCsv({
+      filename: `marketplace-commission-ledger-${new Date().toISOString().slice(0, 10)}.csv`,
+      columns: [
+        { header: 'Category Name', key: 'categoryName' },
+        { header: 'Base Tier Fee', key: 'baseTierFee' },
+        { header: 'Category Override', key: 'categoryOverride' },
+        { header: 'Fixed Order Fee', key: 'fixedOrderFee' },
+        { header: 'Active Merchants', key: 'merchantsCount' },
+        { header: 'Rule Status', key: 'status' },
+      ],
+      data: filteredOverrides,
+    });
+  };
 
   return (
     <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
@@ -161,11 +312,19 @@ export const AdminCommissionPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2.5">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsHistoryModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
+            >
               <Clock className="h-4 w-4 text-slate-500" />
               Fee Adjustment History
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsRuleModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
+            >
               <Plus className="h-4 w-4" />
               Create Commission Rule
             </button>
@@ -250,7 +409,18 @@ export const AdminCommissionPage: React.FC = () => {
                 Automated bracket assignments computed on rolling 30-day gross merchandise volume.
               </p>
             </div>
-            <button className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900">
+            <button
+              onClick={() => {
+                setTierToEdit({
+                  tierName: 'Tier 1: High Volume',
+                  description: 'Sellers with GMV exceeding $50k/month',
+                  takeRate: '8.5%',
+                  fixedFee: '$0.30',
+                });
+                setIsTierModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
+            >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Edit tier logic
             </button>
@@ -285,7 +455,21 @@ export const AdminCommissionPage: React.FC = () => {
                   <Check className="h-3.5 w-3.5" />
                   Auto-qualified monthly
                 </span>
-                <button className="font-bold text-slate-900 hover:underline">Configure</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTierToEdit({
+                      tierName: 'Tier 1: High Volume',
+                      description: 'Sellers with GMV exceeding $50k/month',
+                      takeRate: '8.5%',
+                      fixedFee: '$0.30',
+                    });
+                    setIsTierModalOpen(true);
+                  }}
+                  className="font-bold text-slate-900 hover:underline cursor-pointer"
+                >
+                  Configure
+                </button>
               </div>
             </div>
 
@@ -317,7 +501,21 @@ export const AdminCommissionPage: React.FC = () => {
                   <Zap className="h-3.5 w-3.5 text-amber-500" />
                   Standard qualification
                 </span>
-                <button className="font-bold text-slate-900 hover:underline">Configure</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTierToEdit({
+                      tierName: 'Tier 2: Standard Growth',
+                      description: 'Sellers with GMV between $10k - $50k/mo',
+                      takeRate: '12.0%',
+                      fixedFee: '$0.30',
+                    });
+                    setIsTierModalOpen(true);
+                  }}
+                  className="font-bold text-slate-900 hover:underline cursor-pointer"
+                >
+                  Configure
+                </button>
               </div>
             </div>
 
@@ -349,7 +547,21 @@ export const AdminCommissionPage: React.FC = () => {
                   <Info className="h-3.5 w-3.5 text-slate-400" />
                   Standard gateway charge
                 </span>
-                <button className="font-bold text-slate-900 hover:underline">Configure</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTierToEdit({
+                      tierName: 'Tier 3: Starter & Launch',
+                      description: 'Initial onboarding tier under $10k/month',
+                      takeRate: '15.0%',
+                      fixedFee: '$0.40',
+                    });
+                    setIsTierModalOpen(true);
+                  }}
+                  className="font-bold text-slate-900 hover:underline cursor-pointer"
+                >
+                  Configure
+                </button>
               </div>
             </div>
           </div>
@@ -373,14 +585,25 @@ export const AdminCommissionPage: React.FC = () => {
                   <input
                     type="text"
                     value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
+                    onChange={(e) => { setCategorySearch(e.target.value); setCategoryPage(1); }}
                     placeholder="Filter categories..."
                     className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-1.5 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
                   />
                 </div>
-                <button className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter((prev) => (prev === 'all' ? 'active' : 'all'));
+                    setCategoryPage(1);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-2xs cursor-pointer transition-colors ${
+                    statusFilter === 'active'
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
                   <Filter className="h-3 w-3 text-slate-500" />
-                  Filter
+                  <span>{statusFilter === 'active' ? 'Active Only' : 'Filter All'}</span>
                 </button>
               </div>
 
@@ -397,7 +620,7 @@ export const AdminCommissionPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredOverrides.map((cat) => {
+                    {paginatedOverrides.map((cat) => {
                       const Icon = cat.icon;
                       return (
                         <tr key={cat.id} className="hover:bg-slate-50/70 transition-colors">
@@ -443,18 +666,39 @@ export const AdminCommissionPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500">
-                <span>Showing 4 of 18 configured category rules</span>
+                <span>
+                  Showing {filteredOverrides.length === 0 ? 0 : (categoryPage - 1) * categoriesPerPage + 1} to{' '}
+                  {Math.min(categoryPage * categoriesPerPage, filteredOverrides.length)} of {filteredOverrides.length} rules
+                </span>
                 <div className="flex items-center gap-1">
-                  <button className="h-6 w-6 rounded border border-slate-200 bg-white text-center text-slate-500 hover:bg-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryPage((p) => Math.max(1, p - 1))}
+                    disabled={categoryPage === 1}
+                    className="h-6 w-6 rounded border border-slate-200 bg-white text-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                  >
                     &lt;
                   </button>
-                  <button className="h-6 w-6 rounded bg-slate-900 text-center font-bold text-white">
-                    1
-                  </button>
-                  <button className="h-6 w-6 rounded border border-slate-200 bg-white text-center font-semibold text-slate-600 hover:bg-slate-50">
-                    2
-                  </button>
-                  <button className="h-6 w-6 rounded border border-slate-200 bg-white text-center text-slate-500 hover:bg-slate-50">
+                  {Array.from({ length: totalCategoryPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCategoryPage(page)}
+                      className={`h-6 w-6 rounded text-center text-xs font-bold transition-colors cursor-pointer ${
+                        categoryPage === page
+                          ? 'bg-slate-900 text-white'
+                          : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCategoryPage((p) => Math.min(totalCategoryPages, p + 1))}
+                    disabled={categoryPage === totalCategoryPages || totalCategoryPages === 0}
+                    className="h-6 w-6 rounded border border-slate-200 bg-white text-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                  >
                     &gt;
                   </button>
                 </div>
@@ -515,7 +759,11 @@ export const AdminCommissionPage: React.FC = () => {
                 </div>
               </div>
 
-              <button className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors">
+              <button
+                type="button"
+                onClick={handleExportLedger}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+              >
                 <Download className="h-3.5 w-3.5 text-slate-500" />
                 Download Ledger Report
               </button>
@@ -534,7 +782,11 @@ export const AdminCommissionPage: React.FC = () => {
                 Audit trail of manual overrides, customized enterprise contracts, and temporary promotional fee waivers.
               </p>
             </div>
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={() => setIsHistoryModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
               <Calendar className="h-3.5 w-3.5 text-slate-500" />
               All Events
             </button>
@@ -592,6 +844,340 @@ export const AdminCommissionPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Create Commission Rule Modal */}
+        <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-black text-slate-900">
+                Create Category Commission Rule
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Set category-specific override take rates and fixed transaction fees for marketplace merchants.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleCreateRule} className="space-y-3 py-2 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Category Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="e.g. Home & Living"
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Subtext / Scope</label>
+                <input
+                  type="text"
+                  value={newSubtext}
+                  onChange={(e) => setNewSubtext(e.target.value)}
+                  placeholder="e.g. Furniture and artisan decor"
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Take Rate (%)</label>
+                  <input
+                    type="text"
+                    required
+                    value={newOverrideRate}
+                    onChange={(e) => setNewOverrideRate(e.target.value)}
+                    placeholder="8.5%"
+                    className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Fixed Order Fee ($)</label>
+                  <input
+                    type="text"
+                    required
+                    value={newFixedFee}
+                    onChange={(e) => setNewFixedFee(e.target.value)}
+                    placeholder="$0.30"
+                    className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRuleModalOpen(false)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                >
+                  Create Rule
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Configure Volume Tier Modal */}
+        <Dialog open={isTierModalOpen} onOpenChange={setIsTierModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Crown className="h-5 w-5 text-amber-500" />
+                <span>Configure Volume Tier Bracket</span>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Adjust baseline commission take rate and fixed per-order fulfillment costs for {tierToEdit?.tierName || 'this tier'}.
+              </DialogDescription>
+            </DialogHeader>
+
+            {tierToEdit && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setIsTierModalOpen(false);
+                }}
+                className="space-y-3 py-2 text-xs"
+              >
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tier Name & Bracket</label>
+                  <input
+                    type="text"
+                    value={tierToEdit.tierName}
+                    onChange={(e) =>
+                      setTierToEdit((prev) => (prev ? { ...prev, tierName: e.target.value } : null))
+                    }
+                    className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Qualification Criteria</label>
+                  <input
+                    type="text"
+                    value={tierToEdit.description}
+                    onChange={(e) =>
+                      setTierToEdit((prev) => (prev ? { ...prev, description: e.target.value } : null))
+                    }
+                    className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Take Rate (%)</label>
+                    <input
+                      type="text"
+                      value={tierToEdit.takeRate}
+                      onChange={(e) =>
+                        setTierToEdit((prev) => (prev ? { ...prev, takeRate: e.target.value } : null))
+                      }
+                      className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Transaction Fee ($)</label>
+                    <input
+                      type="text"
+                      value={tierToEdit.fixedFee}
+                      onChange={(e) =>
+                        setTierToEdit((prev) => (prev ? { ...prev, fixedFee: e.target.value } : null))
+                      }
+                      className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsTierModalOpen(false)}
+                    className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                  >
+                    Save Tier Settings
+                  </button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Fee Adjustment History Audit Ledger Modal */}
+        <Dialog open={isHistoryModalOpen} onOpenChange={setIsHistoryModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-2xs">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-lg font-black text-slate-900">
+                      Fee Adjustment History &amp; Audit Ledger
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                      Comprehensive audit ledger of platform take rate exemptions, custom enterprise tiers, and promotional grants.
+                    </DialogDescription>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExportAdjustmentHistoryCsv}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer self-start sm:self-center"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Export History (CSV)
+                </button>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2 text-xs">
+              {/* Summary Stats Row */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Adjustments</span>
+                  <div className="mt-1 text-xl font-black text-slate-900">{RECENT_ADJUSTMENTS.length} Records</div>
+                  <span className="text-[11px] text-emerald-600 font-semibold">100% cryptographically audited</span>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active Custom Tiers</span>
+                  <div className="mt-1 text-xl font-black text-slate-900">4 Merchants</div>
+                  <span className="text-[11px] text-slate-500">Enterprise contracted</span>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">GMV Under Custom Fees</span>
+                  <div className="mt-1 text-xl font-black text-slate-900">$218,400</div>
+                  <span className="text-[11px] text-slate-500">Trailing 30-day volume</span>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    placeholder="Search by merchant, approver, or rationale memo..."
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-slate-900 focus:bg-white"
+                  />
+                </div>
+                <select
+                  value={historyTypeFilter}
+                  onChange={(e) => setHistoryTypeFilter(e.target.value)}
+                  className="admin-select text-xs font-medium text-slate-700 sm:w-56"
+                >
+                  <option value="All">All Adjustment Types</option>
+                  <option value="Enterprise">Enterprise Contract</option>
+                  <option value="Promotional">Promotional Launch</option>
+                  <option value="Grace">Tier Downgrade Grace</option>
+                  <option value="Strategic">Strategic Category Override</option>
+                  <option value="Volume">Volume Tier Incentive</option>
+                </select>
+              </div>
+
+              {/* Detailed Table */}
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th className="px-3.5 py-2.5">TIMESTAMP</th>
+                        <th className="px-3.5 py-2.5">MERCHANT</th>
+                        <th className="px-3.5 py-2.5">TYPE</th>
+                        <th className="px-3.5 py-2.5">RATE DELTA</th>
+                        <th className="px-3.5 py-2.5">DURATION</th>
+                        <th className="px-3.5 py-2.5">AUTHORIZED BY</th>
+                        <th className="px-3.5 py-2.5">RATIONALE / AUDIT MEMO</th>
+                        <th className="px-3.5 py-2.5">STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="px-3.5 py-2.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                            {item.timestamp}
+                          </td>
+                          <td className="px-3.5 py-2.5 font-bold text-slate-900 whitespace-nowrap">
+                            {item.merchantName}
+                          </td>
+                          <td className="px-3.5 py-2.5 whitespace-nowrap">
+                            <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${item.adjustmentBadgeStyle}`}>
+                              {item.adjustmentType}
+                            </span>
+                          </td>
+                          <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">
+                            <span className="text-slate-400 line-through mr-1.5">{item.priorRate}</span>
+                            <span className="font-bold text-slate-900">{item.newRate}</span>
+                          </td>
+                          <td className="px-3.5 py-2.5 text-slate-600 whitespace-nowrap">
+                            {item.effectivePeriod}
+                          </td>
+                          <td className="px-3.5 py-2.5 text-slate-700 whitespace-nowrap font-medium">
+                            {item.authorizedBy}
+                          </td>
+                          <td className="px-3.5 py-2.5 text-slate-500 max-w-xs text-[11px] leading-relaxed">
+                            {item.reason}
+                          </td>
+                          <td className="px-3.5 py-2.5 whitespace-nowrap">
+                            {item.auditStatus === 'Verified' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Verified
+                              </span>
+                            ) : (
+                              <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                System Audit
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-[11px] text-slate-500">
+                  Showing <strong>{filteredHistory.length}</strong> of {RECENT_ADJUSTMENTS.length} historical ledger entries
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportAdjustmentHistoryCsv}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Download className="h-3.5 w-3.5 text-slate-500" />
+                    Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryModalOpen(false)}
+                    className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </WorkspaceLayout>
   );

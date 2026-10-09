@@ -46,7 +46,7 @@ describe('Vendor Workspace Views & Components', () => {
 
       // 5. Low Stock (3)
       expect(screen.getByText('Low Stock')).toBeInTheDocument();
-      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1);
     });
 
     it('renders quick action buttons and recent orders list', () => {
@@ -60,8 +60,8 @@ describe('Vendor Workspace Views & Components', () => {
       expect(
         screen.getByRole('button', { name: /\+ Add New Product/i }),
       ).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Manage Orders/i })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Inventory/i })).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name: /Manage Orders/i }).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByRole('link', { name: /Inventory/i }).length).toBeGreaterThanOrEqual(1);
       expect(
         screen.getAllByRole('link', { name: /Public Storefront/i }).length,
       ).toBeGreaterThanOrEqual(1);

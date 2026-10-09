@@ -6,11 +6,14 @@ import type {
   SubOrder,
   CommissionConfig,
   Dispute,
+  DisputeStatus,
   CartItem,
   ShippingAddress,
   SubOrderStatus,
+  UserRole,
 } from '../../types/domain';
 import { SEED_CATEGORIES, SEED_PRODUCTS, SEED_VENDORS } from '../seed/catalog';
+import { SEED_SUB_ORDERS, SEED_ORDER_GROUPS, SEED_DISPUTES } from '../seed/operations';
 
 const STORAGE_PREFIX = 'vd:v1:';
 
@@ -55,7 +58,15 @@ export class MockDatabase {
 
   public hydrate(): void {
     // 1. Categories
-    this.categories = loadFromStorage('categories', [...SEED_CATEGORIES]);
+    const storedCategories = loadFromStorage<Category[]>('categories', [...SEED_CATEGORIES]);
+    this.categories = storedCategories.map((c) => {
+      const seed = SEED_CATEGORIES.find((s) => s.id === c.id);
+      return seed ? { ...c, image: seed.image } : c;
+    });
+    if (this.categories.length < SEED_CATEGORIES.length) {
+      this.categories = [...SEED_CATEGORIES];
+    }
+    saveToStorage('categories', this.categories);
 
     // 2. Vendors
     this.vendors = loadFromStorage('vendors', [...SEED_VENDORS]);
@@ -69,11 +80,11 @@ export class MockDatabase {
     }
 
     // 4. Orders & SubOrders
-    this.orderGroups = loadFromStorage('orders', []);
-    this.subOrders = loadFromStorage('suborders', []);
+    this.orderGroups = loadFromStorage('orders', structuredClone(SEED_ORDER_GROUPS));
+    this.subOrders = loadFromStorage('suborders', structuredClone(SEED_SUB_ORDERS));
 
     // 5. Disputes
-    this.disputes = loadFromStorage('disputes', []);
+    this.disputes = loadFromStorage('disputes', structuredClone(SEED_DISPUTES));
 
     // 6. Commission config
     this.commissionConfig = loadFromStorage('commission_config', this.commissionConfig);
@@ -94,9 +105,9 @@ export class MockDatabase {
     this.categories = [...SEED_CATEGORIES];
     this.vendors = [...SEED_VENDORS];
     this.products = [...SEED_PRODUCTS];
-    this.orderGroups = [];
-    this.subOrders = [];
-    this.disputes = [];
+    this.orderGroups = structuredClone(SEED_ORDER_GROUPS);
+    this.subOrders = structuredClone(SEED_SUB_ORDERS);
+    this.disputes = structuredClone(SEED_DISPUTES);
     this.commissionConfig = {
       globalDefaultRate: 0.1,
       categoryOverrides: { 'cat-digital': 0.15 },
@@ -248,6 +259,116 @@ export class MockDatabase {
 
     saveToStorage('suborders', this.subOrders);
     return subOrder;
+  }
+
+  // --- Rider Deliveries Console ---
+  public getRiderDeliveries(riderId?: string): SubOrder[] {
+    const targetRider = riderId || 'usr-rider-1';
+    return this.subOrders.filter(
+      (so) =>
+        so.type === 'physical' &&
+        (so.riderId === targetRider || !so.riderId || ['ready_for_pickup', 'shipped', 'out_for_delivery'].includes(so.status)),
+    );
+  }
+
+  public verifyRiderDelivery(
+    subOrderId: string,
+    code: string,
+  ): { success: boolean; message: string; subOrder?: SubOrder } {
+    const subOrder = this.subOrders.find((so) => so.id === subOrderId);
+    if (!subOrder) {
+      return { success: false, message: 'Sub-order not found' };
+    }
+
+    // Verify 4-digit code (or allow 1234/demo bypass)
+    const normalizedInput = code.trim();
+    const actualCode = subOrder.deliveryCode || '4829';
+
+    if (normalizedInput !== actualCode && normalizedInput !== '1234') {
+      return { success: false, message: 'Invalid delivery verification PIN' };
+    }
+
+    subOrder.status = 'delivered';
+    subOrder.history.push({
+      status: 'delivered',
+      timestamp: new Date().toISOString(),
+      actor: 'Rider',
+      note: 'Customer handover confirmed with 4-digit PIN verification',
+    });
+
+    saveToStorage('suborders', this.subOrders);
+    return { success: true, message: 'Handover verified and marked as delivered', subOrder };
+  }
+
+  // --- Support Disputes Console ---
+  public updateDisputeStatus(
+    disputeId: string,
+    status: DisputeStatus,
+    resolutionNote?: string,
+    resolutionAmount?: number,
+  ): Dispute {
+    const dispute = this.disputes.find((d) => d.id === disputeId);
+    if (!dispute) {
+      throw new Error(`Dispute ${disputeId} not found`);
+    }
+
+    dispute.status = status;
+    if (resolutionAmount !== undefined) {
+      dispute.resolutionAmount = resolutionAmount;
+    }
+    if (resolutionNote) {
+      dispute.resolutionNote = resolutionNote;
+      dispute.messages.push({
+        id: `msg-${Date.now()}`,
+        senderRole: 'support',
+        senderName: 'Platform Support',
+        content: `Resolution update: ${resolutionNote}`,
+        isInternalNote: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // If resolved with refund, also update the associated subOrder
+    if (status === 'resolved_refund' && dispute.subOrderId) {
+      const subOrder = this.subOrders.find((so) => so.id === dispute.subOrderId);
+      if (subOrder) {
+        subOrder.status = 'refunded';
+        subOrder.history.push({
+          status: 'refunded',
+          timestamp: new Date().toISOString(),
+          actor: 'Support Agent',
+          note: `Refund issued via Dispute ${disputeId}`,
+        });
+        saveToStorage('suborders', this.subOrders);
+      }
+    }
+
+    saveToStorage('disputes', this.disputes);
+    return dispute;
+  }
+
+  public addDisputeMessage(
+    disputeId: string,
+    message: {
+      senderRole: UserRole;
+      senderName: string;
+      content: string;
+      isInternalNote: boolean;
+    },
+  ): Dispute {
+    const dispute = this.disputes.find((d) => d.id === disputeId);
+    if (!dispute) {
+      throw new Error(`Dispute ${disputeId} not found`);
+    }
+
+    dispute.messages.push({
+      id: `msg-${Date.now()}`,
+      ...message,
+      timestamp: new Date().toISOString(),
+    });
+
+    saveToStorage('disputes', this.disputes);
+    return dispute;
   }
 }
 

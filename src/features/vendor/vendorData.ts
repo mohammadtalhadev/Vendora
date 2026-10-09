@@ -343,20 +343,18 @@ const BASELINE_VENDOR_PRODUCTS: Product[] = [
  * Uses structured deep clone to guarantee test isolation.
  */
 export function getVendorSubOrders(vendorId: string = 'vendor-tech-1'): SubOrder[] {
-  const existing = mockDb.subOrders.filter((so) => so.sellerId === vendorId);
-  if (existing.length > 0) {
-    return existing;
+  const hasBaseline = mockDb.subOrders.some((so) => so.id === 'sub-ord-2001');
+  if (!hasBaseline) {
+    const seeded: SubOrder[] = JSON.parse(JSON.stringify(BASELINE_VENDOR_SUB_ORDERS)).map(
+      (so: SubOrder) => ({
+        ...so,
+        sellerId: vendorId,
+      }),
+    );
+    mockDb.subOrders.push(...seeded);
   }
 
-  // Seed default orders with fresh clones
-  const seeded: SubOrder[] = JSON.parse(JSON.stringify(BASELINE_VENDOR_SUB_ORDERS)).map(
-    (so: SubOrder) => ({
-      ...so,
-      sellerId: vendorId,
-    }),
-  );
-  mockDb.subOrders.push(...seeded);
-  return seeded;
+  return mockDb.subOrders.filter((so) => so.sellerId === vendorId);
 }
 
 /**

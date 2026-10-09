@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ShoppingBag,
   Clock,
@@ -8,14 +9,11 @@ import {
   ChevronDown,
   Download,
   TrendingUp,
-  CheckCircle2,
-  PackageCheck,
-  ShieldAlert,
-  ArrowRight,
   ArrowUpDown,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { exportToCsv } from '../lib/export-csv';
 
 interface AdminOrder {
   id: string;
@@ -35,7 +33,7 @@ const ORDERS_LIST: AdminOrder[] = [
     orderNumber: 'ORD-98421',
     customerName: 'Sarah Jenkins',
     customerEmail: 'sarah.j@example.com',
-    vendorName: 'SoundWave Direct',
+    vendorName: 'Vendora Soundwave',
     itemsSummary: '2 items (Headphones, Cable)',
     amount: '$189.00',
     status: 'Confirmed',
@@ -101,7 +99,7 @@ const ORDERS_LIST: AdminOrder[] = [
     orderNumber: 'ORD-98415',
     customerName: 'Mia Patel',
     customerEmail: 'mia.patel@example.com',
-    vendorName: 'SoundWave Direct',
+    vendorName: 'Vendora Soundwave',
     itemsSummary: '1 item (Monitor Speakers)',
     amount: '$159.00',
     status: 'In Transit',
@@ -121,11 +119,14 @@ const ORDERS_LIST: AdminOrder[] = [
 ];
 
 export const AdminOrdersPage: React.FC = () => {
+  const [orders, setOrders] = useState<AdminOrder[]>(ORDERS_LIST);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
 
-  const filteredOrders = ORDERS_LIST.filter((o) => {
+  const filteredOrders = orders.filter((o) => {
     const matchesSearch =
       o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -133,6 +134,55 @@ export const AdminOrdersPage: React.FC = () => {
     const matchesStatus = statusFilter === 'All Statuses' || o.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleExportOrders = () => {
+    exportToCsv({
+      filename: `admin-marketplace-orders-${new Date().toISOString().slice(0, 10)}.csv`,
+      columns: [
+        { header: 'Order Number', key: 'orderNumber' },
+        { header: 'Date', key: 'date' },
+        { header: 'Customer', key: 'customerName' },
+        { header: 'Email', key: 'customerEmail' },
+        { header: 'Vendor', key: 'vendorName' },
+        { header: 'Items Summary', key: 'itemsSummary' },
+        { header: 'Amount', key: 'amount' },
+        { header: 'Status', key: 'status' },
+      ],
+      data: filteredOrders,
+    });
+  };
+
+  const handleAdvanceStatus = (id: string) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== id) return o;
+        const nextMap: Record<string, AdminOrder['status']> = {
+          Placed: 'Confirmed',
+          Confirmed: 'Packed',
+          Packed: 'Ready for Pickup',
+          'Ready for Pickup': 'In Transit',
+          'In Transit': 'Delivered',
+          Disputed: 'Delivered',
+          Delivered: 'Delivered',
+        };
+        return { ...o, status: nextMap[o.status] || 'Delivered' };
+      })
+    );
+  };
+
+  const handleBatchDeliver = () => {
+    if (selectedIds.length === 0) return;
+    setOrders((prev) =>
+      prev.map((o) => (selectedIds.includes(o.id) ? { ...o, status: 'Delivered' } : o))
+    );
+    setSelectedIds([]);
+  };
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredOrders.length) {
@@ -172,6 +222,7 @@ export const AdminOrdersPage: React.FC = () => {
 
           <button
             type="button"
+            onClick={handleExportOrders}
             className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-slate-800 transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
@@ -306,26 +357,34 @@ export const AdminOrdersPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none shadow-2xs cursor-pointer"
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="admin-select"
+            >
+              <option value="All Statuses">All Statuses</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Placed">Placed</option>
+              <option value="Ready for Pickup">Ready for Pickup</option>
+              <option value="In Transit">In Transit</option>
+              <option value="Packed">Packed</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Disputed">Disputed</option>
+            </select>
+
+            {selectedIds.length > 0 && (
+              <button
+                type="button"
+                onClick={handleBatchDeliver}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold shadow-2xs hover:bg-emerald-700 transition-colors"
               >
-                <option value="All Statuses">All Statuses</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Placed">Placed</option>
-                <option value="Ready for Pickup">Ready for Pickup</option>
-                <option value="In Transit">In Transit</option>
-                <option value="Packed">Packed</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Disputed">Disputed</option>
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
-            </div>
+                <span>Mark {selectedIds.length} Delivered</span>
+              </button>
+            )}
 
             <button
               type="button"
+              onClick={handleExportOrders}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
             >
               <Download className="h-3.5 w-3.5 text-slate-400" />
@@ -365,10 +424,11 @@ export const AdminOrdersPage: React.FC = () => {
                   <th className="py-3 px-4 text-right">AMOUNT</th>
                   <th className="py-3 px-4 text-center">STATUS</th>
                   <th className="py-3 px-4 text-right">DATE</th>
+                  <th className="py-3 px-4 text-center">ACTION</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((order) => {
+                {paginatedOrders.map((order) => {
                   const isSelected = selectedIds.includes(order.id);
                   return (
                     <tr
@@ -387,7 +447,12 @@ export const AdminOrdersPage: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 font-mono font-bold text-slate-900 text-xs">
-                        {order.orderNumber}
+                        <Link
+                          to={`/admin/orders/${order.orderNumber}`}
+                          className="hover:text-[#0071DC] hover:underline transition-colors"
+                        >
+                          {order.orderNumber}
+                        </Link>
                       </td>
 
                       <td className="py-3 px-4">
@@ -432,6 +497,17 @@ export const AdminOrdersPage: React.FC = () => {
                       <td className="py-3 px-4 text-right text-[11px] text-slate-500 font-medium">
                         {order.date}
                       </td>
+
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleAdvanceStatus(order.id)}
+                          className="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                          title="Advance Order Status"
+                        >
+                          {order.status === 'Delivered' ? 'Completed' : 'Advance'}
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -444,118 +520,57 @@ export const AdminOrdersPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span>Rows per page:</span>
               <div className="relative">
-                <select className="appearance-none rounded border border-slate-200 bg-white pl-2 pr-6 py-1 text-xs text-slate-700 shadow-2xs cursor-pointer">
-                  <option value="8">8</option>
-                  <option value="16">16</option>
-                  <option value="32">32</option>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="appearance-none rounded border border-slate-200 bg-white pl-2 pr-6 py-1 text-xs text-slate-700 shadow-2xs cursor-pointer"
+                >
+                  <option value={8}>8</option>
+                  <option value={16}>16</option>
+                  <option value={32}>32</option>
                 </select>
                 <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
               </div>
               <span className="ml-2">
-                Showing 1-{filteredOrders.length} of 68,420 orders total
+                Showing {filteredOrders.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
+                {Math.min(currentPage * itemsPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+                {filteredOrders.length !== orders.length && ` (filtered from ${orders.length})`}
               </span>
             </div>
 
             <div className="flex items-center gap-1 self-end sm:self-auto">
               <button
                 type="button"
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
-                disabled
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
               >
                 Previous
               </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                    currentPage === page
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
               <button
                 type="button"
-                className="rounded bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs"
-              >
-                1
-              </button>
-              <button
-                type="button"
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                2
-              </button>
-              <button
-                type="button"
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                3
-              </button>
-              <span className="px-1 text-slate-400">...</span>
-              <button
-                type="button"
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                855
-              </button>
-              <button
-                type="button"
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
               >
                 Next
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* =====================================================================
-            6. Bottom 3 Fulfillment SLA Cards
-            ===================================================================== */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <h3 className="text-sm font-bold text-slate-900">Delivery SLA Compliance</h3>
-              </div>
-              <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-                98.8% of multi-vendor sub-orders were confirmed and dispatched within their contractual window this billing cycle.
-              </p>
-            </div>
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="font-semibold text-emerald-700">98.8% On-Time</span>
-              <button type="button" className="font-semibold text-slate-900 hover:underline flex items-center gap-1">
-                <span>View Logistics SLA</span>
-                <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <PackageCheck className="h-4 w-4 text-slate-900" />
-                <h3 className="text-sm font-bold text-slate-900">Package Splitting Ratio</h3>
-              </div>
-              <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-                Average checkout basket contains 1.32 vendor sub-orders with independent tracking and settlement reconciliation.
-              </p>
-            </div>
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500 font-medium">1.32 pkgs / checkout</span>
-              <button type="button" className="font-semibold text-slate-900 hover:underline flex items-center gap-1">
-                <span>Split Analytics</span>
-                <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-amber-600" />
-                <h3 className="text-sm font-bold text-slate-900">Escrow Release Safety</h3>
-              </div>
-              <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-                Automated 7-day escrow hold safely prevents fraudulent payouts until delivery confirmation and dispute window expiry.
-              </p>
-            </div>
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-900">7-Day Escrow Active</span>
-              <button type="button" className="font-semibold text-slate-900 hover:underline flex items-center gap-1">
-                <span>Escrow Policies</span>
-                <ArrowRight className="h-3 w-3" />
               </button>
             </div>
           </div>

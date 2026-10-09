@@ -6,6 +6,7 @@ import './index.css';
 import { router } from './app/router';
 import { enableMocking } from './mocks/browser';
 import { SmoothScrollProvider } from './components/SmoothScrollProvider';
+import { GlobalCarouselArrows } from './components/GlobalCarouselArrows';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +22,7 @@ enableMocking().then(() => {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <SmoothScrollProvider>
+          <GlobalCarouselArrows />
           <RouterProvider router={router} />
         </SmoothScrollProvider>
       </QueryClientProvider>

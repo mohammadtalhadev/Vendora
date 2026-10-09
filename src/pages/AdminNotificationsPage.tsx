@@ -19,6 +19,13 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog';
 
 interface NotificationAlert {
   id: string;
@@ -125,25 +132,120 @@ const INITIAL_ALERTS: NotificationAlert[] = [
 ];
 
 export const AdminNotificationsPage: React.FC = () => {
+  const [alerts, setAlerts] = useState<NotificationAlert[]>(INITIAL_ALERTS);
   const [activeTab, setActiveTab] = useState<
     'all' | 'broadcast' | 'compliance' | 'security' | 'automated'
   >('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string | null>(null);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastTarget, setBroadcastTarget] = useState('ALL SELLERS');
+  const [broadcastBody, setBroadcastBody] = useState('');
 
   // Trigger Toggles state
-  const [triggers, setTriggers] = useState({
-    kyc: true,
-    dispute: true,
-    stock: true,
-    payout: true,
-  });
+  const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
+  const [newTriggerTitle, setNewTriggerTitle] = useState('');
+  const [newTriggerDesc, setNewTriggerDesc] = useState('');
 
-  const toggleTrigger = (key: keyof typeof triggers) => {
-    setTriggers((prev) => ({ ...prev, [key]: !prev[key] }));
+  const [triggerList, setTriggerList] = useState([
+    {
+      id: 'kyc',
+      title: 'Real-time KYC verification failures',
+      description: 'Triggers priority email to compliance officer and SMS to merchant.',
+      enabled: true,
+    },
+    {
+      id: 'dispute',
+      title: 'High dispute velocity threshold (>2%)',
+      description: 'Places vendor payouts on provisional hold and notifies risk team.',
+      enabled: true,
+    },
+    {
+      id: 'stock',
+      title: 'Low vendor stock alerts',
+      description: 'Sends automated re-order push notifications when fast-moving inventory <5 units.',
+      enabled: true,
+    },
+    {
+      id: 'payout',
+      title: 'Settlement payout failure alerts',
+      description: 'Immediate webhook notification and admin escalation on banking transfer returns.',
+      enabled: true,
+    },
+  ]);
+
+  const toggleTrigger = (id: string) => {
+    setTriggerList((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, enabled: !t.enabled } : t))
+    );
   };
 
-  const filteredAlerts = INITIAL_ALERTS.filter((alert) => {
+  const handleAddTrigger = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTriggerTitle.trim()) return;
+    setTriggerList((prev) => [
+      ...prev,
+      {
+        id: `trig-${Date.now()}`,
+        title: newTriggerTitle.trim(),
+        description: newTriggerDesc.trim() || 'Custom automated webhook and admin alert trigger.',
+        enabled: true,
+      },
+    ]);
+    setNewTriggerTitle('');
+    setNewTriggerDesc('');
+    setIsTriggerModalOpen(false);
+  };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
+
+  const handleDismissAlert = (id: string) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleAcknowledgeAlert = (id: string) => {
+    setAlerts((prev) =>
+      prev.map((a) => {
+        if (a.id !== id) return a;
+        return {
+          ...a,
+          statusBadge: 'Acknowledged',
+          statusBadgeStyle: 'bg-emerald-100 text-emerald-800',
+          secondaryAction: undefined,
+          primaryAction: undefined,
+        };
+      })
+    );
+  };
+
+  const handleSendBroadcast = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) return;
+    const newBroadcast: NotificationAlert = {
+      id: `alt-${Date.now()}`,
+      borderColor: 'border-l-blue-500',
+      iconBg: 'bg-blue-50',
+      iconColor: 'text-blue-600',
+      icon: Radio,
+      title: broadcastTitle.trim(),
+      teamBadge: broadcastTarget,
+      statusBadge: 'Broadcast',
+      statusBadgeStyle: 'bg-blue-100 text-blue-800',
+      timestamp: 'Just now',
+      description: broadcastBody.trim(),
+      meta: `In-App Modal + Email • Target: ${broadcastTarget}`,
+      primaryAction: 'Acknowledge',
+      secondaryAction: 'Dismiss',
+    };
+    setAlerts([newBroadcast, ...alerts]);
+    setBroadcastTitle('');
+    setBroadcastBody('');
+    setIsBroadcastModalOpen(false);
+  };
+
+  const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch =
       alert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       alert.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -159,6 +261,12 @@ export const AdminNotificationsPage: React.FC = () => {
 
     return true;
   });
+
+  const totalPages = Math.ceil(filteredAlerts.length / itemsPerPage) || 1;
+  const paginatedAlerts = filteredAlerts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
@@ -182,11 +290,19 @@ export const AdminNotificationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors">
+            <button
+              type="button"
+              onClick={() => setActiveTab('security')}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
+            >
               <SlidersHorizontal className="h-4 w-4 text-slate-500" />
-              Notification Settings
+              Security Alerts
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsBroadcastModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer"
+            >
               <Plus className="h-4 w-4" />
               Send Broadcast Message
             </button>
@@ -328,7 +444,19 @@ export const AdminNotificationsPage: React.FC = () => {
 
             {/* Sub-bar: Search & Severity filters */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-              <button className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-semibold self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setAlerts((prev) =>
+                    prev.map((a) => ({
+                      ...a,
+                      statusBadge: 'Acknowledged',
+                      statusBadgeStyle: 'bg-emerald-100 text-emerald-800',
+                    }))
+                  );
+                }}
+                className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-semibold self-start sm:self-auto cursor-pointer"
+              >
                 <Check className="h-3.5 w-3.5 text-slate-500" />
                 <span>Mark all as read</span>
               </button>
@@ -381,7 +509,7 @@ export const AdminNotificationsPage: React.FC = () => {
 
             {/* List of Alerts */}
             <div className="space-y-3">
-              {filteredAlerts.map((alert) => {
+              {paginatedAlerts.map((alert) => {
                 const Icon = alert.icon;
                 return (
                   <div
@@ -422,13 +550,19 @@ export const AdminNotificationsPage: React.FC = () => {
 
                           <div className="flex items-center gap-2">
                             {alert.secondaryAction && (
-                              <button className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                              <button
+                                type="button"
+                                onClick={() => handleDismissAlert(alert.id)}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                              >
                                 {alert.secondaryAction}
                               </button>
                             )}
                             {alert.primaryAction && (
                               <button
-                                className={`rounded-lg px-3.5 py-1 text-xs font-semibold ${
+                                type="button"
+                                onClick={() => handleAcknowledgeAlert(alert.id)}
+                                className={`rounded-lg px-3.5 py-1 text-xs font-semibold cursor-pointer ${
                                   alert.primaryAction === 'View Case' ||
                                   alert.primaryAction === 'Acknowledge' ||
                                   alert.primaryAction === 'Inspect SKUs'
@@ -450,12 +584,26 @@ export const AdminNotificationsPage: React.FC = () => {
 
             {/* Pagination */}
             <div className="flex items-center justify-between pt-2 text-xs text-slate-500">
-              <span>Showing 1-5 of 148,820 logged events</span>
+              <span>
+                Showing {filteredAlerts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
+                {Math.min(currentPage * itemsPerPage, filteredAlerts.length)} of {filteredAlerts.length} logged events
+              </span>
               <div className="flex items-center gap-2">
-                <button className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
                   Previous
                 </button>
-                <button className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50">
+                <span className="font-medium text-slate-600">Page {currentPage} of {totalPages}</span>
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
                   Next
                 </button>
               </div>
@@ -480,104 +628,38 @@ export const AdminNotificationsPage: React.FC = () => {
               </p>
 
               <div className="space-y-3.5 divide-y divide-slate-100">
-                {/* Trigger 1 */}
-                <div className="pt-2 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-bold text-slate-800 text-xs">
-                      Instant KYC submission alerts
+                {triggerList.map((t) => (
+                  <div key={t.id} className="pt-2 flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-bold text-slate-800 text-xs">
+                        {t.title}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {t.description}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Notifies Merchant Ops team instantly when an applicant uploads proof of identity.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => toggleTrigger('kyc')}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      triggers.kyc ? 'bg-slate-900' : 'bg-slate-200'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        triggers.kyc ? 'translate-x-4' : 'translate-x-0'
+                    <button
+                      type="button"
+                      onClick={() => toggleTrigger(t.id)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        t.enabled ? 'bg-slate-900' : 'bg-slate-200'
                       }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Trigger 2 */}
-                <div className="pt-3 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-bold text-slate-800 text-xs">
-                      Dispute escalation &gt;48h SLA
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Triggers urgent pager alert when a contested charge is unreviewed after 48h.
-                    </p>
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          t.enabled ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => toggleTrigger('dispute')}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      triggers.dispute ? 'bg-slate-900' : 'bg-slate-200'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        triggers.dispute ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Trigger 3 */}
-                <div className="pt-3 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-bold text-slate-800 text-xs">
-                      Low vendor stock alerts
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Sends automated re-order push notifications when fast-moving inventory &lt;5 units.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => toggleTrigger('stock')}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      triggers.stock ? 'bg-slate-900' : 'bg-slate-200'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        triggers.stock ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Trigger 4 */}
-                <div className="pt-3 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-bold text-slate-800 text-xs">
-                      Settlement payout failure alerts
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Immediate webhook notification and admin escalation on banking transfer returns.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => toggleTrigger('payout')}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      triggers.payout ? 'bg-slate-900' : 'bg-slate-200'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        triggers.payout ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
+                ))}
               </div>
 
-              <button className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors">
+              <button
+                type="button"
+                onClick={() => setIsTriggerModalOpen(true)}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+              >
                 <Plus className="h-3.5 w-3.5" />
                 Configure Custom Trigger
               </button>
@@ -640,6 +722,129 @@ export const AdminNotificationsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Send Broadcast Modal */}
+        <Dialog open={isBroadcastModalOpen} onOpenChange={setIsBroadcastModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-black text-slate-900">
+                Send Platform Broadcast
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Dispatch platform announcements, emergency operational updates, or holiday notices across the marketplace.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleSendBroadcast} className="space-y-3 py-2 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Target Audience</label>
+                <select
+                  value={broadcastTarget}
+                  onChange={(e) => setBroadcastTarget(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                >
+                  <option value="ALL SELLERS">All Verified Sellers</option>
+                  <option value="MERCHANT OPS">Merchant Operations</option>
+                  <option value="RISK TEAM">Risk &amp; Trust Team</option>
+                  <option value="ALL USERS">All Marketplace Users</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Broadcast Title</label>
+                <input
+                  type="text"
+                  required
+                  value={broadcastTitle}
+                  onChange={(e) => setBroadcastTitle(e.target.value)}
+                  placeholder="e.g. Scheduled Gateway Maintenance Notice"
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Message Body</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={broadcastBody}
+                  onChange={(e) => setBroadcastBody(e.target.value)}
+                  placeholder="Enter detailed broadcast instructions and affected services..."
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsBroadcastModalOpen(false)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                >
+                  Broadcast Now
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Custom Trigger Modal */}
+        <Dialog open={isTriggerModalOpen} onOpenChange={setIsTriggerModalOpen}>
+          <DialogContent className="max-w-md bg-white p-6 rounded-2xl shadow-xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-slate-900">Configure Event Trigger</DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Create a real-time event hook that triggers webhook notifications or alerts.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleAddTrigger} className="space-y-4 pt-2 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Trigger Event Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newTriggerTitle}
+                  onChange={(e) => setNewTriggerTitle(e.target.value)}
+                  placeholder="e.g. Chargeback rate &gt;1.5% in 24 hours"
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Action Description</label>
+                <textarea
+                  rows={3}
+                  value={newTriggerDesc}
+                  onChange={(e) => setNewTriggerDesc(e.target.value)}
+                  placeholder="Describe the automated action taken when this trigger fires..."
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsTriggerModalOpen(false)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                >
+                  Save Trigger
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </WorkspaceLayout>
   );

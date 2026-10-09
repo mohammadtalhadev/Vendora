@@ -10,7 +10,6 @@ export async function enableMocking(): Promise<void> {
 
   try {
     const registration = await worker.start({
-      onUnhandledFrame: 'bypass',
       serviceWorker: {
         url: '/mockServiceWorker.js',
       },

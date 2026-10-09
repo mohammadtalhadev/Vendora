@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   CheckCheck,
@@ -10,6 +11,10 @@ import {
   CheckCircle2,
   Package,
   MoreVertical,
+  X,
+  FileText,
+  Archive,
+  MailCheck,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
@@ -39,8 +44,19 @@ interface ChatThread {
 }
 
 export const VendorMessagesPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
+  const [composeCustomer, setComposeCustomer] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'unread' | 'orders'>('all');
   const [selectedThreadId, setSelectedThreadId] = useState('t1');
@@ -48,6 +64,9 @@ export const VendorMessagesPage: React.FC = () => {
     'Yes, absolutely! The active noise cancellation and Ambient Sound mode both function completely in wired mode as long as the headphones are powered ON.'
   );
   const [isInternalNote, setIsInternalNote] = useState(false);
+  const [threadMenuOpen, setThreadMenuOpen] = useState(false);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [threads, setThreads] = useState<ChatThread[]>([
     {
@@ -114,12 +133,99 @@ export const VendorMessagesPage: React.FC = () => {
     },
   ]);
 
+  const [threadMessages, setThreadMessages] = useState<Record<string, Array<{ id: string; sender: 'buyer' | 'vendor'; text: string; time: string; isInternal?: boolean }>>>({
+    t1: [
+      {
+        id: 'm1',
+        sender: 'buyer',
+        text: 'Hi Nova Electronics Support Team! I just purchased the Sony WH-1000XM5 wireless headphones under Order #ORD-9819. Could you confirm whether the provided USB-C audio interconnect supports lossless transmission directly with the 2023 MacBook Pro DAC, or if I need to source a secondary 3.5mm-to-USB-C adapter?',
+        time: '16:38 CET • Web Portal',
+      },
+    ],
+    t2: [
+      {
+        id: 'm2',
+        sender: 'buyer',
+        text: 'Could you verify whether the express carrier will require a physical signature upon delivery?',
+        time: '14:20 CET',
+      },
+    ],
+    t3: [
+      {
+        id: 'm3',
+        sender: 'buyer',
+        text: 'I dropped off the parcel at the depot yesterday, tracking code was scanned this morning. Please restock.',
+        time: '12:05 CET',
+      },
+    ],
+    t4: [
+      {
+        id: 'm4',
+        sender: 'buyer',
+        text: 'Does the silver variant come with the matching silver memory foam cushions or black ones?',
+        time: '11:15 CET',
+      },
+    ],
+  });
+
   const activeThread = threads.find((t) => t.id === selectedThreadId) || threads[0];
+  const currentMessages = threadMessages[selectedThreadId] || [];
 
   const handleSendMessage = () => {
-    if (!replyText.trim()) return;
-    alert(`Reply sent to ${activeThread.buyerName}!`);
+    const textToSend = replyText.trim() + (attachmentName ? `\n📎 [Attachment: ${attachmentName}]` : '');
+    if (!textToSend.trim()) return;
+    const newMsg = {
+      id: `m-${Date.now()}`,
+      sender: 'vendor' as const,
+      text: textToSend,
+      time: 'Just now • Verified Reply',
+      isInternal: isInternalNote,
+    };
+    setThreadMessages((prev) => ({
+      ...prev,
+      [selectedThreadId]: [...(prev[selectedThreadId] || []), newMsg],
+    }));
+    setThreads((prev) =>
+      prev.map((t) => (t.id === selectedThreadId ? { ...t, unread: false, preview: textToSend } : t))
+    );
     setReplyText('');
+    setAttachmentName(null);
+  };
+
+  const handleMarkThreadUnread = () => {
+    setThreads((prev) =>
+      prev.map((t) => (t.id === selectedThreadId ? { ...t, unread: true } : t))
+    );
+    setThreadMenuOpen(false);
+    showToast('Conversation marked as unread');
+  };
+
+  const handleExportTranscript = () => {
+    const msgs = threadMessages[selectedThreadId] || [];
+    const transcriptText = msgs
+      .map((m) => `[${m.time}] ${m.sender.toUpperCase()}: ${m.text}`)
+      .join('\n\n');
+    const blob = new Blob([transcriptText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transcript-${selectedThreadId}-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setThreadMenuOpen(false);
+    showToast('Transcript exported successfully');
+  };
+
+  const handleArchiveThread = () => {
+    setThreads((prev) => prev.filter((t) => t.id !== selectedThreadId));
+    if (threads.length > 1) {
+      const remaining = threads.filter((t) => t.id !== selectedThreadId);
+      if (remaining.length > 0) {
+        setSelectedThreadId(remaining[0].id);
+      }
+    }
+    setThreadMenuOpen(false);
+    showToast('Conversation archived');
   };
 
   const handleApplyMacro = (text: string) => {
@@ -416,9 +522,41 @@ export const VendorMessagesPage: React.FC = () => {
                   <Clock className="h-3 w-3" />
                   Reply within 42m to maintain 99% SLA
                 </span>
-                <button className="text-slate-400 hover:text-slate-600 p-1">
-                  <MoreVertical className="h-4 w-4" />
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setThreadMenuOpen((prev) => !prev)}
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors"
+                    title="Conversation options"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                  {threadMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg z-20 text-xs text-slate-700 animate-in fade-in zoom-in-95 duration-100">
+                      <button
+                        onClick={handleMarkThreadUnread}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
+                      >
+                        <MailCheck className="h-3.5 w-3.5 text-slate-500" />
+                        <span>Mark as Unread</span>
+                      </button>
+                      <button
+                        onClick={handleExportTranscript}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-slate-500" />
+                        <span>Export Transcript</span>
+                      </button>
+                      <div className="my-1 border-t border-slate-100" />
+                      <button
+                        onClick={handleArchiveThread}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-rose-600 hover:bg-rose-50 transition-colors"
+                      >
+                        <Archive className="h-3.5 w-3.5 text-rose-500" />
+                        <span>Archive Conversation</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -426,32 +564,56 @@ export const VendorMessagesPage: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
               <div className="text-center">
                 <span className="rounded-full bg-white border border-slate-200 px-3 py-1 text-[10px] font-bold text-slate-400 shadow-2xs">
-                  Today, October 24
+                  Active Conversation
                 </span>
               </div>
 
-              {/* Inbound message */}
-              <div className="flex items-start gap-2.5 max-w-lg">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white font-bold text-[10px]">
-                  {activeThread.avatarText}
-                </div>
-                <div>
-                  <div className="rounded-2xl rounded-tl-xs bg-white border border-slate-200/80 p-3.5 text-xs text-slate-800 leading-relaxed shadow-2xs">
-                    Hi Nova Electronics Support Team! I just purchased the Sony WH-1000XM5 wireless headphones under Order #ORD-9819.
-                    <br /><br />
-                    Could you confirm whether the provided USB-C audio interconnect supports lossless transmission directly with the 2023 MacBook Pro DAC, or if I need to source a secondary 3.5mm-to-USB-C adapter?
+              {currentMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex items-start gap-2.5 max-w-lg ${
+                    msg.sender === 'vendor' ? 'ml-auto flex-row-reverse' : ''
+                  }`}
+                >
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white font-bold text-[10px] ${
+                      msg.sender === 'vendor' ? 'bg-[#EA6C13]' : 'bg-slate-900'
+                    }`}
+                  >
+                    {msg.sender === 'vendor' ? 'YOU' : activeThread.avatarText}
                   </div>
-                  <div className="mt-1 text-[10px] text-slate-400 pl-1">
-                    16:38 CET • Sent via Web Portal
+                  <div>
+                    <div
+                      className={`p-3.5 text-xs leading-relaxed shadow-2xs ${
+                        msg.sender === 'vendor'
+                          ? msg.isInternal
+                            ? 'rounded-2xl rounded-tr-xs bg-amber-50 border border-amber-200 text-amber-900'
+                            : 'rounded-2xl rounded-tr-xs bg-slate-900 text-white'
+                          : 'rounded-2xl rounded-tl-xs bg-white border border-slate-200/80 text-slate-800'
+                      }`}
+                    >
+                      {msg.isInternal && (
+                        <div className="text-[10px] font-bold uppercase text-amber-700 mb-1">
+                          🔒 Internal Staff Note
+                        </div>
+                      )}
+                      {msg.text}
+                    </div>
+                    <div
+                      className={`mt-1 text-[10px] text-slate-400 ${
+                        msg.sender === 'vendor' ? 'text-right pr-1' : 'pl-1'
+                      }`}
+                    >
+                      {msg.time}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
 
-              {/* Status callout */}
               <div className="flex items-center justify-center">
                 <div className="rounded-lg bg-slate-100 px-3 py-1 text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
-                  <span>Customer viewed order tracking 12 minutes ago</span>
+                  <span>Verified session connected to Vendora messaging server</span>
                 </div>
               </div>
             </div>
@@ -459,7 +621,7 @@ export const VendorMessagesPage: React.FC = () => {
             {/* Composer Box */}
             <div className="p-3.5 border-t border-slate-200 bg-white space-y-2.5">
               {/* Macro pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs" data-lenis-prevent>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
                   MACROS:
                 </span>
@@ -500,17 +662,53 @@ export const VendorMessagesPage: React.FC = () => {
 
               {/* Input Area */}
               <div className="rounded-xl border border-slate-200 bg-white p-2.5 focus-within:border-slate-900 transition-colors">
+                {attachmentName && (
+                  <div className="mb-2 flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 w-fit">
+                    <Paperclip className="h-3 w-3 text-slate-500" />
+                    <span>{attachmentName}</span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachmentName(null)}
+                      className="ml-1 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
                 <textarea
                   rows={3}
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Type your response to the customer..."
+                  onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Type your response to the customer... (Ctrl+Enter to send)"
                   className="w-full text-xs text-slate-800 placeholder:text-slate-400 resize-none focus:outline-none"
                 />
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <button className="text-slate-400 hover:text-slate-600 p-1" title="Attach file">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setAttachmentName(file.name);
+                          showToast(`Attached ${file.name}`);
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-50 cursor-pointer"
+                      title="Attach file"
+                    >
                       <Paperclip className="h-3.5 w-3.5" />
                     </button>
                     <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 cursor-pointer">
@@ -530,15 +728,15 @@ export const VendorMessagesPage: React.FC = () => {
                     </span>
                     <button
                       type="button"
-                      onClick={() => alert('Draft saved successfully!')}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      onClick={() => showToast('Draft reply saved to local session')}
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                     >
                       Save Draft
                     </button>
                     <button
                       type="button"
                       onClick={handleSendMessage}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs cursor-pointer"
                     >
                       <span>Send Reply</span>
                       <Send className="h-3 w-3" />
@@ -637,8 +835,8 @@ export const VendorMessagesPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => alert('Opening full order manifest #ORD-9819')}
-                className="w-full mt-1 rounded-lg border border-slate-200 bg-white py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
+                onClick={() => navigate('/vendor/orders')}
+                className="w-full mt-1 rounded-lg border border-slate-200 bg-white py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
               >
                 View Full Order Details
               </button>
@@ -646,15 +844,15 @@ export const VendorMessagesPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => alert('Concession adjustment modal')}
-                  className="rounded border border-slate-200 bg-white py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                  onClick={() => showToast('10% concession voucher discount issued for buyer')}
+                  className="rounded border border-slate-200 bg-white py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   % Issue Concession
                 </button>
                 <button
                   type="button"
-                  onClick={() => alert('Initiating return merchandise RMA')}
-                  className="rounded border border-slate-200 bg-white py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                  onClick={() => navigate('/vendor/returns')}
+                  className="rounded border border-slate-200 bg-white py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   Create RMA
                 </button>
@@ -678,7 +876,35 @@ export const VendorMessagesPage: React.FC = () => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                alert('Message sent to customer!');
+                if (!composeCustomer || !composeBody) return;
+                const newThreadId = `t-${Date.now()}`;
+                const newThread: ChatThread = {
+                  id: newThreadId,
+                  buyerName: composeCustomer,
+                  avatarText: composeCustomer.slice(0, 2).toUpperCase(),
+                  isOnline: true,
+                  timeAgo: 'Just now',
+                  preview: composeBody,
+                  tag: composeSubject || 'Direct Message',
+                  tagType: 'presales',
+                  unread: false,
+                };
+                setThreads([newThread, ...threads]);
+                setThreadMessages((prev) => ({
+                  ...prev,
+                  [newThreadId]: [
+                    {
+                      id: `m-${Date.now()}`,
+                      sender: 'vendor',
+                      text: composeBody,
+                      time: 'Just now • Verified Reply',
+                    },
+                  ],
+                }));
+                setSelectedThreadId(newThreadId);
+                setComposeCustomer('');
+                setComposeSubject('');
+                setComposeBody('');
                 setIsComposeModalOpen(false);
               }}
               className="space-y-3 py-2 text-xs"
@@ -688,7 +914,9 @@ export const VendorMessagesPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. #ORD-9819 or customer email"
+                  value={composeCustomer}
+                  onChange={(e) => setComposeCustomer(e.target.value)}
+                  placeholder="e.g. Elena Rostova or #ORD-9819"
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
                 />
               </div>
@@ -698,6 +926,8 @@ export const VendorMessagesPage: React.FC = () => {
                 <input
                   type="text"
                   required
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
                   placeholder="Regarding your recent shipment delivery..."
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
                 />
@@ -708,6 +938,8 @@ export const VendorMessagesPage: React.FC = () => {
                 <textarea
                   required
                   rows={4}
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
                   placeholder="Write message details..."
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
                 />
@@ -717,13 +949,13 @@ export const VendorMessagesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsComposeModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
                 >
                   Send Message
                 </button>
@@ -737,6 +969,14 @@ export const VendorMessagesPage: React.FC = () => {
           open={isProductModalOpen}
           onOpenChange={setIsProductModalOpen}
         />
+
+        {/* ── Floating Toast Notification ───────────────────────────── */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
       </div>
     </WorkspaceLayout>
   );

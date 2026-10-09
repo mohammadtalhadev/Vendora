@@ -51,7 +51,7 @@ export const ProductsPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6">
+    <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6">
       {/* Top Header & Search Bar Summary */}
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
@@ -67,11 +67,12 @@ export const ProductsPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-slate-500">Sort by:</span>
           <select
-            value={sort}
+            value={sort === 'best-selling' ? 'best_selling' : sort}
             onChange={(e) => updateFilter('sort', e.target.value)}
             className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-800 shadow-sm focus:border-[#FF7A1A] focus:outline-none"
           >
             <option value="featured">Featured</option>
+            <option value="best_selling">Best Selling</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
             <option value="rating">Highest Rated</option>
@@ -182,7 +183,7 @@ export const ProductsPage: React.FC = () => {
                     </div>
 
                     <Link to={`/products/${product.id}`} className="mt-1 block">
-                      <h4 className="line-clamp-2 text-sm font-semibold text-slate-800 group-hover:text-[#FF7A1A]">
+                      <h4 className="font-outfit line-clamp-2 text-sm font-semibold text-slate-800 group-hover:text-[#FF7A1A]">
                         {product.title}
                       </h4>
                     </Link>
@@ -194,12 +195,19 @@ export const ProductsPage: React.FC = () => {
                 <div className="border-t border-slate-100 p-4 pt-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-lg font-bold text-slate-900">${product.price.toFixed(2)}</span>
-                      {product.compareAtPrice && (
-                        <span className="ml-2 text-xs text-slate-400 line-through">
-                          ${product.compareAtPrice.toFixed(2)}
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-slate-900">${product.price.toFixed(2)}</span>
+                        {product.compareAtPrice && (
+                          <span className="ml-2 text-xs text-slate-400 line-through">
+                            ${product.compareAtPrice.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1">
+                        <span className="inline-block rounded-md bg-[#E0F2FE] px-2 py-0.5 text-[10px] font-bold text-[#0369A1]">
+                          Shipping within 3 days
                         </span>
-                      )}
+                      </div>
                     </div>
 
                     <button

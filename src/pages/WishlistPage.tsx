@@ -229,7 +229,7 @@ export const WishlistPage: React.FC = () => {
                   </div>
 
                   <Link to={`/products/${product.id}`} className="mt-1 block">
-                    <h3 className="line-clamp-2 text-sm font-bold text-ink transition-colors hover:text-sun-orange">
+                    <h3 className="font-outfit line-clamp-2 text-sm font-bold text-ink transition-colors hover:text-sun-orange">
                       {product.title}
                     </h3>
                   </Link>

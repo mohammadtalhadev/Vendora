@@ -23,6 +23,14 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog';
+import { exportToCsv } from '../lib/export-csv';
 
 interface ReportArchive {
   id: string;
@@ -99,10 +107,17 @@ const REPORT_ARCHIVES: ReportArchive[] = [
 ];
 
 export const AdminReportsPage: React.FC = () => {
+  const [reports, setReports] = useState<ReportArchive[]>(REPORT_ARCHIVES);
   const [searchReport, setSearchReport] = useState('');
   const [selectedType, setSelectedType] = useState('All Types');
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [customReportName, setCustomReportName] = useState('');
+  const [customReportType, setCustomReportType] = useState('Monthly Financial');
+  const [customDateRange, setCustomDateRange] = useState('Last 30 Days');
+  const [selectedDateRange, setSelectedDateRange] = useState('30d');
+  const [reportPage, setReportPage] = useState(1);
 
-  const filteredReports = REPORT_ARCHIVES.filter((rep) => {
+  const filteredReports = reports.filter((rep) => {
     const matchesSearch =
       rep.name.toLowerCase().includes(searchReport.toLowerCase()) ||
       rep.authorName.toLowerCase().includes(searchReport.toLowerCase());
@@ -112,6 +127,68 @@ export const AdminReportsPage: React.FC = () => {
 
     return true;
   });
+
+  const reportsPerPage = 5;
+  const totalReportPages = Math.ceil(filteredReports.length / reportsPerPage) || 1;
+  const paginatedReports = filteredReports.slice(
+    (reportPage - 1) * reportsPerPage,
+    reportPage * reportsPerPage
+  );
+
+  const handleDownloadPreset = (presetName: string) => {
+    exportToCsv({
+      filename: `${presetName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`,
+      columns: [
+        { header: 'Period', key: 'period' },
+        { header: 'Scope', key: 'scope' },
+        { header: 'Volume Metric ($)', key: 'volume' },
+        { header: 'Compliance Rate', key: 'compliance' },
+        { header: 'Status', key: 'status' },
+      ],
+      data: [
+        { period: 'October 2026', scope: presetName, volume: '$1,489,200', compliance: '98.8%', status: 'Audited' },
+        { period: 'September 2026', scope: presetName, volume: '$1,257,800', compliance: '97.9%', status: 'Audited' },
+        { period: 'August 2026', scope: presetName, volume: '$1,190,400', compliance: '98.4%', status: 'Audited' },
+      ],
+    });
+  };
+
+  const handleDownloadArchive = (rep: ReportArchive) => {
+    exportToCsv({
+      filename: rep.name,
+      columns: [
+        { header: 'Report ID', key: 'id' },
+        { header: 'Report Name', key: 'name' },
+        { header: 'Report Type', key: 'type' },
+        { header: 'Date Range', key: 'dateRange' },
+        { header: 'Author', key: 'authorName' },
+        { header: 'Status', key: 'status' },
+      ],
+      data: [rep],
+    });
+  };
+
+  const handleCreateReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customReportName.trim()) return;
+    const cleanFilename = customReportName.trim().endsWith('.csv')
+      ? customReportName.trim()
+      : `${customReportName.trim().replace(/\s+/g, '_')}.csv`;
+    const newRep: ReportArchive = {
+      id: `rep-${Date.now()}`,
+      name: cleanFilename,
+      type: customReportType,
+      dateRange: customDateRange,
+      fileSize: '1.2 MB',
+      authorInitials: 'SA',
+      authorName: 'Super Admin',
+      status: 'Ready',
+    };
+    setReports([newRep, ...reports]);
+    handleDownloadArchive(newRep);
+    setCustomReportName('');
+    setIsGenerateModalOpen(false);
+  };
 
   return (
     <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
@@ -141,19 +218,32 @@ export const AdminReportsPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="relative">
-              <button className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>Date Range: Last 30 Days</span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-              </button>
+              <select
+                value={selectedDateRange}
+                onChange={(e) => setSelectedDateRange(e.target.value)}
+                className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer focus:outline-hidden"
+              >
+                <option value="7d">Date Range: Last 7 Days</option>
+                <option value="30d">Date Range: Last 30 Days</option>
+                <option value="90d">Date Range: Last 90 Days</option>
+                <option value="ytd">Date Range: Year to Date</option>
+              </select>
+              <Calendar className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             </div>
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-2xs transition-colors"
-              title="Refresh Analytics"
+              type="button"
+              onClick={() => handleDownloadPreset('Platform Analytics Reconciliation')}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+              title="Refresh and export summary"
             >
               <RotateCw className="h-3.5 w-3.5" />
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors">
+            <button
+              type="button"
+              onClick={() => setIsGenerateModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer"
+            >
               <Plus className="h-4 w-4" />
               Generate Custom Report
             </button>
@@ -390,7 +480,11 @@ export const AdminReportsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <button className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPreset('State Tax Escrow Audit Summary')}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                >
                   Audit
                 </button>
               </div>
@@ -432,10 +526,18 @@ export const AdminReportsPage: React.FC = () => {
                 </p>
               </div>
               <div className="mt-4 flex items-center gap-2 pt-3 border-t border-slate-100">
-                <button className="flex-1 rounded-lg border border-slate-200 bg-white py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPreset('Monthly Financial and Tax Settlement')}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                >
                   CSV
                 </button>
-                <button className="flex-1 rounded-lg border border-slate-200 bg-white py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPreset('Monthly Financial and Tax Settlement')}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                >
                   PDF
                 </button>
               </div>
@@ -460,7 +562,11 @@ export const AdminReportsPage: React.FC = () => {
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100">
-                <button className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPreset('Vendor Performance and SLA Audit')}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                >
                   <Download className="h-3.5 w-3.5 text-slate-400" />
                   Download CSV
                 </button>
@@ -486,7 +592,11 @@ export const AdminReportsPage: React.FC = () => {
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100">
-                <button className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPreset('Commission and Platform Margins')}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                >
                   <Download className="h-3.5 w-3.5 text-slate-400" />
                   Download CSV
                 </button>
@@ -512,7 +622,11 @@ export const AdminReportsPage: React.FC = () => {
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100">
-                <button className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPreset('Inventory and Catalog Health')}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                >
                   <Download className="h-3.5 w-3.5 text-slate-400" />
                   Download CSV
                 </button>
@@ -547,7 +661,7 @@ export const AdminReportsPage: React.FC = () => {
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
-                  className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden"
+                  className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
                 >
                   <option>All Types</option>
                   <option>Financial</option>
@@ -571,10 +685,11 @@ export const AdminReportsPage: React.FC = () => {
                     <th className="px-4 py-3">FILE SIZE</th>
                     <th className="px-4 py-3">GENERATED BY</th>
                     <th className="px-4 py-3">STATUS</th>
+                    <th className="px-4 py-3 text-right">ACTION</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredReports.map((report) => (
+                  {paginatedReports.map((report) => (
                     <tr key={report.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -614,6 +729,16 @@ export const AdminReportsPage: React.FC = () => {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadArchive(report)}
+                          className="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+                        >
+                          <Download className="h-3 w-3 text-slate-500" />
+                          Download
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -622,27 +747,118 @@ export const AdminReportsPage: React.FC = () => {
 
             {/* Pagination */}
             <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500">
-              <span>Showing 6 of 34 generated audit archives</span>
+              <span>
+                Showing {filteredReports.length === 0 ? 0 : (reportPage - 1) * reportsPerPage + 1} to{' '}
+                {Math.min(reportPage * reportsPerPage, filteredReports.length)} of {filteredReports.length} generated audit archives
+              </span>
               <div className="flex items-center gap-1">
-                <button className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50">
+                <button
+                  type="button"
+                  onClick={() => setReportPage((p) => Math.max(1, p - 1))}
+                  disabled={reportPage === 1}
+                  className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                >
                   Previous
                 </button>
-                <button className="h-6 w-6 rounded bg-slate-900 text-center font-bold text-white">
-                  1
-                </button>
-                <button className="h-6 w-6 rounded border border-slate-200 bg-white text-center font-semibold text-slate-600 hover:bg-slate-50">
-                  2
-                </button>
-                <button className="h-6 w-6 rounded border border-slate-200 bg-white text-center font-semibold text-slate-600 hover:bg-slate-50">
-                  3
-                </button>
-                <button className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50">
+                {Array.from({ length: totalReportPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setReportPage(page)}
+                    className={`h-6 w-6 rounded text-center text-xs font-bold transition-colors cursor-pointer ${
+                      reportPage === page
+                        ? 'bg-slate-900 text-white'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setReportPage((p) => Math.min(totalReportPages, p + 1))}
+                  disabled={reportPage === totalReportPages || totalReportPages === 0}
+                  className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                >
                   Next
                 </button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Generate Custom Report Modal */}
+        <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-black text-slate-900">
+                Generate Custom Analytics Report
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Configure parameters to generate and export an audited marketplace report.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleCreateReport} className="space-y-3 py-2 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Report Name / Description</label>
+                <input
+                  type="text"
+                  required
+                  value={customReportName}
+                  onChange={(e) => setCustomReportName(e.target.value)}
+                  placeholder="e.g. Q4_2026_Dispute_Reconciliation_Log.csv"
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Report Category</label>
+                <select
+                  value={customReportType}
+                  onChange={(e) => setCustomReportType(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                >
+                  <option value="Monthly Financial">Monthly Financial</option>
+                  <option value="Quarterly Tax">Quarterly Tax</option>
+                  <option value="Vendor Performance">Vendor Performance</option>
+                  <option value="Dispute & Escrow">Dispute & Escrow</option>
+                  <option value="Inventory Velocity">Inventory Velocity</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Date Range</label>
+                <select
+                  value={customDateRange}
+                  onChange={(e) => setCustomDateRange(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
+                >
+                  <option value="Last 7 Days">Last 7 Days</option>
+                  <option value="Last 30 Days">Last 30 Days</option>
+                  <option value="Quarter to Date">Quarter to Date</option>
+                  <option value="Year to Date">Year to Date</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsGenerateModalOpen(false)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                >
+                  Generate &amp; Download
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </WorkspaceLayout>
   );

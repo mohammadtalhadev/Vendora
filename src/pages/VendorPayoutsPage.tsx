@@ -23,25 +23,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../components/ui/dialog';
-
-interface PayoutRecord {
-  id: string;
-  period: string;
-  destination: string;
-  amount: number;
-  status: 'processing' | 'completed' | 'failed';
-  traceId: string;
-}
-
-interface BankAccount {
-  id: string;
-  bankName: string;
-  accountType: string;
-  last4: string;
-  routing: string;
-  isDefault: boolean;
-  statusText: string;
-}
+import { useMarketplaceStore } from '../store/marketplace-store';
+import { exportToCsv } from '../lib/export-csv';
 
 export const VendorPayoutsPage: React.FC = () => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -51,70 +34,26 @@ export const VendorPayoutsPage: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState<'all' | '30d' | '90d' | 'ytd'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'processing' | 'completed'>('all');
   const [autoWithdraw, setAutoWithdraw] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([
-    {
-      id: 'bank-1',
-      bankName: 'JPMorgan Chase Bank, N.A.',
-      accountType: 'Business Checking',
-      last4: '4821',
-      routing: '021000021',
-      isDefault: true,
-      statusText: 'Direct Deposit Active',
-    },
-    {
-      id: 'bank-2',
-      bankName: 'Silicon Valley Bank / First Rep.',
-      accountType: 'Treasury Reserve',
-      last4: '9102',
-      routing: '121140399',
-      isDefault: false,
-      statusText: 'Secondary Wire Account',
-    },
-  ]);
+  // New bank form fields
+  const [newBankName, setNewBankName] = useState('');
+  const [newRouting, setNewRouting] = useState('');
+  const [newAccountNum, setNewAccountNum] = useState('');
+  const [newAccountType, setNewAccountType] = useState('Business Checking');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [payouts] = useState<PayoutRecord[]>([
-    {
-      id: 'TR-90412-ACH',
-      period: 'Oct 01 – Oct 15, 2026',
-      destination: 'Chase ••••4821',
-      amount: 2450.0,
-      status: 'processing',
-      traceId: 'ACH-48192019',
-    },
-    {
-      id: 'TR-89210-ACH',
-      period: 'Sep 16 – Sep 30, 2026',
-      destination: 'Chase ••••4821',
-      amount: 2180.5,
-      status: 'completed',
-      traceId: 'ACH-48102911',
-    },
-    {
-      id: 'TR-88195-ACH',
-      period: 'Sep 01 – Sep 15, 2026',
-      destination: 'Chase ••••4821',
-      amount: 2890.0,
-      status: 'completed',
-      traceId: 'ACH-47981290',
-    },
-    {
-      id: 'TR-87002-ACH',
-      period: 'Aug 16 – Aug 31, 2026',
-      destination: 'Chase ••••4821',
-      amount: 1940.2,
-      status: 'completed',
-      traceId: 'ACH-47629103',
-    },
-    {
-      id: 'TR-85940-ACH',
-      period: 'Aug 01 – Aug 15, 2026',
-      destination: 'Chase ••••4821',
-      amount: 3120.0,
-      status: 'completed',
-      traceId: 'ACH-47209184',
-    },
-  ]);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const payouts = useMarketplaceStore((state) => state.payouts);
+  const bankAccounts = useMarketplaceStore((state) => state.bankAccounts);
+  const requestInstantPayout = useMarketplaceStore((state) => state.requestInstantPayout);
+  const addBankAccount = useMarketplaceStore((state) => state.addBankAccount);
+  const setDefaultBankAccount = useMarketplaceStore((state) => state.setDefaultBankAccount);
 
   const handleCopyTrace = (traceId: string) => {
     navigator.clipboard?.writeText(traceId);
@@ -123,18 +62,40 @@ export const VendorPayoutsPage: React.FC = () => {
   };
 
   const handleSetDefaultBank = (accountId: string) => {
-    setBankAccounts((prev) =>
-      prev.map((acc) => ({
-        ...acc,
-        isDefault: acc.id === accountId,
-      }))
-    );
+    setDefaultBankAccount(accountId);
+    showToast('Primary deposit account updated');
+  };
+
+  const handleExportCsv = () => {
+    const data = payouts.map((p) => ({
+      TraceID: p.traceId,
+      Period: p.period,
+      Destination: p.destination,
+      Amount: `$${p.amount.toFixed(2)}`,
+      Status: p.status,
+      CreatedAt: p.createdAt,
+    }));
+    exportToCsv(`vendor-payout-ledger-${new Date().toISOString().split('T')[0]}.csv`, data, {
+      TraceID: 'Trace / Ref ID',
+      Period: 'Settlement Cycle',
+      Destination: 'Bank Destination',
+      Amount: 'Disbursed Amount',
+      Status: 'ACH Status',
+      CreatedAt: 'Initiation Date',
+    });
+    showToast('Payout ledger exported to CSV successfully');
   };
 
   const filteredPayouts = payouts.filter((p) => {
     if (statusFilter !== 'all' && p.status !== statusFilter) return false;
     return true;
   });
+
+  const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage) || 1;
+  const paginatedPayouts = filteredPayouts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <WorkspaceLayout
@@ -416,7 +377,8 @@ export const VendorPayoutsPage: React.FC = () => {
                   </select>
 
                   <button
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-2xs"
+                    onClick={handleExportCsv}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-2xs cursor-pointer"
                     title="Export Ledger CSV"
                   >
                     <Download className="h-3.5 w-3.5" />
@@ -437,7 +399,7 @@ export const VendorPayoutsPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredPayouts.map((row) => (
+                    {paginatedPayouts.map((row) => (
                       <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="px-4 py-3.5 font-mono font-bold text-slate-900">
                           {row.id}
@@ -486,12 +448,28 @@ export const VendorPayoutsPage: React.FC = () => {
 
               {/* Table Footer */}
               <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
-                <span>Showing 1-5 of 28 disbursements</span>
+                <span>
+                  Showing {filteredPayouts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
+                  {Math.min(currentPage * itemsPerPage, filteredPayouts.length)} of {filteredPayouts.length} disbursements
+                </span>
                 <div className="flex items-center gap-2">
-                  <button className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
                     Previous
                   </button>
-                  <button className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                  <span className="font-medium text-slate-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
                     Next
                   </button>
                 </div>
@@ -698,10 +676,11 @@ export const VendorPayoutsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  alert('Instant payout of $2,413.25 initiated to JPMorgan Chase Bank!');
+                  requestInstantPayout(2413.25, 'JPMorgan Chase Bank (•••• 4821)');
+                  showToast('Instant accelerated payout of $2,413.25 initiated via ACH rail');
                   setIsInstantPayoutModalOpen(false);
                 }}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
               >
                 Confirm Instant Transfer
               </button>
@@ -725,7 +704,18 @@ export const VendorPayoutsPage: React.FC = () => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                alert('Bank account submitted for micro-deposit verification.');
+                addBankAccount({
+                  bankName: newBankName || 'Citizens Bank Commercial',
+                  routing: newRouting || '021000021',
+                  last4: newAccountNum.slice(-4) || '7721',
+                  accountType: newAccountType,
+                  isDefault: false,
+                  statusText: 'Direct Deposit Active',
+                });
+                showToast(`Bank account "${newBankName || 'Citizens Commercial'}" added and verified`);
+                setNewBankName('');
+                setNewRouting('');
+                setNewAccountNum('');
                 setIsAddBankModalOpen(false);
               }}
               className="space-y-3.5 py-2 text-xs"
@@ -735,6 +725,8 @@ export const VendorPayoutsPage: React.FC = () => {
                 <input
                   type="text"
                   required
+                  value={newBankName}
+                  onChange={(e) => setNewBankName(e.target.value)}
                   placeholder="e.g. Bank of America, Wells Fargo"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
                 />
@@ -745,6 +737,8 @@ export const VendorPayoutsPage: React.FC = () => {
                 <input
                   type="text"
                   required
+                  value={newRouting}
+                  onChange={(e) => setNewRouting(e.target.value)}
                   pattern="[0-9]{9}"
                   placeholder="021000021"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-mono focus:outline-none focus:border-slate-900"
@@ -756,6 +750,8 @@ export const VendorPayoutsPage: React.FC = () => {
                 <input
                   type="password"
                   required
+                  value={newAccountNum}
+                  onChange={(e) => setNewAccountNum(e.target.value)}
                   placeholder="••••••••••••"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-mono focus:outline-none focus:border-slate-900"
                 />
@@ -763,7 +759,11 @@ export const VendorPayoutsPage: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Account Type</label>
-                <select className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900">
+                <select
+                  value={newAccountType}
+                  onChange={(e) => setNewAccountType(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                >
                   <option>Business Checking</option>
                   <option>Corporate Treasury</option>
                   <option>Operating Reserve</option>
@@ -794,6 +794,14 @@ export const VendorPayoutsPage: React.FC = () => {
           open={isProductModalOpen}
           onOpenChange={setIsProductModalOpen}
         />
+
+        {/* ── Floating Toast Notification ────────────────────────────── */}
+        {toastMessage && (
+          <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xl flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
       </div>
     </WorkspaceLayout>
   );

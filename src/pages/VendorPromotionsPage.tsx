@@ -28,6 +28,8 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 
+import { exportToCsv } from '../lib/export-csv';
+
 interface PromoCampaign {
   id: string;
   name: string;
@@ -52,11 +54,27 @@ export const VendorPromotionsPage: React.FC = () => {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isNominateModalOpen, setIsNominateModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'scheduled' | 'expired' | 'draft'>('all');
   const [discountTypeFilter, setDiscountTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+
+  // Form states
+  const [formTitle, setFormTitle] = useState('');
+  const [formCode, setFormCode] = useState('');
+  const [formDiscountType, setFormDiscountType] = useState('Percentage Off (%)');
+  const [formDiscountValue, setFormDiscountValue] = useState('15');
+  const [formMinOrder, setFormMinOrder] = useState('50');
+  const [formScope, setFormScope] = useState('Storewide (All Active Products)');
 
   const [campaigns, setCampaigns] = useState<PromoCampaign[]>([
     {
@@ -177,6 +195,12 @@ export const VendorPromotionsPage: React.FC = () => {
     return true;
   });
 
+  const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage) || 1;
+  const paginatedCampaigns = filteredCampaigns.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <WorkspaceLayout
       role="vendor"
@@ -290,13 +314,13 @@ export const VendorPromotionsPage: React.FC = () => {
         {/* ── Tabs & Search Bar ───────────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200 pb-2">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" data-lenis-prevent>
               {[
-                { id: 'all', label: 'All Campaigns', count: 6 },
-                { id: 'active', label: 'Active', count: 4 },
-                { id: 'scheduled', label: 'Scheduled', count: 1 },
-                { id: 'expired', label: 'Expired', count: 3 },
-                { id: 'draft', label: 'Draft', count: 1 },
+                { id: 'all', label: 'All Campaigns', count: campaigns.length },
+                { id: 'active', label: 'Active', count: campaigns.filter((c) => c.status === 'active').length },
+                { id: 'scheduled', label: 'Scheduled', count: campaigns.filter((c) => c.status === 'scheduled').length },
+                { id: 'expired', label: 'Expired', count: campaigns.filter((c) => c.status === 'expired').length },
+                { id: 'draft', label: 'Draft', count: campaigns.filter((c) => c.status === 'draft').length },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -321,7 +345,26 @@ export const VendorPromotionsPage: React.FC = () => {
               ))}
             </div>
 
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 self-start sm:self-auto">
+            <button
+              onClick={() => {
+                exportToCsv({
+                  filename: `vendor-promotions-${new Date().toISOString().slice(0, 10)}.csv`,
+                  columns: [
+                    { header: 'Campaign Name', key: 'name' },
+                    { header: 'Coupon Code', key: 'code' },
+                    { header: 'Discount', key: 'typeValue' },
+                    { header: 'Scope', key: 'scope' },
+                    { header: 'Window', key: 'window' },
+                    { header: 'Redemptions', key: 'redemptionsCurrent' },
+                    { header: 'Sales Attributed ($)', key: 'salesAttributed' },
+                    { header: 'Status', key: 'status' },
+                    { header: 'Enabled', key: 'isEnabled' },
+                  ],
+                  data: filteredCampaigns,
+                });
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 self-start sm:self-auto cursor-pointer"
+            >
               <Download className="h-3.5 w-3.5" />
               <span>Export CSV</span>
             </button>
@@ -397,7 +440,7 @@ export const VendorPromotionsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredCampaigns.map((c) => {
+                {paginatedCampaigns.map((c) => {
                   const percent =
                     c.redemptionsMax === 'unlimited'
                       ? 100
@@ -521,18 +564,27 @@ export const VendorPromotionsPage: React.FC = () => {
 
           {/* Table Footer */}
           <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
-            <span>Showing 1 to {filteredCampaigns.length} of 6 results</span>
+            <span>
+              Showing {filteredCampaigns.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredCampaigns.length)} of {filteredCampaigns.length} results
+            </span>
             <div className="flex items-center gap-1">
-              <button className="rounded border border-slate-200 px-2 py-0.5 text-xs hover:bg-slate-50 disabled:opacity-40">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="rounded border border-slate-200 px-2 py-0.5 text-xs hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
                 &lt;
               </button>
-              <button className="rounded bg-slate-900 px-2 py-0.5 text-xs font-bold text-white">
-                1
-              </button>
-              <button className="rounded border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                2
-              </button>
-              <button className="rounded border border-slate-200 px-2 py-0.5 text-xs hover:bg-slate-50">
+              <span className="px-2 font-medium text-slate-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded border border-slate-200 px-2 py-0.5 text-xs hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
                 &gt;
               </button>
             </div>
@@ -675,7 +727,32 @@ export const VendorPromotionsPage: React.FC = () => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                alert('Campaign created successfully!');
+                if (!formTitle || !formCode) return;
+                const newPromo: PromoCampaign = {
+                  id: `promo-${Date.now()}`,
+                  name: formTitle,
+                  code: formCode.toUpperCase(),
+                  typeValue:
+                    formDiscountType === 'Percentage Off (%)'
+                      ? `${formDiscountValue}% Off`
+                      : formDiscountType === 'Free Domestic Shipping'
+                      ? 'Free Shipping'
+                      : `$${formDiscountValue} Off`,
+                  minOrder: formMinOrder ? `Min order $${formMinOrder}` : 'No min order',
+                  scope: formScope,
+                  scopeIcon: formScope.includes('Audio') ? 'audio' : formScope.includes('Keyboard') ? 'keyboard' : 'storewide',
+                  window: 'Active today',
+                  windowSubtext: '30 days left',
+                  redemptionsCurrent: 0,
+                  redemptionsMax: 500,
+                  salesAttributed: 0,
+                  ordersAttributed: 0,
+                  status: 'active',
+                  isEnabled: true,
+                };
+                setCampaigns([newPromo, ...campaigns]);
+                setFormTitle('');
+                setFormCode('');
                 setIsCreatePromoModalOpen(false);
               }}
               className="space-y-3.5 py-2 text-xs"
@@ -685,6 +762,8 @@ export const VendorPromotionsPage: React.FC = () => {
                 <input
                   type="text"
                   required
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="e.g. Cyber Monday Super Sale"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
                 />
@@ -696,13 +775,19 @@ export const VendorPromotionsPage: React.FC = () => {
                   <input
                     type="text"
                     required
+                    value={formCode}
+                    onChange={(e) => setFormCode(e.target.value)}
                     placeholder="CYBER50"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-mono uppercase focus:outline-none focus:border-slate-900"
                   />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Discount Type</label>
-                  <select className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900">
+                  <select
+                    value={formDiscountType}
+                    onChange={(e) => setFormDiscountType(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                  >
                     <option>Percentage Off (%)</option>
                     <option>Fixed Dollar Amount ($)</option>
                     <option>Free Domestic Shipping</option>
@@ -716,6 +801,8 @@ export const VendorPromotionsPage: React.FC = () => {
                   <input
                     type="number"
                     required
+                    value={formDiscountValue}
+                    onChange={(e) => setFormDiscountValue(e.target.value)}
                     placeholder="15"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
                   />
@@ -724,6 +811,8 @@ export const VendorPromotionsPage: React.FC = () => {
                   <label className="block font-bold text-slate-700 mb-1">Min. Order Value ($)</label>
                   <input
                     type="number"
+                    value={formMinOrder}
+                    onChange={(e) => setFormMinOrder(e.target.value)}
                     placeholder="50"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
                   />
@@ -732,7 +821,11 @@ export const VendorPromotionsPage: React.FC = () => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Product Scope</label>
-                <select className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900">
+                <select
+                  value={formScope}
+                  onChange={(e) => setFormScope(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                >
                   <option>Storewide (All Active Products)</option>
                   <option>Specific Category: Audio</option>
                   <option>Specific Category: Keyboards &amp; Peripherals</option>
@@ -855,10 +948,10 @@ export const VendorPromotionsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  alert('3 products nominated for Vendora Tech Week spotlight review!');
+                  showToast('3 products nominated for Vendora Tech Week spotlight review!');
                   setIsNominateModalOpen(false);
                 }}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
               >
                 Submit Nomination
               </button>
@@ -871,6 +964,14 @@ export const VendorPromotionsPage: React.FC = () => {
           open={isProductModalOpen}
           onOpenChange={setIsProductModalOpen}
         />
+
+        {/* ── Floating Toast Notification ───────────────────────────── */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
       </div>
     </WorkspaceLayout>
   );

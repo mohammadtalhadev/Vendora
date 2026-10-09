@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Download,
   Package,
@@ -11,6 +12,7 @@ import {
   X,
   ArrowUpRight,
   Check,
+  CheckCircle2,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
@@ -20,6 +22,8 @@ import {
 } from '../features/vendor/vendorData';
 import type { SubOrder, SubOrderStatus } from '../types/domain';
 import { useAuthStore } from '../store/auth-store';
+
+import { exportToCsv } from '../lib/export-csv';
 
 type FilterStatus = 'all' | SubOrderStatus;
 
@@ -31,6 +35,17 @@ export const VendorOrdersPage: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>(['sub-ord-2001', 'sub-ord-2002']);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [carrierFilter, setCarrierFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleAdvanceStatus = (subOrderId: string, currentStatus: SubOrderStatus) => {
     let nextStatus: SubOrderStatus | null = null;
@@ -55,6 +70,34 @@ export const VendorOrdersPage: React.FC = () => {
     }
   };
 
+  const handleBulkFulfill = () => {
+    const placed = orders.filter((o) => o.status === 'placed');
+    if (placed.length === 0) {
+      showToast('All pending orders are already confirmed.');
+      return;
+    }
+    placed.forEach((o) => {
+      advanceSubOrderStatus(o.id, 'confirmed', 'Vendor', 'Bulk confirmed');
+    });
+    setOrders(getVendorSubOrders(vendorId));
+    showToast(`Bulk confirmed ${placed.length} pending orders.`);
+  };
+
+  const handleExportCsv = () => {
+    exportToCsv({
+      filename: `vendor-orders-${new Date().toISOString().slice(0, 10)}.csv`,
+      columns: [
+        { header: 'Order ID', key: 'id' },
+        { header: 'Date', key: 'createdAt' },
+        { header: 'Status', key: 'status' },
+        { header: 'Subtotal ($)', key: 'subtotal' },
+        { header: 'Commission ($)', key: 'commissionAmount' },
+        { header: 'Net Payout ($)', key: 'netPayout' },
+      ],
+      data: filteredOrders,
+    });
+  };
+
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       if (selectedFilter !== 'all' && order.status !== selectedFilter) {
@@ -69,6 +112,12 @@ export const VendorOrdersPage: React.FC = () => {
       return true;
     });
   }, [orders, selectedFilter, searchQuery]);
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const toggleSelectOne = (id: string) => {
     setSelectedOrderIds((prev) =>
@@ -115,13 +164,19 @@ export const VendorOrdersPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors">
+            <button
+              onClick={handleExportCsv}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
+            >
               <Download className="h-4 w-4 text-slate-500" />
               Export CSV
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors">
+            <button
+              onClick={handleBulkFulfill}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
+            >
               <Package className="h-4 w-4" />
-              Bulk Fulfill (4)
+              Bulk Fulfill ({orders.filter((o) => o.status === 'placed').length})
             </button>
           </div>
         </div>
@@ -287,28 +342,58 @@ export const VendorOrdersPage: React.FC = () => {
             </div>
 
             <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden">
-                <option>All Shipping Carriers</option>
-                <option>FedEx Ground</option>
-                <option>DHL Express</option>
-                <option>USPS Priority</option>
+              <select
+                value={carrierFilter}
+                onChange={(e) => {
+                  setCarrierFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
+              >
+                <option value="all">All Shipping Carriers</option>
+                <option value="fedex">FedEx Ground</option>
+                <option value="dhl">DHL Express</option>
+                <option value="usps">USPS Priority</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
 
             <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden">
-                <option>Payment: All</option>
-                <option>Paid (Apple Pay)</option>
-                <option>Paid (Credit Card)</option>
-                <option>Refunded</option>
+              <select
+                value={paymentFilter}
+                onChange={(e) => {
+                  setPaymentFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
+              >
+                <option value="all">Payment: All</option>
+                <option value="apple_pay">Paid (Apple Pay)</option>
+                <option value="credit_card">Paid (Credit Card)</option>
+                <option value="refunded">Refunded</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
 
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
-              Filters
+            <button
+              type="button"
+              onClick={() => {
+                setShowFilters(!showFilters);
+                if (showFilters) {
+                  setCarrierFilter('all');
+                  setPaymentFilter('all');
+                  setSearchQuery('');
+                  setSelectedFilter('all');
+                }
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-2xs transition-colors cursor-pointer ${
+                showFilters || carrierFilter !== 'all' || paymentFilter !== 'all'
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {showFilters || carrierFilter !== 'all' || paymentFilter !== 'all' ? 'Reset Filters' : 'Filters'}
             </button>
           </div>
         </div>
@@ -322,16 +407,35 @@ export const VendorOrdersPage: React.FC = () => {
               <span className="text-slate-300">Selected total: $861.40</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700">
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 cursor-pointer"
+              >
                 <Printer className="h-3.5 w-3.5" />
                 Print Packing Slips ({selectedOrderIds.length})
               </button>
-              <button className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700">
+              <button
+                type="button"
+                onClick={() => showToast(`Generated carrier shipping labels for ${selectedOrderIds.length} orders: ${selectedOrderIds.join(', ')}`)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 cursor-pointer"
+              >
                 <FileText className="h-3.5 w-3.5" />
                 Generate Shipping Labels
               </button>
-              <button className="rounded-lg bg-white px-3.5 py-1.5 font-bold text-slate-900 hover:bg-slate-100 shadow-xs">
-                Mark as Shipped
+              <button
+                onClick={() => {
+                  selectedOrderIds.forEach((id) => {
+                    const ord = orders.find((o) => o.id === id);
+                    if (ord && (ord.status === 'placed' || ord.status === 'confirmed' || ord.status === 'packed')) {
+                      advanceSubOrderStatus(id, 'ready_for_pickup', 'Vendor', 'Marked ready for pickup via bulk batch');
+                    }
+                  });
+                  setOrders(getVendorSubOrders(vendorId));
+                  setSelectedOrderIds([]);
+                }}
+                className="rounded-lg bg-white px-3.5 py-1.5 font-bold text-slate-900 hover:bg-slate-100 shadow-xs cursor-pointer"
+              >
+                Mark as Ready
               </button>
               <button
                 onClick={() => setSelectedOrderIds([])}
@@ -366,7 +470,7 @@ export const VendorOrdersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((order) => {
+                {paginatedOrders.map((order) => {
                   const isChecked = selectedOrderIds.includes(order.id);
                   return (
                     <tr
@@ -385,10 +489,13 @@ export const VendorOrdersPage: React.FC = () => {
 
                       {/* ORDER ID & DATE */}
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                        <Link
+                          to={`/vendor/orders/${order.id}`}
+                          className="flex items-center gap-1.5 font-bold text-slate-900 hover:text-[#EA6C13] transition-colors"
+                        >
                           <span>{order.id}</span>
                           <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
-                        </div>
+                        </Link>
                         <div className="text-[11px] text-slate-400">
                           {order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today, 11:20 AM'}
                         </div>
@@ -519,41 +626,57 @@ export const VendorOrdersPage: React.FC = () => {
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500">
             <div className="flex items-center gap-4">
               <span>
-                Showing <strong>1 to {filteredOrders.length}</strong> of <strong>342</strong> orders
+                Showing <strong>{filteredOrders.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredOrders.length)}</strong> of <strong>{filteredOrders.length}</strong> orders
               </span>
               <div className="flex items-center gap-1.5">
                 <span>Rows per page:</span>
-                <select className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700">
-                  <option>10</option>
-                  <option>25</option>
-                  <option>50</option>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 cursor-pointer"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
                 </select>
               </div>
             </div>
 
             <div className="flex items-center gap-1 self-end sm:self-auto">
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
-                &lt;
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="flex h-7 px-2 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Previous
               </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded bg-slate-900 text-xs font-bold text-white">
-                1
-              </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                2
-              </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                3
-              </button>
-              <span className="px-1 text-slate-400">...</span>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                35
-              </button>
-              <button className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
-                &gt;
+              <span className="px-2 font-medium text-slate-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="flex h-7 px-2 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Next
               </button>
             </div>
           </div>
         </div>
+
+        {/* ── Floating Toast Notification ───────────────────────────── */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
       </div>
     </WorkspaceLayout>
   );

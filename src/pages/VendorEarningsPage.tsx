@@ -4,6 +4,7 @@ import {
   Download,
   ShieldCheck,
   Search,
+  CheckCircle2,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
@@ -15,6 +16,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../components/ui/dialog';
+import { exportToCsv } from '../lib/export-csv';
 
 interface LedgerRecord {
   id: string;
@@ -31,10 +33,31 @@ export const VendorEarningsPage: React.FC = () => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
   const [isTaxDocModalOpen, setIsTaxDocModalOpen] = useState(false);
+  const [statementFormat, setStatementFormat] = useState<'pdf' | 'csv'>('csv');
   const [activeTab, setActiveTab] = useState<'All' | 'Sales' | 'Refunds' | 'Fees'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [timeRange, setTimeRange] = useState<'30d' | '90d' | '1y' | 'ytd'>('30d');
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP'>('USD');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDownloadTaxPdf = (year: string) => {
+    const element = document.createElement('a');
+    const content = `IRS FORM 1099-K (${year})\nRecipient: Nova Electronics\nTIN: ***-**-4921\nGross Payment Volume: $34,820.00\nPlatform: Vendora Marketplace Inc.\nStatus: Certified\nGenerated: ${new Date().toLocaleDateString()}`;
+    const file = new Blob([content], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `Form-1099-K-${year}-Nova-Electronics.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    showToast(`Downloaded ${year} Form 1099-K`);
+  };
 
   const ledgerRecords: LedgerRecord[] = [
     {
@@ -112,6 +135,12 @@ export const VendorEarningsPage: React.FC = () => {
     }
     return true;
   });
+
+  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage) || 1;
+  const paginatedRecords = filteredRecords.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <WorkspaceLayout
@@ -510,7 +539,23 @@ export const VendorEarningsPage: React.FC = () => {
                 </div>
 
                 <button
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+                  onClick={() => {
+                    exportToCsv({
+                      filename: `vendor-ledger-${new Date().toISOString().slice(0, 10)}.csv`,
+                      columns: [
+                        { header: 'Transaction ID', key: 'id' },
+                        { header: 'Datetime', key: 'datetime' },
+                        { header: 'Reference Order', key: 'refOrder' },
+                        { header: 'Type', key: 'type' },
+                        { header: 'Gross ($)', key: 'gross' },
+                        { header: 'Fee ($)', key: 'fee' },
+                        { header: 'Net Payout ($)', key: 'net' },
+                        { header: 'Settlement Status', key: 'status' },
+                      ],
+                      data: filteredRecords,
+                    });
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
                   title="Export filtered records"
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -535,7 +580,7 @@ export const VendorEarningsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredRecords.map((r) => (
+                {paginatedRecords.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-4 py-3.5 text-slate-600 font-medium">
                       {r.datetime}
@@ -598,25 +643,27 @@ export const VendorEarningsPage: React.FC = () => {
 
           {/* Table Footer */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500 gap-3">
-            <span>Showing 1 to {filteredRecords.length} of 342 ledger records</span>
+            <span>
+              Showing {filteredRecords.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredRecords.length)} of {filteredRecords.length} ledger records
+            </span>
             <div className="flex items-center gap-1">
-              <button className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
                 Previous
               </button>
-              <button className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">
-                1
-              </button>
-              <button className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                2
-              </button>
-              <button className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                3
-              </button>
-              <span className="px-1 text-slate-400">...</span>
-              <button className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                57
-              </button>
-              <button className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+              <span className="px-2 font-medium text-slate-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
                 Next
               </button>
             </div>
@@ -650,12 +697,32 @@ export const VendorEarningsPage: React.FC = () => {
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Export Format</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-2.5 cursor-pointer hover:bg-slate-50">
-                    <input type="radio" name="format" defaultChecked />
+                  <label
+                    onClick={() => setStatementFormat('pdf')}
+                    className={`flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                      statementFormat === 'pdf' ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="format"
+                      checked={statementFormat === 'pdf'}
+                      onChange={() => setStatementFormat('pdf')}
+                    />
                     <span className="font-semibold text-slate-800">PDF Report</span>
                   </label>
-                  <label className="flex items-center gap-2 rounded-lg border border-slate-200 p-2.5 cursor-pointer hover:bg-slate-50">
-                    <input type="radio" name="format" />
+                  <label
+                    onClick={() => setStatementFormat('csv')}
+                    className={`flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                      statementFormat === 'csv' ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="format"
+                      checked={statementFormat === 'csv'}
+                      onChange={() => setStatementFormat('csv')}
+                    />
                     <span className="font-semibold text-slate-800">CSV Spreadsheet</span>
                   </label>
                 </div>
@@ -666,17 +733,34 @@ export const VendorEarningsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsStatementModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 Close
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  alert('Statement generated and downloaded.');
+                  if (statementFormat === 'csv') {
+                    exportToCsv({
+                      filename: `vendor-statement-${new Date().toISOString().slice(0, 10)}.csv`,
+                      columns: [
+                        { header: 'Transaction ID', key: 'id' },
+                        { header: 'Datetime', key: 'datetime' },
+                        { header: 'Reference Order', key: 'refOrder' },
+                        { header: 'Type', key: 'type' },
+                        { header: 'Gross ($)', key: 'gross' },
+                        { header: 'Fee ($)', key: 'fee' },
+                        { header: 'Net Payout ($)', key: 'net' },
+                        { header: 'Settlement Status', key: 'status' },
+                      ],
+                      data: filteredRecords,
+                    });
+                  } else {
+                    window.print();
+                  }
                   setIsStatementModalOpen(false);
                 }}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
               >
                 Generate &amp; Download
               </button>
@@ -704,8 +788,9 @@ export const VendorEarningsPage: React.FC = () => {
                   <div className="text-[11px] text-slate-500">Issued Jan 31, 2024 • TIN ending in 4921</div>
                 </div>
                 <button
-                  onClick={() => alert('Downloading 2023 1099-K PDF')}
-                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  type="button"
+                  onClick={() => handleDownloadTaxPdf('2023')}
+                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
                 >
                   Download
                 </button>
@@ -717,8 +802,9 @@ export const VendorEarningsPage: React.FC = () => {
                   <div className="text-[11px] text-slate-500">Issued Jan 30, 2023 • TIN ending in 4921</div>
                 </div>
                 <button
-                  onClick={() => alert('Downloading 2022 1099-K PDF')}
-                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  type="button"
+                  onClick={() => handleDownloadTaxPdf('2022')}
+                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
                 >
                   Download
                 </button>
@@ -742,6 +828,14 @@ export const VendorEarningsPage: React.FC = () => {
           open={isProductModalOpen}
           onOpenChange={setIsProductModalOpen}
         />
+
+        {/* ── Floating Toast Notification ───────────────────────────── */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
       </div>
     </WorkspaceLayout>
   );

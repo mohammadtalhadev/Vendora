@@ -52,14 +52,14 @@ export const BecomeSellerPage: FC = () => {
         <div className="relative z-10 mx-auto max-w-3xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-[#FF7A1A]" />
-            <span>Vendora Merchant Program</span>
+            <span className="font-outfit">Vendora Merchant Program</span>
           </div>
 
-          <h1 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">
+          <h1 className="font-outfit mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">
             Sell to Hundreds of Thousands on Vendora
           </h1>
 
-          <p className="mt-4 text-base text-slate-300 sm:text-lg">
+          <p className="font-outfit mt-4 text-base text-slate-300 sm:text-lg">
             Scale your brand with industry-lowest commission rates, instant split payouts, and automated fulfillment tools built for modern merchants.
           </p>
 
