@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabase';
-import type { Category, ModerationStatus, Product, ProductType, Variant } from '../../../types/domain';
-import type { Database } from '../../../types/database';
+import { PRODUCT_SELECT, mapProduct, type ProductWithRefs } from './product-row';
+import type { Category, Product, ProductType } from '../../../types/domain';
 
 export interface ProductQueryParams {
   q?: string;
@@ -29,16 +29,6 @@ export interface SearchSuggestion {
   price?: number;
 }
 
-type ProductRow = Database['public']['Tables']['products']['Row'];
-
-interface ProductWithRefs extends ProductRow {
-  category: { id: string; name: string; slug: string } | null;
-  seller: { id: string; store_name: string; slug: string; seller_type: 'platform' | 'vendor' } | null;
-}
-
-const PRODUCT_SELECT =
-  '*, category:categories(id, name, slug), seller:vendor_profiles(id, store_name, slug, seller_type)';
-
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SORTS: Record<string, Array<{ column: string; ascending: boolean }>> = {
@@ -48,33 +38,6 @@ const SORTS: Record<string, Array<{ column: string; ascending: boolean }>> = {
   price_asc: [{ column: 'price', ascending: true }],
   price_desc: [{ column: 'price', ascending: false }],
 };
-
-function mapProduct(row: ProductWithRefs): Product {
-  return {
-    id: row.id,
-    title: row.title,
-    slug: row.slug,
-    description: row.description,
-    category: row.category?.name ?? '',
-    brand: row.brand,
-    images: row.images,
-    price: Number(row.price),
-    compareAtPrice: row.compare_at_price === null ? undefined : Number(row.compare_at_price),
-    type: row.type as ProductType,
-    sellerId: row.seller_id,
-    sellerName: row.seller?.store_name ?? '',
-    sellerType: row.seller?.seller_type ?? 'vendor',
-    variants: (row.variants ?? []) as unknown as Variant[],
-    stock: row.stock,
-    shippingSettings: row.shipping_settings as Product['shippingSettings'],
-    digitalAssetInfo: row.digital_asset_info as Product['digitalAssetInfo'],
-    rating: Number(row.rating),
-    reviewCount: row.review_count,
-    status: row.status as ModerationStatus,
-    rejectionReason: row.rejection_reason ?? undefined,
-    createdAt: row.created_at,
-  };
-}
 
 /** Storefront filters take a category id or slug; an unknown slug must yield no products. */
 async function resolveCategoryIds(category: string): Promise<string[]> {

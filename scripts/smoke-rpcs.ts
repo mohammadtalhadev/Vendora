@@ -134,7 +134,7 @@ console.log('\n[checkout] place_order');
 await as('authenticated', CU);
 await q(
   `insert into cart_items (user_id, product_id, variant_id, quantity) values
-     ($1,$2,'v-black',2),($1,$3,null,1)`,
+     ($1,$2,'v-black',2),($1,$3,'',1)`,
   [CU, P_PHYS, P_DIG],
 );
 ok('guest cart is scoped to owner', (await q('select count(*)::int c from cart_items'))[0].c === 2);
@@ -146,6 +146,11 @@ await expectThrow(
   'row-level security',
 );
 await as('authenticated', CU);
+await expectThrow(
+  'the same no-variant line cannot be added twice',
+  () => q(`insert into cart_items (user_id, product_id, quantity) values ($1,$2,1)`, [CU, P_DIG]),
+  'duplicate key',
+);
 const placed = (
   await q(
     `select place_order($1::jsonb,'card','express','SAVE10','leave at door') as r`,
@@ -206,17 +211,37 @@ const payout = (await q(`select request_payout(100) as r`))[0].r;
 ok('payout created for accrued net', Number(payout.amount) === 100 && /^FAST-\d{8}$/.test(payout.reference));
 await as('authenticated', CU);
 await q(`insert into reviews (product_id, author_id, author_name, rating, headline, body) values ($1,$2,'Sarah',5,'Great','Loved it')`, [P_PHYS, CU]);
+ok(
+  'the buyer who actually received the product is marked verified',
+  (await q(`select verified_purchase from reviews where author_id=$1`, [CU]))[0].verified_purchase === true,
+);
 await as('authenticated', CU2);
 await expectThrow('cannot post a review as someone else', () => q(`insert into reviews (product_id, author_id, author_name, rating) values ($1,$2,'Sarah',4)`, [P_PHYS, CU]), 'row-level security');
-await q(`insert into reviews (product_id, author_id, author_name, rating, headline, body) values ($1,$2,'Ali',1,'Bad','Broke')`, [P_PHYS, CU2]);
+await q(
+  `insert into reviews (product_id, author_id, author_name, rating, headline, body, verified_purchase) values ($1,$2,'Ali',1,'Bad','Broke',true)`,
+  [P_PHYS, CU2],
+);
 ok('rating rollup recomputed by trigger', Number((await q(`select rating from products where id=$1`, [P_PHYS]))[0].rating) === 3);
+ok(
+  'a browser cannot stamp its own review as a verified purchase',
+  (await q(`select verified_purchase from reviews where author_id=$1 and product_id=$2`, [CU2, P_PHYS]))[0].verified_purchase === false,
+);
 await as('authenticated', CU);
 await expectThrow('cannot review the same product twice', () => q(`insert into reviews (product_id, author_id, author_name, rating) values ($1,$2,'Sarah again',4)`, [P_PHYS, CU]), 'duplicate key');
 await as('authenticated', CU2);
 await expectThrow('cannot edit another user review', () => q(`update reviews set rating=1 where author_id=$1`, [CU]), 'row-level security');
 await q(`update reviews set helpful_count = helpful_count + 1 where author_id=$1`, [CU]);
 ok('but anyone may bump helpful_count', Number((await q(`select helpful_count::int h from reviews where author_id=$1`, [CU]))[0].h) === 1);
+await expectThrow(
+  'a helpful vote cannot rewrite verified_purchase',
+  () => q(`update reviews set verified_purchase=true where author_id=$1`, [CU2]),
+  'row-level security',
+);
 await q(`insert into reviews (product_id, author_id, author_name, rating, body) values ($1,$2,'Zoe',5,'Licence works')`, [P_DIG, CU2]);
+ok(
+  'a licence the reviewer never bought stays unverified',
+  (await q(`select verified_purchase from reviews where author_id=$1 and product_id=$2`, [CU2, P_DIG]))[0].verified_purchase === false,
+);
 await as('authenticated', VENDOR);
 await q(`select reply_to_review(id, 'Thanks for the feedback') from reviews where author_id=$1`, [CU]);
 ok('vendor reply stored', (await q(`select seller_reply->>'body' b from reviews where author_id=$1`, [CU]))[0].b === 'Thanks for the feedback');

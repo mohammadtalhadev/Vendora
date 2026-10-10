@@ -29,7 +29,20 @@ type Order = { column: string; ascending: boolean };
 /** Columns PostgREST walks for an embed, keyed by `<from table>.<referenced table>`. */
 const EMBED_FK: Record<string, Record<string, string>> = {
   products: { categories: 'category_id', vendor_profiles: 'seller_id' },
+  cart_items: { products: 'product_id' },
+  wishlist_items: { products: 'product_id' },
+  reviews: { products: 'product_id' },
 };
+
+/** The unique indexes the migrations declare, so insert and upsert behave like Postgres. */
+const UNIQUE_KEYS: Record<string, string[]> = {
+  cart_items: ['user_id', 'product_id', 'variant_id'],
+  wishlist_items: ['user_id', 'product_id'],
+  reviews: ['product_id', 'author_id'],
+};
+
+/** `alias:referenced_table(cols)` in a PostgREST select list. */
+const EMBED_RE = /^(?:([\w]+):)?([\w]+)\((.*)\)$/s;
 
 /** Splits a PostgREST select list on top-level commas only. */
 function splitSelect(columns: string): string[] {
@@ -78,13 +91,22 @@ function textSearchFilter(term: string): Filter {
 
 /**
  * In-memory stand-in for the slice of Supabase the data layer touches: table reads with
- * filters, ordering, ranges, counts and FK embeds, plus the GoTrue password/OAuth methods
- * and the auth listener. Postgres and GoTrue semantics themselves are covered offline by
+ * filters, ordering, ranges, counts and FK embeds, writes that honour unique keys and
+ * `onConflict`, the RPCs the app calls, plus the GoTrue password/OAuth methods and the
+ * auth listener. Postgres and GoTrue semantics themselves are covered offline by
  * scripts/smoke-rpcs.ts; this double only lets unit tests assert how the client maps
  * those responses.
  */
 export function createSupabaseDouble() {
-  const tables: Record<string, Row[]> = { profiles: [], vendor_profiles: [], products: [], categories: [] };
+  const tables: Record<string, Row[]> = {
+    profiles: [],
+    vendor_profiles: [],
+    products: [],
+    categories: [],
+    cart_items: [],
+    wishlist_items: [],
+    reviews: [],
+  };
   const failures: Record<string, string | null> = {};
   const authState = {
     session: null as DoubleSession | null,
@@ -99,6 +121,44 @@ export function createSupabaseDouble() {
   };
   const listeners = new Set<Listener>();
   let syntheticId = 0;
+  let rpcError: DoubleError | null = null;
+  const rpcCalls: Array<{ fn: string; args: Row }> = [];
+
+  /** Resolves a select list against a row, replaying `alias:table(cols)` embeds recursively. */
+  function project(target: Row, selectList: string, fromTable: string): Row {
+    const parts = splitSelect(selectList);
+    const out: Row = parts.includes('*') ? { ...target } : {};
+    for (const part of parts) {
+      if (part === '*') continue;
+      const embed = EMBED_RE.exec(part);
+      if (!embed) {
+        out[part] = target[part];
+        continue;
+      }
+      const name = embed[1] ?? embed[2];
+      const referenced = embed[2];
+      const fkColumn = EMBED_FK[fromTable]?.[referenced];
+      const child = fkColumn
+        ? (tables[referenced] ?? []).find((candidate) => candidate.id === target[fkColumn]) ?? null
+        : null;
+      out[name] = child ? project(child, embed[3], referenced) : null;
+    }
+    return out;
+  }
+
+  /** The columns Postgres would fill for a row the client did not supply. */
+  function withDefaults(table: string, row: Row): Row {
+    const out: Row = { ...row };
+    if (out.id === undefined) out.id = `${table}-${++syntheticId}`;
+    if (out.created_at === undefined) out.created_at = new Date().toISOString();
+    return out;
+  }
+
+  function uniqueConflict(table: string, row: Row): Row | undefined {
+    const key = UNIQUE_KEYS[table];
+    if (!key) return undefined;
+    return (tables[table] ?? []).find((existing) => key.every((column) => existing[column] === row[column]));
+  }
 
   function query(table: string) {
     const rows = () => tables[table] ?? [];
@@ -111,6 +171,11 @@ export function createSupabaseDouble() {
       take: null as number | null,
       window: null as [number, number] | null,
       signal: null as AbortSignal | null,
+      /** Rows a write in this chain affected; a following `.select().single()` returns them. */
+      written: null as Row[] | null,
+      /** A rejected write, reported when the chain is awaited, as PostgREST reports it. */
+      writeError: null as DoubleError | null,
+      pending: null as { kind: 'update' | 'delete'; patch: Row | null } | null,
       select(columns: string, options?: { count?: string }) {
         this.selected = columns;
         this.wantCount = options?.count !== undefined;
@@ -176,34 +241,34 @@ export function createSupabaseDouble() {
         const limited = this.take !== null ? paged.slice(0, this.take) : paged;
         return limited.map((row) => this.withEmbeds(row));
       },
-      /** Replays the select list's `alias:referenced_table(cols)` embeds against seeded rows. */
+      /** Replays the select list's embeds against seeded rows, one level at a time. */
       withEmbeds(row: Row) {
-        const out: Row = { ...row };
-        for (const part of splitSelect(this.selected)) {
-          const embed = /^(?:([\w]+):)?([\w]+)\((.*)\)$/s.exec(part);
-          if (!embed) continue;
-          const referenced = embed[2];
-          const inner = embed[3];
-          const fkColumn = EMBED_FK[table]?.[referenced];
-          if (!fkColumn) continue;
-          const name = embed[1] ?? referenced;
-          const target = (tables[referenced] ?? []).find((candidate) => candidate.id === row[fkColumn]);
-          if (!target) {
-            out[name] = null;
-            continue;
-          }
-          const picked = splitSelect(inner)
-            .filter((column) => column !== '*')
-            .reduce<Row>((acc, column) => ({ ...acc, [column]: target[column] }), {});
-          out[name] = picked;
-        }
-        return out;
+        return project(row, this.selected, table);
       },
       outcome() {
         const message = failure();
+        const pending = this.pending;
+        const writeError = this.writeError;
+        this.pending = null;
+        this.writeError = null;
         if (message) return { data: null, error: { message }, count: null };
+        if (writeError) return { data: null, error: writeError, count: null };
         if (this.signal?.aborted) {
           return { data: null, error: { name: 'AbortError', message: 'Aborted' }, count: null };
+        }
+        if (pending) {
+          const targets = this.filtered();
+          tables[table] =
+            pending.kind === 'delete'
+              ? rows().filter((row) => !targets.includes(row))
+              : rows().map((row) => (targets.includes(row) ? { ...row, ...pending.patch } : row));
+          this.written = targets;
+        }
+        if (this.written) {
+          // A write only returns rows when the chain asked for them, as PostgREST does.
+          if (!this.selected) return { data: null, error: null, count: null };
+          const affected = this.written.map((row) => this.withEmbeds(row));
+          return { data: affected, error: null, count: this.wantCount ? affected.length : null };
         }
         return { data: this.matched(), error: null, count: this.wantCount ? this.filtered().length : null };
       },
@@ -224,27 +289,67 @@ export function createSupabaseDouble() {
           ? { data: first, error: null }
           : { data: null, error: { message: `No rows found for ${table}` } };
       },
-      async insert(values: Row) {
+      insert(values: Row | Row[]) {
         const message = failure();
-        if (message) return { data: null, error: { message } };
-        tables[table] = [...rows(), values];
-        return { data: values, error: null };
+        if (message) {
+          this.writeError = { message };
+          return this;
+        }
+        const incoming = Array.isArray(values) ? values : [values];
+        for (const row of incoming) {
+          if (uniqueConflict(table, row)) {
+            this.writeError = {
+              message: `duplicate key value violates unique constraint "${table}_key"`,
+            };
+            return this;
+          }
+        }
+        const stored = incoming.map((row) => withDefaults(table, row));
+        tables[table] = [...rows(), ...stored];
+        this.written = stored;
+        return this;
       },
-      async upsert(values: Row) {
+      /**
+       * `onConflict` decides whether a matching row is merged or a fresh one appended, which
+       * is exactly the difference between a cart line updating its quantity and duplicating.
+       */
+      upsert(values: Row | Row[], options?: { onConflict?: string }) {
         const message = failure();
-        if (message) return { data: null, error: { message } };
-        tables[table] = [...rows(), values];
-        return { data: values, error: null };
+        if (message) {
+          this.writeError = { message };
+          return this;
+        }
+        const incoming = Array.isArray(values) ? values : [values];
+        const key = options?.onConflict?.split(',').map((column) => column.trim());
+        const stored: Row[] = [];
+        for (const raw of incoming) {
+          const row = withDefaults(table, raw);
+          const existing = key
+            ? rows().find((candidate) => key.every((column) => candidate[column] === row[column]))
+            : uniqueConflict(table, row);
+          if (!existing) {
+            tables[table] = [...rows(), row];
+            stored.push(row);
+            continue;
+          }
+          const merged = { ...existing, ...row };
+          tables[table] = rows().map((candidate) => (candidate === existing ? merged : candidate));
+          stored.push(merged);
+        }
+        this.written = stored;
+        return this;
       },
-      async update() {
-        const message = failure();
-        if (message) return { data: null, error: { message } };
-        return { data: null, error: null };
+      /**
+       * Like the real builder, these only record the write: it runs when the chain is
+       * awaited, so every `.eq(...)` applied after the call is in place by then.
+       */
+      update(patch: Row) {
+        this.pending = { kind: 'update', patch };
+        return this;
       },
-      async delete() {
-        const message = failure();
-        if (message) return { data: null, error: { message } };
-        return { data: null, error: null };
+      delete() {
+        this.pending = { kind: 'delete', patch: null };
+        return this;
       },
     };
     return builder;
@@ -259,8 +364,21 @@ export function createSupabaseDouble() {
     failures,
     authState,
     listeners,
+    rpcCalls,
     emit,
     from: vi.fn((table: string) => query(table)),
+    /** Only the RPCs the data layer calls are implemented; the rest fail loudly. */
+    rpc: vi.fn(async (fn: string, args: Row = {}) => {
+      rpcCalls.push({ fn, args });
+      if (rpcError) return { data: null, error: rpcError };
+      if (fn === 'reply_to_review') {
+        const review = tables.reviews.find((row) => row.id === args.p_review_id);
+        if (!review) return { data: null, error: { message: `No rows found for ${fn}` } };
+        review.seller_reply = { author: 'Merchant Response', timeAgo: 'Just now', body: args.p_reply };
+        return { data: true, error: null };
+      }
+      return { data: null, error: { message: `Unknown rpc: ${fn}` } };
+    }),
     auth: {
       getSession: vi.fn(async () => ({ data: { session: authState.session } })),
       signInWithPassword: vi.fn(async ({ email }: { email: string; password: string }) => {
@@ -334,6 +452,22 @@ export function createSupabaseDouble() {
       tables.products.push(product);
       return product;
     },
+    seedCartItem(item: Row) {
+      tables.cart_items.push(item);
+      return item;
+    },
+    seedWishlistItem(item: Row) {
+      tables.wishlist_items.push(item);
+      return item;
+    },
+    seedReview(review: Row) {
+      tables.reviews.push(review);
+      return review;
+    },
+    /** Makes the next RPC call fail, the way a denied SECURITY DEFINER call does. */
+    failRpc(message: string | null) {
+      rpcError = message ? { message } : null;
+    },
     reset() {
       Object.keys(tables).forEach((name) => {
         tables[name].length = 0;
@@ -348,9 +482,12 @@ export function createSupabaseDouble() {
       authState.signOutError = null;
       authState.oAuthError = null;
       authState.confirmEmail = false;
+      rpcError = null;
+      rpcCalls.length = 0;
       listeners.clear();
       syntheticId = 0;
       double.from.mockClear();
+      double.rpc.mockClear();
       Object.values(double.auth).forEach((fn) => typeof fn.mockClear === 'function' && fn.mockClear());
     },
   };
@@ -406,6 +543,52 @@ export function categoryRow(overrides: Partial<Row> = {}): Row {
     icon: null,
     image: null,
     commission_rate_override: null,
+    ...overrides,
+  };
+}
+
+/** A cart_items line: `variant_id` is the empty string when no variant was chosen. */
+export function cartRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: 'cart-1',
+    user_id: 'user-1',
+    product_id: productRow().id,
+    variant_id: '',
+    quantity: 1,
+    created_at: '2026-10-05T00:00:00.000Z',
+    updated_at: '2026-10-05T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function wishlistRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: 'wish-1',
+    user_id: 'user-1',
+    product_id: productRow().id,
+    created_at: '2026-10-05T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A reviews row; `verified_purchase` is set by the database, never by the client. */
+export function reviewRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000201',
+    product_id: productRow().id,
+    author_id: 'user-1',
+    author_name: 'Alex Buyer',
+    author_avatar: '',
+    author_country: 'US',
+    verified_purchase: false,
+    order_number: null,
+    rating: 5,
+    headline: 'Excellent',
+    body: 'Arrived early and works perfectly.',
+    photos: [],
+    helpful_count: 3,
+    seller_reply: null,
+    created_at: '2026-10-05T00:00:00.000Z',
     ...overrides,
   };
 }

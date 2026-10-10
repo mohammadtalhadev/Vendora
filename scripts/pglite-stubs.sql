@@ -65,6 +65,20 @@ as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;
 
+-- Supabase gives anon/authenticated USAGE on the auth schema and EXECUTE on
+-- auth.uid(); verified against a real project. Without it, a trigger function
+-- that calls auth.uid() fails as authenticated even though a policy may not.
+do $$
+declare r text;
+begin
+  foreach r in array array['anon', 'authenticated', 'service_role'] loop
+    if exists (select 1 from pg_roles where rolname = r) then
+      execute format('grant usage on schema auth to %I', r);
+      execute format('grant execute on function auth.uid() to %I', r);
+    end if;
+  end loop;
+end $$;
+
 create schema if not exists storage;
 
 create table if not exists storage.buckets (
