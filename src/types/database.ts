@@ -99,7 +99,7 @@ export type Database = {
           quantity: number
           updated_at: string
           user_id: string
-          variant_id: string | null
+          variant_id: string
         }
         Insert: {
           created_at?: string
@@ -108,7 +108,7 @@ export type Database = {
           quantity?: number
           updated_at?: string
           user_id: string
-          variant_id?: string | null
+          variant_id?: string
         }
         Update: {
           created_at?: string
@@ -117,7 +117,7 @@ export type Database = {
           quantity?: number
           updated_at?: string
           user_id?: string
-          variant_id?: string | null
+          variant_id?: string
         }
         Relationships: [
           {
