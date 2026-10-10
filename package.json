@@ -9,7 +9,14 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:seed:gen": "node --experimental-strip-types scripts/generate-seed.ts",
+    "db:types": "node --experimental-strip-types scripts/gen-types.ts",
+    "db:types:remote": "supabase gen types typescript --linked --schema public > src/types/database.ts",
+    "db:check": "node --experimental-strip-types scripts/validate-migrations.ts && node --experimental-strip-types scripts/validate-seed.ts && node --experimental-strip-types scripts/smoke-rpcs.ts",
+    "db:push": "supabase db push --linked",
+    "auth:verify": "node scripts/verify-auth-live.mjs",
+    "db:reset": "supabase db reset --linked"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -18,6 +25,7 @@
     "@radix-ui/react-label": "^2.1.16",
     "@radix-ui/react-select": "^2.3.8",
     "@radix-ui/react-tabs": "^1.1.22",
+    "@supabase/supabase-js": "^2.117.3",
     "@tanstack/react-query": "^5.104.1",
     "clsx": "^2.1.1",
     "lenis": "^1.3.26",
@@ -34,6 +42,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
