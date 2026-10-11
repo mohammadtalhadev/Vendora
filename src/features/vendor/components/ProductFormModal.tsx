@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   Package,
@@ -22,8 +22,9 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
 import type { Product, ProductType, Variant } from '../../../types/domain';
-import { addVendorProduct } from '../vendorData';
-import { mockDb } from '../../../mocks/db';
+import { useCategories } from '../../catalog/hooks/useProducts';
+import { useCreateVendorProduct, useUpdateVendorProduct } from '../hooks/useVendorProducts';
+import type { VendorProductDraft } from '../api/products';
 import { cn } from '../../../lib/utils';
 
 export interface ProductFormModalProps {
@@ -34,6 +35,8 @@ export interface ProductFormModalProps {
   onSuccess?: () => void;
   onSave?: (product: Product) => void;
   initialProduct?: Partial<Product> | null;
+  vendorId?: string;
+  vendorName?: string;
 }
 
 type TabType = 'details' | 'pricing' | 'variants';
@@ -42,6 +45,8 @@ interface ProductFormContentProps {
   initialProduct?: Partial<Product> | null;
   onSave?: (product: Product) => void;
   onClose: () => void;
+  vendorId?: string;
+  vendorName?: string;
 }
 
 const ProductFormContent: React.FC<ProductFormContentProps> = ({
@@ -50,39 +55,48 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('details');
+  const { data: categoryData } = useCategories();
+  const categories = categoryData?.categories ?? [];
+  const createListing = useCreateVendorProduct();
+  const updateListing = useUpdateVendorProduct();
 
-  // Form Fields initialized from initialProduct or sensible defaults
+  // Form fields start empty: a prefilled price or brand would be a value the seller
+  // never chose, and it would land in the database as if they had.
   const [title, setTitle] = useState(initialProduct?.title || '');
-  const [category, setCategory] = useState(initialProduct?.category || 'cat-audio');
-  const [brand, setBrand] = useState(initialProduct?.brand || 'SoundWave Direct');
+  const [categoryId, setCategoryId] = useState('');
+  const [brand, setBrand] = useState(initialProduct?.brand || '');
   const [description, setDescription] = useState(initialProduct?.description || '');
-  const [imageUrl, setImageUrl] = useState(
-    initialProduct?.images?.[0] ||
-      'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
-  );
+  const [imageUrl, setImageUrl] = useState(initialProduct?.images?.[0] || '');
   const [productType, setProductType] = useState<ProductType>(
     initialProduct?.type || 'physical',
   );
   const [price, setPrice] = useState(
-    initialProduct?.price !== undefined ? initialProduct.price.toString() : '189.00',
+    initialProduct?.price !== undefined ? initialProduct.price.toString() : '',
   );
   const [compareAtPrice, setCompareAtPrice] = useState(
     initialProduct?.compareAtPrice ? initialProduct.compareAtPrice.toString() : '',
   );
   const [stock, setStock] = useState(
-    initialProduct?.stock !== undefined ? initialProduct.stock.toString() : '25',
+    initialProduct?.stock !== undefined ? initialProduct.stock.toString() : '',
   );
   const [shippingFee, setShippingFee] = useState(
     initialProduct?.shippingSettings?.standardFee !== undefined
       ? initialProduct.shippingSettings.standardFee.toString()
-      : '8.50',
+      : '',
   );
   const [licenseType, setLicenseType] = useState(
-    initialProduct?.digitalAssetInfo?.licenseType || 'Commercial License',
+    initialProduct?.digitalAssetInfo?.licenseType || 'Single Commercial License',
   );
   const [downloadUrl, setDownloadUrl] = useState(
-    initialProduct?.digitalAssetInfo?.downloadUrl || '/downloads/asset.zip',
+    initialProduct?.digitalAssetInfo?.downloadUrl || '',
   );
+
+  // An edited row carries the category *name*; the select is addressed by id.
+  useEffect(() => {
+    if (categoryId || !initialProduct?.category || categories.length === 0) return;
+    const match = categories.find((cat) => cat.name === initialProduct.category);
+    if (match) setCategoryId(match.id);
+  }, [categories, initialProduct, categoryId]);
 
   // Variant Generator State
   const [optionName, setOptionName] = useState('Color');
@@ -102,7 +116,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
     if (rawValues.length === 0) return;
 
     const basePriceNum = parseFloat(price) || 0;
-    const baseStockNum = parseInt(stock, 10) || 10;
+    const baseStockNum = parseInt(stock, 10) || 0;
     const optLabel = optionName.trim() || 'Option';
 
     const generated: Variant[] = rawValues.map((val, index) => {
@@ -110,9 +124,9 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
       return {
         id: `var-${Date.now()}-${index}`,
         name: `${optLabel}: ${val}`,
-        sku: `SW-${slugVal}-${index + 1}`,
+        sku: `${slugVal}-${index + 1}`,
         price: basePriceNum,
-        stock: Math.max(1, Math.floor(baseStockNum / rawValues.length)),
+        stock: Math.floor(baseStockNum / rawValues.length),
         attributes: { [optLabel]: val },
       };
     });
@@ -124,12 +138,17 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
     setVariants((prev) => prev.filter((v) => v.id !== id));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
     if (!title.trim()) {
       setErrorMessage('Product title is required.');
+      setActiveTab('details');
+      return;
+    }
+    if (!categoryId) {
+      setErrorMessage('Choose the category this listing belongs in.');
       setActiveTab('details');
       return;
     }
@@ -141,55 +160,48 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
       return;
     }
 
-    const stockNum = parseInt(stock, 10);
+    const stockNum = stock.trim() === '' ? 0 : parseInt(stock, 10);
     if (isNaN(stockNum) || stockNum < 0) {
       setErrorMessage('Please enter a valid stock quantity.');
       setActiveTab('pricing');
       return;
     }
 
-    const newProduct: Product = {
-      id: initialProduct?.id || `prod-${Date.now()}`,
+    // The seller supplies the listing; `seller_id`, `status`, `rating` and `review_count`
+    // are set by the database, so a new listing enters moderation as pending_review.
+    const draft: VendorProductDraft = {
       title: title.trim(),
-      slug: title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      description: description.trim() || title.trim(),
-      category,
-      brand: brand.trim() || 'SoundWave Direct',
-      images: [
-        imageUrl.trim() ||
-          'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
-      ],
+      description: description.trim(),
+      categoryId,
+      brand: brand.trim(),
+      images: imageUrl.trim() ? [imageUrl.trim()] : [],
       price: priceNum,
-      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : undefined,
+      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       type: productType,
-      sellerId: 'vendor-tech-1',
-      sellerName: 'SoundWave Direct',
-      sellerType: 'vendor',
-      variants: variants.length > 0 ? variants : [],
+      variants,
       stock: stockNum,
       shippingSettings:
         productType === 'physical'
           ? {
               standardFee: parseFloat(shippingFee) || 0,
-              freeShipping: parseFloat(shippingFee) === 0,
+              freeShipping: (parseFloat(shippingFee) || 0) === 0,
             }
           : undefined,
       digitalAssetInfo:
         productType === 'digital'
-          ? {
-              licenseType,
-              downloadUrl: downloadUrl || '/downloads/package.zip',
-            }
+          ? { licenseType, downloadUrl: downloadUrl.trim() || undefined }
           : undefined,
-      rating: initialProduct?.rating || 5.0,
-      reviewCount: initialProduct?.reviewCount || 0,
-      status: initialProduct?.status || 'approved',
-      createdAt: initialProduct?.createdAt || new Date().toISOString(),
     };
 
-    addVendorProduct(newProduct);
-    onSave?.(newProduct);
-    onClose();
+    try {
+      const saved = initialProduct?.id
+        ? await updateListing.mutateAsync({ productId: initialProduct.id, updates: draft })
+        : await createListing.mutateAsync(draft);
+      onSave?.(saved);
+      onClose();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Could not save the listing.');
+    }
   };
 
   return (
@@ -283,25 +295,16 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                   Category <span className="text-coral">*</span>
                 </label>
                 <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
                   className="flex h-11 w-full rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
                 >
-                  {mockDb.categories.length > 0 ? (
-                    mockDb.categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="cat-audio">Audio & Sound</option>
-                      <option value="cat-computing">Computers & Tech</option>
-                      <option value="cat-gaming">Gaming Gear</option>
-                      <option value="cat-smart-home">Smart Home</option>
-                      <option value="cat-digital">Digital Licenses</option>
-                    </>
-                  )}
+                  <option value="">Choose a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -634,8 +637,9 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                 type="submit"
                 variant="orange-cta"
                 size="sm"
+                disabled={createListing.isPending || updateListing.isPending}
               >
-                Save Product
+                {createListing.isPending || updateListing.isPending ? 'Saving…' : 'Save Product'}
               </Button>
             </div>
           </div>
@@ -653,6 +657,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onSuccess,
   onSave,
   initialProduct,
+  vendorId,
+  vendorName,
 }) => {
   const isModalOpen = open ?? isOpen ?? false;
   const handleOpenChange = (val: boolean) => {
@@ -674,6 +680,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           initialProduct={initialProduct}
           onSave={handleSave}
           onClose={() => handleOpenChange(false)}
+          vendorId={vendorId}
+          vendorName={vendorName}
         />
       </DialogContent>
     </Dialog>

@@ -1,745 +1,452 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Search,
-  MessageSquare,
-  Calendar,
-  Ticket,
-  Play,
-  Download,
-  ExternalLink,
+  AlertTriangle,
   ArrowRight,
-  ShieldCheck,
-  Package,
-  CreditCard,
+  Inbox,
+  MessageSquare,
   RotateCcw,
-  Zap,
-  CheckCircle2,
+  Search,
+  Send,
+  Settings,
+  ShieldCheck,
+  Ticket,
+  Truck,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '../components/ui/dialog';
+import {
+  useDisputeMessages,
+  usePostDisputeMessage,
+  useVendorDisputes,
+} from '../features/vendor/hooks/useVendorDisputes';
+import type { DisputeStatus, VendorDispute } from '../features/vendor/api/disputes';
 
-export const VendorSupportPage: React.FC = () => {
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isOpenTicketModalOpen, setIsOpenTicketModalOpen] = useState(false);
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const [isBookCallModalOpen, setIsBookCallModalOpen] = useState(false);
-  const [isTicketHistoryModalOpen, setIsTicketHistoryModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+const STATUS_LABEL: Record<DisputeStatus, string> = {
+  open: 'Open',
+  under_review: 'Under review',
+  escalated: 'Escalated',
+  resolved_refund: 'Resolved · refund',
+  resolved_denied: 'Resolved · denied',
+};
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+const STATUS_STYLE: Record<DisputeStatus, string> = {
+  open: 'bg-amber-50 text-amber-800 border-amber-200',
+  under_review: 'bg-blue-50 text-blue-800 border-blue-200',
+  escalated: 'bg-red-50 text-red-800 border-red-200',
+  resolved_refund: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  resolved_denied: 'bg-slate-100 text-slate-700 border-slate-200',
+};
+
+const awaitingDecision = (status: DisputeStatus) =>
+  status === 'open' || status === 'under_review' || status === 'escalated';
+
+const dateTime = (value: string) =>
+  new Date(value).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+/** One case's exchange, loaded when the seller opens it so the list stays a single query. */
+const DisputeThread: React.FC<{ dispute: VendorDispute }> = ({ dispute }) => {
+  const messages = useDisputeMessages(dispute.id);
+  const reply = usePostDisputeMessage();
+  const [draft, setDraft] = useState('');
+
+  const send = async () => {
+    const body = draft.trim();
+    if (!body) return;
+    await reply.mutateAsync({ disputeId: dispute.id, body });
+    setDraft('');
   };
 
-  const suggestedSearches = [
-    '1099-K Tax Forms',
-    'Fulfillment SLA',
-    'Return Window Rules',
-    'Restricted Brands',
-    'Fee Schedule 2026',
-  ];
+  return (
+    <div className="space-y-4 text-xs">
+      <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Reason filed
+          </span>
+          <span className="font-mono text-[10px] text-slate-400">{dispute.id.slice(0, 8)}</span>
+        </div>
+        <p className="font-semibold text-slate-800 leading-relaxed">{dispute.reason}</p>
+        <p className="text-[11px] text-slate-500">
+          Opened by {dispute.customerName || 'the buyer'} · {dateTime(dispute.createdAt)}
+        </p>
+        {dispute.resolutionNote && (
+          <p className="pt-1.5 border-t border-slate-200 text-[11px] text-slate-600 leading-relaxed">
+            <span className="font-bold text-slate-900">Staff resolution note: </span>
+            {dispute.resolutionNote}
+            {dispute.resolutionAmount !== undefined && (
+              <span className="ml-1 font-mono">· {dispute.resolutionAmount.toFixed(2)} recorded</span>
+            )}
+          </p>
+        )}
+      </div>
+
+      <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+        {messages.isLoading && <p className="text-slate-400">Loading the exchange…</p>}
+        {messages.error && (
+          <p className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-red-800">
+            {messages.error.message}
+          </p>
+        )}
+        {messages.data?.length === 0 && (
+          <p className="rounded-lg border border-dashed border-slate-200 p-3 text-slate-400">
+            No one has written in this case yet.
+          </p>
+        )}
+        {messages.data?.map((message) => (
+          <div
+            key={message.id}
+            className={`rounded-xl border p-3 space-y-1 ${
+              message.isInternalNote
+                ? 'border-dashed border-violet-200 bg-violet-50/60'
+                : message.senderRole === 'vendor'
+                  ? 'border-orange-100 bg-orange-50/50'
+                  : 'border-slate-200 bg-white'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-bold text-slate-900">
+                {message.senderName || (message.senderRole === 'customer' ? 'Buyer' : 'Vendora')}
+              </span>
+              <span className="text-[10px] text-slate-400">{dateTime(message.createdAt)}</span>
+            </div>
+            {message.isInternalNote && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-violet-700">
+                Internal note — staff wrote it, your copy shows because the thread is shared
+              </span>
+            )}
+            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{message.body}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <textarea
+          rows={3}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Add the tracking numbers, delivery proof or clarification your side of the case needs…"
+          className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 focus:outline-none focus:border-[#FF7A1A]"
+        />
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[10px] text-slate-400">
+            Posted as your store. Only staff can change the status or close a case.
+          </span>
+          <button
+            type="button"
+            onClick={() => void send()}
+            disabled={!draft.trim() || reply.isPending}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[#EA580C] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Send className="h-3.5 w-3.5" />
+            {reply.isPending ? 'Sending…' : 'Send reply'}
+          </button>
+        </div>
+        {reply.isError && (
+          <p className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-red-800">
+            {reply.error.message}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export const VendorSupportPage: React.FC = () => {
+  const disputes = useVendorDisputes();
+  const [filter, setFilter] = useState('');
+  const [openCaseId, setOpenCaseId] = useState<string | null>(null);
+
+  const rows = disputes.data ?? [];
+  const awaitingCount = rows.filter((d) => awaitingDecision(d.status)).length;
+  const urgentCount = rows.filter((d) => d.urgency === 'urgent' && awaitingDecision(d.status)).length;
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (d) =>
+        d.reason.toLowerCase().includes(q) ||
+        d.customerName.toLowerCase().includes(q) ||
+        STATUS_LABEL[d.status].toLowerCase().includes(q) ||
+        d.id.toLowerCase().includes(q),
+    );
+  }, [rows, filter]);
+
+  const openCase = rows.find((d) => d.id === openCaseId) ?? null;
 
   return (
-    <WorkspaceLayout
-      role="vendor"
-      roleBadgeText="VENDOR PARTNER"
-      sidebar={<VendorNav onOpenAddProduct={() => setIsProductModalOpen(true)} />}
-    >
+    <WorkspaceLayout role="vendor" sidebar={<VendorNav />}>
       <div className="space-y-6">
-        {/* ── Breadcrumb & Header ─────────────────────────────────── */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              ASSISTANCE &amp; POLICIES <span className="text-slate-300">/</span> HELP CENTER
-            </div>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-              Help &amp; Support
-            </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Access seller documentation, platform compliance guidelines, contact dedicated merchant support, or submit an inquiry ticket.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => showToast('Connecting to Vendora Merchant Community Discourse...')}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <UsersIcon className="h-4 w-4 text-slate-500" />
-              Seller Community Forum
-            </button>
-            <button
-              onClick={() => setIsOpenTicketModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors"
-            >
-              <Ticket className="h-4 w-4" />
-              + Open Support Ticket
-            </button>
-          </div>
+        {/* ── Header ──────────────────────────────────────────────── */}
+        <div>
+          <h1 className="text-2xl font-black font-outfit tracking-tight text-slate-900">
+            Help &amp; Support
+          </h1>
+          <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-3xl">
+            This is your arbitration queue: the cases that name{' '}
+            <strong className="text-slate-700">your store</strong>, read live from the{' '}
+            <code className="font-mono text-[11px]">disputes</code> table. This build has no ticket
+            desk, knowledge base or live-chat queue, so anything not on this page is not something
+            a seller can do.
+          </p>
         </div>
 
-        {/* ── Hero Search Box ─────────────────────────────────────── */}
-        <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/70 p-6 sm:p-8 shadow-xs text-center space-y-4">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            SELF-SERVICE DOCUMENTATION INDEX
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            What can we help you resolve today?
-          </h2>
+        {/* ── Counts taken from the queue itself ──────────────────── */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[
+            {
+              label: 'Cases naming your store',
+              value: rows.length,
+              hint: 'Every dispute row whose vendor id is yours',
+            },
+            {
+              label: 'Awaiting a decision',
+              value: awaitingCount,
+              hint: 'Open, under review or escalated',
+            },
+            {
+              label: 'Flagged urgent by the buyer',
+              value: urgentCount,
+              hint: `${rows.length - awaitingCount} resolved or denied`,
+            },
+          ].map((tile) => (
+            <div
+              key={tile.label}
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-1"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {tile.label}
+              </div>
+              <div className="text-2xl font-black text-slate-900 tabular-nums">{tile.value}</div>
+              <div className="text-[11px] text-slate-500">{tile.hint}</div>
+            </div>
+          ))}
+        </div>
 
-          <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search seller guides, API docs, dispute guidelines, fee structures..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white pl-11 pr-14 py-3 text-xs text-slate-800 placeholder:text-slate-400 shadow-xs focus:outline-none focus:border-slate-900"
-            />
-            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-400 border border-slate-200">
-              ⌘K
-            </span>
+        {/* ── Queue ───────────────────────────────────────────────── */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-base font-bold text-slate-900">Case queue</h2>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="text"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter by reason, buyer, status or case id"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-xs placeholder-slate-400 focus:outline-none focus:border-[#FF7A1A]"
+              />
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 pt-1">
-            <span className="font-semibold text-slate-400">Suggested Searches:</span>
-            {suggestedSearches.map((term) => (
-              <button
-                key={term}
-                onClick={() => setSearchQuery(term)}
-                className="rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-slate-400 hover:text-slate-900 shadow-2xs transition-all"
+          {disputes.isLoading && (
+            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-400">
+              Loading your cases…
+            </div>
+          )}
+
+          {disputes.error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 space-y-2">
+              <div className="flex items-center gap-2 font-bold">
+                <AlertTriangle className="h-4 w-4" />
+                The queue could not be read
+              </div>
+              <p className="leading-relaxed">{disputes.error.message}</p>
+              <p className="text-[11px] text-red-700">
+                Nothing here falls back to a sample file — the list stays empty until the read
+                succeeds.
+              </p>
+            </div>
+          )}
+
+          {!disputes.isLoading && !disputes.error && filtered.length === 0 && (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center space-y-2">
+              <Inbox className="mx-auto h-6 w-6 text-slate-300" />
+              <div className="text-sm font-bold text-slate-900">
+                {rows.length === 0 ? 'No case names your store' : 'No case matches the filter'}
+              </div>
+              <p className="mx-auto max-w-md text-xs text-slate-500 leading-relaxed">
+                {rows.length === 0
+                  ? 'A dispute is opened by the buyer of an order, never by the seller: the insert policy only accepts a row whose customer id is the signed-in account. An empty queue means nothing is against you.'
+                  : 'Widen the filter to see the rest of the queue.'}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {filtered.map((dispute) => (
+              <div
+                key={dispute.id}
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all hover:shadow-xs"
               >
-                {term}
-              </button>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${STATUS_STYLE[dispute.status]}`}
+                      >
+                        {STATUS_LABEL[dispute.status]}
+                      </span>
+                      {dispute.urgency === 'urgent' && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[10px] font-bold text-red-700">
+                          <AlertTriangle className="h-3 w-3" />
+                          Urgent
+                        </span>
+                      )}
+                      <span className="font-mono text-[10px] text-slate-400">
+                        {dispute.id.slice(0, 8)}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-900 leading-relaxed">
+                      {dispute.reason}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      {dispute.customerName || 'Buyer'} · opened {dateTime(dispute.createdAt)} ·
+                      last touched {dateTime(dispute.updatedAt)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {dispute.orderGroupId && (
+                      <Link
+                        to={`/vendor/orders/${dispute.orderGroupId}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        Order
+                        <ArrowRight className="h-3 w-3 text-slate-400" />
+                      </Link>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setOpenCaseId(dispute.id)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-[11px] font-bold text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      Open thread
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* ── 3 Direct Support Channels Cards ──────────────────────── */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {/* Card 1: Priority Live Chat */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                  <Zap className="h-4 w-4" />
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Live Available
-                </span>
-              </div>
-              <h3 className="mt-3 font-bold text-slate-900 text-sm">Priority Live Chat</h3>
-              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                Average wait time: &lt; 3 mins. Available 24/7 for Level 3 Platinum Sellers.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsChatModalOpen(true)}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-2xs"
+        {/* ── Where the work actually happens ─────────────────────── */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              to: '/vendor/messages',
+              icon: MessageSquare,
+              title: 'Customer Messages',
+              body: 'Buyer threads your store is party to. Answering there is the fastest way to stop a question becoming a case.',
+            },
+            {
+              to: '/vendor/returns',
+              icon: RotateCcw,
+              title: 'Returns',
+              body: 'Return requests live on the sub-order rows, and approving or refusing one happens on that page.',
+            },
+            {
+              to: '/vendor/shipping-settings',
+              icon: Truck,
+              title: 'Shipping & Origin',
+              body: 'Handling time, carriers and origin set the delivery promise a case is usually arguing about.',
+            },
+            {
+              to: '/vendor/store-settings',
+              icon: Settings,
+              title: 'Store Settings',
+              body: 'Return window, restocking fee and vacation mode — the policy staff read before deciding a case.',
+            },
+          ].map((card) => (
+            <Link
+              key={card.to}
+              to={card.to}
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-2 hover:border-slate-300 hover:shadow-xs transition-all"
             >
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span>Start Live Chat</span>
-            </button>
-          </div>
-
-          {/* Card 2: Dedicated Merchant Advisor */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                  <Calendar className="h-4 w-4" />
-                </div>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  Assigned Advisor
-                </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                <card.icon className="h-4 w-4" />
               </div>
-              <h3 className="mt-3 font-bold text-slate-900 text-sm">Dedicated Merchant Advisor</h3>
-              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                Assigned Account Manager: <strong>Sarah Jenkins</strong>. Schedule a 1-on-1 strategy or catalog optimization call.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsBookCallModalOpen(true)}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
-            >
-              <Calendar className="h-3.5 w-3.5 text-slate-500" />
-              <span>Book a Call</span>
-            </button>
-          </div>
-
-          {/* Card 3: Support Ticket Escalation */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
-                  <Ticket className="h-4 w-4" />
-                </div>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  0 Open • 12 Resolved
-                </span>
-              </div>
-              <h3 className="mt-3 font-bold text-slate-900 text-sm">Support Ticket Escalation</h3>
-              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                0 Open Tickets, 12 Resolved. Track ongoing technical inquiries and dispute escalations.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsTicketHistoryModalOpen(true)}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
-            >
-              <Ticket className="h-3.5 w-3.5 text-slate-500" />
-              <span>View Ticket History</span>
-            </button>
-          </div>
+              <div className="text-xs font-bold text-slate-900">{card.title}</div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">{card.body}</p>
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#FF7A1A]">
+                Open
+                <ArrowRight className="h-3 w-3" />
+              </span>
+            </Link>
+          ))}
         </div>
 
-        {/* ── Main Section (8 cols / 4 cols) ───────────────────────── */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-          {/* ── Left Column (8 cols): Frequently Consulted Topics ──── */}
-          <div className="space-y-6 lg:col-span-8">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Frequently Consulted Merchant Topics
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Standard Operating Procedures, service SLAs, and operational policies.
-                  </p>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Updated March 2026
-                </span>
-              </div>
-
-              {/* 4 Topic Categories (2x2 Grid) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                {/* 1. Fulfillment & Shipping */}
-                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/70 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700">
-                        <Package className="h-4 w-4" />
-                      </div>
-                      <span className="font-bold text-slate-900 text-xs">Fulfillment &amp; Shipping</span>
-                    </div>
-                    <span className="rounded-full bg-slate-200/80 px-2 py-0.2 text-[9px] font-bold text-slate-600">
-                      3 Guides
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    {[
-                      'Vendora Express Packing Standards',
-                      'Handling Lost in Transit Claims',
-                      'International Customs Documentation',
-                    ].map((guide) => (
-                      <button
-                        key={guide}
-                        type="button"
-                        onClick={() => showToast(`Opening documentation: ${guide}`)}
-                        className="w-full flex items-center justify-between text-left text-slate-700 hover:text-slate-900 hover:underline text-[11px] font-medium py-1 cursor-pointer"
-                      >
-                        <span>{guide}</span>
-                        <ArrowRight className="h-3 w-3 text-slate-400 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Payments & Fees */}
-                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/70 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700">
-                        <CreditCard className="h-4 w-4" />
-                      </div>
-                      <span className="font-bold text-slate-900 text-xs">Payments &amp; Fees</span>
-                    </div>
-                    <span className="rounded-full bg-slate-200/80 px-2 py-0.2 text-[9px] font-bold text-slate-600">
-                      3 Guides
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    {[
-                      'Understanding Bi-weekly ACH Schedules',
-                      'Dispute Chargeback Escrow Rules',
-                      'Promotional Fee Credits',
-                    ].map((guide) => (
-                      <button
-                        key={guide}
-                        type="button"
-                        onClick={() => showToast(`Opening documentation: ${guide}`)}
-                        className="w-full flex items-center justify-between text-left text-slate-700 hover:text-slate-900 hover:underline text-[11px] font-medium py-1 cursor-pointer"
-                      >
-                        <span>{guide}</span>
-                        <ArrowRight className="h-3 w-3 text-slate-400 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. Catalog Compliance */}
-                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/70 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700">
-                        <ShieldCheck className="h-4 w-4" />
-                      </div>
-                      <span className="font-bold text-slate-900 text-xs">Catalog Compliance</span>
-                    </div>
-                    <span className="rounded-full bg-slate-200/80 px-2 py-0.2 text-[9px] font-bold text-slate-600">
-                      3 Guides
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    {[
-                      '4K Image & Specification Standards',
-                      'FCC & CE Electronics Certification Uploads',
-                      'Restricted Product Policies',
-                    ].map((guide) => (
-                      <button
-                        key={guide}
-                        type="button"
-                        onClick={() => showToast(`Opening documentation: ${guide}`)}
-                        className="w-full flex items-center justify-between text-left text-slate-700 hover:text-slate-900 hover:underline text-[11px] font-medium py-1 cursor-pointer"
-                      >
-                        <span>{guide}</span>
-                        <ArrowRight className="h-3 w-3 text-slate-400 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Returns & Disputed RMAs */}
-                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/70 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700">
-                        <RotateCcw className="h-4 w-4" />
-                      </div>
-                      <span className="font-bold text-slate-900 text-xs">Returns &amp; Disputed RMAs</span>
-                    </div>
-                    <span className="rounded-full bg-slate-200/80 px-2 py-0.2 text-[9px] font-bold text-slate-600">
-                      3 Guides
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    {[
-                      'Auto-approval threshold configuration',
-                      'Customer return fraud protection guidelines',
-                      'Restocking fee allowances',
-                    ].map((guide) => (
-                      <button
-                        key={guide}
-                        type="button"
-                        onClick={() => showToast(`Opening documentation: ${guide}`)}
-                        className="w-full flex items-center justify-between text-left text-slate-700 hover:text-slate-900 hover:underline text-[11px] font-medium py-1 cursor-pointer"
-                      >
-                        <span>{guide}</span>
-                        <ArrowRight className="h-3 w-3 text-slate-400 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Masterclass Video Callout */}
-              <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-slate-900 to-slate-950 p-4 sm:p-5 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/20 text-white">
-                    <Play className="h-5 w-5 fill-white" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                      VENDORA ACADEMY MASTERCLASS
-                    </div>
-                    <h3 className="font-bold text-sm text-white">
-                      Q2 Peak Fulfillment &amp; RMA Protocol Briefing
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Stream the 18-minute verified workflow walkthrough with head logistics architects.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => showToast('Launching masterclass video stream player...')}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-xs font-bold text-slate-900 hover:bg-slate-100 transition-colors shrink-0 self-start sm:self-auto cursor-pointer"
-                >
-                  <span>Watch Session</span>
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
+        {/* ── Boundaries ──────────────────────────────────────────── */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-slate-700" />
+            <h2 className="text-sm font-bold text-slate-900">What this queue can and cannot do</h2>
           </div>
-
-          {/* ── Right Column (4 cols): Status, Tickets, Downloads ─── */}
-          <div className="space-y-6 lg:col-span-4">
-            {/* Widget 1: Marketplace Operational Status */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900">
-                  Marketplace Operational Status
-                </h3>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  All Systems Normal
-                </span>
-              </div>
-
-              <div className="space-y-2.5 text-xs">
-                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
-                  <span className="font-medium text-slate-700">Core Checkout</span>
-                  <span className="font-bold text-emerald-700">99.98% uptime</span>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
-                  <span className="font-medium text-slate-700">Merchant Payout Engine</span>
-                  <span className="font-bold text-emerald-700">Operational</span>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
-                  <span className="font-medium text-slate-700">Webhooks &amp; APIs</span>
-                  <span className="font-bold text-emerald-700">Operational</span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400 space-y-1.5">
-                <div className="flex justify-between">
-                  <span>Latency (US-East Edge):</span>
-                  <strong className="text-slate-700 font-mono">24ms average</strong>
-                </div>
-                {/* Latency ticks */}
-                <div className="flex gap-1 h-2">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="flex-1 bg-emerald-500 rounded-xs" />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Widget 2: Recent Support Tickets */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">Recent Support Tickets</h3>
-                  <div className="text-[10px] text-slate-400">Nova Electronics</div>
-                </div>
-              </div>
-
-              <div className="space-y-2.5 text-xs">
-                {[
-                  {
-                    id: '#TK-8491',
-                    title: 'Clarification on multi-variant ...',
-                    meta: 'Closed Feb 24, 2026 • Agent Mark R.',
-                  },
-                  {
-                    id: '#TK-8204',
-                    title: 'Update to international tax ne...',
-                    meta: 'Closed Jan 19, 2026 • Compliance Team',
-                  },
-                  {
-                    id: '#TK-7912',
-                    title: 'Carrier label scan delay inquiry',
-                    meta: 'Closed Dec 12, 2025 • Logistics Team',
-                  },
-                ].map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/60 space-y-1"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-slate-900 text-xs">
-                        {ticket.id}
-                      </span>
-                      <span className="rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                        Resolved
-                      </span>
-                    </div>
-                    <div className="font-medium text-slate-700 text-xs truncate">
-                      {ticket.title}
-                    </div>
-                    <div className="text-[10px] text-slate-400">{ticket.meta}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Widget 3: Seller Resource Downloads */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <Download className="h-4 w-4 text-slate-600" />
-                Seller Resource Downloads
-              </h3>
-
-              <div className="space-y-2 text-xs">
-                {[
-                  { title: '2026 Merchant Handbook', meta: 'PDF • 4.2 MB' },
-                  { title: 'Standard RMA Packing Slip', meta: 'Template • XLSX' },
-                  { title: 'API Integration Specs', meta: 'OpenAPI 3.1 • JSON' },
-                ].map((res) => (
-                  <div
-                    key={res.title}
-                    className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/60 flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="font-bold text-slate-900 text-xs">{res.title}</div>
-                      <div className="text-[10px] text-slate-400">{res.meta}</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => showToast(`Downloading resource template: ${res.title}`)}
-                      className="p-1 text-slate-400 hover:text-slate-800 cursor-pointer"
-                      title="Download file"
-                    >
-                      <Download className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <ul className="grid grid-cols-1 gap-x-8 gap-y-1.5 text-[11px] text-slate-600 leading-relaxed md:grid-cols-2">
+            <li>
+              <span className="font-bold text-slate-900">You can reply.</span> The message policy
+              accepts a post from a party to the case, sent under your own account id.
+            </li>
+            <li>
+              <span className="font-bold text-slate-900">You cannot change status.</span> Updates
+              and <code className="font-mono">resolve_dispute</code> are admin and support only.
+            </li>
+            <li>
+              <span className="font-bold text-slate-900">You cannot open a case.</span> The insert
+              policy requires the buyer to be the filer, so there is no seller ticket form here.
+            </li>
+            <li>
+              <span className="font-bold text-slate-900">No ticket history, no SLA meters.</span>{' '}
+              There is no ticket table in this schema, so there is nothing to count or list.
+            </li>
+            <li>
+              <span className="font-bold text-slate-900">Staff internal notes reach you.</span> The
+              shared-thread policy does not filter them; the thread labels each one.
+            </li>
+            <li>
+              <span className="font-bold text-slate-900">Evidence is not uploadable here.</span> A
+              case row carries <code className="font-mono">evidence_photos</code>, but no policy
+              lets a seller write it.
+            </li>
+          </ul>
         </div>
 
-        {/* ── Open Ticket Modal ────────────────────────────────────── */}
-        <Dialog open={isOpenTicketModalOpen} onOpenChange={setIsOpenTicketModalOpen}>
-          <DialogContent className="sm:max-w-md">
+        {/* ── Thread dialog ───────────────────────────────────────── */}
+        <Dialog
+          open={openCase !== null}
+          onOpenChange={(next) => {
+            if (!next) setOpenCaseId(null);
+          }}
+        >
+          <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-slate-700" />
-                Open Merchant Support Ticket
+                <Ticket className="h-5 w-5 text-[#FF7A1A]" />
+                Dispute thread
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Submit an urgent technical, financial, or catalog inquiry directly to the merchant operations team.
+                Read-only status, writable message — the decision stays with Vendora staff.
               </DialogDescription>
             </DialogHeader>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                showToast('Support ticket created! Ticket #TK-9021 assigned.');
-                setIsOpenTicketModalOpen(false);
-              }}
-              className="space-y-3 py-2 text-xs"
-            >
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Issue Category</label>
-                <select className="w-full rounded-lg border border-slate-200 p-2 text-xs">
-                  <option>Settlement &amp; Payout Inquiry</option>
-                  <option>Order Fulfillment &amp; Courier Escalation</option>
-                  <option>Catalog Moderation / Rejection Dispute</option>
-                  <option>Technical API / Webhook Integration</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Subject</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Summary of operational issue..."
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Detailed Description</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Provide order IDs, error codes, or screenshots..."
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsOpenTicketModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-                >
-                  Submit Ticket
-                </button>
-              </div>
-            </form>
+            {openCase && <DisputeThread dispute={openCase} />}
           </DialogContent>
         </Dialog>
-
-        {/* ── Live Chat Modal ─────────────────────────────────────── */}
-        <Dialog open={isChatModalOpen} onOpenChange={setIsChatModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Zap className="h-5 w-5 fill-amber-500 text-amber-500" />
-                Priority 24/7 Seller Chat
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Connected with Level 3 Platinum Specialist • Estimated wait: &lt; 1 min
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2">
-              <div className="font-bold text-slate-900">Agent Marcus (Logistics Architect)</div>
-              <p className="text-slate-600">
-                "Hello Nova Electronics! I see your current batch cycle #2026-20 is scheduled for ACH trigger tomorrow. How may I assist your fulfillment team today?"
-              </p>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setIsChatModalOpen(false)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-              >
-                End Session
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Book Call Modal ─────────────────────────────────────── */}
-        <Dialog open={isBookCallModalOpen} onOpenChange={setIsBookCallModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-slate-700" />
-                Schedule Strategy Session
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                With your dedicated Account Manager: Sarah Jenkins
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 py-2 text-xs">
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <div className="font-bold text-slate-900">Next Available Slots</div>
-                <div className="mt-2 space-y-1.5">
-                  <label className="flex items-center gap-2 p-2 rounded bg-white border border-slate-200 cursor-pointer">
-                    <input type="radio" name="slot" defaultChecked />
-                    <span>Tomorrow at 10:00 AM CST</span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2 rounded bg-white border border-slate-200 cursor-pointer">
-                    <input type="radio" name="slot" />
-                    <span>Thursday at 2:30 PM CST</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsBookCallModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('Calendar appointment booked! Invitation sent to your email.');
-                  setIsBookCallModalOpen(false);
-                }}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
-              >
-                Confirm Booking
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Ticket History Modal ─────────────────────────────────── */}
-        <Dialog open={isTicketHistoryModalOpen} onOpenChange={setIsTicketHistoryModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-slate-700" />
-                Ticket History &amp; Audit Log
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                12 tickets resolved with average resolution time of 1.4 hours.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-2 py-2 text-xs max-h-60 overflow-y-auto">
-              <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50">
-                <div className="font-bold text-slate-900">#TK-8491: Multi-variant sync query</div>
-                <div className="text-[10px] text-slate-400">Closed Feb 24 • Satisfied rating 5/5</div>
-              </div>
-              <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50">
-                <div className="font-bold text-slate-900">#TK-8204: Tax nexus certificate check</div>
-                <div className="text-[10px] text-slate-400">Closed Jan 19 • Satisfied rating 5/5</div>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setIsTicketHistoryModalOpen(false)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-              >
-                Close
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Product Form Modal ───────────────────────────────────── */}
-        <ProductFormModal
-          open={isProductModalOpen}
-          onOpenChange={setIsProductModalOpen}
-        />
-
-        {/* ── Toast Notification ───────────────────────────────────── */}
-        {toastMessage && (
-          <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xl flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
       </div>
     </WorkspaceLayout>
   );
 };
-
-// Helper icon component
-const UsersIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    height="24"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-    width="24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);

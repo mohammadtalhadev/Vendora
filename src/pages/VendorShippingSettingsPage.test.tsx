@@ -1,100 +1,113 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// WorkspaceLayout's sign-out needs the auth provider; these tests never click it.
+vi.mock('../lib/auth-context', async () => {
+  const { useAuthStub } = await import('../test/auth-context-stub');
+  return { useAuth: useAuthStub };
+});
+vi.mock('../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { VendorShippingSettingsPage } from './VendorShippingSettingsPage';
+import { renderWorkspace, signInVendor } from '../test/vendor-render';
+import { shippingRow, supabaseDouble } from '../test/supabase-double';
 
-describe('VendorShippingSettingsPage component', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
+beforeEach(() => {
+  supabaseDouble.reset();
+  signInVendor();
+});
 
-  it('renders shipping rates, warehouse dispatch origin, and SLA options', () => {
-    render(
-      <MemoryRouter>
-        <VendorShippingSettingsPage />
-      </MemoryRouter>
+describe('VendorShippingSettingsPage', () => {
+  it('starts the form from the row this store saved', async () => {
+    supabaseDouble.seedShippingSettings(
+      shippingRow({
+        vendor_id: 'store-1',
+        standard_rate: 7.25,
+        express_rate: 19,
+        warehouse_name: 'North Dock',
+        sla_window: '24h',
+      }),
     );
 
-    expect(
-      screen.getByRole('heading', { name: /Shipping Settings & Dispatch Origin/i })
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Free Shipping Threshold/i)).toBeInTheDocument();
-    expect(screen.getByText(/Standard Shipping Flat Rate/i)).toBeInTheDocument();
-    expect(screen.getByText(/Express Courier Surcharge/i)).toBeInTheDocument();
-    expect(screen.getByText(/Warehouse Dispatch Origin/i)).toBeInTheDocument();
-    expect(screen.getByText(/Dispatched within 24 hours \(Prime SLA\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Dispatched within 48 hours/i)).toBeInTheDocument();
-    expect(screen.getByText(/Custom 3-5 business days/i)).toBeInTheDocument();
+    renderWorkspace(<VendorShippingSettingsPage />);
+
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(7.25));
+    expect(screen.getByLabelText('Express surcharge')).toHaveValue(19);
+    expect(screen.getByLabelText('Facility name')).toHaveValue('North Dock');
+    expect(screen.getByRole('radio', { name: 'Dispatched within 24 hours' })).toBeChecked();
+    expect(screen.getByText('$7.25')).toBeInTheDocument();
   });
 
-  it('allows editing shipping rates and saving to localStorage with toast notification', async () => {
-    render(
-      <MemoryRouter>
-        <VendorShippingSettingsPage />
-      </MemoryRouter>
-    );
+  it('shows an unsaved store blanks rather than sample rates', async () => {
+    renderWorkspace(<VendorShippingSettingsPage />);
 
-    const standardInput = screen.getByLabelText(/Standard Shipping Flat Rate/i);
-    fireEvent.change(standardInput, { target: { value: '9.50' } });
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(0));
+    expect(screen.getByLabelText('Express surcharge')).toHaveValue(0);
+    expect(screen.getByLabelText('Facility name')).toHaveValue('');
+    // The summary restates the absence instead of inventing an origin.
+    await waitFor(() => expect(screen.getByText('not recorded')).toBeInTheDocument());
+    expect(supabaseDouble.tables.vendor_shipping_settings).toHaveLength(0);
+  });
 
-    const saveButtons = screen.getAllByRole('button', { name: /Save Settings/i });
-    fireEvent.click(saveButtons[0]);
+  it('saves the form into the store’s own row and shows what came back', async () => {
+    supabaseDouble.seedShippingSettings(shippingRow({ vendor_id: 'store-1' }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/Shipping rates, dispatch origin, and SLA rules successfully saved!/i)).toBeInTheDocument();
+    renderWorkspace(<VendorShippingSettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(8.5));
+
+    fireEvent.change(screen.getByLabelText('Standard flat rate'), { target: { value: '9.50' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Custom 3-5 business days' }));
+    fireEvent.click(screen.getByRole('button', { name: /Save settings/i }));
+
+    await waitFor(() => expect(screen.getByText(/Saved: Demo Warehouse · Custom 3-5 business days/)).toBeInTheDocument());
+    expect(supabaseDouble.tables.vendor_shipping_settings).toHaveLength(1);
+    expect(supabaseDouble.tables.vendor_shipping_settings[0]).toMatchObject({
+      vendor_id: 'store-1',
+      standard_rate: 9.5,
+      sla_window: 'custom',
     });
-
-    const stored = localStorage.getItem('vd:v1:vendor_shipping_settings');
-    expect(stored).toBeTruthy();
-    expect(JSON.parse(stored!).standardRate).toBe(9.5);
+    // The panel restates the stored row, not what was typed.
+    expect(screen.getByText('$9.50')).toBeInTheDocument();
   });
 
-  it('allows updating warehouse address origin and access codes', () => {
-    render(
-      <MemoryRouter>
-        <VendorShippingSettingsPage />
-      </MemoryRouter>
-    );
+  it('reverts to the saved row instead of a marketplace default', async () => {
+    supabaseDouble.seedShippingSettings(shippingRow({ vendor_id: 'store-1', standard_rate: 6 }));
 
-    const streetInput = screen.getByLabelText(/Street Address & Bay \/ Suite/i);
-    fireEvent.change(streetInput, { target: { value: '100 Metro Logistics Way' } });
-    expect(streetInput).toHaveValue('100 Metro Logistics Way');
+    renderWorkspace(<VendorShippingSettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(6));
 
-    const gateInput = screen.getByLabelText(/Security Gate Access Code/i);
-    fireEvent.change(gateInput, { target: { value: '#9999-DOCK' } });
-    expect(gateInput).toHaveValue('#9999-DOCK');
+    fireEvent.change(screen.getByLabelText('Standard flat rate'), { target: { value: '44' } });
+    expect(screen.getByLabelText('Standard flat rate')).toHaveValue(44);
+
+    fireEvent.click(screen.getByRole('button', { name: /Revert to saved/i }));
+    expect(screen.getByLabelText('Standard flat rate')).toHaveValue(6);
   });
 
-  it('switches fulfillment SLA window radio choice', () => {
-    render(
-      <MemoryRouter>
-        <VendorShippingSettingsPage />
-      </MemoryRouter>
+  it('reports a write the database refused', async () => {
+    supabaseDouble.seedShippingSettings(shippingRow({ vendor_id: 'store-1' }));
+
+    renderWorkspace(<VendorShippingSettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(8.5));
+
+    supabaseDouble.failures.vendor_shipping_settings = 'row-level security';
+    fireEvent.click(screen.getByRole('button', { name: /Save settings/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/Failed to save your shipping settings: row-level security/)).toBeInTheDocument(),
     );
-
-    const sla48Radio = screen.getByRole('radio', { name: /Dispatched within 48 hours/i });
-    fireEvent.click(sla48Radio);
-    expect(sla48Radio).toBeChecked();
-
-    const slaCustomRadio = screen.getByRole('radio', { name: /Custom 3-5 business days/i });
-    fireEvent.click(slaCustomRadio);
-    expect(slaCustomRadio).toBeChecked();
+    expect(supabaseDouble.tables.vendor_shipping_settings[0].standard_rate).toBe(8.5);
   });
 
-  it('resets settings to default on Reset Defaults click', async () => {
-    render(
-      <MemoryRouter>
-        <VendorShippingSettingsPage />
-      </MemoryRouter>
+  it('shows a failed read as an error rather than as an empty form', async () => {
+    supabaseDouble.failures.vendor_shipping_settings = 'connection terminated';
+
+    renderWorkspace(<VendorShippingSettingsPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/Failed to load your shipping settings: connection terminated/)).toBeInTheDocument(),
     );
-
-    const standardInput = screen.getByLabelText(/Standard Shipping Flat Rate/i);
-    fireEvent.change(standardInput, { target: { value: '25.00' } });
-
-    const resetBtn = screen.getByRole('button', { name: /Reset Defaults/i });
-    fireEvent.click(resetBtn);
-
-    expect(screen.getByText(/Reset to marketplace standard configurations/i)).toBeInTheDocument();
-    expect(standardInput).toHaveValue(8.5);
   });
 });

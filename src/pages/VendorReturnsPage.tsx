@@ -1,24 +1,30 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   RotateCcw,
   Check,
   Clock,
-  Truck,
-  TrendingDown,
-  DollarSign,
   Search,
-  ChevronDown,
   Download,
   CheckCircle2,
-  Camera,
-  Video,
-  Lightbulb,
+  AlertCircle,
+  Boxes,
   SlidersHorizontal,
+  ShieldQuestion,
+  X,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import { useMarketplaceStore } from '../store/marketplace-store';
 import { exportToCsv } from '../lib/export-csv';
+import {
+  useApproveReturn,
+  useCompleteReturn,
+  useDeclineReturn,
+  useReturnQueue,
+  useVendorPackages,
+} from '../features/vendor/hooks/useVendorPackages';
+import type { VendorPackage } from '../features/vendor/api/packages';
+import { useUpdateVendorStore, useVendorStore } from '../features/vendor/hooks/useVendorStore';
+import type { VendorStore } from '../features/vendor/api/store';
 import {
   Dialog,
   DialogContent,
@@ -27,812 +33,943 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 
+const money = (value: number) =>
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const dateLabel = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+type Tab = 'all' | 'requested' | 'approved' | 'closed' | 'declined';
+
+const TAB_STATUSES: Record<Exclude<Tab, 'all'>, string[]> = {
+  requested: ['return_requested'],
+  approved: ['return_approved'],
+  closed: ['returned'],
+  declined: ['return_rejected'],
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  return_requested: 'Waiting on your decision',
+  return_approved: 'Approved · RMA issued',
+  returned: 'Closed · units restocked',
+  return_rejected: 'Declined',
+};
+
+/**
+ * `sub_orders.return_reason` exists but no RPC ever writes it, so the buyer's reason is
+ * read back from the history entry that moved the package into `return_requested`.
+ */
+function reasonOf(pkg: VendorPackage): string {
+  if (pkg.returnReason) return pkg.returnReason;
+  const requested = pkg.history.filter((h) => h.status === 'return_requested');
+  return requested[requested.length - 1]?.note || 'No reason recorded by the buyer';
+}
+
+function requestedAtOf(pkg: VendorPackage): string {
+  const requested = pkg.history.find((h) => h.status === 'return_requested');
+  return requested?.timestamp ?? pkg.createdAt;
+}
+
+interface RestockReport {
+  label: string;
+  lines: { title: string; returned: number; stock: number }[];
+}
+
 export const VendorReturnsPage: React.FC = () => {
-  const storeReturns = useMarketplaceStore((state) => state.returns);
-  const approveReturn = useMarketplaceStore((state) => state.approveReturn);
-  const rejectReturn = useMarketplaceStore((state) => state.rejectReturn);
-  const markReturnRestocked = useMarketplaceStore((state) => state.markReturnRestocked);
+  const queue = useReturnQueue();
+  const allPackages = useVendorPackages();
+  const approve = useApproveReturn();
+  const decline = useDeclineReturn();
+  const close = useCompleteReturn();
+  const updateStore = useUpdateVendorStore();
+  const profile = useVendorStore().data;
 
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'transit' | 'inspection' | 'completed' | 'disputed'>('all');
+  const [activeTab, setActiveTab] = useState<Tab>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [reasonFilter, setReasonFilter] = useState('All');
-  const [selectedIds, setSelectedIds] = useState<string[]>(['rma-1']);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
-  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const itemsPerPage = 5;
 
+  const [decisionError, setDecisionError] = useState<string | null>(null);
+  const [restockReports, setRestockReports] = useState<RestockReport[]>([]);
+
+  const [approveTarget, setApproveTarget] = useState<VendorPackage | null>(null);
+  const [refundInput, setRefundInput] = useState('');
+  const [declineTarget, setDeclineTarget] = useState<VendorPackage | null>(null);
+  const [declineReason, setDeclineReason] = useState('');
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 5000);
   };
 
-  const toggleSelectOne = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
+  const rows = useMemo(() => queue.data ?? [], [queue.data]);
+  const bookedPackages = allPackages.data ?? [];
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === storeReturns.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(storeReturns.map((item) => item.id));
+  const requested = rows.filter((p) => p.status === 'return_requested');
+  const approved = rows.filter((p) => p.status === 'return_approved');
+  const closed = rows.filter((p) => p.status === 'returned');
+  const declined = rows.filter((p) => p.status === 'return_rejected');
+
+  const refundsBooked = [...approved, ...closed].reduce((sum, p) => sum + (p.refundAmount ?? 0), 0);
+  const returnRate = bookedPackages.length ? (rows.length / bookedPackages.length) * 100 : 0;
+
+  const reasonCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    rows.forEach((p) => map.set(reasonOf(p), (map.get(reasonOf(p)) ?? 0) + 1));
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  }, [rows]);
+
+  const trail = useMemo(() => {
+    return rows
+      .flatMap((pkg) =>
+        pkg.history
+          .filter((h) => h.status.startsWith('return'))
+          .map((h) => ({ pkg, event: h })),
+      )
+      .sort((a, b) => new Date(b.event.timestamp).getTime() - new Date(a.event.timestamp).getTime())
+      .slice(0, 8);
+  }, [rows]);
+
+  const filtered = rows.filter((p) => {
+    const statuses = activeTab === 'all' ? null : TAB_STATUSES[activeTab];
+    if (statuses && !statuses.includes(p.status)) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const haystack = [
+        p.id,
+        p.rmaCode ?? '',
+        p.buyerEmail,
+        p.items.map((i) => i.title).join(' '),
+      ]
+        .join(' ')
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
     }
-  };
-
-  const handleBulkApprove = () => {
-    const pendingList = storeReturns.filter((r) => r.status === 'pending');
-    if (pendingList.length === 0) {
-      showToast('No pending returns to approve');
-      return;
-    }
-    for (const item of pendingList) {
-      approveReturn(item.rmaId);
-    }
-    showToast(`Approved ${pendingList.length} returns and issued buyer refunds`);
-  };
-
-  const handleExportCsv = () => {
-    const exportData = filteredItems.map((r) => ({
-      RMA: r.rmaId,
-      Order: r.orderNumber,
-      Customer: r.customerName,
-      Product: r.productName,
-      Reason: r.reason,
-      Refund: r.refundAmountFormatted,
-      Status: r.status,
-    }));
-
-    exportToCsv(`vendor-returns-${new Date().toISOString().split('T')[0]}.csv`, exportData, {
-      RMA: 'RMA Tracking ID',
-      Order: 'Order Number',
-      Customer: 'Buyer Name',
-      Product: 'Returned Product',
-      Reason: 'Return Reason',
-      Refund: 'Refund Amount',
-      Status: 'RMA Status',
-    });
-    showToast('Returns exported to CSV successfully');
-  };
-
-  const filteredItems = storeReturns.filter((item) => {
-    const q = searchQuery.toLowerCase();
-    const matchSearch =
-      item.rmaId.toLowerCase().includes(q) ||
-      item.orderNumber.toLowerCase().includes(q) ||
-      item.customerName.toLowerCase().includes(q) ||
-      item.productName.toLowerCase().includes(q);
-
-    if (!matchSearch) return false;
-
-    if (reasonFilter !== 'All') {
-      if (!item.reason.toLowerCase().includes(reasonFilter.toLowerCase())) return false;
-    }
-
-    if (activeTab === 'pending' && item.status !== 'pending') return false;
-    if (activeTab === 'transit' && item.status !== 'in_transit') return false;
-    if (activeTab === 'completed' && item.status !== 'approved' && item.status !== 'restocked') return false;
-    if (activeTab === 'disputed' && item.status !== 'rejected') return false;
-
     return true;
   });
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  const paged = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleApprove = async () => {
+    if (!approveTarget) return;
+    setDecisionError(null);
+    const parsed = refundInput.trim() === '' ? undefined : Number.parseFloat(refundInput);
+    if (parsed !== undefined && (!Number.isFinite(parsed) || parsed < 0)) {
+      setDecisionError('Enter a refund amount as a number, or leave it blank for the goods total.');
+      return;
+    }
+    try {
+      const result = await approve.mutateAsync({
+        subOrderId: approveTarget.id,
+        refundAmount: parsed,
+      });
+      showToast(
+        `Approved. RMA ${result.decision.rmaCode} issued, refund recorded at ${money(result.decision.refundAmount ?? 0)}.`,
+      );
+      setApproveTarget(null);
+      setRefundInput('');
+    } catch (err) {
+      setDecisionError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!declineTarget) return;
+    setDecisionError(null);
+    if (declineReason.trim() === '') {
+      setDecisionError('The database refuses a decline with no reason - the buyer has to be told why.');
+      return;
+    }
+    try {
+      await decline.mutateAsync({ subOrderId: declineTarget.id, reason: declineReason.trim() });
+      showToast(`Declined ${declineTarget.rmaCode ?? declineTarget.id}. The reason is on the package history.`);
+      setDeclineTarget(null);
+      setDeclineReason('');
+    } catch (err) {
+      setDecisionError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleCloseAndRestock = async (pkg: VendorPackage) => {
+    setDecisionError(null);
+    try {
+      const result = await close.mutateAsync(pkg.id);
+      const titles = new Map(pkg.items.map((i) => [i.productId, i.title]));
+      setRestockReports((prev) => [
+        {
+          label: pkg.rmaCode ?? pkg.id,
+          lines: result.restocked.map((line) => ({
+            title: titles.get(line.productId) ?? line.productId,
+            returned: line.returned,
+            stock: line.stock,
+          })),
+        },
+        ...prev,
+      ]);
+      showToast(`Closed ${pkg.rmaCode ?? pkg.id}: units are back on the shelf at the database's counts.`);
+    } catch (err) {
+      setDecisionError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleExportCsv = () => {
+    const data = filtered.map((p) => ({
+      packageId: p.id,
+      rma: p.rmaCode ?? '',
+      buyer: p.buyerEmail || 'No buyer contact on this order',
+      item: p.items.map((i) => i.title).join(' + ') || 'Package contents unavailable',
+      requested: requestedAtOf(p),
+      reason: reasonOf(p),
+      goodsTotal: money(p.subtotal),
+      refund: p.refundAmount === undefined ? '' : money(p.refundAmount),
+      status: p.status,
+    }));
+    exportToCsv(`vendor-returns-${new Date().toISOString().split('T')[0]}.csv`, data, {
+      packageId: 'Package ID',
+      rma: 'RMA',
+      buyer: 'Buyer',
+      item: 'Items',
+      requested: 'Requested',
+      reason: 'Reason',
+      goodsTotal: 'Goods total',
+      refund: 'Refund recorded',
+      status: 'Status',
+    });
+    showToast('Return queue exported to CSV');
+  };
 
   return (
     <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
       <div className="space-y-6">
-        {/* Page Header */}
+        {/* ── Page header ─────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">
-                Returns &amp; Refunds
-              </h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live RMA Queue
-              </span>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              ORDER MANAGEMENT <span className="text-slate-300">/</span> RETURNS
             </div>
-            <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-              Process return authorizations, inspect received merchandise, issue instantaneous buyer credits, and manage intelligent automated restocking workflows.
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+              Returns &amp; Refund Decisions
+            </h1>
+            <p className="mt-1 max-w-2xl text-xs text-slate-500">
+              A return begins when the buyer marks one of your delivered packages as returned. You
+              approve or decline it here; closing an approved return puts the units back on the shelf
+              in the same database transaction.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setIsRulesModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <SlidersHorizontal className="h-4 w-4 text-slate-500" />
-              Return Settings / Policy
-            </button>
-            <button
-              onClick={handleBulkApprove}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
-            >
-              <Check className="h-4 w-4" />
-              Bulk Approve Pending
-            </button>
-          </div>
+          <button
+            onClick={() => setIsPolicyModalOpen(true)}
+            className="inline-flex items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 sm:self-auto"
+          >
+            <SlidersHorizontal className="h-4 w-4 text-slate-500" />
+            Return policy on your store record
+          </button>
         </div>
 
         {toastMessage && (
-          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-xs font-bold text-emerald-800">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
             <span>{toastMessage}</span>
           </div>
         )}
 
-        {/* 4 Top KPI Cards */}
+        {decisionError && (
+          <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <span>{decisionError}</span>
+          </div>
+        )}
+
+        {/* ── KPI cards ───────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Card 1: Active Return Requests */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>ACTIVE RETURN REQUESTS</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
+              <span>WAITING ON YOU</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-100 bg-amber-50 text-amber-600">
                 <RotateCcw className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">3</span>
-              <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
-                Action Needed
-              </span>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {queue.isPending ? '—' : requested.length}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
               <Clock className="h-3.5 w-3.5 text-slate-400" />
-              <span>Avg resolution time: <strong className="text-slate-800">4.2 hrs</strong></span>
+              <span>Requests nothing has decided yet</span>
             </div>
           </div>
 
-          {/* Card 2: In Transit to Warehouse */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>IN TRANSIT TO WAREHOUSE</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
-                <Truck className="h-4 w-4" />
+              <span>APPROVED · RMA ISSUED</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
+                <Check className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">5</span>
-              <span className="text-xs text-slate-500 font-medium">Via UPS / FedEx Ground</span>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {queue.isPending ? '—' : approved.length}
             </div>
-            <div className="mt-2 text-xs text-slate-500 font-medium">
-              <strong className="text-slate-800">2</strong> expected delivery today
+            <div className="mt-2 text-xs text-slate-500">
+              Awaiting the parcel. Closing one restocks it.
             </div>
           </div>
 
-          {/* Card 3: Merchant Return Rate */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>MERCHANT RETURN RATE</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-                <TrendingDown className="h-4 w-4" />
+              <span>REFUNDS RECORDED</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 text-slate-600">
+                <ShieldQuestion className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">1.8%</span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                -0.4% vs benchmark
-              </span>
-            </div>
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-              <Check className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Cat. Benchmark: <strong>3.5% (Electronics)</strong></span>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">{money(refundsBooked)}</div>
+            <div className="mt-2 text-xs text-slate-500">
+              {approved.length + closed.length} return(s) carrying a refund amount
             </div>
           </div>
 
-          {/* Card 4: Total Refunded */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>TOTAL REFUNDED (30D)</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
-                <DollarSign className="h-4 w-4" />
+              <span>RETURNS PER PACKAGE</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-600">
+                <RotateCcw className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">$490.50</span>
-              <span className="text-xs text-slate-500 font-medium">4 Approved</span>
-            </div>
-            <div className="mt-2 text-xs text-slate-500 font-medium">
-              Recovery rate: <strong className="text-slate-800">76.4% via restock</strong>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">{returnRate.toFixed(1)}%</div>
+            <div className="mt-2 text-xs text-slate-500">
+              {rows.length} of {bookedPackages.length} package(s) this store has booked
             </div>
           </div>
         </div>
 
-        {/* Filter Tabs Bar */}
+        {/* ── Tabs ────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100/90 p-1 text-xs font-bold text-slate-600">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`rounded-lg px-3 py-1.5 transition-all ${
-              activeTab === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            All Returns <span className="opacity-75">23</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`rounded-lg px-3 py-1.5 transition-all ${
-              activeTab === 'pending'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Pending Action <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-800">3</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('transit')}
-            className={`rounded-lg px-3 py-1.5 transition-all ${
-              activeTab === 'transit'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            In Transit <span className="rounded bg-blue-100 px-1 text-[10px] text-blue-800">5</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('inspection')}
-            className={`rounded-lg px-3 py-1.5 transition-all ${
-              activeTab === 'inspection'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Awaiting Inspection <span className="opacity-75">2</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('completed')}
-            className={`rounded-lg px-3 py-1.5 transition-all ${
-              activeTab === 'completed'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Completed / Refunded <span className="opacity-75">16</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('disputed')}
-            className={`rounded-lg px-3 py-1.5 transition-all ${
-              activeTab === 'disputed'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Rejected / Disputed <span className="rounded bg-rose-100 px-1 text-[10px] text-rose-800">2</span>
-          </button>
+          {(
+            [
+              ['all', `All (${rows.length})`],
+              ['requested', `Needs a decision (${requested.length})`],
+              ['approved', `Approved (${approved.length})`],
+              ['closed', `Restocked (${closed.length})`],
+              ['declined', `Declined (${declined.length})`],
+            ] as [Tab, string][]
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                setActiveTab(key);
+                setCurrentPage(1);
+              }}
+              className={`rounded-lg px-3 py-1.5 transition-all ${
+                activeTab === key ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Filter Controls Bar */}
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search RMA or order ID..."
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Search package id, RMA, buyer email or item title"
               className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
             />
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <select
-                value={reasonFilter}
-                onChange={(e) => setReasonFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden"
-              >
-                <option value="All">All Reasons (Defective, Remorse, Damaged)</option>
-                <option value="Defective">Defective</option>
-                <option value="Remorse">Remorse</option>
-                <option value="Damaged">Damaged</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            </div>
-
-            <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden">
-                <option>All Resolutions</option>
-                <option>Refund to Card</option>
-                <option>Store Credit</option>
-                <option>Replacement</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            </div>
-
-            <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden">
-                <option>Last 90 Days</option>
-                <option>Last 30 Days</option>
-                <option>Last 7 Days</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            </div>
-
-            <button
-              onClick={handleExportCsv}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
-              title="Download Report (CSV)"
-            >
-              <Download className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex h-9 items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 sm:self-auto"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export queue
+          </button>
         </div>
 
-        {/* Returns Data Table */}
+        {/* ── Restock receipts ────────────────────────────────────── */}
+        {restockReports.length > 0 && (
+          <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+            <div className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+              Stock put back by this session
+            </div>
+            {restockReports.map((report) => (
+              <div key={report.label} className="text-xs text-emerald-900">
+                <span className="font-bold">{report.label}</span>
+                {' — '}
+                {report.lines.map((line) => `${line.title}: ${line.returned} unit(s) back, shelf now ${line.stock}`).join('; ')}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Queue table ─────────────────────────────────────────── */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th className="w-10 px-4 py-3.5 text-center">
-                    <input
-                      type="checkbox"
-                      checked={storeReturns.length > 0 && selectedIds.length === storeReturns.length}
-                      onChange={toggleSelectAll}
-                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                    />
-                  </th>
-                  <th className="px-4 py-3.5">RMA &amp; ORDER ID</th>
-                  <th className="px-4 py-3.5">CUSTOMER</th>
-                  <th className="px-4 py-3.5">RETURNED PRODUCT</th>
-                  <th className="px-4 py-3.5">REASON &amp; VERIFICATION</th>
-                  <th className="px-4 py-3.5">REFUND AMOUNT</th>
-                  <th className="px-4 py-3.5 text-right">ACTION</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {paginatedItems.map((item) => {
-                  const isChecked = selectedIds.includes(item.id);
-                  return (
-                    <tr
-                      key={item.id}
-                      className={`hover:bg-slate-50/70 transition-colors ${isChecked ? 'bg-slate-50/80' : ''}`}
-                    >
-                      <td className="w-10 px-4 py-3.5 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleSelectOne(item.id)}
-                          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                        />
-                      </td>
-
-                      {/* RMA & Order ID */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900">{item.rmaId}</div>
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                          <span className="font-semibold text-blue-600">{item.orderNumber}</span>
-                          <span>•</span>
-                          <span className="text-slate-400">{item.orderTime}</span>
-                        </div>
-                      </td>
-
-                      {/* Customer */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900">{item.customerName}</div>
-                        <div className="text-[11px] text-slate-400">{item.customerCity}</div>
-                      </td>
-
-                      {/* Returned Product */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={item.productImage}
-                            alt={item.productName}
-                            className="h-9 w-9 shrink-0 rounded-lg object-cover border border-slate-200"
-                          />
-                          <div>
-                            <div className="font-bold text-slate-900">{item.productName}</div>
-                            <div className="text-[10px] text-slate-400">{item.productVariant}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Reason & Verification */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-medium text-slate-800">{item.reason}</div>
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          {item.badgeType === 'photos' && (
-                            <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-700">
-                              <Camera className="h-3 w-3" />
-                              {item.badgeLabel}
-                            </span>
-                          )}
-                          {item.badgeType === 'video' && (
-                            <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-700">
-                              <Video className="h-3 w-3" />
-                              {item.badgeLabel}
-                            </span>
-                          )}
-                          {item.badgeType === 'unopened' && (
-                            <span className="rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
-                              {item.badgeLabel}
-                            </span>
-                          )}
-                          {item.badgeType === 'dock' && (
-                            <span className="rounded bg-blue-50 px-1.5 py-0.2 text-[10px] font-semibold text-blue-700">
-                              {item.badgeLabel}
-                            </span>
-                          )}
-                          {item.badgeType === 'restocked' && (
-                            <span className="rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
-                              {item.badgeLabel}
-                            </span>
-                          )}
-                          {item.serialNote && (
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              • {item.serialNote}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Refund Amount */}
-                      <td className="px-4 py-3.5 font-bold text-slate-900">
-                        {item.refundAmountFormatted}
-                      </td>
-
-                      {/* Action */}
-                      <td className="px-4 py-3.5 text-right">
-                        {item.status === 'pending' && (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => {
-                                approveReturn(item.rmaId);
-                                showToast(`Approved refund of ${item.refundAmountFormatted} for ${item.rmaId}`);
-                              }}
-                              className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => {
-                                rejectReturn(item.rmaId);
-                                showToast(`Rejected return ${item.rmaId}`);
-                              }}
-                              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-600"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                        {item.status === 'approved' && (
-                          <button
-                            onClick={() => {
-                              markReturnRestocked(item.rmaId);
-                              showToast(`Restocked merchandise for ${item.rmaId}`);
-                            }}
-                            className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
-                          >
-                            Restock
-                          </button>
-                        )}
-                        {item.status === 'restocked' && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-                            Restocked ✓
-                          </span>
-                        )}
-                        {item.status === 'rejected' && (
-                          <span className="text-[11px] font-semibold text-rose-600">
-                            Rejected ✗
-                          </span>
-                        )}
-                        {item.status === 'in_transit' && (
-                          <span className="text-[11px] font-semibold text-blue-600">
-                            In Transit 🚚
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Table Footer */}
-          <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500">
-            <span>
-              Showing <strong>{filteredItems.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredItems.length)}</strong> of <strong>{filteredItems.length}</strong> return orders •{' '}
-              {selectedIds.length} selected
-            </span>
-            <div className="flex items-center gap-2">
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-700 focus:outline-none"
-              >
-                <option value={5}>5 / page</option>
-                <option value={10}>10 / page</option>
-                <option value={20}>20 / page</option>
-              </select>
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                &lt; Prev
-              </button>
-              <span className="px-2 font-medium text-slate-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                Next &gt;
-              </button>
+          {queue.isError && (
+            <div className="flex items-start gap-2 p-5 text-xs text-rose-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{(queue.error as Error).message}</span>
             </div>
-          </div>
+          )}
+
+          {!queue.isError && rows.length === 0 && (
+            <div className="space-y-2 p-8 text-center">
+              <RotateCcw className="mx-auto h-8 w-8 text-slate-300" />
+              <div className="text-sm font-bold text-slate-900">No returns on this store right now</div>
+              <p className="mx-auto max-w-xl text-xs text-slate-500">
+                Buyers open a return from their order page once a package of yours is delivered. Until
+                one does, this queue stays empty - there is nothing here to approve, because there is
+                nothing to approve.
+              </p>
+            </div>
+          )}
+
+          {!queue.isError && rows.length > 0 && (
+            <>
+              <div className="border-b border-slate-100 p-5">
+                <h2 className="text-base font-bold text-slate-900">Return queue</h2>
+                <p className="text-xs text-slate-500">
+                  One row per package. Approving mints the RMA the buyer must quote; declining keeps
+                  your reason on the package history.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3.5">PACKAGE &amp; RMA</th>
+                      <th className="px-4 py-3.5">BUYER</th>
+                      <th className="px-4 py-3.5">WHAT COMES BACK</th>
+                      <th className="px-4 py-3.5">REQUESTED / REASON</th>
+                      <th className="px-4 py-3.5">REFUND</th>
+                      <th className="px-4 py-3.5 text-right">ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {paged.map((pkg) => {
+                      const refund = pkg.refundAmount;
+                      return (
+                        <tr key={pkg.id} className="transition-colors hover:bg-slate-50/70">
+                          <td className="px-4 py-3.5">
+                            <div className="font-bold text-slate-900">{pkg.rmaCode ?? 'No RMA yet'}</div>
+                            <a
+                              href={`/vendor/orders/${pkg.id}`}
+                              className="text-[11px] font-semibold text-blue-600 hover:underline"
+                            >
+                              {pkg.id.slice(0, 8)}
+                            </a>
+                            <div className="text-[10px] text-slate-400">
+                              {pkg.type === 'digital' ? 'Digital package' : 'Physical package'}
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="font-semibold text-slate-800">
+                              {pkg.buyerEmail || 'No buyer contact on this order'}
+                            </div>
+                            {pkg.buyerAddress?.city && (
+                              <div className="text-[11px] text-slate-400">{pkg.buyerAddress.city}</div>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-start gap-2.5">
+                              {pkg.items[0]?.image ? (
+                                <img
+                                  src={pkg.items[0].image}
+                                  alt={pkg.items[0].title}
+                                  className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
+                                  <Boxes className="h-4 w-4" />
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-semibold text-slate-800">
+                                  {pkg.items[0]?.title || 'Package contents unavailable'}
+                                </div>
+                                {pkg.items.length > 1 && (
+                                  <div className="text-[10px] text-slate-400">
+                                    +{pkg.items.length - 1} more line(s)
+                                  </div>
+                                )}
+                                <div className="text-[10px] text-slate-400">
+                                  Goods {money(pkg.subtotal)} · freight {money(pkg.shippingFee)}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="text-slate-700">{dateLabel(requestedAtOf(pkg))}</div>
+                            <div className="mt-0.5 max-w-xs text-[11px] text-slate-500">{reasonOf(pkg)}</div>
+                            {pkg.returnRejectReason && (
+                              <div className="mt-1 text-[11px] font-semibold text-rose-600">
+                                Declined: {pkg.returnRejectReason}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="font-bold text-slate-900">
+                              {refund === undefined ? '—' : money(refund)}
+                            </div>
+                            {refund === undefined && (
+                              <div className="text-[10px] text-slate-400">
+                                Defaults to {money(pkg.subtotal)}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3.5 text-right">
+                            {pkg.status === 'return_requested' && (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDecisionError(null);
+                                    setRefundInput('');
+                                    setApproveTarget(pkg);
+                                  }}
+                                  className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-slate-800"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDecisionError(null);
+                                    setDeclineReason('');
+                                    setDeclineTarget(pkg);
+                                  }}
+                                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600"
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            )}
+                            {pkg.status === 'return_approved' && (
+                              <button
+                                type="button"
+                                onClick={() => handleCloseAndRestock(pkg)}
+                                disabled={close.isPending}
+                                className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                              >
+                                Close &amp; restock
+                              </button>
+                            )}
+                            {pkg.status !== 'return_requested' && pkg.status !== 'return_approved' && (
+                              <span className="text-[11px] font-semibold text-slate-500">
+                                {STATUS_LABEL[pkg.status] ?? pkg.status}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
+                <span>
+                  Showing{' '}
+                  <strong>
+                    {filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to{' '}
+                    {Math.min(currentPage * itemsPerPage, filtered.length)}
+                  </strong>{' '}
+                  of <strong>{filtered.length}</strong>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    &lt; Prev
+                  </button>
+                  <span className="px-2 font-medium text-slate-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="rounded border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next &gt;
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* 2-Column Bottom Analytics: Common Reasons & Return Rules */}
+        {/* ── Reason breakdown & decision trail ───────────────────── */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Column (7 cols): Common Return Reasons Breakdown */}
-          <div className="lg:col-span-7 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Common Return Reasons Breakdown
-                </h2>
-                <p className="text-xs text-slate-500">Telemetry based on last 90 days RMA classifications</p>
-              </div>
-              <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                Sample: 124 returns
-              </span>
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-6">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Why these returns were opened</h2>
+              <p className="text-xs text-slate-500">
+                Counted from the note the buyer left on {rows.length} open or closed return(s)
+              </p>
             </div>
 
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <div className="flex items-center justify-between pb-1 font-medium text-slate-700">
-                  <span>Defective packaging / hardware issue</span>
-                  <strong className="text-slate-900">42% (52 orders)</strong>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div className="h-full bg-slate-900 rounded-full" style={{ width: '42%' }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between pb-1 font-medium text-slate-700">
-                  <span>Changed mind / Buyer remorse</span>
-                  <strong className="text-slate-900">28% (35 orders)</strong>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div className="h-full bg-slate-700 rounded-full" style={{ width: '28%' }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between pb-1 font-medium text-slate-700">
-                  <span>Item not as described / Spec mismatch</span>
-                  <strong className="text-slate-900">18% (22 orders)</strong>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div className="h-full bg-slate-500 rounded-full" style={{ width: '18%' }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between pb-1 font-medium text-slate-700">
-                  <span>Damaged in transit by carrier</span>
-                  <strong className="text-slate-900">12% (15 orders)</strong>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div className="h-full bg-slate-400 rounded-full" style={{ width: '12%' }} />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2 text-slate-600">
-                <Lightbulb className="h-4 w-4 text-amber-500" />
-                <span>Tip: Updating power bank specs lowered return velocity by <strong>14%</strong>.</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                className="font-bold text-slate-900 hover:underline self-start sm:self-auto cursor-pointer"
-              >
-                Download CSV report →
-              </button>
-            </div>
-          </div>
-
-          {/* Right Column (5 cols): Automated Return Rules */}
-          <div className="lg:col-span-5 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Automated Return Rules</h2>
-                <p className="text-xs text-slate-500">System rules to accelerate merchant review</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsRulesModalOpen(true)}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-              >
-                Configure
-              </button>
-            </div>
+            {reasonCounts.length === 0 && (
+              <p className="text-xs text-slate-500">Nothing to break down yet.</p>
+            )}
 
             <div className="space-y-3 text-xs">
-              {/* Rule 1 */}
-              <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-slate-900">Auto-approve items under $30</div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Buyer receives label instantly without manual approval
-                    </p>
+              {reasonCounts.map(([reason, count]) => (
+                <div key={reason}>
+                  <div className="flex items-start justify-between gap-3 pb-1 font-medium text-slate-700">
+                    <span className="max-w-md">{reason}</span>
+                    <strong className="shrink-0 text-slate-900">{count}</strong>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-slate-900"
+                      style={{ width: `${(count / rows.length) * 100}%` }}
+                    />
                   </div>
                 </div>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  Enabled
-                </span>
-              </div>
-
-              {/* Rule 2 */}
-              <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
-                  <Camera className="h-4 w-4 text-emerald-600 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-slate-900">Mandatory photo proof for defects</div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Requires min. 1 serial image and 1 defect image
-                    </p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  Enabled
-                </span>
-              </div>
-
-              {/* Rule 3 */}
-              <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
-                  <Clock className="h-4 w-4 text-slate-600 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-slate-900">Standard Return Window</div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      30 days from carrier delivery timestamp
-                    </p>
-                  </div>
-                </div>
-                <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  30 Days
-                </span>
-              </div>
+              ))}
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Last edited 3 days ago by vendor@demo.test</span>
-              <button
-                type="button"
-                onClick={() => setIsAuditModalOpen(true)}
-                className="font-semibold text-slate-600 hover:text-slate-900 cursor-pointer underline"
-              >
-                View Audit Log
-              </button>
+            <p className="border-t border-slate-100 pt-3 text-[11px] text-slate-400">
+              The reason is whatever the buyer typed. The schema has a{' '}
+              <code className="font-mono">return_reason</code> column that no RPC writes, so this list
+              reads the status history instead of a classified field.
+            </p>
+          </div>
+
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-6">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Decision trail</h2>
+              <p className="text-xs text-slate-500">
+                Every return event the database appended to your packages
+              </p>
             </div>
+
+            {trail.length === 0 && (
+              <p className="text-xs text-slate-500">
+                No return has been decided on this store yet. Approvals and declines both append an
+                entry here the moment they happen.
+              </p>
+            )}
+
+            <div className="space-y-2.5 text-xs">
+              {trail.map(({ pkg, event }, idx) => (
+                <div
+                  key={`${pkg.id}-${idx}`}
+                  className="rounded-lg border border-slate-100 bg-slate-50/70 p-3"
+                >
+                  <div className="font-bold text-slate-900">
+                    {pkg.rmaCode ?? pkg.id.slice(0, 8)} · {STATUS_LABEL[event.status] ?? event.status}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">{event.note || 'No note recorded'}</div>
+                  <div className="mt-1 text-[10px] text-slate-400">
+                    {event.actor} • {new Date(event.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="border-t border-slate-100 pt-3 text-[11px] text-slate-400">
+              Return decisions also write to <code className="font-mono">audit_logs</code>, which row
+              level security opens to staff only - this trail comes from the package history you can
+              read.
+            </p>
           </div>
         </div>
 
-        {/* Modal: Automated Return Rules */}
-        <Dialog open={isRulesModalOpen} onOpenChange={setIsRulesModalOpen}>
-          <DialogContent className="max-w-md bg-white p-6 rounded-2xl shadow-xl">
+        {/* ── Approve modal ───────────────────────────────────────── */}
+        <Dialog
+          open={Boolean(approveTarget)}
+          onOpenChange={(open) => {
+            if (!open) setApproveTarget(null);
+          }}
+        >
+          <DialogContent className="max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold text-slate-900">Automated Return Rules</DialogTitle>
+              <DialogTitle className="text-lg font-bold text-slate-900">Approve this return</DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Configure auto-approval thresholds, inspection policies, and customer return shipping costs.
+                {approveTarget?.rmaCode ?? 'A new RMA code'} ·{' '}
+                {approveTarget ? money(approveTarget.subtotal) + ' in goods' : ''}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 pt-2 text-xs">
+              <p className="text-slate-600">
+                Approving generates the RMA the buyer must quote, records the refund on the package, and
+                moves it to <span className="font-semibold">return approved</span>. Refund the goods
+                total in full, or agree a smaller amount. Freight is not part of this number.
+              </p>
+
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Auto-Approval Price Floor ($)</label>
+                <label className="mb-1 block font-bold text-slate-700">
+                  Refund amount (optional)
+                </label>
                 <input
                   type="text"
-                  defaultValue="30.00"
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900 font-mono"
+                  inputMode="decimal"
+                  value={refundInput}
+                  onChange={(e) => setRefundInput(e.target.value)}
+                  placeholder={approveTarget ? approveTarget.subtotal.toFixed(2) : '0.00'}
+                  className="w-full rounded-lg border border-slate-200 p-2 font-mono text-xs focus:border-slate-900 focus:outline-none"
                 />
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Leave blank and <code className="font-mono">decide_return</code> books the goods total.
+                </p>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Return Window (Days)</label>
-                <input
-                  type="text"
-                  defaultValue="30"
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Return Shipping Cost</label>
-                <select className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900">
-                  <option>Free returns (Vendor prepaid label)</option>
-                  <option>Customer pays return postage</option>
-                  <option>Deducted from refund ($5.99 fee)</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => setIsRulesModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  onClick={() => setApproveTarget(null)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsRulesModalOpen(false);
-                    showToast('Return policy rules updated successfully');
-                  }}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                  onClick={handleApprove}
+                  disabled={approve.isPending}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
-                  Save Rules
+                  {approve.isPending ? 'Writing…' : 'Approve & issue RMA'}
                 </button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Modal: Return Audit Log */}
-        <Dialog open={isAuditModalOpen} onOpenChange={setIsAuditModalOpen}>
-          <DialogContent className="max-w-lg bg-white p-6 rounded-2xl shadow-xl">
+        {/* ── Decline modal ───────────────────────────────────────── */}
+        <Dialog
+          open={Boolean(declineTarget)}
+          onOpenChange={(open) => {
+            if (!open) setDeclineTarget(null);
+          }}
+        >
+          <DialogContent className="max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold text-slate-900">Return &amp; RMA Audit Log</DialogTitle>
+              <DialogTitle className="text-lg font-bold text-slate-900">Decline this return</DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Recent policy modifications and dispute audit trail.
+                Package {declineTarget?.id.slice(0, 8)} · {money(declineTarget?.subtotal ?? 0)} in goods
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 pt-3 max-h-80 overflow-y-auto text-xs">
-              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
-                <div className="font-bold text-slate-900">Return window calibrated to 30 days</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">vendor@demo.test • 3 days ago</div>
-              </div>
-              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
-                <div className="font-bold text-slate-900">Mandatory photo proof requirement enabled</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">ops@vendora.market • 1 week ago</div>
-              </div>
-              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
-                <div className="font-bold text-slate-900">Instant label threshold set to &lt;$30</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">vendor@demo.test • 2 weeks ago</div>
-              </div>
-            </div>
+            <div className="space-y-4 pt-2 text-xs">
+              <p className="text-slate-600">
+                A decline is not a delete. The package stays on the order with your reason attached, and
+                the buyer sees it.
+              </p>
 
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setIsAuditModalOpen(false)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
-              >
-                Close
-              </button>
+              <div>
+                <label className="mb-1 block font-bold text-slate-700">Reason for the buyer</label>
+                <textarea
+                  value={declineReason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                  rows={3}
+                  placeholder="Outside the return window, or the item returned is not the unit shipped."
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDeclineTarget(null)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDecline}
+                  disabled={decline.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Record the decline
+                </button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* ── Policy modal ────────────────────────────────────────── */}
+        <PolicyModal
+          open={isPolicyModalOpen}
+          onClose={() => setIsPolicyModalOpen(false)}
+          profile={profile ?? null}
+          updateStore={updateStore}
+          onSaved={showToast}
+        />
       </div>
     </WorkspaceLayout>
   );
 };
+
+function PolicyModal({
+  open,
+  onClose,
+  profile,
+  updateStore,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  profile: VendorStore | null;
+  updateStore: ReturnType<typeof useUpdateVendorStore>;
+  onSaved: (msg: string) => void;
+}) {
+  const [windowDays, setWindowDays] = useState('30');
+  const [fee, setFee] = useState('0.00');
+  const [payer, setPayer] = useState<'buyer' | 'seller'>('buyer');
+  const [autoApprove, setAutoApprove] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!profile) return;
+    setWindowDays(String(profile.returnWindowDays));
+    setFee(profile.restockingFee.toFixed(2));
+    setPayer(profile.returnShippingPayer === 'seller' ? 'seller' : 'buyer');
+    setAutoApprove(profile.autoApproveReturns);
+  }, [profile]);
+
+  const save = async () => {
+    setError(null);
+    const days = Number.parseInt(windowDays, 10);
+    const feeValue = Number.parseFloat(fee);
+    if (!Number.isFinite(days) || days < 0 || days > 365) {
+      setError('The column rejects a window outside 0-365 days.');
+      return;
+    }
+    if (!Number.isFinite(feeValue) || feeValue < 0) {
+      setError('Restocking fee must be zero or more.');
+      return;
+    }
+    try {
+      await updateStore.mutateAsync({
+        returnWindowDays: days,
+        restockingFee: feeValue,
+        returnShippingPayer: payer,
+        autoApproveReturns: autoApprove,
+      });
+      onSaved('Return policy saved to your store record.');
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
+      <DialogContent className="max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold text-slate-900">Return policy</DialogTitle>
+          <DialogDescription className="text-xs text-slate-500">
+            Four fields on <code className="font-mono">vendor_profiles</code>, the same ones the
+            Settings page reads.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2 text-xs">
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-rose-800">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block font-bold text-slate-700">Return window (days)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={windowDays}
+                onChange={(e) => setWindowDays(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2 font-mono text-xs focus:border-slate-900 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-bold text-slate-700">Restocking fee</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={fee}
+                onChange={(e) => setFee(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 p-2 font-mono text-xs focus:border-slate-900 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-bold text-slate-700">Who pays return postage</label>
+            <select
+              value={payer}
+              onChange={(e) => setPayer(e.target.value as 'buyer' | 'seller')}
+              className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-slate-900 focus:outline-none"
+            >
+              <option value="buyer">Buyer</option>
+              <option value="seller">Seller</option>
+            </select>
+          </div>
+
+          <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+            <input
+              type="checkbox"
+              checked={autoApprove}
+              onChange={(e) => setAutoApprove(e.target.checked)}
+              className="mt-0.5 rounded border-slate-300"
+            />
+            <span>
+              <span className="block font-bold text-slate-900">Auto-approve returns</span>
+              <span className="mt-0.5 block text-[11px] text-slate-500">
+                Stored on your record. Nothing in this build acts on it: there is no scheduler reading
+                the flag, so every request still waits for your decision here.
+              </span>
+            </span>
+          </label>
+
+          <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
+            Be exact about what these do. All four are stored on your vendor record and read back by
+            this page and the Settings page. Nothing else in this build consumes them:{' '}
+            <code className="font-mono">decide_return</code> does not check the window, does not move
+            postage, and does <strong>not</strong> subtract the restocking fee - the refund you approve
+            is the refund that gets booked, so deduct a fee yourself by approving a smaller amount.
+          </p>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={updateStore.isPending}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+            >
+              {updateStore.isPending ? 'Saving…' : 'Save policy'}
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

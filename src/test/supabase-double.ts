@@ -32,7 +32,8 @@ const EMBED_FK: Record<string, Record<string, string>> = {
   cart_items: { products: 'product_id' },
   wishlist_items: { products: 'product_id' },
   reviews: { products: 'product_id' },
-  sub_orders: { vendor_profiles: 'seller_id' },
+  sub_orders: { vendor_profiles: 'seller_id', orders: 'order_group_id' },
+  product_qa: { products: 'product_id' },
 };
 
 /** One-to-many embeds: `<from table>.<child table> = child.<foreign key>`. */
@@ -119,6 +120,14 @@ export function createSupabaseDouble() {
     orders: [],
     sub_orders: [],
     deliveries: [],
+    disputes: [],
+    dispute_messages: [],
+    product_qa: [],
+    media_items: [],
+    vendor_shipping_settings: [],
+    vendor_notification_prefs: [],
+    message_threads: [],
+    messages: [],
   };
   const failures: Record<string, string | null> = {};
   const authState = {
@@ -139,6 +148,16 @@ export function createSupabaseDouble() {
   /** The jsonb `checkout_quote` / `place_order` would return; pricing stays in Postgres. */
   let quoteFixture: Row | null = null;
   let placedFixture: Row | null = null;
+  /**
+   * The jsonb the vendor aggregate RPCs return. Like pricing, the arithmetic is the
+   * database's job (scripts/smoke-rpcs.ts covers it); a test pins one screen to known
+   * numbers here, and the mapping in `api/dashboard.ts` / `api/earnings.ts` is what is
+   * under test. Unset means "the store has no history yet", which is what the real
+   * functions return for an empty ledger.
+   */
+  let dashboardFixture: Row | null = null;
+  let balanceFixture: Row | null = null;
+  let earningsFixture: Row | null = null;
 
   /** Resolves a select list against a row, replaying `alias:table(cols)` embeds recursively. */
   function project(target: Row, selectList: string, fromTable: string): Row {
@@ -284,11 +303,16 @@ export function createSupabaseDouble() {
         }
         if (pending) {
           const targets = this.filtered();
-          tables[table] =
-            pending.kind === 'delete'
-              ? rows().filter((row) => !targets.includes(row))
-              : rows().map((row) => (targets.includes(row) ? { ...row, ...pending.patch } : row));
-          this.written = targets;
+          if (pending.kind === 'delete') {
+            tables[table] = rows().filter((row) => !targets.includes(row));
+            this.written = targets;
+          } else {
+            // PostgREST returns the row as it now reads, so the written rows carry the patch.
+            const patched = targets.map((row) => ({ ...row, ...pending.patch }));
+            const byOriginal = new Map(targets.map((row, index) => [row, patched[index]]));
+            tables[table] = rows().map((row) => byOriginal.get(row) ?? row);
+            this.written = patched;
+          }
         }
         if (this.written) {
           // A write only returns rows when the chain asked for them, as PostgREST does.
@@ -385,6 +409,26 @@ export function createSupabaseDouble() {
     listeners.forEach((listener) => listener(event, session));
   };
 
+  /** The store the session owns, the way `current_vendor_id()` resolves it. */
+  const vendorOfSession = () =>
+    tables.vendor_profiles.find((row) => row.user_id === authState.session?.user.id)?.id ?? null;
+
+  /**
+   * The real client's RPC call is awaitable *and* chainable - `.abortSignal(signal)` hands
+   * back the same pending request. A query that passes a signal therefore needs this shape,
+   * not a bare promise.
+   */
+  const chainableRpc = (
+    call: (fn: string, args?: Row) => Promise<{ data: unknown; error: DoubleError | null }>,
+  ) =>
+    vi.fn((fn: string, args: Row = {}) => {
+      const pending = call(fn, args);
+      return Object.assign(pending, {
+        abortSignal: (signal?: AbortSignal) =>
+          signal?.aborted ? Promise.reject(new DOMException('Aborted', 'AbortError')) : pending,
+      });
+    });
+
   const double = {
     tables,
     failures,
@@ -394,7 +438,7 @@ export function createSupabaseDouble() {
     emit,
     from: vi.fn((table: string) => query(table)),
     /** Only the RPCs the data layer calls are implemented; the rest fail loudly. */
-    rpc: vi.fn(async (fn: string, args: Row = {}) => {
+    rpc: chainableRpc(vi.fn(async (fn: string, args: Row = {}) => {
       rpcCalls.push({ fn, args });
       if (rpcError) return { data: null, error: rpcError };
       if (fn === 'reply_to_review') {
@@ -424,6 +468,47 @@ export function createSupabaseDouble() {
         ];
         return { data: { status: args.p_next }, error: null };
       }
+      // Moderation moves a listing; the same four refusals the function raises.
+      if (fn === 'set_vendor_product_listing') {
+        if (args.p_action !== 'submit' && args.p_action !== 'withdraw') {
+          return { data: null, error: { message: 'Action must be submit or withdraw' } };
+        }
+        const product = tables.products.find((row) => row.id === args.p_product_id);
+        if (!product) return { data: null, error: { message: 'Product not found' } };
+        if (product.seller_id !== vendorOfSession()) {
+          return { data: null, error: { message: 'This listing is not yours' } };
+        }
+        if (args.p_action === 'submit') {
+          if (product.status !== 'draft' && product.status !== 'rejected') {
+            return { data: null, error: { message: `A ${product.status} listing does not need to be submitted` } };
+          }
+          product.status = 'pending_review';
+          product.rejection_reason = null;
+        } else {
+          if (!['draft', 'pending_review', 'rejected'].includes(String(product.status))) {
+            return { data: null, error: { message: 'Approved listings are withdrawn by the platform, not by the seller' } };
+          }
+          product.status = 'draft';
+        }
+        return { data: { id: product.id, status: product.status }, error: null };
+      }
+      // `sub_orders` has no UPDATE policy: carrier and tracking ride on this RPC, so the
+      // double enforces the same four refusals the function raises.
+      if (fn === 'update_sub_order_tracking') {
+        const sub = tables.sub_orders.find((row) => row.id === args.p_sub_order_id);
+        if (!sub) return { data: null, error: { message: 'Package not found' } };
+        if (sub.type !== 'physical') {
+          return { data: null, error: { message: 'Digital packages have nothing to track' } };
+        }
+        if (sub.seller_id !== vendorOfSession()) {
+          return { data: null, error: { message: 'This package is not yours to update' } };
+        }
+        const tracking = String(args.p_tracking_number ?? '').trim();
+        if (tracking === '') return { data: null, error: { message: 'A tracking number is required' } };
+        sub.carrier_name = String(args.p_carrier_name ?? '').trim() || null;
+        sub.tracking_number = tracking;
+        return { data: { carrierName: sub.carrier_name, trackingNumber: sub.tracking_number }, error: null };
+      }
       if (fn === 'issue_delivery_code') {
         const sub = tables.sub_orders.find((row) => row.id === args.p_sub_order_id);
         if (!sub) return { data: null, error: { message: 'Sub-order not found' } };
@@ -436,8 +521,21 @@ export function createSupabaseDouble() {
         sub.delivery_code_hash = 'sha256:rotated';
         return { data: { code: '4821', subOrderId: sub.id }, error: null };
       }
+      // The seller's own store, resolved from the session like `current_vendor_id()` does.
+      if (fn === 'current_vendor_id') {
+        return { data: vendorOfSession(), error: null };
+      }
+      if (fn === 'vendor_dashboard') {
+        return { data: dashboardFixture ?? dashboardJson(), error: null };
+      }
+      if (fn === 'vendor_balance') {
+        return { data: balanceFixture ?? balanceJson(), error: null };
+      }
+      if (fn === 'vendor_earnings') {
+        return { data: earningsFixture ?? earningsJson(), error: null };
+      }
       return { data: null, error: { message: `Unknown rpc: ${fn}` } };
-    }),
+    })),
     auth: {
       getSession: vi.fn(async () => ({ data: { session: authState.session } })),
       signInWithPassword: vi.fn(async ({ email }: { email: string; password: string }) => {
@@ -535,6 +633,38 @@ export function createSupabaseDouble() {
       tables.sub_orders.push(subOrder);
       return subOrder;
     },
+    seedDispute(dispute: Row) {
+      tables.disputes.push(dispute);
+      return dispute;
+    },
+    seedDisputeMessage(message: Row) {
+      tables.dispute_messages.push(message);
+      return message;
+    },
+    seedQuestion(question: Row) {
+      tables.product_qa.push(question);
+      return question;
+    },
+    seedMediaItem(item: Row) {
+      tables.media_items.push(item);
+      return item;
+    },
+    seedShippingSettings(settings: Row) {
+      tables.vendor_shipping_settings.push(settings);
+      return settings;
+    },
+    seedNotificationPrefs(prefs: Row) {
+      tables.vendor_notification_prefs.push(prefs);
+      return prefs;
+    },
+    seedThread(thread: Row) {
+      tables.message_threads.push(thread);
+      return thread;
+    },
+    seedMessage(message: Row) {
+      tables.messages.push(message);
+      return message;
+    },
     /** The jsonb `checkout_quote` returns, so a test can pin one screen to known money. */
     setQuote(quote: Row | null) {
       quoteFixture = quote;
@@ -542,6 +672,16 @@ export function createSupabaseDouble() {
     /** The jsonb `place_order` returns after booking. */
     setPlacedOrder(placed: Row | null) {
       placedFixture = placed;
+    },
+    /** The jsonb `vendor_dashboard` returns; unset means an empty ledger. */
+    setDashboard(dashboard: Row | null) {
+      dashboardFixture = dashboard;
+    },
+    setBalance(balance: Row | null) {
+      balanceFixture = balance;
+    },
+    setEarnings(earnings: Row | null) {
+      earningsFixture = earnings;
     },
     /** Makes the next RPC call fail, the way a denied SECURITY DEFINER call does. */
     failRpc(message: string | null) {
@@ -565,6 +705,9 @@ export function createSupabaseDouble() {
       rpcCalls.length = 0;
       quoteFixture = null;
       placedFixture = null;
+      dashboardFixture = null;
+      balanceFixture = null;
+      earningsFixture = null;
       listeners.clear();
       syntheticId = 0;
       double.from.mockClear();
@@ -787,6 +930,219 @@ export function subOrderRow(overrides: Partial<Row> = {}): Row {
     customer_notes: null,
     delivery_code_hash: 'sha256:seeded',
     created_at: '2026-10-06T14:30:00.000Z',
+    ...overrides,
+  };
+}
+
+/**
+ * A disputes row. Only the buyer of the order can insert one (`disputes_insert_customer`),
+ * so a test seeds it rather than creating it through the client.
+ */
+export function disputeRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000601',
+    sub_order_id: subOrderRow().id,
+    order_group_id: orderRow().id,
+    customer_id: 'user-1',
+    customer_name: 'Alex Buyer',
+    customer_avatar: null,
+    vendor_id: 'store-1',
+    vendor_name: 'Demo Store',
+    reason: 'Package never arrived',
+    status: 'open',
+    urgency: 'standard',
+    assigned_agent_id: null,
+    resolution_note: null,
+    resolution_amount: null,
+    evidence_photos: [],
+    created_at: '2026-10-07T00:00:00.000Z',
+    updated_at: '2026-10-07T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A dispute_messages entry. `is_internal_note` is a staff flag the counterparty can still read. */
+export function disputeMessageRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000611',
+    dispute_id: disputeRow().id,
+    sender_id: 'user-1',
+    sender_role: 'customer',
+    sender_name: 'Alex Buyer',
+    sender_avatar: null,
+    content: 'The tracking has not moved in six days.',
+    is_internal_note: false,
+    attachments: [],
+    created_at: '2026-10-07T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A product_qa row; the question, product and asker are immutable to the seller. */
+export function questionRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000701',
+    product_id: productRow().id,
+    vendor_id: 'store-1',
+    customer_id: 'user-1',
+    customer_name: 'Alex Buyer',
+    question: 'Does this work with a USB-C hub?',
+    answer: null,
+    published: false,
+    created_at: '2026-10-07T00:00:00.000Z',
+    answered_at: null,
+    ...overrides,
+  };
+}
+
+/** A media_items row; `status` is the platform's moderation column, not the seller's. */
+export function mediaItemRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000801',
+    vendor_id: 'store-1',
+    name: 'headphones.png',
+    folder: 'products',
+    object_path: 'store-1/products/headphones.png',
+    cdn_url: 'https://cdn.example.test/headphones.png',
+    mime_type: 'image/png',
+    size_bytes: 20480,
+    width: 1024,
+    height: 1024,
+    status: 'pending',
+    created_at: '2026-10-07T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A vendor_shipping_settings row. The store id is the primary key, so one row per store. */
+export function shippingRow(overrides: Partial<Row> = {}): Row {
+  return {
+    vendor_id: 'store-1',
+    free_shipping_enabled: false,
+    free_shipping_threshold: 150,
+    standard_rate: 8.5,
+    express_rate: 24,
+    warehouse_name: 'Demo Warehouse',
+    street: '1 Dock Road',
+    city: 'Columbus',
+    state: 'OH',
+    zip_code: '43004',
+    phone: '614-555-0100',
+    operating_hours: 'Mon-Fri 08:00-18:00',
+    gate_code: '4432',
+    sla_window: '48h',
+    ...overrides,
+  };
+}
+
+/** A vendor_notification_prefs row; the switches live in one jsonb bag. */
+export function prefsRow(overrides: Partial<Row> = {}): Row {
+  return {
+    vendor_id: 'store-1',
+    prefs: { smsDispatch: false, lowInventoryAlert: true, rmaPushAlert: true, dailyDigest: false },
+    ...overrides,
+  };
+}
+
+/** A message_threads row. */
+export function threadRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000901',
+    vendor_id: 'store-1',
+    customer_id: 'user-1',
+    customer_name: 'Alex Buyer',
+    channel: 'order_inquiry',
+    order_ref: 'ORD-1001',
+    product_ref: null,
+    status: 'open',
+    created_at: '2026-10-06T14:30:00.000Z',
+    updated_at: '2026-10-07T09:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A messages row inside a buyer thread. */
+export function threadMessageRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000911',
+    thread_id: threadRow().id,
+    sender_id: 'user-1',
+    sender_role: 'customer',
+    sender_name: 'Alex Buyer',
+    body: 'Is this still in stock?',
+    attachments: [],
+    read: false,
+    created_at: '2026-10-07T09:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/**
+ * The jsonb `vendor_dashboard` returns for a store with no history. The aggregates are
+ * Postgres' work; this is the shape the client must map, so a test can pin one tile by
+ * handing `setDashboard()` its own section.
+ */
+export function dashboardJson(overrides: Partial<Row> = {}): Row {
+  return {
+    store: {
+      id: 'store-1',
+      storeName: 'Demo Store',
+      slug: 'demo-store',
+      sellerType: 'vendor',
+      status: 'active',
+      rating: 0,
+      reviewCount: 0,
+      vacationMode: false,
+    },
+    kpis: {
+      grossBooked: 0,
+      commission: 0,
+      netPayout: 0,
+      physicalSales: 0,
+      digitalSales: 0,
+      revenue7d: 0,
+      revenue30d: 0,
+      orders7d: 0,
+      balance: 0,
+    },
+    stages: { placed: 0, confirmed: 0, packed: 0, inTransit: 0, delivered: 0, returns: 0, cancelled: 0 },
+    catalog: {
+      approved: 0,
+      pendingReview: 0,
+      rejected: 0,
+      draft: 0,
+      archived: 0,
+      lowStock: 0,
+      outOfStock: 0,
+      units: 0,
+      valuation: 0,
+    },
+    engagement: { openThreads: 0, unreadMessages: 0, activePromotions: 0, unansweredQuestions: 0 },
+    topProducts: [],
+    recentPackages: [],
+    ...overrides,
+  };
+}
+
+/** The jsonb `vendor_balance` returns for a store that has earned nothing. */
+export function balanceJson(overrides: Partial<Row> = {}): Row {
+  return {
+    vendorId: 'store-1',
+    lifetimeNet: 0,
+    paidOut: 0,
+    reserve: 0,
+    available: 0,
+    pendingPayouts: 0,
+    ...overrides,
+  };
+}
+
+/** The jsonb `vendor_earnings` returns when the ledger is empty. */
+export function earningsJson(overrides: Partial<Row> = {}): Row {
+  return {
+    totals: { gross: 0, subtotal: 0, shipping: 0, fees: 0, net: 0, packages: 0, settled: 0, processing: 0 },
+    months: [],
+    ledger: [],
     ...overrides,
   };
 }

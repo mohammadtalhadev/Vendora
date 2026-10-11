@@ -1,301 +1,285 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+
+// WorkspaceLayout's sign-out needs the auth provider; these tests never click it.
+vi.mock('../lib/auth-context', async () => {
+  const { useAuthStub } = await import('../test/auth-context-stub');
+  return { useAuth: useAuthStub };
+});
+vi.mock('../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { Route, Routes } from 'react-router-dom';
 import { VendorOrderDetailPage } from './VendorOrderDetailPage';
 import { VendorInventoryPage } from './VendorInventoryPage';
-import { useAuthStore, DEMO_ACCOUNTS } from '../store/auth-store';
-import { mockDb } from '../mocks/db';
+import { renderWorkspace, signInVendor } from '../test/vendor-render';
+import {
+  categoryRow,
+  orderRow,
+  productRow,
+  subOrderRow,
+  supabaseDouble,
+} from '../test/supabase-double';
 
-describe('Vendor Workspace New Pages', () => {
+function renderOrderDetail(id: string) {
+  return renderWorkspace(
+    <Routes>
+      <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
+    </Routes>,
+    [`/vendor/orders/${id}`],
+  );
+}
+
+const physicalPackage = (overrides: Record<string, unknown> = {}) =>
+  subOrderRow({
+    id: 'sub-a',
+    order_group_id: 'order-1',
+    seller_id: 'store-1',
+    type: 'physical',
+    status: 'placed',
+    ...overrides,
+  });
+
+beforeEach(() => {
+  supabaseDouble.reset();
+  signInVendor();
+  supabaseDouble.seedCategory(categoryRow({ id: 'cat-audio', name: 'Audio' }));
+  supabaseDouble.seedOrder(orderRow({ id: 'order-1', customer_email: 'buyer@demo.test' }));
+});
+
+describe('VendorOrderDetailPage', () => {
+  it('shows the package the route names, with the money and buyer the order recorded', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage());
+    renderOrderDetail('sub-a');
+
+    await waitFor(() => expect(screen.getByText(/Sub-Order #sub-a/)).toBeInTheDocument());
+    expect(screen.getByText(/Master Group: #order-1/)).toBeInTheDocument();
+    expect(screen.getByText('Package Line Items (1)')).toBeInTheDocument();
+    expect(screen.getByText('Reference Headphones')).toBeInTheDocument();
+    expect(screen.getByText('Financial Settlement Breakdown')).toBeInTheDocument();
+    expect(screen.getAllByText(/\$199\.99/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Customer Destination & Notes')).toBeInTheDocument();
+    expect(screen.getByText('Alex Buyer')).toBeInTheDocument();
+  });
+
+  it('refuses to open another store’s package, and says where it went', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage({ id: 'sub-b', seller_id: 'store-2' }));
+    renderOrderDetail('sub-b');
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/This package could not be loaded: Package not found\. It may belong to another store\./),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('walks confirm -> pack -> release, then stops because the rider records the handover', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage());
+    renderOrderDetail('sub-a');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Confirm Order/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Order/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Mark Packed/i })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /Mark Packed/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Ready for Rider Pickup/i })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /Ready for Rider Pickup/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Waiting for the courier to scan this package in/),
+      ).toBeInTheDocument(),
+    );
+
+    const row = supabaseDouble.tables.sub_orders.find((r) => r.id === 'sub-a');
+    expect(row?.status).toBe('ready_for_pickup');
+    expect(row?.history).toHaveLength(4);
+    expect(screen.queryByRole('button', { name: /Mark Shipped|Mark Delivered/i })).not.toBeInTheDocument();
+  });
+
+  it('records the carrier and tracking number through the RPC, the only write a store has here', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage({ status: 'ready_for_pickup' }));
+    renderOrderDetail('sub-a');
+
+    await waitFor(() => expect(screen.getByText('Shipping & Carrier Details')).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText('Courier you are handing this package to'), {
+      target: { value: 'DHL' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. TRACK-883921/i), {
+      target: { value: 'DHL-445566' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Save Tracking/i }));
+
+    await waitFor(() => expect(screen.getByText('Tracking Saved!')).toBeInTheDocument());
+    const row = supabaseDouble.tables.sub_orders.find((r) => r.id === 'sub-a');
+    expect(row).toMatchObject({ carrier_name: 'DHL', tracking_number: 'DHL-445566' });
+  });
+
+  it('will not send a blank tracking number, so nothing is written', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage({ status: 'ready_for_pickup' }));
+    renderOrderDetail('sub-a');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Save Tracking/i })).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText('Courier you are handing this package to'), {
+      target: { value: 'DHL' },
+    });
+    const tracking = screen.getByPlaceholderText(/e\.g\. TRACK-883921/i) as HTMLInputElement;
+    expect(tracking).toBeRequired();
+
+    fireEvent.click(screen.getByRole('button', { name: /Save Tracking/i }));
+
+    // The form stops it before the RPC, and the RPC would too: either way the row is untouched.
+    expect(
+      supabaseDouble.rpcCalls.filter((call) => call.fn === 'update_sub_order_tracking'),
+    ).toHaveLength(0);
+    expect(supabaseDouble.tables.sub_orders.find((r) => r.id === 'sub-a')?.tracking_number).toBeNull();
+  });
+
+  it('gives a digital package no shipping form and no packed step', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage({ type: 'digital', license_key: null, items: [] }));
+    renderOrderDetail('sub-a');
+
+    await waitFor(() => expect(screen.getByText('Digital Delivery')).toBeInTheDocument());
+    expect(
+      screen.getByText(/Nothing to pack or ship - this is a digital package, and the platform issues the key\./),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Confirm Order|Mark Packed/i })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/e\.g\. TRACK-883921/i)).not.toBeInTheDocument();
+  });
+
+  it('prints a packing slip from the recorded data, and admits when no origin is on file', async () => {
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
+    supabaseDouble.seedSubOrder(physicalPackage({ carrier_name: 'DHL', tracking_number: 'DHL-445566' }));
+    renderOrderDetail('sub-a');
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Print Packing Slip & Label/i })).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Print Packing Slip & Label/i }));
+
+    const slip = await screen.findByText('Official Packing Slip & Shipping Label');
+    expect(slip).toBeInTheDocument();
+    expect(screen.getByText(/DHL • standard manifest/)).toBeInTheDocument();
+    expect(screen.getByText(/No pickup address on file - add one under Shipping & Logistics/)).toBeInTheDocument();
+    expect(screen.getAllByText('DHL-445566').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: /Print Document/i }));
+    expect(printSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels through the state machine, with the reason kept in the history the database holds', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage());
+    renderOrderDetail('sub-a');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Cancel Order/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /^Cancel Order/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/Cancel Sub-Order #sub-a/)).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByRole('combobox'), { target: { value: 'Pricing error' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /Confirm Cancellation/i }));
+
+    await waitFor(() => expect(screen.getByText('Order Cancelled')).toBeInTheDocument());
+    const row = supabaseDouble.tables.sub_orders.find((r) => r.id === 'sub-a');
+    expect(row?.status).toBe('cancelled');
+    expect(JSON.stringify(row?.history)).toContain('Merchant cancelled: Pricing error');
+  });
+
+  it('will not open a conversation the buyer never started', async () => {
+    supabaseDouble.seedSubOrder(physicalPackage());
+    renderOrderDetail('sub-a');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Message Customer/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Message Customer/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(/This buyer has not opened a conversation about the order/),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /Send Message to Customer/i })).toBeDisabled();
+  });
+});
+
+describe('VendorInventoryPage', () => {
   beforeEach(() => {
-    // Reset auth store to demo vendor account
-    useAuthStore.setState({
-      user: DEMO_ACCOUNTS.vendor,
-      token: 'mock-vendor-token',
-      isAuthenticated: true,
-    });
-    // Reset mock database to clean seed
-    mockDb.resetToSeed();
-    vi.restoreAllMocks();
+    supabaseDouble.seedProduct(
+      productRow({ id: 'p-1', seller_id: 'store-1', title: 'Reference Headphones', category_id: 'cat-audio', stock: 3 }),
+    );
+    supabaseDouble.seedProduct(
+      productRow({ id: 'p-2', seller_id: 'store-1', title: 'Apex Keyboard', category_id: 'cat-audio', stock: 0 }),
+    );
+    supabaseDouble.seedProduct(productRow({ id: 'p-3', seller_id: 'store-2', title: 'Another Store Item', stock: 40 }));
   });
 
-  describe('1. VendorOrderDetailPage (Route: /vendor/orders/:id)', () => {
-    it('renders merchant order management view with customer details and line items', () => {
-      render(
-        <MemoryRouter initialEntries={['/vendor/orders/sub-98421-A']}>
-          <Routes>
-            <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
-          </Routes>
-        </MemoryRouter>,
-      );
+  it('counts only this store’s listings, and flags the rows the threshold covers', async () => {
+    renderWorkspace(<VendorInventoryPage />);
 
-      // Verify Workspace Layout role badge
-      expect(screen.getByTestId('role-badge')).toHaveTextContent(/VENDOR PARTNER/i);
-
-      // Verify Sub-order header details
-      expect(screen.getByText(/Sub-Order #sub-98421-A/i)).toBeInTheDocument();
-      expect(screen.getByText(/Master Group: #ord-98421/i)).toBeInTheDocument();
-
-      // Verify Customer destination
-      expect(screen.getByText('Customer Destination & Notes')).toBeInTheDocument();
-      expect(screen.getByText('Sarah Customer')).toBeInTheDocument();
-      expect(screen.getByText(/Buyer Order Notes/i)).toBeInTheDocument();
-
-      // Verify Line items table
-      expect(screen.getByText(/Package Line Items/i)).toBeInTheDocument();
-      expect(screen.getByText('Nova Pro Wireless ANC Headphones')).toBeInTheDocument();
-
-      // Verify Financial breakdown
-      expect(screen.getByText('Financial Settlement Breakdown')).toBeInTheDocument();
-      expect(screen.getByText('Platform Commission Deduction')).toBeInTheDocument();
-      expect(screen.getByText('Net Seller Payout')).toBeInTheDocument();
-    });
-
-    it('advances sequential order progression (Confirm Order -> Mark Packed -> Ready for Rider Pickup / Mark Shipped)', () => {
-      // Set sub-98421-A to 'placed' for sequential progression testing
-      const order = mockDb.subOrders.find((so) => so.id === 'sub-98421-A');
-      if (order) order.status = 'placed';
-
-      render(
-        <MemoryRouter initialEntries={['/vendor/orders/sub-98421-A']}>
-          <Routes>
-            <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
-          </Routes>
-        </MemoryRouter>,
-      );
-
-      // Stage 1: Placed -> Confirm Order
-      const confirmBtn = screen.getByRole('button', { name: /Confirm Order/i });
-      expect(confirmBtn).toBeInTheDocument();
-      fireEvent.click(confirmBtn);
-
-      // Stage 2: Confirmed -> Mark Packed
-      const markPackedBtn = screen.getByRole('button', { name: /Mark Packed/i });
-      expect(markPackedBtn).toBeInTheDocument();
-      fireEvent.click(markPackedBtn);
-
-      // Stage 3: Packed -> Ready for Rider Pickup
-      const readyForRiderBtn = screen.getByRole('button', { name: /Ready for Rider Pickup/i });
-      expect(readyForRiderBtn).toBeInTheDocument();
-      fireEvent.click(readyForRiderBtn);
-
-      // Stage 4: Ready for Pickup -> Mark Shipped
-      const markShippedBtn = screen.getByRole('button', { name: /Mark Shipped/i });
-      expect(markShippedBtn).toBeInTheDocument();
-      fireEvent.click(markShippedBtn);
-
-      // Stage 5: Shipped -> Mark Delivered
-      const markDeliveredBtn = screen.getByRole('button', { name: /Mark Delivered/i });
-      expect(markDeliveredBtn).toBeInTheDocument();
-    });
-
-    it('allows updating carrier tracking number with dropdown and save button', () => {
-      render(
-        <MemoryRouter initialEntries={['/vendor/orders/sub-98421-A']}>
-          <Routes>
-            <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
-          </Routes>
-        </MemoryRouter>,
-      );
-
-      // Carrier selection dropdown
-      const carrierSelect = screen.getByDisplayValue('Vendora Express Rider');
-      fireEvent.change(carrierSelect, { target: { value: 'FedEx' } });
-
-      // Tracking input
-      const trackingInput = screen.getByPlaceholderText(/e.g. TRACK-883921/i);
-      fireEvent.change(trackingInput, { target: { value: 'FX-9988221' } });
-
-      // Save tracking button
-      const saveBtn = screen.getByRole('button', { name: /Save Tracking/i });
-      fireEvent.click(saveBtn);
-
-      // Verified updated carrier and tracking
-      expect(screen.getAllByText('FedEx').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('FX-9988221').length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('opens printable Packing Slip & Shipping Label modal with barcode simulation and window.print', () => {
-      const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
-
-      render(
-        <MemoryRouter initialEntries={['/vendor/orders/sub-98421-A']}>
-          <Routes>
-            <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
-          </Routes>
-        </MemoryRouter>,
-      );
-
-      // Open print modal
-      const printModalBtn = screen.getByRole('button', { name: /Print Packing Slip & Label/i });
-      fireEvent.click(printModalBtn);
-
-      // Verify modal content
-      expect(screen.getByText(/Official Packing Slip & Shipping Label/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/VENDORA EXPRESS/i).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText(/PRIORITY GROUND AIRWAY MANIFEST/i)).toBeInTheDocument();
-      expect(screen.getByText(/SHIP FROM \(ORIGIN WAREHOUSE\):/i)).toBeInTheDocument();
-      expect(screen.getByText(/SHIP TO \(DESTINATION RECIPIENT\):/i)).toBeInTheDocument();
-
-      // Trigger print document button
-      const printDocBtn = screen.getByRole('button', { name: /Print Document/i });
-      fireEvent.click(printDocBtn);
-      expect(printSpy).toHaveBeenCalled();
-    });
-
-    it('supports order cancellation workflow modal with reason codes', () => {
-      // Ensure order is not delivered
-      const order = mockDb.subOrders.find((so) => so.id === 'sub-98421-A');
-      if (order) order.status = 'placed';
-
-      render(
-        <MemoryRouter initialEntries={['/vendor/orders/sub-98421-A']}>
-          <Routes>
-            <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
-          </Routes>
-        </MemoryRouter>,
-      );
-
-      // Click Cancel Order button
-      const cancelBtn = screen.getByRole('button', { name: /Cancel Order/i });
-      fireEvent.click(cancelBtn);
-
-      // Dialog is open
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toBeInTheDocument();
-      expect(within(dialog).getByText(/Cancel Sub-Order #sub-98421-A/i)).toBeInTheDocument();
-
-      // Reason dropdown
-      const reasonSelect = within(dialog).getByDisplayValue('Out of stock');
-      expect(reasonSelect).toBeInTheDocument();
-      fireEvent.change(reasonSelect, { target: { value: 'Pricing error' } });
-
-      // Confirm cancellation
-      const confirmCancelBtn = within(dialog).getByRole('button', { name: /Confirm Cancellation/i });
-      fireEvent.click(confirmCancelBtn);
-
-      // Order status transitions to Cancelled
-      expect(screen.getByText(/Order Cancelled/i)).toBeInTheDocument();
-    });
-
-    it('opens shortcut modal to message customer', () => {
-      render(
-        <MemoryRouter initialEntries={['/vendor/orders/sub-98421-A']}>
-          <Routes>
-            <Route path="/vendor/orders/:id" element={<VendorOrderDetailPage />} />
-          </Routes>
-        </MemoryRouter>,
-      );
-
-      const msgBtn = screen.getByRole('button', { name: /Message Customer/i });
-      fireEvent.click(msgBtn);
-
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toBeInTheDocument();
-      expect(within(dialog).getByText(/Message Customer: Sarah Customer/i)).toBeInTheDocument();
-
-      const sendBtn = within(dialog).getByRole('button', { name: /Send Message to Customer/i });
-      fireEvent.click(sendBtn);
-
-      // Dialog closes and toast appears
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText('Reference Headphones')).toBeInTheDocument());
+    expect(screen.queryByText('Another Store Item')).not.toBeInTheDocument();
+    expect(screen.getByText('Sold Out')).toBeInTheDocument();
+    expect(screen.getByText(/Low-Stock Alerts/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/listings are at 5 units or fewer, including sold-out ones/),
+    ).toBeInTheDocument();
   });
 
-  describe('2. VendorInventoryPage (Route: /vendor/inventory)', () => {
-    it('renders quick stock editor table, metrics, and low-stock alert banner', () => {
-      render(
-        <MemoryRouter>
-          <VendorInventoryPage />
-        </MemoryRouter>,
-      );
+  it('writes one row’s stock back to the catalog when the seller saves it', async () => {
+    renderWorkspace(<VendorInventoryPage />);
 
-      // Header and metrics
-      expect(screen.getByText('Inventory & Stock Management')).toBeInTheDocument();
-      expect(screen.getByText('Active SKUs')).toBeInTheDocument();
-      expect(screen.getByText('Low-Stock Alerts')).toBeInTheDocument();
-      expect(screen.getByText('Digital Key Reserve')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByTitle('Increment stock').length).toBe(2));
+    fireEvent.click(screen.getAllByTitle('Increment stock')[0]);
 
-      // Low-stock threshold alert banner
-      expect(screen.getByText(/Low-Stock Threshold Alert/i)).toBeInTheDocument();
+    const update = screen.getAllByRole('button', { name: /^Update$/ });
+    expect(update[0]).toBeEnabled();
+    fireEvent.click(update[0]);
 
-      // Table columns
-      expect(screen.getByText('Product & Variant')).toBeInTheDocument();
-      expect(screen.getByText('SKU Code')).toBeInTheDocument();
-      expect(screen.getByText('Quick Stock Stepper')).toBeInTheDocument();
-      expect(screen.getByText('Restock Backlog & ETA')).toBeInTheDocument();
-    });
+    await waitFor(() => expect(supabaseDouble.tables.products.find((r) => r.id === 'p-1')?.stock).toBe(4));
+    expect(screen.getByText(/units\.$/)).toBeInTheDocument();
+  });
 
-    it('allows adjusting stock with steppers and saving changes inline', () => {
-      render(
-        <MemoryRouter>
-          <VendorInventoryPage />
-        </MemoryRouter>,
-      );
+  it('saves every edited row in one pass, and keeps failures visible', async () => {
+    renderWorkspace(<VendorInventoryPage />);
 
-      // Find stock stepper inputs
-      const stockInputs = screen.getAllByRole('spinbutton');
-      expect(stockInputs.length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getAllByTitle('Increment stock').length).toBe(2));
+    fireEvent.click(screen.getAllByTitle('Increment stock')[0]);
+    fireEvent.click(screen.getAllByTitle('Increment stock')[1]);
+    expect(screen.getAllByText(/unsaved/i).length).toBeGreaterThan(0);
 
-      const firstInput = stockInputs[0];
-      const initialVal = parseInt((firstInput as HTMLInputElement).value, 10);
+    fireEvent.click(screen.getByRole('button', { name: /Save All Changes/i }));
 
-      // Click increment button (+)
-      const plusButtons = screen.getAllByTitle('Increment stock');
-      fireEvent.click(plusButtons[0]);
+    await waitFor(() => expect(screen.getByText(/stock levels to your catalog\./)).toBeInTheDocument());
+    expect(supabaseDouble.tables.products.find((r) => r.id === 'p-1')?.stock).toBe(4);
+    expect(supabaseDouble.tables.products.find((r) => r.id === 'p-2')?.stock).toBe(1);
+  });
 
-      // Stock is incremented
-      expect((firstInput as HTMLInputElement).value).toBe((initialVal + 1).toString());
+  it('shows the database’s refusal instead of a saved stock level', async () => {
+    renderWorkspace(<VendorInventoryPage />);
 
-      // Row update button becomes active
-      const updateButtons = screen.getAllByRole('button', { name: /Update/i });
-      expect(updateButtons.length).toBeGreaterThan(0);
-      fireEvent.click(updateButtons[0]);
+    await waitFor(() => expect(screen.getAllByTitle('Increment stock').length).toBe(2));
+    fireEvent.click(screen.getAllByTitle('Increment stock')[0]);
 
-      // Feedback toast appears
-      expect(screen.getByText(/Updated stock for/i)).toBeInTheDocument();
-    });
+    // The read already happened; from here the write is the thing that fails.
+    supabaseDouble.failures.products = 'row-level security';
+    fireEvent.click(screen.getAllByRole('button', { name: /^Update$/ })[0]);
 
-    it('switches to Digital License Vault tab and displays license keys with upload workflow', () => {
-      render(
-        <MemoryRouter>
-          <VendorInventoryPage />
-        </MemoryRouter>,
-      );
+    await waitFor(() => expect(screen.getByText('The database refused these writes:')).toBeInTheDocument());
+    expect(supabaseDouble.tables.products.find((r) => r.id === 'p-1')?.stock).toBe(3);
+  });
 
-      // Switch to Digital License Vault tab
-      const vaultTab = screen.getByRole('button', { name: /Digital License Vault/i });
-      fireEvent.click(vaultTab);
+  it('lists the keys the platform already issued, and says there is no vault to deposit into', async () => {
+    supabaseDouble.seedSubOrder(
+      physicalPackage({ id: 'sub-digital', type: 'digital', status: 'delivered', license_key: 'VEN-LIC-77' }),
+    );
+    renderWorkspace(<VendorInventoryPage />);
 
-      // Verify digital products and vault items
-      expect(screen.getByText(/ACTIVE VAULT:/i)).toBeInTheDocument();
-      expect(screen.getByText(/Available Reserve/i)).toBeInTheDocument();
-      expect(screen.getByText(/ACTIVATION KEY \/ LICENSE TOKEN/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: /Digital Licenses \(1 issued\)/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Digital Licenses \(1 issued\)/i }));
 
-      // Verify presence of copy button
-      const copyButtons = screen.getAllByTitle('Copy key');
-      expect(copyButtons.length).toBeGreaterThan(0);
-
-      // Open Bulk Upload modal
-      const uploadBtn = screen.getByRole('button', { name: /Upload License Keys/i });
-      fireEvent.click(uploadBtn);
-
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toBeInTheDocument();
-      expect(within(dialog).getByText(/Bulk Upload Activation Keys/i)).toBeInTheDocument();
-
-      // Type new keys
-      const textarea = within(dialog).getByPlaceholderText(/VEN-LIC-FIGMA/i);
-      fireEvent.change(textarea, {
-        target: { value: 'VEN-LIC-NEW-001\nVEN-LIC-NEW-002\nVEN-LIC-NEW-003' },
-      });
-
-      // Submit upload
-      const depositBtn = within(dialog).getByRole('button', { name: /Deposit Keys to Vault/i });
-      fireEvent.click(depositBtn);
-
-      // Keys are deposited
-      expect(screen.getByText(/Added 3 new activation keys/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText('VEN-LIC-77')).toBeInTheDocument();
+    expect(screen.getAllByTitle('Copy key')).toHaveLength(1);
+    expect(screen.getByText(/There is no seller-side key vault to deposit into/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Upload License Keys/i })).not.toBeInTheDocument();
   });
 });

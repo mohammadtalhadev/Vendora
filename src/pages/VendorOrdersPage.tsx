@@ -16,38 +16,111 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import {
-  getVendorSubOrders,
-  advanceSubOrderStatus,
-} from '../features/vendor/vendorData';
-import type { SubOrder, SubOrderStatus } from '../types/domain';
-import { useAuthStore } from '../store/auth-store';
+import { useVendorData } from '../features/vendor/hooks/useVendorData';
+import type { SubOrderStatus } from '../types/domain';
 
 import { exportToCsv } from '../lib/export-csv';
 
 type FilterStatus = 'all' | SubOrderStatus;
 
-export const VendorOrdersPage: React.FC = () => {
-  const { user } = useAuthStore();
-  const vendorId = user?.vendorId || 'vendor-tech-1';
+/**
+ * One label per status the database can hold. The physical and digital machines share
+ * `placed`, `cancelled` and `refunded`, so a row outside the six states this page used to
+ * know about is still described instead of rendering blank.
+ */
+const STATUS_PILL: Record<SubOrderStatus, { label: string; pill: string; dot: string }> = {
+  placed: { label: 'Unfulfilled', pill: 'bg-amber-50 text-amber-700', dot: 'bg-amber-500' },
+  confirmed: { label: 'Confirmed', pill: 'bg-blue-50 text-blue-700', dot: 'bg-blue-500' },
+  packed: {
+    label: 'Packed',
+    pill: 'bg-purple-50 text-purple-700 border border-purple-200/60',
+    dot: 'bg-purple-500',
+  },
+  ready_for_pickup: {
+    label: 'Awaiting Rider Pickup',
+    pill: 'bg-blue-50/80 text-blue-700 border border-blue-200/60',
+    dot: 'bg-blue-500',
+  },
+  shipped: { label: 'Shipped', pill: 'bg-indigo-50 text-indigo-700', dot: 'bg-indigo-500' },
+  out_for_delivery: {
+    label: 'Out for delivery',
+    pill: 'bg-indigo-50 text-indigo-700',
+    dot: 'bg-indigo-500',
+  },
+  delivered: {
+    label: 'Delivered',
+    pill: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60',
+    dot: 'bg-emerald-500',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    pill: 'bg-rose-50 text-rose-700 border border-rose-200/60',
+    dot: 'bg-rose-500',
+  },
+  delivery_failed: {
+    label: 'Delivery failed',
+    pill: 'bg-rose-50 text-rose-700 border border-rose-200/60',
+    dot: 'bg-rose-500',
+  },
+  return_requested: {
+    label: 'Return requested',
+    pill: 'bg-orange-50 text-orange-700 border border-orange-200/60',
+    dot: 'bg-orange-500',
+  },
+  return_approved: {
+    label: 'Return approved',
+    pill: 'bg-orange-50 text-orange-700 border border-orange-200/60',
+    dot: 'bg-orange-500',
+  },
+  return_rejected: {
+    label: 'Return rejected',
+    pill: 'bg-rose-50 text-rose-700 border border-rose-200/60',
+    dot: 'bg-rose-500',
+  },
+  returned: {
+    label: 'Returned',
+    pill: 'bg-slate-100 text-slate-700 border border-slate-200',
+    dot: 'bg-slate-400',
+  },
+  refunded: {
+    label: 'Refunded',
+    pill: 'bg-slate-100 text-slate-700 border border-slate-200',
+    dot: 'bg-slate-400',
+  },
+  paid: { label: 'Paid', pill: 'bg-amber-50 text-amber-700', dot: 'bg-amber-500' },
+  available: {
+    label: 'Ready to download',
+    pill: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60',
+    dot: 'bg-emerald-500',
+  },
+};
 
-  const [orders, setOrders] = useState<SubOrder[]>(() => getVendorSubOrders(vendorId));
+/** A package at `packed` is the only one a store may mark ready; earlier states need their own steps. */
+const READY_ELIGIBLE: SubOrderStatus[] = ['packed'];
+
+export const VendorOrdersPage: React.FC = () => {
+  const {
+    orders,
+    advanceOrderStatus,
+    kpis,
+  } = useVendorData();
+
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>(['sub-ord-2001', 'sub-ord-2002']);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [ageFilter, setAgeFilter] = useState<'all' | '7' | '30'>('all');
   const [carrierFilter, setCarrierFilter] = useState('all');
-  const [paymentFilter, setPaymentFilter] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'card' | 'cod'>('all');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleAdvanceStatus = (subOrderId: string, currentStatus: SubOrderStatus) => {
+  const handleAdvanceStatus = async (subOrderId: string, currentStatus: SubOrderStatus) => {
     let nextStatus: SubOrderStatus | null = null;
     let note = '';
 
@@ -62,24 +135,21 @@ export const VendorOrdersPage: React.FC = () => {
       note = 'Order marked ready for rider pickup';
     }
 
+    // The RPC owns the transition; the query cache refetches the row it wrote.
     if (nextStatus) {
-      const updated = advanceSubOrderStatus(subOrderId, nextStatus, 'Vendor', note);
-      setOrders((prev) =>
-        prev.map((order) => (order.id === subOrderId ? updated : order)),
-      );
+      await advanceOrderStatus(subOrderId, nextStatus, 'Vendor', note);
     }
   };
 
-  const handleBulkFulfill = () => {
+  const handleBulkFulfill = async () => {
     const placed = orders.filter((o) => o.status === 'placed');
     if (placed.length === 0) {
       showToast('All pending orders are already confirmed.');
       return;
     }
-    placed.forEach((o) => {
-      advanceSubOrderStatus(o.id, 'confirmed', 'Vendor', 'Bulk confirmed');
-    });
-    setOrders(getVendorSubOrders(vendorId));
+    for (const o of placed) {
+      await advanceOrderStatus(o.id, 'confirmed', 'Vendor', 'Bulk confirmed');
+    }
     showToast(`Bulk confirmed ${placed.length} pending orders.`);
   };
 
@@ -98,20 +168,32 @@ export const VendorOrdersPage: React.FC = () => {
     });
   };
 
+  /** Carriers named by the store's own shipped packages - nothing else is offered. */
+  const carriers = useMemo(() => {
+    const names = orders.map((o) => o.carrierName).filter((c): c is string => Boolean(c));
+    return [...new Set(names)].sort();
+  }, [orders]);
+
   const filteredOrders = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const cutoff = ageFilter === 'all' ? -Infinity : Date.now() - Number(ageFilter) * 86_400_000;
+
     return orders.filter((order) => {
       if (selectedFilter !== 'all' && order.status !== selectedFilter) {
         return false;
       }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (new Date(order.createdAt).getTime() < cutoff) return false;
+      if (carrierFilter !== 'all' && (order.carrierName ?? 'none') !== carrierFilter) return false;
+      if (paymentFilter !== 'all' && order.paymentMethod !== paymentFilter) return false;
+      if (q) {
         const matchesId = order.id.toLowerCase().includes(q);
         const matchesItems = order.items.some((i) => i.title.toLowerCase().includes(q));
-        if (!matchesId && !matchesItems) return false;
+        const matchesBuyer = order.buyerEmail.toLowerCase().includes(q);
+        if (!matchesId && !matchesItems && !matchesBuyer) return false;
       }
       return true;
     });
-  }, [orders, selectedFilter, searchQuery]);
+  }, [orders, selectedFilter, searchQuery, ageFilter, carrierFilter, paymentFilter]);
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
   const paginatedOrders = filteredOrders.slice(
@@ -126,12 +208,19 @@ export const VendorOrdersPage: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedOrderIds.length === orders.length) {
-      setSelectedOrderIds([]);
-    } else {
-      setSelectedOrderIds(orders.map((o) => o.id));
-    }
+    const visibleIds = filteredOrders.map((o) => o.id);
+    setSelectedOrderIds((prev) => {
+      const allVisibleSelected =
+        visibleIds.length > 0 && visibleIds.every((id) => prev.includes(id));
+      return allVisibleSelected
+        ? prev.filter((id) => !visibleIds.includes(id))
+        : [...new Set([...prev, ...visibleIds])];
+    });
   };
+
+  const selectedPackages = orders.filter((o) => selectedOrderIds.includes(o.id));
+  const selectedTotal = selectedPackages.reduce((sum, o) => sum + o.gross, 0);
+  const readyEligible = selectedPackages.filter((o) => READY_ELIGIBLE.includes(o.status));
 
   return (
     <WorkspaceLayout
@@ -140,26 +229,14 @@ export const VendorOrdersPage: React.FC = () => {
       sidebar={<VendorNav />}
     >
       <div className="space-y-6">
-        {/* Breadcrumb & Live Sync */}
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <span className="font-bold uppercase tracking-wider text-slate-600">
-              FULFILLMENT CENTRAL
-            </span>
-            <span>•</span>
-            <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Sync Active</span>
-            </div>
-          </div>
-        </div>
-
         {/* Page Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Orders</h1>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">Orders</h1>
             <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-              Track customer orders, manage packing slips, fulfill shipments, and handle real-time carrier telemetry.
+              Every sub-order naming your store, read from the database. Confirm, pack and release
+              for pickup here; the carrier and the handover PIN are recorded by the delivery side,
+              and a store has no shipping-label or tracking feed to write.
             </p>
           </div>
 
@@ -173,9 +250,9 @@ export const VendorOrdersPage: React.FC = () => {
             </button>
             <button
               onClick={handleBulkFulfill}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Package className="h-4 w-4" />
+              <Package className="h-4 w-4 stroke-[2.5]" />
               Bulk Fulfill ({orders.filter((o) => o.status === 'placed').length})
             </button>
           </div>
@@ -190,14 +267,11 @@ export const VendorOrdersPage: React.FC = () => {
               <FileText className="h-4 w-4 text-slate-400" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">342</span>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                +9.4%
-              </span>
+              <span className="text-3xl font-extrabold text-slate-900">{orders.length}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>Current calendar month</span>
-              <strong className="text-slate-800">$128.4k GMV</strong>
+              <span>Gross sales volume</span>
+              <strong className="text-slate-800">{kpis.grossSales} GMV</strong>
             </div>
           </div>
 
@@ -205,19 +279,21 @@ export const VendorOrdersPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                 <span>To Pack</span>
               </div>
               <Package className="h-4 w-4 text-amber-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">12</span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                {orders.filter((o) => o.status === 'placed' || o.status === 'confirmed').length}
+              </span>
               <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
                 Needs Action
               </span>
             </div>
-            <div className="mt-2 text-xs text-rose-600 font-semibold">
-              Oldest unfulfilled: 3h 42m overdue
+            <div className="mt-2 text-xs text-slate-500">
+              Unfulfilled pending sub-orders
             </div>
           </div>
 
@@ -228,11 +304,12 @@ export const VendorOrdersPage: React.FC = () => {
               <Truck className="h-4 w-4 text-blue-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">8</span>
-              <span className="text-xs text-slate-500 font-medium">DHL &amp; FedEx</span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                {orders.filter((o) => o.status === 'ready_for_pickup').length}
+              </span>
             </div>
             <div className="mt-2 text-xs text-slate-500">
-              Carrier pickup window: <strong className="text-slate-800">Today, 4:00 PM</strong>
+              Awaiting rider dispatch
             </div>
           </div>
 
@@ -243,13 +320,15 @@ export const VendorOrdersPage: React.FC = () => {
               <Truck className="h-4 w-4 text-slate-400" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">284</span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                {orders.filter((o) => o.status === 'shipped' || o.status === 'out_for_delivery' || o.status === 'delivered').length}
+              </span>
               <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                98.6% On-time
+                Active Parcels
               </span>
             </div>
             <div className="mt-2 text-xs text-slate-500">
-              Avg delivery duration: <strong className="text-slate-800">2.1 Business Days</strong>
+              Dispatched to buyer destinations
             </div>
           </div>
         </div>
@@ -264,7 +343,7 @@ export const VendorOrdersPage: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Orders <span className="opacity-75">342</span>
+            All Orders <span className="opacity-75">{orders.length}</span>
           </button>
           <button
             onClick={() => setSelectedFilter('placed')}
@@ -274,7 +353,7 @@ export const VendorOrdersPage: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Placed <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-800">12</span>
+            Placed <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-800">{orders.filter((o) => o.status === 'placed').length}</span>
           </button>
           <button
             onClick={() => setSelectedFilter('confirmed')}
@@ -284,7 +363,7 @@ export const VendorOrdersPage: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Confirmed
+            Confirmed <span className="opacity-75">{orders.filter((o) => o.status === 'confirmed').length}</span>
           </button>
           <button
             onClick={() => setSelectedFilter('packed')}
@@ -294,7 +373,7 @@ export const VendorOrdersPage: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Packed <span className="opacity-75">8</span>
+            Packed <span className="opacity-75">{orders.filter((o) => o.status === 'packed').length}</span>
           </button>
           <button
             onClick={() => setSelectedFilter('ready_for_pickup')}
@@ -304,7 +383,7 @@ export const VendorOrdersPage: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Ready for Pickup <span className="opacity-75">5</span>
+            Ready for Pickup <span className="opacity-75">{orders.filter((o) => o.status === 'ready_for_pickup').length}</span>
           </button>
           <button
             onClick={() => setSelectedFilter('delivered')}
@@ -314,7 +393,7 @@ export const VendorOrdersPage: React.FC = () => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Delivered <span className="opacity-75">1,420</span>
+            Delivered <span className="opacity-75">{orders.filter((o) => o.status === 'delivered').length}</span>
           </button>
         </div>
 
@@ -326,17 +405,24 @@ export const VendorOrdersPage: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Order ID, customer name... ⌘K"
+              placeholder="Search order id, item title or buyer email"
               className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <select className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden">
-                <option>Last 30 Days</option>
-                <option>Last 7 Days</option>
-                <option>Today</option>
+              <select
+                value={ageFilter}
+                onChange={(e) => {
+                  setAgeFilter(e.target.value as 'all' | '7' | '30');
+                  setCurrentPage(1);
+                }}
+                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
+              >
+                <option value="all">Booked any time</option>
+                <option value="7">Booked in last 7 days</option>
+                <option value="30">Booked in last 30 days</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
@@ -350,10 +436,13 @@ export const VendorOrdersPage: React.FC = () => {
                 }}
                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
               >
-                <option value="all">All Shipping Carriers</option>
-                <option value="fedex">FedEx Ground</option>
-                <option value="dhl">DHL Express</option>
-                <option value="usps">USPS Priority</option>
+                <option value="all">Any carrier</option>
+                <option value="none">No carrier recorded</option>
+                {carriers.map((carrier) => (
+                  <option key={carrier} value={carrier}>
+                    {carrier}
+                  </option>
+                ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
@@ -362,39 +451,39 @@ export const VendorOrdersPage: React.FC = () => {
               <select
                 value={paymentFilter}
                 onChange={(e) => {
-                  setPaymentFilter(e.target.value);
+                  setPaymentFilter(e.target.value as 'all' | 'card' | 'cod');
                   setCurrentPage(1);
                 }}
                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
               >
-                <option value="all">Payment: All</option>
-                <option value="apple_pay">Paid (Apple Pay)</option>
-                <option value="credit_card">Paid (Credit Card)</option>
-                <option value="refunded">Refunded</option>
+                <option value="all">Payment: any</option>
+                <option value="card">Paid by card</option>
+                <option value="cod">Cash on delivery</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowFilters(!showFilters);
-                if (showFilters) {
+            {(ageFilter !== 'all' ||
+              carrierFilter !== 'all' ||
+              paymentFilter !== 'all' ||
+              searchQuery.trim() !== '' ||
+              selectedFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAgeFilter('all');
                   setCarrierFilter('all');
                   setPaymentFilter('all');
                   setSearchQuery('');
                   setSelectedFilter('all');
-                }
-              }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold shadow-2xs transition-colors cursor-pointer ${
-                showFilters || carrierFilter !== 'all' || paymentFilter !== 'all'
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              {showFilters || carrierFilter !== 'all' || paymentFilter !== 'all' ? 'Reset Filters' : 'Filters'}
-            </button>
+                  setCurrentPage(1);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition-colors cursor-pointer"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Clear filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -404,7 +493,7 @@ export const VendorOrdersPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="font-bold">{selectedOrderIds.length} orders selected</span>
               <span className="text-slate-400">•</span>
-              <span className="text-slate-300">Selected total: $861.40</span>
+              <span className="text-slate-300">Selected total: ${selectedTotal.toFixed(2)}</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -412,30 +501,23 @@ export const VendorOrdersPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 cursor-pointer"
               >
                 <Printer className="h-3.5 w-3.5" />
-                Print Packing Slips ({selectedOrderIds.length})
+                Print this page ({selectedOrderIds.length})
               </button>
               <button
-                type="button"
-                onClick={() => showToast(`Generated carrier shipping labels for ${selectedOrderIds.length} orders: ${selectedOrderIds.join(', ')}`)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 cursor-pointer"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Generate Shipping Labels
-              </button>
-              <button
-                onClick={() => {
-                  selectedOrderIds.forEach((id) => {
-                    const ord = orders.find((o) => o.id === id);
-                    if (ord && (ord.status === 'placed' || ord.status === 'confirmed' || ord.status === 'packed')) {
-                      advanceSubOrderStatus(id, 'ready_for_pickup', 'Vendor', 'Marked ready for pickup via bulk batch');
-                    }
-                  });
-                  setOrders(getVendorSubOrders(vendorId));
+                onClick={async () => {
+                  for (const pkg of readyEligible) {
+                    await advanceOrderStatus(pkg.id, 'ready_for_pickup', 'Vendor', 'Marked ready for pickup via bulk batch');
+                  }
+                  showToast(
+                    readyEligible.length === selectedOrderIds.length
+                      ? `${readyEligible.length} packages marked ready for pickup.`
+                      : `${readyEligible.length} of ${selectedOrderIds.length} selected are packed and marked ready; the rest still need confirming and packing.`,
+                  );
                   setSelectedOrderIds([]);
                 }}
                 className="rounded-lg bg-white px-3.5 py-1.5 font-bold text-slate-900 hover:bg-slate-100 shadow-xs cursor-pointer"
               >
-                Mark as Ready
+                Mark as Ready ({readyEligible.length})
               </button>
               <button
                 onClick={() => setSelectedOrderIds([])}
@@ -456,7 +538,10 @@ export const VendorOrdersPage: React.FC = () => {
                   <th className="w-10 px-4 py-3.5 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedOrderIds.length === orders.length}
+                      checked={
+                        filteredOrders.length > 0 &&
+                        filteredOrders.every((o) => selectedOrderIds.includes(o.id))
+                      }
                       onChange={toggleSelectAll}
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                     />
@@ -497,15 +582,17 @@ export const VendorOrdersPage: React.FC = () => {
                           <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
                         </Link>
                         <div className="text-[11px] text-slate-400">
-                          {order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today, 11:20 AM'}
+                          {new Date(order.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </td>
 
                       {/* CUSTOMER & DESTINATION */}
                       <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900">Sarah Jenkins</div>
+                        <div className="font-bold text-slate-900">{order.buyerAddress?.fullName || order.buyerEmail || 'Buyer'}</div>
                         <div className="text-[11px] text-slate-400 truncate max-w-xs">
-                          s.jenkins@example.com • Austin, TX, USA
+                          {[order.buyerEmail, order.buyerAddress?.city && `${order.buyerAddress.city}, ${order.buyerAddress.state}`]
+                            .filter(Boolean)
+                            .join(' • ')}
                         </div>
                       </td>
 
@@ -517,7 +604,7 @@ export const VendorOrdersPage: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900 truncate max-w-xs">
-                              {order.items[0]?.title || 'Sony WH-1000XM5 (x1)'}
+                              {order.items[0]?.title ?? 'No line items on this sub-order'}
                             </div>
                             <div className="text-[10px] text-slate-400">
                               {order.items.length} item{order.items.length > 1 ? 's' : ''} in shipment
@@ -531,47 +618,29 @@ export const VendorOrdersPage: React.FC = () => {
                         <div className="font-bold text-slate-900">${(order.subtotal + order.shippingFee).toFixed(2)}</div>
                         <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
                           <Check className="h-3 w-3" />
-                          <span>Paid (Apple Pay)</span>
+                          <span>
+                            {order.paymentMethod === 'cod'
+                              ? 'Cash on delivery'
+                              : 'Card, charged at checkout'}
+                          </span>
                         </div>
                       </td>
 
                       {/* FULFILLMENT STATUS */}
                       <td className="px-4 py-3.5">
-                        {order.status === 'placed' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                            Unfulfilled
-                          </span>
-                        )}
-                        {order.status === 'confirmed' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                            Confirmed
-                          </span>
-                        )}
-                        {order.status === 'packed' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-semibold text-purple-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
-                            Packing
-                          </span>
-                        )}
-                        {order.status === 'ready_for_pickup' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                            Awaiting Rider Pickup
-                          </span>
-                        )}
-                        {order.status === 'delivered' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            Delivered
-                          </span>
-                        )}
-                        {order.status === 'cancelled' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                            Cancelled
-                          </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_PILL[order.status].pill}`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_PILL[order.status].dot}`}
+                          />
+                          {STATUS_PILL[order.status].label}
+                        </span>
+                        {order.trackingNumber && (
+                          <div className="mt-1 text-[10px] font-mono text-slate-400 truncate max-w-[14rem]">
+                            {order.carrierName ? `${order.carrierName} · ` : ''}
+                            {order.trackingNumber}
+                          </div>
                         )}
                       </td>
 
@@ -581,7 +650,7 @@ export const VendorOrdersPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleAdvanceStatus(order.id, 'placed')}
-                            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs"
+                            className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer transition-all active:scale-95"
                           >
                             Confirm Order
                           </button>
@@ -590,7 +659,7 @@ export const VendorOrdersPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
-                            className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 shadow-2xs"
+                            className="rounded-full bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white hover:bg-sun-orange-600 shadow-2xs cursor-pointer transition-colors"
                           >
                             Mark Packed
                           </button>
@@ -599,20 +668,32 @@ export const VendorOrdersPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleAdvanceStatus(order.id, 'packed')}
-                            className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs"
+                            className="rounded-full bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs cursor-pointer transition-colors"
                           >
                             Ready for Rider Pickup
                           </button>
                         )}
                         {order.status === 'ready_for_pickup' && (
                           <span className="text-[11px] font-semibold text-slate-500">
-                            Staged at Dock ✓
+                            {order.riderId ? 'Rider assigned' : 'Awaiting rider assignment'}
                           </span>
                         )}
                         {order.status === 'delivered' && (
                           <span className="text-[11px] font-semibold text-emerald-600">
-                            Completed ✓
+                            Delivered by rider
                           </span>
+                        )}
+                        {(order.status === 'return_requested' ||
+                          order.status === 'return_approved' ||
+                          order.status === 'return_rejected' ||
+                          order.status === 'returned' ||
+                          order.status === 'refunded') && (
+                          <Link
+                            to="/vendor/returns"
+                            className="text-[11px] font-bold text-[#FF7A1A] hover:underline"
+                          >
+                            Handle in Returns
+                          </Link>
                         )}
                       </td>
                     </tr>

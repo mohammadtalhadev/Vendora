@@ -1,319 +1,292 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+
+// WorkspaceLayout's sign-out needs the auth provider; these tests never click it.
+vi.mock('../../../lib/auth-context', async () => {
+  const { useAuthStub } = await import('../../../test/auth-context-stub');
+  return { useAuth: useAuthStub };
+});
+vi.mock('../../../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../../../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { VendorDashboardPage } from '../../../pages/VendorDashboardPage';
 import { VendorOrdersPage } from '../../../pages/VendorOrdersPage';
 import { VendorProductsPage } from '../../../pages/VendorProductsPage';
 import { ProductFormModal } from './ProductFormModal';
-import { useAuthStore, DEMO_ACCOUNTS } from '../../../store/auth-store';
-import { mockDb } from '../../../mocks/db';
+import { renderWorkspace, signInVendor } from '../../../test/vendor-render';
+import {
+  categoryRow,
+  dashboardJson,
+  orderRow,
+  productRow,
+  subOrderRow,
+  supabaseDouble,
+} from '../../../test/supabase-double';
 
-describe('Vendor Workspace Views & Components', () => {
+/** A dashboard payload with numbers no screen could invent: the test owns them. */
+function fixtureWith(overrides: Parameters<typeof dashboardJson>[0] = {}) {
+  supabaseDouble.setDashboard({ ...dashboardJson(), ...overrides });
+}
+
+beforeEach(() => {
+  supabaseDouble.reset();
+  signInVendor();
+  supabaseDouble.seedCategory(categoryRow({ id: 'cat-audio', name: 'Audio' }));
+  supabaseDouble.seedCategory(categoryRow({ id: 'cat-keys', name: 'Keyboards' }));
+});
+
+describe('VendorDashboardPage', () => {
+  it('reports the KPI numbers the vendor_dashboard query returns', async () => {
+    fixtureWith({
+      kpis: { ...dashboardJson().kpis, grossBooked: 12500, commission: 1250, netPayout: 11250, orders7d: 3 },
+      stages: { ...dashboardJson().stages, placed: 4 },
+      catalog: { ...dashboardJson().catalog, approved: 7, lowStock: 2 },
+    });
+    renderWorkspace(<VendorDashboardPage />);
+
+    // The tiles quote the RPC's own jsonb, not a number the screen remembered.
+    await waitFor(() => expect(screen.getAllByText('$11,250').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('$12,500').length).toBeGreaterThan(0);
+
+    // Pending Orders and Low Stock are the RPC's stage and catalog counts, relabelled.
+    const metrics = screen.getByText('Gross Sales').parentElement as HTMLElement;
+    expect(within(metrics).getByText('4')).toBeInTheDocument();
+    expect(within(metrics).getByText('2')).toBeInTheDocument();
+    expect(screen.queryByText('$34,820')).not.toBeInTheDocument();
+  });
+
+  it('lists only this store’s packages, with the buyer read from the parent order', async () => {
+    supabaseDouble.seedOrder(orderRow({ id: 'order-1', customer_email: 'buyer@demo.test' }));
+    supabaseDouble.seedSubOrder(
+      subOrderRow({ id: 'sub-a', order_group_id: 'order-1', seller_id: 'store-1', status: 'placed' }),
+    );
+    supabaseDouble.seedSubOrder(
+      subOrderRow({ id: 'sub-b', order_group_id: 'order-1', seller_id: 'store-2', status: 'placed' }),
+    );
+    renderWorkspace(<VendorDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('#sub-a')).toBeInTheDocument());
+    expect(screen.queryByText('#sub-b')).not.toBeInTheDocument();
+    expect(screen.getByText('buyer@demo.test')).toBeInTheDocument();
+    expect(screen.getByText('Reference Headphones')).toBeInTheDocument();
+  });
+
+  it('says so when the store has no packages instead of showing a seeded queue', async () => {
+    renderWorkspace(<VendorDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText('No customer sub-orders yet')).toBeInTheDocument());
+    expect(
+      screen.getByText(/Add a product and it goes to the platform for review|Incoming buyer orders for/),
+    ).toBeInTheDocument();
+  });
+
+  it('advances a package by writing the status transition to the database', async () => {
+    supabaseDouble.seedOrder(orderRow({ id: 'order-1' }));
+    supabaseDouble.seedSubOrder(subOrderRow({ id: 'sub-a', order_group_id: 'order-1', status: 'placed' }));
+    renderWorkspace(<VendorDashboardPage />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Confirm Order/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Confirm Order/i }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Mark Packed/i })).toBeInTheDocument());
+    expect(supabaseDouble.tables.sub_orders[0].status).toBe('confirmed');
+    expect(supabaseDouble.tables.sub_orders[0].history).toHaveLength(2);
+  });
+
+  it('shows a failed read as a failure, not as a store that earned nothing', async () => {
+    supabaseDouble.failures.sub_orders = 'row-level security';
+    renderWorkspace(<VendorDashboardPage />);
+
+    await waitFor(() => expect(screen.getByText(/Failed to load your orders: row-level security/)).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+    // The queue admits it is unknown instead of claiming the store simply has no orders.
+    expect(screen.getByText('This queue is unknown - the read failed')).toBeInTheDocument();
+    expect(screen.queryByText('No customer sub-orders yet')).not.toBeInTheDocument();
+  });
+});
+
+describe('VendorOrdersPage and the fulfilment state machine', () => {
   beforeEach(() => {
-    // Reset auth store to demo vendor account
-    useAuthStore.setState({
-      user: DEMO_ACCOUNTS.vendor,
-      token: 'mock-vendor-token',
-      isAuthenticated: true,
-    });
-    // Reset mock database to clean seed
-    mockDb.resetToSeed();
-  });
-
-  describe('1. VendorDashboardPage', () => {
-    it('renders all 5 required KPI cards with exact values', () => {
-      render(
-        <MemoryRouter>
-          <VendorDashboardPage />
-        </MemoryRouter>,
-      );
-
-      // 1. Gross Sales ($34,820)
-      expect(screen.getByText('Gross Sales')).toBeInTheDocument();
-      expect(screen.getByText('$34,820')).toBeInTheDocument();
-
-      // 2. Platform Commission Deducted ($3,482)
-      expect(screen.getByText('Platform Commission Deducted')).toBeInTheDocument();
-      expect(screen.getByText('$3,482')).toBeInTheDocument();
-
-      // 3. Net Payout ($31,338)
-      expect(screen.getByText('Net Payout')).toBeInTheDocument();
-      expect(screen.getByText('$31,338')).toBeInTheDocument();
-
-      // 4. Pending Orders (14)
-      expect(screen.getByText('Pending Orders')).toBeInTheDocument();
-      expect(screen.getByText('14')).toBeInTheDocument();
-
-      // 5. Low Stock (3)
-      expect(screen.getByText('Low Stock')).toBeInTheDocument();
-      expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('renders quick action buttons and recent orders list', () => {
-      render(
-        <MemoryRouter>
-          <VendorDashboardPage />
-        </MemoryRouter>,
-      );
-
-      // Verify Quick Action buttons
-      expect(
-        screen.getByRole('button', { name: /\+ Add New Product/i }),
-      ).toBeInTheDocument();
-      expect(screen.getAllByRole('link', { name: /Manage Orders/i }).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByRole('link', { name: /Inventory/i }).length).toBeGreaterThanOrEqual(1);
-      expect(
-        screen.getAllByRole('link', { name: /Public Storefront/i }).length,
-      ).toBeGreaterThanOrEqual(1);
-
-      // Verify Recent orders table header
-      expect(screen.getByText('Recent Customer Sub-Orders')).toBeInTheDocument();
-      expect(screen.getByText('Sub-Order ID')).toBeInTheDocument();
-
-      // Verify presence of recent order entries
-      expect(screen.getByText('#sub-ord-2001')).toBeInTheDocument();
-      expect(
-        screen.getAllByText('Aura Precision Studio Reference In-Ear Monitors').length,
-      ).toBeGreaterThanOrEqual(1);
-    });
-
-    it('allows advancing order status directly from dashboard quick action', () => {
-      render(
-        <MemoryRouter>
-          <VendorDashboardPage />
-        </MemoryRouter>,
-      );
-
-      // Initially, order 2001 has 'Confirm Order'
-      const confirmButton = screen.getByRole('button', { name: /Confirm Order/i });
-      expect(confirmButton).toBeInTheDocument();
-
-      fireEvent.click(confirmButton);
-
-      // Order 2001 transitions to confirmed, so Mark Packed buttons are present
-      const markPackedButtons = screen.getAllByRole('button', { name: /Mark Packed/i });
-      expect(markPackedButtons.length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  describe('2. VendorOrdersPage & Order Lifecycle State Machine', () => {
-    it('renders vendor sub-orders with status filters', () => {
-      render(
-        <MemoryRouter>
-          <VendorOrdersPage />
-        </MemoryRouter>,
-      );
-
-      // Verify Filter Buttons (using exact starts-with regex so filters don't collide with actions)
-      expect(screen.getByRole('button', { name: /^All/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^Placed/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^Confirmed/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^Packed/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^Ready for Pickup/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^Delivered/i })).toBeInTheDocument();
-
-      // Verify orders listed
-      expect(screen.getByText('sub-ord-2001')).toBeInTheDocument();
-      expect(screen.getByText('sub-ord-2002')).toBeInTheDocument();
-    });
-
-    it('advances order status sequentially through Confirm Order -> Mark Packed -> Ready for Rider Pickup', () => {
-      render(
-        <MemoryRouter>
-          <VendorOrdersPage />
-        </MemoryRouter>,
-      );
-
-      const card = screen.getByTestId('sub-order-card-sub-ord-2001');
-
-      // Step 1: Find order in 'placed' status and click "Confirm Order"
-      const confirmBtn = within(card).getByRole('button', { name: /Confirm Order/i });
-      expect(confirmBtn).toBeInTheDocument();
-      fireEvent.click(confirmBtn);
-
-      // Step 2: Order moves to 'confirmed', button becomes "Mark Packed"
-      const markPackedBtn = within(card).getByRole('button', { name: /Mark Packed/i });
-      expect(markPackedBtn).toBeInTheDocument();
-      fireEvent.click(markPackedBtn);
-
-      // Step 3: Order moves to 'packed', button becomes "Ready for Rider Pickup"
-      const readyForRiderBtn = within(card).getByRole('button', {
-        name: /Ready for Rider Pickup/i,
-      });
-      expect(readyForRiderBtn).toBeInTheDocument();
-      fireEvent.click(readyForRiderBtn);
-
-      // Step 4: Order moves to 'ready_for_pickup', showing awaiting rider status
-      expect(within(card).getByText(/Awaiting Rider Pickup/i)).toBeInTheDocument();
-    });
-
-    it('filters orders by status correctly', () => {
-      render(
-        <MemoryRouter>
-          <VendorOrdersPage />
-        </MemoryRouter>,
-      );
-
-      // Filter by 'Placed'
-      const placedFilter = screen.getByRole('button', { name: /^Placed/i });
-      fireEvent.click(placedFilter);
-
-      expect(screen.getByText('sub-ord-2001')).toBeInTheDocument();
-      // sub-ord-2002 is confirmed, so it should be filtered out
-      expect(screen.queryByText('sub-ord-2002')).not.toBeInTheDocument();
-
-      // Switch to 'All'
-      const allFilter = screen.getByRole('button', { name: /^All/i });
-      fireEvent.click(allFilter);
-      expect(screen.getByText('sub-ord-2001')).toBeInTheDocument();
-      expect(screen.getByText('sub-ord-2002')).toBeInTheDocument();
-    });
-  });
-
-  describe('3. VendorProductsPage & ProductFormModal Integration', () => {
-    it('renders vendor product inventory table with required columns', () => {
-      render(
-        <MemoryRouter>
-          <VendorProductsPage />
-        </MemoryRouter>,
-      );
-
-      // Headers
-      expect(screen.getByText('Product Details')).toBeInTheDocument();
-      expect(screen.getByText('Fulfillment Type')).toBeInTheDocument();
-      expect(screen.getByText('Price')).toBeInTheDocument();
-      expect(screen.getByText('Stock Level')).toBeInTheDocument();
-      expect(screen.getByText('Moderation Status')).toBeInTheDocument();
-      expect(screen.getByText('Actions')).toBeInTheDocument();
-
-      // Product rows
-      expect(
-        screen.getByText('Aura Precision Studio Reference In-Ear Monitors'),
-      ).toBeInTheDocument();
-      expect(screen.getByText('+ Add New Product')).toBeInTheDocument();
-    });
-
-    it('opens ProductFormModal when "+ Add New Product" is clicked', () => {
-      render(
-        <MemoryRouter>
-          <VendorProductsPage />
-        </MemoryRouter>,
-      );
-
-      const addBtn = screen.getByRole('button', { name: /\+ Add New Product/i });
-      fireEvent.click(addBtn);
-
-      // Verify dialog is opened
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Add New Product')).toBeInTheDocument();
-      expect(screen.getByText('1. Listing Details')).toBeInTheDocument();
-      expect(screen.getByText('2. Pricing & Delivery')).toBeInTheDocument();
-      expect(screen.getByText(/3. Variant Generator/i)).toBeInTheDocument();
-    });
-
-    it(
-      'creates and saves a new product with variants to mockDb',
-      () => {
-        render(
-          <MemoryRouter>
-            <VendorProductsPage />
-          </MemoryRouter>,
-        );
-
-        // Open Modal
-        fireEvent.click(screen.getByRole('button', { name: /\+ Add New Product/i }));
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-
-        // Fill in Step 1: Listing Details
-        const titleInput = screen.getByPlaceholderText(
-          /e.g. Aura Precision Studio Reference In-Ear Monitors/i,
-        );
-        fireEvent.change(titleInput, { target: { value: 'HyperSonic Pro ANC Wireless IEM' } });
-
-        // Navigate to Step 3: Variant Generator
-        fireEvent.click(screen.getByRole('button', { name: /3. Variant Generator/i }));
-
-        // Use variant generator
-        const optionValuesInput = screen.getByPlaceholderText(
-          /e.g. Matte Black, Lunar Silver, Gold/i,
-        );
-        fireEvent.change(optionValuesInput, { target: { value: 'Midnight, Platinum' } });
-
-        const generateBtn = screen.getByRole('button', { name: /Generate Variants/i });
-        fireEvent.click(generateBtn);
-
-        // Verify generated variants appear
-        expect(screen.getByText('Color: Midnight')).toBeInTheDocument();
-        expect(screen.getByText('Color: Platinum')).toBeInTheDocument();
-
-        // Save Product
-        const saveBtn = screen.getByRole('button', { name: /Save Product/i });
-        fireEvent.click(saveBtn);
-
-        // Verify new product appears in the table
-        expect(screen.getByText('HyperSonic Pro ANC Wireless IEM')).toBeInTheDocument();
-      },
-      15000,
+    supabaseDouble.seedOrder(orderRow({ id: 'order-1', customer_email: 'buyer@demo.test' }));
+    supabaseDouble.seedSubOrder(subOrderRow({ id: 'sub-a', order_group_id: 'order-1', status: 'placed' }));
+    supabaseDouble.seedSubOrder(
+      subOrderRow({ id: 'sub-b', order_group_id: 'order-1', seller_id: 'store-1', status: 'confirmed', created_at: '2026-10-07T14:30:00.000Z' }),
     );
   });
 
-  describe('4. ProductFormModal Unit Tests', () => {
-    it('supports toggling between Physical and Digital fulfillment', () => {
-      const onSave = vi.fn();
-      const onOpenChange = vi.fn();
+  it('lists the store’s packages and filters them by the recorded stage', async () => {
+    renderWorkspace(<VendorOrdersPage />);
 
-      render(
-        <ProductFormModal
-          open={true}
-          onOpenChange={onOpenChange}
-          onSave={onSave}
-        />,
-      );
+    await waitFor(() => expect(screen.getByTestId('sub-order-card-sub-a')).toBeInTheDocument());
+    expect(screen.getByTestId('sub-order-card-sub-b')).toBeInTheDocument();
 
-      // Go to Step 2
-      fireEvent.click(screen.getByRole('button', { name: /2. Pricing & Delivery/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Placed/i }));
+    await waitFor(() => expect(screen.queryByTestId('sub-order-card-sub-b')).not.toBeInTheDocument());
+    expect(screen.getByTestId('sub-order-card-sub-a')).toBeInTheDocument();
 
-      const physicalBtn = screen.getByRole('button', { name: /Physical Good/i });
-      const digitalBtn = screen.getByRole('button', { name: /Digital Asset/i });
+    fireEvent.click(screen.getByRole('button', { name: /^Confirmed/i }));
+    await waitFor(() => expect(screen.queryByTestId('sub-order-card-sub-a')).not.toBeInTheDocument());
+    expect(screen.getByTestId('sub-order-card-sub-b')).toBeInTheDocument();
+  });
 
-      expect(physicalBtn).toBeInTheDocument();
-      expect(digitalBtn).toBeInTheDocument();
+  it('walks one package confirm -> pack -> release, and stops where the rider takes over', async () => {
+    renderWorkspace(<VendorOrdersPage />);
 
-      // Toggle to Digital
-      fireEvent.click(digitalBtn);
-      expect(screen.getByText('License Type')).toBeInTheDocument();
-      expect(screen.getByText('Asset Download URL')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('sub-order-card-sub-a')).toBeInTheDocument());
+    const row = screen.getByTestId('sub-order-card-sub-a');
 
-      // Toggle back to Physical
-      fireEvent.click(physicalBtn);
-      expect(screen.getByText(/Standard Shipping Fee/i)).toBeInTheDocument();
+    fireEvent.click(within(row).getByRole('button', { name: /Confirm Order/i }));
+    await waitFor(() => expect(within(row).getByRole('button', { name: /Mark Packed/i })).toBeInTheDocument());
+
+    fireEvent.click(within(row).getByRole('button', { name: /Mark Packed/i }));
+    await waitFor(() =>
+      expect(within(row).getByRole('button', { name: /Ready for Rider Pickup/i })).toBeInTheDocument(),
+    );
+
+    fireEvent.click(within(row).getByRole('button', { name: /Ready for Rider Pickup/i }));
+    await waitFor(() => expect(within(row).getByText('Awaiting Rider Pickup')).toBeInTheDocument());
+
+    // The store has released the parcel; only the rider can record the handover.
+    expect(within(row).getByText('Awaiting rider assignment')).toBeInTheDocument();
+    expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+    expect(supabaseDouble.tables.sub_orders.find((r) => r.id === 'sub-a')?.status).toBe('ready_for_pickup');
+  });
+
+  it('shows the tracking the delivery side recorded, and offers nothing to write here', async () => {
+    supabaseDouble.tables.sub_orders.find((r) => r.id === 'sub-b')!.tracking_number = 'DHL-445566';
+    renderWorkspace(<VendorOrdersPage />);
+
+    await waitFor(() => expect(screen.getByTestId('sub-order-card-sub-b')).toBeInTheDocument());
+    expect(screen.getByText('DHL-445566')).toBeInTheDocument();
+  });
+});
+
+describe('VendorProductsPage and the listing form', () => {
+  it('renders this store’s listings with their moderation state, and no competitor’s', async () => {
+    supabaseDouble.seedProduct(
+      productRow({ id: 'p-1', seller_id: 'store-1', title: 'Reference Headphones', category_id: 'cat-audio', status: 'approved', stock: 0 }),
+    );
+    supabaseDouble.seedProduct(
+      productRow({ id: 'p-2', seller_id: 'store-1', title: 'Apex Keyboard', category_id: 'cat-keys', status: 'pending_review', stock: 12 }),
+    );
+    supabaseDouble.seedProduct(productRow({ id: 'p-3', seller_id: 'store-2', title: 'Another Store Item' }));
+    renderWorkspace(<VendorProductsPage />);
+
+    await waitFor(() => expect(screen.getByText('Reference Headphones')).toBeInTheDocument());
+    expect(screen.queryByText('Another Store Item')).not.toBeInTheDocument();
+
+    const live = within(screen.getByText('Reference Headphones').closest('tr') as HTMLElement);
+    expect(live.getByText('Approved')).toBeInTheDocument();
+    expect(live.getByText('Sold out')).toBeInTheDocument();
+    expect(live.queryByRole('button', { name: /Submit|Withdraw/i })).not.toBeInTheDocument();
+
+    const queued = within(screen.getByText('Apex Keyboard').closest('tr') as HTMLElement);
+    expect(queued.getByText('Pending Review')).toBeInTheDocument();
+    expect(queued.getByRole('button', { name: /Withdraw/i })).toBeInTheDocument();
+  });
+
+  it('creates a listing through the modal and the database, then re-reads it', async () => {
+    renderWorkspace(<VendorProductsPage />);
+
+    await waitFor(() => expect(screen.getByText('No listings yet')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /\+ Add New Product/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByPlaceholderText(/Aura Precision Studio Reference/i), {
+      target: { value: 'HyperSonic Pro ANC Wireless IEM' },
     });
+    fireEvent.change(within(dialog).getByRole('combobox'), { target: { value: 'cat-audio' } });
 
-    it('validates required product title before submission', () => {
-      const onSave = vi.fn();
-      const onOpenChange = vi.fn();
+    fireEvent.click(within(dialog).getByRole('button', { name: /2\. Pricing & Delivery/i }));
+    fireEvent.change(within(dialog).getByPlaceholderText('189.00'), { target: { value: '189' } });
+    fireEvent.change(within(dialog).getByPlaceholderText('25'), { target: { value: '40' } });
+    fireEvent.change(within(dialog).getByPlaceholderText('8.50'), { target: { value: '6' } });
 
-      render(
-        <ProductFormModal
-          open={true}
-          onOpenChange={onOpenChange}
-          onSave={onSave}
-        />,
-      );
+    fireEvent.click(within(dialog).getByRole('button', { name: /Save Product/i }));
 
-      // Clear title
-      const titleInput = screen.getByPlaceholderText(
-        /e.g. Aura Precision Studio Reference In-Ear Monitors/i,
-      );
-      fireEvent.change(titleInput, { target: { value: '' } });
-
-      // Click save
-      const saveBtn = screen.getByRole('button', { name: /Save Product/i });
-      fireEvent.click(saveBtn);
-
-      // Expect validation error
-      expect(screen.getByText(/Product title is required/i)).toBeInTheDocument();
-      expect(onSave).not.toHaveBeenCalled();
+    await waitFor(() => expect(supabaseDouble.tables.products).toHaveLength(1));
+    expect(supabaseDouble.tables.products[0]).toMatchObject({
+      title: 'HyperSonic Pro ANC Wireless IEM',
+      slug: 'hypersonic-pro-anc-wireless-iem',
+      seller_id: 'store-1',
+      category_id: 'cat-audio',
+      price: 189,
+      stock: 40,
+      // A seller cannot approve its own work: the row goes to moderation.
+      status: 'pending_review',
     });
+    await waitFor(() => expect(screen.getByText('HyperSonic Pro ANC Wireless IEM')).toBeInTheDocument());
+  });
+
+  it('refuses to save a listing without a title, and writes nothing', async () => {
+    renderWorkspace(<VendorProductsPage />);
+
+    await waitFor(() => expect(screen.getByText('No listings yet')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /\+ Add New Product/i }));
+    const dialog = await screen.findByRole('dialog');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /Save Product/i }));
+
+    await waitFor(() => expect(screen.getByText('Product title is required.')).toBeInTheDocument());
+    expect(supabaseDouble.tables.products).toHaveLength(0);
+  });
+
+  it('sends a draft to moderation and withdraws it again through the listing RPC', async () => {
+    supabaseDouble.seedProduct(
+      productRow({ id: 'p-1', seller_id: 'store-1', title: 'Draft Listing', category_id: 'cat-audio', status: 'draft' }),
+    );
+    renderWorkspace(<VendorProductsPage />);
+
+    await waitFor(() => expect(screen.getByText('Draft Listing')).toBeInTheDocument());
+    const row = within(screen.getByText('Draft Listing').closest('tr') as HTMLElement);
+
+    fireEvent.click(row.getByRole('button', { name: /Submit/i }));
+    await waitFor(() =>
+      expect(supabaseDouble.tables.products.find((r) => r.id === 'p-1')?.status).toBe('pending_review'),
+    );
+
+    const withdrawn = within(screen.getByText('Draft Listing').closest('tr') as HTMLElement);
+    fireEvent.click(await withdrawn.findByRole('button', { name: /Withdraw/i }));
+    await waitFor(() =>
+      expect(supabaseDouble.tables.products.find((r) => r.id === 'p-1')?.status).toBe('draft'),
+    );
+  });
+});
+
+describe('ProductFormModal', () => {
+  it('switches the fulfillment model and shows only the fields that model has', async () => {
+    renderWorkspace(
+      <ProductFormModal open onOpenChange={() => {}} onSave={() => {}} />
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /2\. Pricing & Delivery/i }));
+
+    expect(within(dialog).getByRole('button', { name: /Physical Good \(Courier Pickup\)/i })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: /Digital Asset \(Instant License\)/i }));
+    expect(within(dialog).getByText('License Type')).toBeInTheDocument();
+    expect(within(dialog).getByText('Asset Download URL')).toBeInTheDocument();
+    expect(within(dialog).queryByText(/Standard Shipping Fee/)).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /Physical Good \(Courier Pickup\)/i }));
+    expect(within(dialog).getByText(/Standard Shipping Fee/)).toBeInTheDocument();
+    expect(within(dialog).queryByText('Asset Download URL')).not.toBeInTheDocument();
+  });
+
+  it('requires a category before it will write a listing', async () => {
+    renderWorkspace(<ProductFormModal open onOpenChange={() => {}} onSave={() => {}} />);
+
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByPlaceholderText(/Aura Precision Studio Reference/i), {
+      target: { value: 'Uncategorised Attempt' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: /Save Product/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Choose the category this listing belongs in.')).toBeInTheDocument(),
+    );
+    expect(supabaseDouble.tables.products).toHaveLength(0);
   });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
@@ -21,8 +21,13 @@ import {
   FileSpreadsheet,
   Truck,
   MessageCircleQuestion,
+  ChevronsUpDown,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '../../../lib/auth-context';
 import { useAuthStore } from '../../../store/auth-store';
+import { useVendorData } from '../hooks/useVendorData';
+import { useVendorDashboard } from '../hooks/useVendorDashboard';
 import { cn } from '../../../lib/utils';
 
 export interface VendorNavProps {
@@ -55,8 +60,30 @@ export const VendorNav: React.FC<VendorNavProps> = ({
   const location = useLocation();
   const currentPath = location.pathname;
   const { user } = useAuthStore();
-  const vendorStoreId = user?.vendorId ?? 'vendor-tech-1';
-  const storeName = user?.name ? `${user.name.split(' ')[0]} Electronics` : 'Nova Electronics';
+  const { vendorId: hookVendorId, storeName: hookStoreName } = useVendorData();
+  // The four queue badges are counts Postgres already makes for the dashboard RPC, so the
+  // sidebar cannot show a number the workspace itself disagrees with. A zero renders nothing.
+  const dashboard = useVendorDashboard();
+  const badges: Record<string, number> = dashboard.data
+    ? {
+        orders:
+          dashboard.data.stages.placed +
+          dashboard.data.stages.confirmed +
+          dashboard.data.stages.packed,
+        returns: dashboard.data.stages.returns,
+        qa: dashboard.data.engagement.unansweredQuestions,
+        messages: dashboard.data.engagement.unreadMessages,
+      }
+    : {};
+  const badgeOf = (key: string) => {
+    const value = badges[key] ?? 0;
+    return value > 0 ? String(value) : undefined;
+  };
+
+  const vendorStoreId = hookVendorId || user?.vendorId || '';
+  // The store a session owns is decided by the database, so there is no switcher here:
+  // a second store means a second account, and the storefront link needs a real id.
+  const storeName = hookStoreName || 'Your store';
 
   const navSections: NavSection[] = [
     {
@@ -108,7 +135,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
           label: 'Orders',
           accessibleName: 'Orders',
           icon: ClipboardList,
-          badge: '12',
+          badge: badgeOf('orders'),
           badgeColor: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
         },
         {
@@ -116,7 +143,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
           label: 'Returns',
           accessibleName: 'Returns',
           icon: RotateCcw,
-          badge: '3',
+          badge: badgeOf('returns'),
           badgeColor: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40',
         },
         {
@@ -124,7 +151,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
           label: 'Customer Q&A',
           accessibleName: 'Product QA',
           icon: MessageCircleQuestion,
-          badge: '3',
+          badge: badgeOf('qa'),
           badgeColor: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40',
         },
       ],
@@ -157,7 +184,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
           to: '/vendor/messages',
           label: 'Customer Messages',
           icon: MessageSquare,
-          badge: '4',
+          badge: badgeOf('messages'),
           badgeColor: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
         },
         {
@@ -231,14 +258,49 @@ export const VendorNav: React.FC<VendorNavProps> = ({
     return currentPath.startsWith(item.to + '/');
   };
 
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    void signOut().then(() => navigate('/'));
+  };
+
   return (
     <nav
-      className={cn('flex h-full flex-col justify-between pb-4', className)}
+      className={cn('flex flex-col h-full w-full overflow-hidden', className)}
       aria-label="Vendor Portal Navigation"
     >
-      <div className="flex flex-col gap-3 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-1">
-        {/* ── Brand / Store Capsule ───────────────────────────── */}
-        <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-3 shadow-xs">
+      {/* ── 1. Top Pinned Section: Homepage Logo + Hover Effect (shrink-0) ── */}
+      <div className="shrink-0 border-b border-slate-200/60 dark:border-white/10 px-4 py-3.5 bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.65))] dark:bg-slate-900/65">
+        <Link
+          to="/vendor"
+          aria-label="Vendora Seller Home"
+          className="flex items-center justify-between focus:outline-none group transition-all"
+          title="Vendora Seller Hub"
+        >
+          <div className="flex flex-col">
+            <span className="font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-[#FF7A1A] transition-colors">
+              Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-all duration-300 group-hover:scale-125" />
+            </span>
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-wider mt-1 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+              Seller Hub
+            </span>
+          </div>
+          <span className="inline-flex items-center rounded-md bg-orange-500/10 dark:bg-orange-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#EA6C13] dark:text-[#FF7A1A] border border-orange-500/20 group-hover:border-orange-500/40 transition-colors">
+            Seller
+          </span>
+        </Link>
+      </div>
+
+      {/* ── 2. Center Scrollable Section: Only navigation options & store capsule scroll (flex-1 overflow-y-auto) ── */}
+      <div
+        data-lenis-prevent
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar px-3 py-2 space-y-3"
+      >
+        {/* Brand / Store Capsule */}
+        <div className="relative rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-3 shadow-xs">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 font-black text-[#FF7A1A] border border-orange-100 dark:border-orange-900/40 text-xs uppercase">
               <Store className="h-4 w-4" />
@@ -246,9 +308,6 @@ export const VendorNav: React.FC<VendorNavProps> = ({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <h2 className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">{storeName}</h2>
-                <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
-                  Approved
-                </span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
                 <span className="truncate">{user?.email ?? 'vendor@demo.test'}</span>
@@ -269,7 +328,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
           </div>
         </div>
 
-        {/* ── Grouped Navigation Sections ─────────────────────── */}
+        {/* Grouped Navigation Sections */}
         <div className="space-y-3">
           {navSections.map((section) => (
             <div key={section.title} className="space-y-0.5">
@@ -326,6 +385,42 @@ export const VendorNav: React.FC<VendorNavProps> = ({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── 3. Bottom Pinned Section: Fixed seller profile card (shrink-0 mt-auto) ── */}
+      <div className="shrink-0 mt-auto border-t border-slate-200/60 dark:border-white/10 p-2.5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xs">
+        <Link
+          to="/vendor/profile"
+          onClick={onNavigate}
+          className="flex items-center justify-between rounded-xl p-1.5 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all border border-transparent hover:border-slate-200/60 dark:hover:border-slate-700/60 group"
+          title="View Seller Profile & Settings"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800 text-[#FF7A1A] shadow-xs group-hover:scale-105 transition-transform">
+              <UserCheck className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                {user?.name ?? 'Seller User'}
+              </p>
+              <p className="truncate text-[10px] text-slate-400 leading-tight">
+                {user?.email ?? 'vendor@demo.test'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sign out"
+              title="Sign out"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+            <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+        </Link>
       </div>
     </nav>
   );

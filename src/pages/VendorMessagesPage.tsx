@@ -1,260 +1,233 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Search,
-  CheckCheck,
-  Plus,
-  Clock,
-  ShieldCheck,
   Send,
-  Paperclip,
+  Download,
+  MessageSquare,
+  Inbox,
+  Clock,
+  AlertTriangle,
   CheckCircle2,
-  Package,
-  MoreVertical,
   X,
-  FileText,
-  Archive,
-  MailCheck,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '../components/ui/dialog';
+  useMarkThreadRead,
+  useSendThreadMessage,
+  useSetThreadStatus,
+  useThreadMessages,
+  useVendorThreads,
+} from '../features/vendor/hooks/useVendorMessages';
+import type {
+  ThreadChannel,
+  ThreadStatus,
+  VendorThreadSummary,
+} from '../features/vendor/api/messages';
 
-interface ChatThread {
-  id: string;
-  buyerName: string;
-  avatarText: string;
-  isOnline: boolean;
-  orderId?: string;
-  rmaId?: string;
-  timeAgo: string;
-  preview: string;
-  tag: string;
-  tagType: 'specs' | 'delivery' | 'return' | 'presales';
-  isUrgent?: boolean;
-  slaText?: string;
-  unread: boolean;
+/** Threads are labelled by the buyer's context, not by our own subject lines. */
+const CHANNEL_LABEL: Record<ThreadChannel, string> = {
+  order_inquiry: 'Order',
+  return_rma: 'Return / RMA',
+  product_question: 'Listing',
+  dispute: 'Dispute',
+};
+
+/** Static class maps: Tailwind cannot generate interpolated class names. */
+const STATUS_STYLE: Record<ThreadStatus, string> = {
+  open: 'bg-slate-100 text-slate-700 border-slate-200',
+  pending: 'bg-amber-50 text-amber-800 border-amber-200',
+  urgent: 'bg-rose-50 text-rose-700 border-rose-200',
+  escalated: 'bg-violet-50 text-violet-800 border-violet-200',
+  resolved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+};
+
+const KPI_GRID = 'rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs';
+
+const STATUSES: ThreadStatus[] = ['pending', 'urgent', 'escalated', 'resolved'];
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export const VendorMessagesPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+function clockTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+function dateLabel(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
-  const [composeCustomer, setComposeCustomer] = useState('');
-  const [composeSubject, setComposeSubject] = useState('');
-  const [composeBody, setComposeBody] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterTab, setFilterTab] = useState<'all' | 'unread' | 'orders'>('all');
-  const [selectedThreadId, setSelectedThreadId] = useState('t1');
-  const [replyText, setReplyText] = useState(
-    'Yes, absolutely! The active noise cancellation and Ambient Sound mode both function completely in wired mode as long as the headphones are powered ON.'
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const minutes = Math.round((Date.now() - then) / 60_000);
+  if (minutes < 1) return 'now';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d`;
+  return dateLabel(iso);
+}
+
+/**
+ * A reply is due when the newest message came from the buyer and nobody has closed the
+ * thread. There is no response-time metric stored, so the inbox says this rather than
+ * quoting an SLA.
+ */
+function isReplyDue(thread: VendorThreadSummary): boolean {
+  return (
+    thread.status !== 'resolved' &&
+    (thread.lastMessage?.senderRole === 'customer' || thread.unreadCount > 0)
   );
-  const [isInternalNote, setIsInternalNote] = useState(false);
-  const [threadMenuOpen, setThreadMenuOpen] = useState(false);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+}
 
-  const [threads, setThreads] = useState<ChatThread[]>([
-    {
-      id: 't1',
-      buyerName: 'Elena Rostova',
-      avatarText: 'ER',
-      isOnline: true,
-      orderId: '#ORD-9819',
-      timeAgo: '4m ago',
-      preview: 'Will the included Type-C cable work directly with my MacBook Pro DAC without an adapter?',
-      tag: 'Specs Query',
-      tagType: 'specs',
-      unread: true,
-    },
-    {
-      id: 't2',
-      buyerName: 'Marcus Vance',
-      avatarText: 'MV',
-      isOnline: false,
-      orderId: '#ORD-9820',
-      timeAgo: 'SLA 48m',
-      preview: 'Could you verify whether the express carrier will require a physical signature upon delivery?',
-      tag: 'Delivery Check',
-      tagType: 'delivery',
-      isUrgent: true,
-      slaText: 'SLA 48m',
-      unread: true,
-    },
-    {
-      id: 't3',
-      buyerName: 'Devon Thorpe',
-      avatarText: 'DT',
-      isOnline: false,
-      rmaId: 'RMA-4029',
-      timeAgo: '2h ago',
-      preview: 'I dropped off the parcel at the depot yesterday, tracking code was scanned this morning.',
-      tag: 'Return Inquiry',
-      tagType: 'return',
-      unread: true,
-    },
-    {
-      id: 't4',
-      buyerName: 'Sarah Jenkins',
-      avatarText: 'SJ',
-      isOnline: false,
-      orderId: 'Listing #WH-XM5',
-      timeAgo: '3h ago',
-      preview: 'Does the silver variant come with the matching silver memory foam cushions or black ones?',
-      tag: 'Pre-Sales',
-      tagType: 'presales',
-      unread: false,
-    },
-    {
-      id: 't5',
-      buyerName: "Liam O'Connor",
-      avatarText: 'LO',
-      isOnline: false,
-      orderId: '#ORD-9750',
-      timeAgo: 'Yesterday',
-      preview: 'Thanks for the quick packing update, looking forward to testing the custom keycaps!',
-      tag: 'General',
-      tagType: 'presales',
-      unread: false,
-    },
-  ]);
+const QUICK_REPLIES = [
+  {
+    label: 'Order status',
+    body: 'Your order is still with us and moving through the usual packing queue. I will post the tracking number here the moment the courier scans the parcel.',
+  },
+  {
+    label: 'Product answer',
+    body: 'Thanks for asking before buying. Here is what that variant includes, and I can confirm the rest from the supplier sheet if you need it.',
+  },
+  {
+    label: 'Return next step',
+    body: 'I can open the return from the Returns page once the buyer requests it on the order. After I approve it the store issues the RMA and the refund amount is booked automatically.',
+  },
+];
 
-  const [threadMessages, setThreadMessages] = useState<Record<string, Array<{ id: string; sender: 'buyer' | 'vendor'; text: string; time: string; isInternal?: boolean }>>>({
-    t1: [
-      {
-        id: 'm1',
-        sender: 'buyer',
-        text: 'Hi Nova Electronics Support Team! I just purchased the Sony WH-1000XM5 wireless headphones under Order #ORD-9819. Could you confirm whether the provided USB-C audio interconnect supports lossless transmission directly with the 2023 MacBook Pro DAC, or if I need to source a secondary 3.5mm-to-USB-C adapter?',
-        time: '16:38 CET • Web Portal',
-      },
-    ],
-    t2: [
-      {
-        id: 'm2',
-        sender: 'buyer',
-        text: 'Could you verify whether the express carrier will require a physical signature upon delivery?',
-        time: '14:20 CET',
-      },
-    ],
-    t3: [
-      {
-        id: 'm3',
-        sender: 'buyer',
-        text: 'I dropped off the parcel at the depot yesterday, tracking code was scanned this morning. Please restock.',
-        time: '12:05 CET',
-      },
-    ],
-    t4: [
-      {
-        id: 'm4',
-        sender: 'buyer',
-        text: 'Does the silver variant come with the matching silver memory foam cushions or black ones?',
-        time: '11:15 CET',
-      },
-    ],
-  });
+type Filter = 'all' | 'unread' | 'needs-reply' | 'resolved';
 
-  const activeThread = threads.find((t) => t.id === selectedThreadId) || threads[0];
-  const currentMessages = threadMessages[selectedThreadId] || [];
+export const VendorMessagesPage: React.FC = () => {
+  const threadsQuery = useVendorThreads();
+  const markRead = useMarkThreadRead();
+  const sendMessage = useSendThreadMessage();
+  const setStatus = useSetThreadStatus();
 
-  const handleSendMessage = () => {
-    const textToSend = replyText.trim() + (attachmentName ? `\n📎 [Attachment: ${attachmentName}]` : '');
-    if (!textToSend.trim()) return;
-    const newMsg = {
-      id: `m-${Date.now()}`,
-      sender: 'vendor' as const,
-      text: textToSend,
-      time: 'Just now • Verified Reply',
-      isInternal: isInternalNote,
-    };
-    setThreadMessages((prev) => ({
-      ...prev,
-      [selectedThreadId]: [...(prev[selectedThreadId] || []), newMsg],
-    }));
-    setThreads((prev) =>
-      prev.map((t) => (t.id === selectedThreadId ? { ...t, unread: false, preview: textToSend } : t))
-    );
-    setReplyText('');
-    setAttachmentName(null);
+  const { threadId: linkedThreadId } = useParams();
+  const [activeId, setActiveId] = useState<string | null>(linkedThreadId ?? null);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
+  const [draft, setDraft] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const threads = threadsQuery.data ?? [];
+  const active = threads.find((thread) => thread.id === activeId) ?? threads[0] ?? null;
+  const messagesQuery = useThreadMessages(active?.id ?? '');
+  const messages = messagesQuery.data ?? [];
+
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 3000);
   };
 
-  const handleMarkThreadUnread = () => {
-    setThreads((prev) =>
-      prev.map((t) => (t.id === selectedThreadId ? { ...t, unread: true } : t))
+  // Opening a thread clears the buyer's unread marks; the mutation refreshes both queries.
+  useEffect(() => {
+    if (active && active.unreadCount > 0) markRead.mutate(active.id);
+    setFormError(null);
+  }, [active?.id]);
+
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [messages.length, active?.id]);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return threads.filter((thread) => {
+      if (filter === 'unread' && thread.unreadCount === 0) return false;
+      if (filter === 'needs-reply' && !isReplyDue(thread)) return false;
+      if (filter === 'resolved' && thread.status !== 'resolved') return false;
+      if (!query) return true;
+      const haystack = [
+        thread.customerName,
+        CHANNEL_LABEL[thread.channel],
+        thread.orderRef ?? '',
+        thread.productRef ?? '',
+        thread.lastMessage?.body ?? '',
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [threads, search, filter]);
+
+  const unreadTotal = threads.reduce((sum, thread) => sum + thread.unreadCount, 0);
+  const dueTotal = threads.filter(isReplyDue).length;
+  const hotTotal = threads.filter(
+    (thread) => thread.status === 'urgent' || thread.status === 'escalated',
+  ).length;
+
+  const handleSend = () => {
+    const body = draft.trim();
+    if (!active || !body) return;
+    setFormError(null);
+    sendMessage.mutate(
+      { threadId: active.id, body },
+      {
+        onSuccess: () => {
+          setDraft('');
+          showToast('Reply sent to the buyer');
+        },
+        onError: (error: Error) => setFormError(error.message),
+      },
     );
-    setThreadMenuOpen(false);
-    showToast('Conversation marked as unread');
   };
 
-  const handleExportTranscript = () => {
-    const msgs = threadMessages[selectedThreadId] || [];
-    const transcriptText = msgs
-      .map((m) => `[${m.time}] ${m.sender.toUpperCase()}: ${m.text}`)
-      .join('\n\n');
-    const blob = new Blob([transcriptText], { type: 'text/plain' });
+  const handleStatus = (status: ThreadStatus) => {
+    if (!active) return;
+    setFormError(null);
+    setStatus.mutate(
+      { threadId: active.id, status },
+      {
+        onSuccess: () => showToast(`Marked ${status}`),
+        onError: (error: Error) => setFormError(error.message),
+      },
+    );
+  };
+
+  const exportTranscript = () => {
+    if (!active || messages.length === 0) return;
+    const lines = [
+      `Vendora conversation · ${active.customerName}`,
+      `Channel: ${CHANNEL_LABEL[active.channel]}`,
+      active.orderRef ? `Order: ${active.orderRef}` : '',
+      '',
+      ...messages.map(
+        (message) =>
+          `[${new Date(message.createdAt).toLocaleString()}] ${message.senderName} (${message.senderRole}): ${message.body}`,
+      ),
+    ].filter(Boolean);
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `transcript-${selectedThreadId}-${Date.now()}.txt`;
-    a.click();
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `vendora-thread-${active.id}.txt`;
+    anchor.click();
     URL.revokeObjectURL(url);
-    setThreadMenuOpen(false);
-    showToast('Transcript exported successfully');
+    showToast('Transcript downloaded');
   };
-
-  const handleArchiveThread = () => {
-    setThreads((prev) => prev.filter((t) => t.id !== selectedThreadId));
-    if (threads.length > 1) {
-      const remaining = threads.filter((t) => t.id !== selectedThreadId);
-      if (remaining.length > 0) {
-        setSelectedThreadId(remaining[0].id);
-      }
-    }
-    setThreadMenuOpen(false);
-    showToast('Conversation archived');
-  };
-
-  const handleApplyMacro = (text: string) => {
-    setReplyText(text);
-  };
-
-  const filteredThreads = threads.filter((t) => {
-    if (filterTab === 'unread' && !t.unread) return false;
-    if (filterTab === 'orders' && !t.orderId) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        t.buyerName.toLowerCase().includes(q) ||
-        (t.orderId && t.orderId.toLowerCase().includes(q)) ||
-        t.preview.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
 
   return (
     <WorkspaceLayout
       role="vendor"
       roleBadgeText="VENDOR PARTNER"
-      sidebar={<VendorNav onOpenAddProduct={() => setIsProductModalOpen(true)} />}
+      sidebar={<VendorNav />}
     >
       <div className="space-y-6">
-        {/* ── Breadcrumb & Header ─────────────────────────────────── */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               COMMUNICATIONS <span className="text-slate-300">/</span> MESSAGES
@@ -262,722 +235,409 @@ export const VendorMessagesPage: React.FC = () => {
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
               Customer Messages
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Direct buyer inquiries, order support threads, pre-sales questions, and resolution tracking.
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500">
+              Buyers open a thread from an order, a return or a listing. You can reply and change
+              its status. You cannot start one: the insert policy requires the buyer&apos;s own
+              account, and the transcript has no private-note column or file uploader.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={exportTranscript}
+            disabled={messages.length === 0}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="h-4 w-4 text-slate-500" />
+            Export transcript
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={KPI_GRID}>
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span>Conversations</span>
+              <Inbox className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">{threads.length}</div>
+            <p className="mt-2 text-[11px] text-slate-500">
+              Threads attached to this store&apos;s orders and listings.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={() => {
-                setThreads((prev) => prev.map((t) => ({ ...t, unread: false })));
-              }}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <CheckCheck className="h-4 w-4 text-slate-500" />
-              Mark All as Read
-            </button>
-            <button
-              onClick={() => setIsComposeModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              + Compose Message
-            </button>
+          <div className={KPI_GRID}>
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span>Unread</span>
+              <MessageSquare className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">{unreadTotal}</div>
+            <p className="mt-2 text-[11px] text-slate-500">
+              Buyer messages you have not opened yet. Marking read happens when you open the
+              thread.
+            </p>
+          </div>
+
+          <div className={KPI_GRID}>
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span>Awaiting your reply</span>
+              <Clock className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">{dueTotal}</div>
+            <p className="mt-2 text-[11px] text-slate-500">
+              The newest message is from the buyer and the thread is not resolved. No response-time
+              target is stored.
+            </p>
+          </div>
+
+          <div className={KPI_GRID}>
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <span>Urgent / escalated</span>
+              <AlertTriangle className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">{hotTotal}</div>
+            <p className="mt-2 text-[11px] text-slate-500">
+              Statuses you set yourself. Staff see the same thread through the admin inbox.
+            </p>
           </div>
         </div>
 
-        {/* ── 4 Top KPI Cards ─────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Card 1: Unread Inquiries */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Unread Inquiries</span>
-                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
-                  ● 3 Urgent SLA &lt;2h
-                </span>
-              </div>
-              <div className="mt-3 text-3xl font-extrabold text-slate-900">7</div>
-            </div>
-            <div className="mt-4 pt-2">
-              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full bg-slate-900 rounded-full" style={{ width: '45%' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Avg First Response Time */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Avg First Response Time</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  -4m vs 30m target
-                </span>
-              </div>
-              <div className="mt-3 text-3xl font-extrabold text-slate-900">18m</div>
-            </div>
-            <div className="mt-4 pt-2">
-              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '70%' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Resolution Rate */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Resolution Rate</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  ↑ +2.1% this week
-                </span>
-              </div>
-              <div className="mt-3 text-3xl font-extrabold text-slate-900">94.2%</div>
-            </div>
-            <div className="mt-4 pt-2">
-              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full bg-slate-900 rounded-full" style={{ width: '94%' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Customer CSAT */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Customer CSAT</span>
-                <div className="flex items-center text-amber-400 text-xs">
-                  {'★'.repeat(5)}
-                </div>
-              </div>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-3xl font-extrabold text-slate-900">4.8</span>
-                <span className="text-sm font-semibold text-slate-400">/ 5.0</span>
-              </div>
-              <div className="mt-1 text-xs text-slate-500">420 surveyed chats</div>
-            </div>
-            <div className="mt-4 pt-2">
-              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full bg-slate-900 rounded-full" style={{ width: '92%' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── 3-Column Message Center ──────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* ── Left Column (3 cols): Conversations List ──────────── */}
-          <div className="lg:col-span-3 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col h-[700px]">
-            {/* Search & Tabs */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className="lg:col-span-4 xl:col-span-3 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col h-[640px]">
             <div className="p-3.5 border-b border-slate-100 space-y-2.5">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search buyer, order ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white"
+                  placeholder="Search buyer, order, message"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
                 />
               </div>
-
-              <div className="flex items-center gap-1 text-[11px] font-bold">
-                <button
-                  onClick={() => setFilterTab('all')}
-                  className={`rounded-md px-2.5 py-1 ${
-                    filterTab === 'all'
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  All (28)
-                </button>
-                <button
-                  onClick={() => setFilterTab('unread')}
-                  className={`rounded-md px-2.5 py-1 ${
-                    filterTab === 'unread'
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  Unread (7)
-                </button>
-                <button
-                  onClick={() => setFilterTab('orders')}
-                  className={`rounded-md px-2.5 py-1 ${
-                    filterTab === 'orders'
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  Orders
-                </button>
+              <div className="flex flex-wrap items-center gap-1 text-[11px] font-bold">
+                {(
+                  [
+                    ['all', `All (${threads.length})`],
+                    ['unread', `Unread (${unreadTotal})`],
+                    ['needs-reply', `Reply due (${dueTotal})`],
+                    ['resolved', `Resolved (${threads.filter((t) => t.status === 'resolved').length})`],
+                  ] as [Filter, string][]
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFilter(key)}
+                    className={`rounded-md px-2.5 py-1 ${
+                      filter === key
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* List */}
             <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
-              {filteredThreads.map((t) => {
-                const isSelected = t.id === selectedThreadId;
+              {threadsQuery.isLoading && (
+                <div className="p-4 text-xs text-slate-500">Loading your conversations…</div>
+              )}
+              {threadsQuery.error && (
+                <div className="p-4 text-xs text-rose-700">
+                  {(threadsQuery.error as Error).message}
+                </div>
+              )}
+              {!threadsQuery.isLoading && filtered.length === 0 && (
+                <div className="p-4 text-xs text-slate-500">
+                  {threads.length === 0
+                    ? 'No buyer has opened a conversation with this store yet. Threads appear when a buyer writes from an order, a return or a listing.'
+                    : 'No conversation matches this filter.'}
+                </div>
+              )}
+              {filtered.map((thread) => {
+                const isSelected = active?.id === thread.id;
                 return (
-                  <div
-                    key={t.id}
-                    onClick={() => {
-                      setSelectedThreadId(t.id);
-                      setThreads((prev) =>
-                        prev.map((item) =>
-                          item.id === t.id ? { ...item, unread: false } : item
-                        )
-                      );
-                    }}
-                    className={`p-3.5 cursor-pointer transition-colors ${
+                  <button
+                    key={thread.id}
+                    type="button"
+                    onClick={() => setActiveId(thread.id)}
+                    className={`w-full p-3.5 text-left transition-colors ${
                       isSelected
                         ? 'bg-slate-100/80 border-l-3 border-slate-900'
                         : 'hover:bg-slate-50/80'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white font-bold text-xs">
-                          {t.avatarText}
-                          {t.isOnline && (
-                            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-900 text-xs truncate flex items-center gap-1">
-                            <span>{t.buyerName}</span>
-                            {t.id === 't1' && (
-                              <CheckCircle2 className="h-3 w-3 text-blue-500 fill-blue-50" />
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {t.orderId || t.rmaId}
-                          </div>
-                        </div>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                          {initials(thread.customerName)}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-xs font-bold text-slate-900">
+                            {thread.customerName}
+                          </span>
+                          <span className="block truncate font-mono text-[10px] text-slate-400">
+                            {thread.orderRef ?? thread.productRef ?? CHANNEL_LABEL[thread.channel]}
+                          </span>
+                        </span>
                       </div>
-
-                      <div className="text-right shrink-0">
-                        <div
-                          className={`text-[10px] ${
-                            t.isUrgent ? 'text-rose-600 font-bold' : 'text-slate-400'
-                          }`}
-                        >
-                          {t.timeAgo}
-                        </div>
-                        {t.unread && (
-                          <span className="inline-block mt-1 h-2 w-2 rounded-full bg-slate-900" />
+                      <span className="shrink-0 text-right">
+                        <span className="block text-[10px] text-slate-400">
+                          {relativeTime(thread.updatedAt)}
+                        </span>
+                        {thread.unreadCount > 0 && (
+                          <span className="mt-1 inline-block rounded-full bg-slate-900 px-1.5 text-[9px] font-bold text-white">
+                            {thread.unreadCount}
+                          </span>
                         )}
-                      </div>
+                      </span>
                     </div>
 
-                    <p className="mt-2 text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
-                      {t.preview}
+                    <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-600">
+                      {thread.lastMessage
+                        ? `${thread.lastMessage.senderRole === 'vendor' ? 'You: ' : ''}${thread.lastMessage.body}`
+                        : 'No messages in this thread yet.'}
                     </p>
 
-                    <div className="mt-2 flex items-center gap-1.5">
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                        {t.tag}
+                        {CHANNEL_LABEL[thread.channel]}
                       </span>
-                      {t.isUrgent && (
-                        <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-700">
-                          Urgent
+                      <span
+                        className={`rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${STATUS_STYLE[thread.status]}`}
+                      >
+                        {thread.status}
+                      </span>
+                      {isReplyDue(thread) && (
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-800">
+                          Reply due
                         </span>
                       )}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </div>
 
-          {/* ── Middle Column (6 cols): Active Chat Thread ─────────── */}
-          <div className="lg:col-span-6 rounded-xl border border-slate-200 bg-white shadow-xs flex flex-col h-[700px] overflow-hidden">
-            {/* Thread Header */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white font-bold text-xs">
-                  {activeThread.avatarText}
-                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-900 text-sm">
-                      {activeThread.buyerName}
-                    </span>
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                      ✓ Verified Buyer
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    Berlin, Germany (16:42 CET) • Order #ORD-9819
-                  </div>
-                </div>
+          <div className="lg:col-span-8 xl:col-span-9 rounded-xl border border-slate-200 bg-white shadow-xs flex flex-col h-[640px] overflow-hidden">
+            {!active ? (
+              <div className="flex flex-1 items-center justify-center p-8 text-center text-xs text-slate-500">
+                Select a conversation to read it. A store cannot start a thread — the buyer has to
+                write first.
               </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                      {initials(active.customerName)}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900">
+                          {active.customerName}
+                        </span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[active.status]}`}
+                        >
+                          {active.status}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        {CHANNEL_LABEL[active.channel]}
+                        {active.orderRef ? ` · ${active.orderRef}` : ''}
+                        {active.productRef ? ` · ${active.productRef}` : ''} · opened{' '}
+                        {dateLabel(active.createdAt)}
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="flex items-center gap-2">
-                <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-800 border border-amber-200">
-                  <Clock className="h-3 w-3" />
-                  Reply within 42m to maintain 99% SLA
-                </span>
-                <div className="relative">
-                  <button
-                    onClick={() => setThreadMenuOpen((prev) => !prev)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors"
-                    title="Conversation options"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
-                  {threadMenuOpen && (
-                    <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg z-20 text-xs text-slate-700 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Set status
+                    </span>
+                    {STATUSES.map((status) => (
                       <button
-                        onClick={handleMarkThreadUnread}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
+                        key={status}
+                        type="button"
+                        onClick={() => handleStatus(status)}
+                        disabled={active.status === status || setStatus.isPending}
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                          active.status === status
+                            ? STATUS_STYLE[status]
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
                       >
-                        <MailCheck className="h-3.5 w-3.5 text-slate-500" />
-                        <span>Mark as Unread</span>
+                        {status}
                       </button>
-                      <button
-                        onClick={handleExportTranscript}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
+                    ))}
+                  </div>
+                </div>
+
+                <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-slate-50/50 p-4">
+                  {messagesQuery.isLoading && (
+                    <div className="text-center text-xs text-slate-500">Loading messages…</div>
+                  )}
+                  {messagesQuery.error && (
+                    <div className="text-center text-xs text-rose-700">
+                      {(messagesQuery.error as Error).message}
+                    </div>
+                  )}
+                  {!messagesQuery.isLoading && messages.length === 0 && (
+                    <div className="text-center text-xs text-slate-500">
+                      This thread has no messages stored yet.
+                    </div>
+                  )}
+                  {messages.map((message) => {
+                    const mine = message.senderRole !== 'customer';
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex max-w-xl items-start gap-2.5 ${
+                          mine ? 'ml-auto flex-row-reverse' : ''
+                        }`}
                       >
-                        <FileText className="h-3.5 w-3.5 text-slate-500" />
-                        <span>Export Transcript</span>
+                        <span
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
+                            mine ? 'bg-[#EA6C13]' : 'bg-slate-900'
+                          }`}
+                        >
+                          {mine ? 'YOU' : initials(message.senderName)}
+                        </span>
+                        <div className="min-w-0">
+                          <div
+                            className={`rounded-2xl p-3.5 text-xs leading-relaxed shadow-2xs ${
+                              mine
+                                ? 'rounded-tr-xs bg-slate-900 text-white'
+                                : 'rounded-tl-xs border border-slate-200/80 bg-white text-slate-800'
+                            }`}
+                          >
+                            {message.body}
+                          </div>
+                          <div
+                            className={`mt-1 text-[10px] text-slate-400 ${
+                              mine ? 'pr-1 text-right' : 'pl-1'
+                            }`}
+                          >
+                            {message.senderName} · {clockTime(message.createdAt)} ·{' '}
+                            {dateLabel(message.createdAt)}
+                            {message.attachments.length > 0 && (
+                              <>
+                                {' · '}
+                                {message.attachments.map((url) => (
+                                  <a
+                                    key={url}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="underline"
+                                  >
+                                    attachment
+                                  </a>
+                                ))}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-2.5 border-t border-slate-200 bg-white p-3.5">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Prefill
+                    </span>
+                    {QUICK_REPLIES.map((reply) => (
+                      <button
+                        key={reply.label}
+                        type="button"
+                        onClick={() => setDraft(reply.body)}
+                        className="shrink-0 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        {reply.label}
                       </button>
-                      <div className="my-1 border-t border-slate-100" />
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5 focus-within:border-slate-900">
+                    <textarea
+                      rows={3}
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                          event.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      placeholder="Reply to the buyer… (Ctrl+Enter to send)"
+                      className="w-full resize-none text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    />
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                      <span className="text-[10px] text-slate-400">
+                        Sent as your store name, straight to the messages table.
+                      </span>
                       <button
-                        onClick={handleArchiveThread}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-rose-600 hover:bg-rose-50 transition-colors"
+                        type="button"
+                        onClick={handleSend}
+                        disabled={draft.trim().length === 0 || sendMessage.isPending}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <Archive className="h-3.5 w-3.5 text-rose-500" />
-                        <span>Archive Conversation</span>
+                        <span>{sendMessage.isPending ? 'Sending…' : 'Send reply'}</span>
+                        <Send className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {formError && (
+                    <div className="flex items-start justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">
+                      <span>{formError}</span>
+                      <button type="button" onClick={() => setFormError(null)} aria-label="Dismiss">
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Message Stream */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
-              <div className="text-center">
-                <span className="rounded-full bg-white border border-slate-200 px-3 py-1 text-[10px] font-bold text-slate-400 shadow-2xs">
-                  Active Conversation
-                </span>
-              </div>
-
-              {currentMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex items-start gap-2.5 max-w-lg ${
-                    msg.sender === 'vendor' ? 'ml-auto flex-row-reverse' : ''
-                  }`}
-                >
-                  <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white font-bold text-[10px] ${
-                      msg.sender === 'vendor' ? 'bg-[#EA6C13]' : 'bg-slate-900'
-                    }`}
-                  >
-                    {msg.sender === 'vendor' ? 'YOU' : activeThread.avatarText}
-                  </div>
-                  <div>
-                    <div
-                      className={`p-3.5 text-xs leading-relaxed shadow-2xs ${
-                        msg.sender === 'vendor'
-                          ? msg.isInternal
-                            ? 'rounded-2xl rounded-tr-xs bg-amber-50 border border-amber-200 text-amber-900'
-                            : 'rounded-2xl rounded-tr-xs bg-slate-900 text-white'
-                          : 'rounded-2xl rounded-tl-xs bg-white border border-slate-200/80 text-slate-800'
-                      }`}
-                    >
-                      {msg.isInternal && (
-                        <div className="text-[10px] font-bold uppercase text-amber-700 mb-1">
-                          🔒 Internal Staff Note
-                        </div>
-                      )}
-                      {msg.text}
-                    </div>
-                    <div
-                      className={`mt-1 text-[10px] text-slate-400 ${
-                        msg.sender === 'vendor' ? 'text-right pr-1' : 'pl-1'
-                      }`}
-                    >
-                      {msg.time}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <div className="flex items-center justify-center">
-                <div className="rounded-lg bg-slate-100 px-3 py-1 text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
-                  <span>Verified session connected to Vendora messaging server</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Composer Box */}
-            <div className="p-3.5 border-t border-slate-200 bg-white space-y-2.5">
-              {/* Macro pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs" data-lenis-prevent>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
-                  MACROS:
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleApplyMacro(
-                      'Your order #ORD-9819 has been prepared and staged for courier collection. Live GPS rider tracking will activate once scanned.'
-                    )
-                  }
-                  className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 shrink-0"
-                >
-                  ⚡ Track Shipment
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleApplyMacro(
-                      'The included Type-C cable is fully wired for high-resolution 24-bit/96kHz digital USB audio playback directly from macOS.'
-                    )
-                  }
-                  className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 shrink-0"
-                >
-                  ⚡ Confirm Specifications
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleApplyMacro(
-                      'Should you need an RMA return label, you can generate an automated prepaid return QR code from your order status panel.'
-                    )
-                  }
-                  className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 shrink-0"
-                >
-                  ⚡ Send RMA Form
-                </button>
-              </div>
-
-              {/* Input Area */}
-              <div className="rounded-xl border border-slate-200 bg-white p-2.5 focus-within:border-slate-900 transition-colors">
-                {attachmentName && (
-                  <div className="mb-2 flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 w-fit">
-                    <Paperclip className="h-3 w-3 text-slate-500" />
-                    <span>{attachmentName}</span>
-                    <button
-                      type="button"
-                      onClick={() => setAttachmentName(null)}
-                      className="ml-1 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-                <textarea
-                  rows={3}
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="Type your response to the customer... (Ctrl+Enter to send)"
-                  className="w-full text-xs text-slate-800 placeholder:text-slate-400 resize-none focus:outline-none"
-                />
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setAttachmentName(file.name);
-                          showToast(`Attached ${file.name}`);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-50 cursor-pointer"
-                      title="Attach file"
-                    >
-                      <Paperclip className="h-3.5 w-3.5" />
-                    </button>
-                    <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isInternalNote}
-                        onChange={(e) => setIsInternalNote(e.target.checked)}
-                        className="rounded text-slate-900"
-                      />
-                      <span>Internal staff note only</span>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400 hidden sm:inline">
-                      Press Ctrl + Enter to send
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => showToast('Draft reply saved to local session')}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      Save Draft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSendMessage}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs cursor-pointer"
-                    >
-                      <span>Send Reply</span>
-                      <Send className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Right Column (3 cols): Buyer Dossier ──────────────── */}
-          <div className="lg:col-span-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                BUYER DOSSIER
-              </span>
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            </div>
-
-            {/* Customer card */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white font-bold text-sm">
-                {activeThread.avatarText}
-              </div>
-              <div>
-                <div className="font-bold text-slate-900 text-sm">
-                  {activeThread.buyerName}
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  elena.rostova@designlab.com
-                </div>
-              </div>
-            </div>
-
-            {/* Metrics 2x2 Grid */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold">Member Since</div>
-                <div className="mt-0.5 font-bold text-slate-900">March 2023</div>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold">Total Spend</div>
-                <div className="mt-0.5 font-bold text-slate-900">$1,280.00</div>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold">Completed Orders</div>
-                <div className="mt-0.5 font-bold text-slate-900">6 Orders</div>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold">Disputes / Claims</div>
-                <div className="mt-0.5 font-bold text-emerald-700">0 Disputes</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs py-1 border-t border-slate-100">
-              <span className="text-slate-500 font-medium">Trust Rating</span>
-              <span className="font-bold text-emerald-700 flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Tier 1 Verified
-              </span>
-            </div>
-
-            {/* Active Order Card */}
-            <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2.5 text-xs">
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-slate-900 text-[11px]">ACTIVE ORDER: #ORD-9819</div>
-                <span className="rounded-full bg-blue-50 px-2 py-0.2 text-[9px] font-bold text-blue-700 border border-blue-200">
-                  Ready for Pickup
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                  <Package className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-bold text-slate-900 text-xs truncate">
-                    Sony WH-1000XM5...
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    SKU: SNY-WH1000XM5-BLK
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between font-bold text-slate-900 text-xs pt-1 border-t border-slate-200/60">
-                <span>$374.98</span>
-                <span className="text-emerald-700 text-[11px]">Paid (Apple Pay)</span>
-              </div>
-
-              <div className="text-[11px] text-slate-500 space-y-0.5 pt-1">
-                <div>Carrier: <strong className="text-slate-700">DHL Express Worldwide</strong></div>
-                <div>Tracking: <strong className="font-mono text-slate-700">JD01460000981928</strong></div>
-                <div>Estimated: <strong className="text-slate-700">Tomorrow, 14:00</strong></div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigate('/vendor/orders')}
-                className="w-full mt-1 rounded-lg border border-slate-200 bg-white py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
-              >
-                View Full Order Details
-              </button>
-
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => showToast('10% concession voucher discount issued for buyer')}
-                  className="rounded border border-slate-200 bg-white py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  % Issue Concession
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/vendor/returns')}
-                  className="rounded border border-slate-200 bg-white py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  Create RMA
-                </button>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* ── Compose Message Modal ───────────────────────────────── */}
-        <Dialog open={isComposeModalOpen} onOpenChange={setIsComposeModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900">
-                Compose Direct Customer Message
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Initiate a direct customer support ticket regarding an active order or delivery inquiry.
-              </DialogDescription>
-            </DialogHeader>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!composeCustomer || !composeBody) return;
-                const newThreadId = `t-${Date.now()}`;
-                const newThread: ChatThread = {
-                  id: newThreadId,
-                  buyerName: composeCustomer,
-                  avatarText: composeCustomer.slice(0, 2).toUpperCase(),
-                  isOnline: true,
-                  timeAgo: 'Just now',
-                  preview: composeBody,
-                  tag: composeSubject || 'Direct Message',
-                  tagType: 'presales',
-                  unread: false,
-                };
-                setThreads([newThread, ...threads]);
-                setThreadMessages((prev) => ({
-                  ...prev,
-                  [newThreadId]: [
-                    {
-                      id: `m-${Date.now()}`,
-                      sender: 'vendor',
-                      text: composeBody,
-                      time: 'Just now • Verified Reply',
-                    },
-                  ],
-                }));
-                setSelectedThreadId(newThreadId);
-                setComposeCustomer('');
-                setComposeSubject('');
-                setComposeBody('');
-                setIsComposeModalOpen(false);
-              }}
-              className="space-y-3 py-2 text-xs"
-            >
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Customer / Order Reference</label>
-                <input
-                  type="text"
-                  required
-                  value={composeCustomer}
-                  onChange={(e) => setComposeCustomer(e.target.value)}
-                  placeholder="e.g. Elena Rostova or #ORD-9819"
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Subject</label>
-                <input
-                  type="text"
-                  required
-                  value={composeSubject}
-                  onChange={(e) => setComposeSubject(e.target.value)}
-                  placeholder="Regarding your recent shipment delivery..."
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Message Body</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={composeBody}
-                  onChange={(e) => setComposeBody(e.target.value)}
-                  placeholder="Write message details..."
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsComposeModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
-                >
-                  Send Message
-                </button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Product Form Modal ───────────────────────────────────── */}
-        <ProductFormModal
-          open={isProductModalOpen}
-          onOpenChange={setIsProductModalOpen}
-        />
-
-        {/* ── Floating Toast Notification ───────────────────────────── */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 text-[11px] leading-relaxed text-slate-500 shadow-xs">
+          <div className="font-bold uppercase tracking-wider text-slate-400">
+            What this page can and cannot do
           </div>
-        )}
+          <ul className="mt-2 space-y-1">
+            <li>
+              · Reply as the store, move a thread between pending, urgent, escalated and resolved,
+              and export the transcript.
+            </li>
+            <li>
+              · Start a conversation. <code>threads_insert_customer</code> only lets the buyer's own
+              account create a thread, so an empty inbox stays empty until they write.
+            </li>
+            <li>
+              · Add private staff notes or upload attachments. The messages table has an
+              <code>attachments</code> column but no uploader wired to it, and no column for a note
+              the buyer cannot read.
+            </li>
+            <li>
+              · Track first-response time or CSAT. Nothing in the schema stores when a reply landed
+              relative to the question, so no target or score is shown.
+            </li>
+          </ul>
+        </div>
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          <span>{toast}</span>
+        </div>
+      )}
     </WorkspaceLayout>
   );
 };

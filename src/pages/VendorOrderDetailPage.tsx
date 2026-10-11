@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -8,142 +8,158 @@ import {
   Printer,
   Ban,
   MessageSquare,
-  Copy,
-  Check,
   MapPin,
   Barcode,
   Save,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import { mockDb } from '../mocks/db';
-import type { SubOrder, SubOrderStatus } from '../types/domain';
+import { useVendorData } from '../features/vendor/hooks/useVendorData';
+import {
+  useAdvancePackageStatus,
+  useUpdatePackageTracking,
+  useVendorPackage,
+} from '../features/vendor/hooks/useVendorPackages';
+import { useSendThreadMessage, useVendorThreads } from '../features/vendor/hooks/useVendorMessages';
+import { useShippingSettings } from '../features/vendor/hooks/useVendorStore';
+import type { SubOrderStatus } from '../types/domain';
+
+/**
+ * `advance_sub_order_status` only accepts a store-initiated 'cancelled' from these statuses;
+ * once the courier holds the package, cancelling it is the rider's or the platform's call.
+ */
+const CANCEL_ELIGIBLE: SubOrderStatus[] = [
+  'placed',
+  'confirmed',
+  'packed',
+  'ready_for_pickup',
+  'delivery_failed',
+];
 
 export const VendorOrderDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id = '' } = useParams<{ id: string }>();
+  const packageQuery = useVendorPackage(id);
+  const advanceStatus = useAdvancePackageStatus();
+  const saveTracking = useUpdatePackageTracking();
+  const threadsQuery = useVendorThreads();
+  const sendMessage = useSendThreadMessage();
+  const shippingQuery = useShippingSettings();
+  const { activeProfile } = useVendorData();
 
-  // Find sub-order or fallback to realistic mock
-  const [subOrder, setSubOrder] = useState<SubOrder>(() => {
-    const found = mockDb.subOrders.find(
-      (so) => so.id.toLowerCase() === id?.toLowerCase() || so.id === id,
-    );
-    if (found) return found;
-
-    return {
-      id: id || 'sub-98421-A',
-      orderGroupId: 'ord-98421',
-      sellerId: 'vendor-tech-1',
-      sellerName: 'SoundWave Direct',
-      sellerType: 'vendor',
-      type: 'physical',
-      items: [
-        {
-          id: 'item-1',
-          productId: 'prod-v-1',
-          title: 'Nova Pro Wireless ANC Headphones',
-          price: 229.0,
-          quantity: 1,
-          maxStock: 25,
-          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',
-          sellerId: 'vendor-tech-1',
-          sellerName: 'SoundWave Direct',
-          sellerType: 'vendor',
-          type: 'physical',
-        },
-      ],
-      subtotal: 229.0,
-      shippingFee: 8.5,
-      commissionRate: 0.1, // 10% platform commission
-      commissionAmount: 22.9,
-      netPayout: 214.6,
-      status: 'confirmed',
-      deliveryCode: '4921',
-      history: [
-        { status: 'placed', timestamp: '2026-10-08T10:15:00Z', actor: 'Customer', note: 'Order placed by buyer' },
-        { status: 'confirmed', timestamp: '2026-10-08T10:45:00Z', actor: 'Vendor', note: 'Order accepted by merchant' },
-      ],
-      createdAt: '2026-10-08T10:15:00Z',
-    };
-  });
+  const subOrder = packageQuery.data;
 
   // Carrier tracking state
-  const [carrier, setCarrier] = useState('Vendora Express Rider');
-  const [trackingNumber, setTrackingNumber] = useState('TRK-98421-VND');
+  const [carrier, setCarrier] = useState('');
+  const [trackingNumber, setTrackingNumber] = useState('');
   const [trackingSaved, setTrackingSaved] = useState(false);
+
+  // The form mirrors the row the database holds, once it lands.
+  useEffect(() => {
+    if (!subOrder) return;
+    setCarrier(subOrder.carrierName ?? '');
+    setTrackingNumber(subOrder.trackingNumber ?? '');
+  }, [subOrder]);
 
   // Modals state
   const [isPackingSlipOpen, setIsPackingSlipOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('Out of stock');
   const [cancelNotes, setCancelNotes] = useState('');
-  const [copiedPIN, setCopiedPIN] = useState(false);
 
   // Message Customer Modal
   const [isMessageCustomerOpen, setIsMessageCustomerOpen] = useState(false);
   const [customerMessage, setCustomerMessage] = useState('');
   const [messageSentToast, setMessageSentToast] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
+  // The handover PIN is hashed on the way in and verified by the rider, so no workspace
+  // screen can read it back - there is nothing to display or copy here.
+  const address = subOrder?.buyerAddress;
   const customerAddress = {
-    fullName: 'Sarah Customer',
-    street: '742 Evergreen Terrace, Apt 4B',
-    city: 'Springfield',
-    state: 'OR',
-    zipCode: '97477',
-    country: 'United States',
-    phone: '+1 (555) 019-2834',
-    orderNotes: 'Please leave the package by the front door behind the planter box.',
+    fullName: address?.fullName || subOrder?.buyerEmail || 'Buyer',
+    street: address?.street ?? '',
+    city: address?.city ?? '',
+    state: address?.state ?? '',
+    zipCode: address?.zipCode ?? '',
+    country: address?.country ?? '',
+    phone: address?.phone ?? '',
+    orderNotes: subOrder?.customerNotes ?? '',
   };
 
-  const handleAdvanceStatus = (nextStatus: SubOrderStatus) => {
-    const updated: SubOrder = {
-      ...subOrder,
-      status: nextStatus,
-      history: [
-        ...subOrder.history,
-        {
-          status: nextStatus,
-          timestamp: new Date().toISOString(),
-          actor: 'Vendor',
-          note: `Status updated to ${nextStatus}`,
-        },
-      ],
-    };
-    setSubOrder(updated);
-  };
+  // A thread is opened by the buyer (`threads_insert_customer`), so a store can only reply
+  // inside one the buyer started for this order.
+  const orderThread = (threadsQuery.data ?? []).find(
+    (thread) => thread.orderRef === subOrder?.orderGroupId,
+  );
 
-  const handleSaveTracking = (e: React.FormEvent) => {
-    e.preventDefault();
-    setTrackingSaved(true);
-    setTimeout(() => setTrackingSaved(false), 2500);
-  };
+  // The packing slip prints the store's own pickup origin, so an unsaved Shipping page
+  // prints a warning rather than an invented warehouse.
+  const origin = [
+    shippingQuery.data?.warehouseName,
+    shippingQuery.data?.street,
+    shippingQuery.data?.city,
+    shippingQuery.data?.state,
+    shippingQuery.data?.zipCode,
+  ].filter((part): part is string => Boolean(part));
 
-  const handleCancelOrder = (e: React.FormEvent) => {
-    e.preventDefault();
-    const updated: SubOrder = {
-      ...subOrder,
-      status: 'cancelled',
-      returnReason: cancelReason,
-      history: [
-        ...subOrder.history,
-        {
-          status: 'cancelled',
-          timestamp: new Date().toISOString(),
-          actor: 'Vendor',
-          note: `Merchant cancelled order: ${cancelReason}. Note: ${cancelNotes}`,
-        },
-      ],
-    };
-    setSubOrder(updated);
-    setIsCancelModalOpen(false);
-  };
 
-  const handleCopyPIN = () => {
-    if (subOrder.deliveryCode) {
-      navigator.clipboard.writeText(subOrder.deliveryCode);
-      setCopiedPIN(true);
-      setTimeout(() => setCopiedPIN(false), 2000);
+  const handleAdvanceStatus = async (nextStatus: SubOrderStatus) => {
+    setActionError(null);
+    try {
+      await advanceStatus.mutateAsync({
+        subOrderId: subOrder!.id,
+        nextStatus,
+        note: `Status updated to ${nextStatus}`,
+      });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not update this package.');
     }
   };
+
+  const handleSaveTracking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionError(null);
+    try {
+      await saveTracking.mutateAsync({
+        subOrderId: subOrder!.id,
+        carrierName: carrier,
+        trackingNumber,
+      });
+      setTrackingSaved(true);
+      setTimeout(() => setTrackingSaved(false), 2500);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not record the tracking details.');
+    }
+  };
+
+  const handleCancelOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionError(null);
+    try {
+      await advanceStatus.mutateAsync({
+        subOrderId: subOrder!.id,
+        nextStatus: 'cancelled',
+        note: `Merchant cancelled: ${cancelReason}${cancelNotes ? `. Note: ${cancelNotes}` : ''}`,
+      });
+      setIsCancelModalOpen(false);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not cancel this package.');
+    }
+  };
+
+  if (packageQuery.isPending || !subOrder) {
+    return (
+      <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-xs font-semibold text-slate-600">
+          {packageQuery.isError
+            ? `This package could not be loaded: ${
+                packageQuery.error instanceof Error ? packageQuery.error.message : 'unknown error'
+              }`
+            : 'Loading the package…'}
+        </div>
+      </WorkspaceLayout>
+    );
+  }
 
   return (
     <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
@@ -187,14 +203,16 @@ export const VendorOrderDetailPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsPackingSlipOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Printer className="h-3.5 w-3.5 text-slate-500" />
-              Print Packing Slip & Label
-            </button>
+            {subOrder.type === 'physical' && (
+              <button
+                type="button"
+                onClick={() => setIsPackingSlipOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <Printer className="h-3.5 w-3.5 text-slate-500" />
+                Print Packing Slip &amp; Label
+              </button>
+            )}
 
             <button
               type="button"
@@ -205,7 +223,9 @@ export const VendorOrderDetailPage: React.FC = () => {
               Message Customer
             </button>
 
-            {subOrder.status !== 'cancelled' && subOrder.status !== 'delivered' && (
+            {/* A store may cancel only while the package is still its own to hold:
+                `advance_sub_order_status` refuses 'cancelled' once the courier has it. */}
+            {CANCEL_ELIGIBLE.includes(subOrder.status) && (
               <button
                 type="button"
                 onClick={() => setIsCancelModalOpen(true)}
@@ -225,6 +245,13 @@ export const VendorOrderDetailPage: React.FC = () => {
           </div>
         )}
 
+        {actionError && (
+          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs font-bold text-rose-800 flex items-center gap-2">
+            <Ban className="h-4 w-4" />
+            {actionError}
+          </div>
+        )}
+
         {/* Fulfillment Lifecycle Stepper Action Bar */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
           <div className="flex items-center justify-between mb-4">
@@ -240,7 +267,16 @@ export const VendorOrderDetailPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {subOrder.status === 'placed' && (
+            {subOrder.type === 'digital' && (
+              <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <Package className="h-4 w-4 text-slate-400" />
+                {subOrder.licenseKey
+                  ? 'License key delivered to the buyer.'
+                  : 'Nothing to pack or ship - this is a digital package, and the platform issues the key.'}
+              </span>
+            )}
+
+            {subOrder.type === 'physical' && subOrder.status === 'placed' && (
               <button
                 type="button"
                 onClick={() => handleAdvanceStatus('confirmed')}
@@ -250,7 +286,7 @@ export const VendorOrderDetailPage: React.FC = () => {
               </button>
             )}
 
-            {subOrder.status === 'confirmed' && (
+            {subOrder.type === 'physical' && subOrder.status === 'confirmed' && (
               <button
                 type="button"
                 onClick={() => handleAdvanceStatus('packed')}
@@ -260,7 +296,7 @@ export const VendorOrderDetailPage: React.FC = () => {
               </button>
             )}
 
-            {subOrder.status === 'packed' && (
+            {subOrder.type === 'physical' && subOrder.status === 'packed' && (
               <button
                 type="button"
                 onClick={() => handleAdvanceStatus('ready_for_pickup')}
@@ -272,31 +308,40 @@ export const VendorOrderDetailPage: React.FC = () => {
             )}
 
             {subOrder.status === 'ready_for_pickup' && (
-              <button
-                type="button"
-                onClick={() => handleAdvanceStatus('shipped')}
-                className="rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Mark Shipped
-              </button>
+              <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <Truck className="h-4 w-4 text-slate-400" />
+                Waiting for the courier to scan this package in. Handover is recorded by the rider, not by the store.
+              </span>
             )}
 
-            {subOrder.status === 'shipped' && (
-              <button
-                type="button"
-                onClick={() => handleAdvanceStatus('delivered')}
-                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Mark Delivered
-              </button>
+            {(subOrder.status === 'shipped' || subOrder.status === 'out_for_delivery') && (
+              <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <Truck className="h-4 w-4 text-slate-400" />
+                In the courier&rsquo;s hands &mdash; the rider records every milestone from here to delivery.
+              </span>
             )}
 
             {subOrder.status === 'delivered' && (
               <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                Fulfillment Complete: Customer confirmed delivery.
+                Fulfillment Complete: the courier confirmed delivery.
+              </span>
+            )}
+
+            {(subOrder.status === 'return_requested'
+              || subOrder.status === 'return_approved'
+              || subOrder.status === 'returned'
+              || subOrder.status === 'return_rejected'
+              || subOrder.status === 'refunded'
+              || subOrder.status === 'delivery_failed'
+              || subOrder.status === 'cancelled') && (
+              <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <Ban className="h-4 w-4 text-slate-400" />
+                {subOrder.status === 'return_requested'
+                  ? 'A return decision is made on the Returns page, not here.'
+                  : subOrder.status === 'cancelled'
+                    ? 'This package is cancelled - nothing further to do.'
+                    : 'This package is outside the fulfilment steps - the platform handles what comes next.'}
               </span>
             )}
           </div>
@@ -384,82 +429,74 @@ export const VendorOrderDetailPage: React.FC = () => {
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
               <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                 <Truck className="h-4 w-4 text-slate-500" />
-                Shipping & Carrier Details
+                {subOrder.type === 'physical' ? 'Shipping & Carrier Details' : 'Digital Delivery'}
               </h3>
 
-              <form onSubmit={handleSaveTracking} className="space-y-3 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Assigned Carrier</label>
-                  <select
-                    value={carrier}
-                    onChange={(e) => setCarrier(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-800 bg-slate-50/50"
-                  >
-                    <option value="Vendora Express Rider">Vendora Express Rider</option>
-                    <option value="FedEx">FedEx</option>
-                    <option value="DHL">DHL</option>
-                    <option value="UPS">UPS</option>
-                    <option value="USPS">USPS</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Courier Tracking Code</label>
-                  <input
-                    type="text"
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    placeholder="e.g. TRACK-883921"
-                    className="w-full rounded-xl border border-slate-200 p-2.5 font-mono text-slate-900"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 text-white py-2.5 font-bold hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  Save Tracking
-                </button>
-                {trackingSaved && (
-                  <p className="text-emerald-600 font-bold text-center mt-1">Tracking Saved!</p>
-                )}
-              </form>
-
-              <div className="mt-3 text-xs text-slate-600">
-                <span>Carrier: <strong>{carrier}</strong></span> •{' '}
-                <span>Tracking: <strong className="font-mono">{trackingNumber}</strong></span>
-                {trackingSaved && (
-                  <span className="ml-2 font-bold text-emerald-600 inline-flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> Saved!
-                  </span>
-                )}
-              </div>
-
-              {subOrder.deliveryCode && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Rider Handover PIN:</span>
-                    <div className="flex items-center gap-1.5">
+              {subOrder.type === 'digital' && (
+                <p className="text-xs text-slate-600">
+                  {subOrder.licenseKey ? (
+                    <>
+                      License key issued to the buyer:{' '}
                       <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">
-                        {subOrder.deliveryCode}
+                        {subOrder.licenseKey}
                       </span>
-                      <button
-                        type="button"
-                        onClick={handleCopyPIN}
-                        className="text-slate-400 hover:text-slate-600 p-1"
-                        title="Copy PIN"
-                      >
-                        {copiedPIN ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
+                    </>
+                  ) : (
+                    'Nothing to hand to a courier - this package is delivered as a license key, and the platform issues it.'
+                  )}
+                </p>
+              )}
+
+              {subOrder.type === 'physical' && (
+                <>
+                  <form onSubmit={handleSaveTracking} className="space-y-3 text-xs">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Assigned Carrier</label>
+                      <input
+                        type="text"
+                        list="vendor-carrier-options"
+                        value={carrier}
+                        onChange={(e) => setCarrier(e.target.value)}
+                        placeholder="Courier you are handing this package to"
+                        className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-800 bg-slate-50/50"
+                        required
+                      />
+                      <datalist id="vendor-carrier-options">
+                        {(activeProfile?.carriers ?? []).map((name) => (
+                          <option key={name} value={name} />
+                        ))}
+                      </datalist>
                     </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Courier Tracking Code</label>
+                      <input
+                        type="text"
+                        value={trackingNumber}
+                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        placeholder="e.g. TRACK-883921"
+                        className="w-full rounded-xl border border-slate-200 p-2.5 font-mono text-slate-900"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full flex items-center justify-center gap-1.5 rounded-full bg-slate-900 text-white py-2.5 font-bold hover:bg-slate-800 transition-colors cursor-pointer text-xs"
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      Save Tracking
+                    </button>
+                    {trackingSaved && (
+                      <p className="text-emerald-600 font-bold text-center mt-1">Tracking Saved!</p>
+                    )}
+                  </form>
+
+                  <div className="mt-3 text-xs text-slate-600">
+                    <span>Carrier: <strong>{carrier || 'not assigned'}</strong></span> •{' '}
+                    <span>Tracking: <strong className="font-mono">{trackingNumber || 'none recorded'}</strong></span>
                   </div>
-                </div>
+                </>
               )}
             </div>
 
@@ -470,17 +507,24 @@ export const VendorOrderDetailPage: React.FC = () => {
                 Customer Destination & Notes
               </h3>
 
-              <div>
-                <p className="font-bold text-slate-900 text-sm">{customerAddress.fullName}</p>
-                <p className="text-slate-600 mt-1 leading-relaxed">
-                  {customerAddress.street}
-                  <br />
-                  {customerAddress.city}, {customerAddress.state} {customerAddress.zipCode}
-                  <br />
-                  {customerAddress.country}
+              {address ? (
+                <div>
+                  <p className="font-bold text-slate-900 text-sm">{customerAddress.fullName}</p>
+                  <p className="text-slate-600 mt-1 leading-relaxed">
+                    {customerAddress.street}
+                    <br />
+                    {customerAddress.city}, {customerAddress.state} {customerAddress.zipCode}
+                    <br />
+                    {customerAddress.country}
+                  </p>
+                  <p className="text-slate-600 mt-1">Phone: {customerAddress.phone}</p>
+                </div>
+              ) : (
+                <p className="text-slate-600">
+                  {subOrder.buyerEmail || 'No buyer contact on this order.'} - nothing is shipped:
+                  this package is fulfilled digitally.
                 </p>
-                <p className="text-slate-600 mt-1">Phone: {customerAddress.phone}</p>
-              </div>
+              )}
 
               {customerAddress.orderNotes && (
                 <div className="pt-3 border-t border-slate-100 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
@@ -504,7 +548,8 @@ export const VendorOrderDetailPage: React.FC = () => {
                       Official Packing Slip & Shipping Label
                     </h3>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
-                      VENDORA EXPRESS • PRIORITY GROUND AIRWAY MANIFEST
+                      {carrier || 'Carrier not assigned'} &bull;{' '}
+                      {(subOrder.deliveryOption ?? 'standard').replace(/_/g, ' ')} manifest
                     </span>
                   </div>
                 </div>
@@ -518,12 +563,15 @@ export const VendorOrderDetailPage: React.FC = () => {
               </div>
 
               <div className="py-6 space-y-6 text-xs">
-                {/* Simulated Barcode */}
+                {/* The courier scans its own label into its network; this slip carries the
+                    tracking code you recorded, printed as a barcode for the picker. */}
                 <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="font-mono text-2xl tracking-widest font-black text-slate-900">
                     * ||| | |||| | ||| || ||| | *
                   </div>
-                  <span className="font-mono text-xs text-slate-500">{trackingNumber}</span>
+                  <span className="font-mono text-xs text-slate-500">
+                    {trackingNumber || 'No tracking code recorded yet'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -531,11 +579,17 @@ export const VendorOrderDetailPage: React.FC = () => {
                     <span className="font-bold uppercase text-slate-400 block mb-1">
                       SHIP FROM (ORIGIN WAREHOUSE):
                     </span>
-                    <p className="font-bold text-slate-900">{subOrder.sellerName}</p>
-                    <p className="text-slate-600">
-                      120 Industrial Parkway, Warehouse 4<br />
-                      San Leandro, CA 94577
-                    </p>
+                    {origin.length > 0 ? (
+                      <>
+                        <p className="font-bold text-slate-900">{origin[0]}</p>
+                        <p className="text-slate-600">{origin.slice(1).join(', ')}</p>
+                      </>
+                    ) : (
+                      <p className="text-amber-800 italic">
+                        No pickup address on file - add one under Shipping &amp; Logistics before
+                        printing a label.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <span className="font-bold uppercase text-slate-400 block mb-1">
@@ -606,8 +660,9 @@ export const VendorOrderDetailPage: React.FC = () => {
                 Cancel Sub-Order #{subOrder.id}
               </h3>
               <p className="text-xs text-slate-500 mb-4">
-                Cancelling this order will release all customer funds and issue a full automated
-                refund.
+                Cancelling records the cancellation on this package and writes it into the order
+                history. It does not restock the items and it does not refund the buyer &mdash;
+                stock is adjusted from Inventory, and the platform issues the refund.
               </p>
 
               <form onSubmit={handleCancelOrder} className="space-y-4 text-xs">
@@ -639,13 +694,13 @@ export const VendorOrderDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsCancelModalOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
+                    className="rounded-full border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-xs"
                   >
                     Keep Order
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-rose-600 px-4 py-2 font-bold text-white shadow-md hover:bg-rose-700"
+                    className="rounded-full bg-rose-600 px-4 py-2 font-bold text-white shadow-md hover:bg-rose-700 cursor-pointer text-xs"
                   >
                     Confirm Cancellation
                   </button>
@@ -671,15 +726,32 @@ export const VendorOrderDetailPage: React.FC = () => {
               </p>
 
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  setIsMessageCustomerOpen(false);
-                  setCustomerMessage('');
-                  setMessageSentToast(true);
-                  setTimeout(() => setMessageSentToast(false), 3000);
+                  const textToSend = customerMessage.trim();
+                  if (!textToSend || !orderThread) return;
+                  setActionError(null);
+                  try {
+                    await sendMessage.mutateAsync({ threadId: orderThread.id, body: textToSend });
+                    setIsMessageCustomerOpen(false);
+                    setCustomerMessage('');
+                    setMessageSentToast(true);
+                    setTimeout(() => setMessageSentToast(false), 3000);
+                  } catch (err) {
+                    setActionError(
+                      err instanceof Error ? err.message : 'Could not send the message.',
+                    );
+                  }
                 }}
                 className="space-y-4 text-xs"
               >
+                {!orderThread && (
+                  <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-600">
+                    This buyer has not opened a conversation about the order, and only the buyer
+                    can start one. Use the customer messages workspace to reply to threads that
+                    exist, or contact the buyer through the order’s own support channel.
+                  </p>
+                )}
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Message Content</label>
                   <textarea
@@ -696,22 +768,16 @@ export const VendorOrderDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsMessageCustomerOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
+                    className="rounded-full border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsMessageCustomerOpen(false);
-                      setCustomerMessage('');
-                      setMessageSentToast(true);
-                      setTimeout(() => setMessageSentToast(false), 3000);
-                    }}
-                    className="rounded-xl bg-[#FF7A1A] px-4 py-2 font-bold text-white shadow-md hover:bg-[#EA580C]"
+                    disabled={!orderThread || sendMessage.isPending}
+                    className="rounded-full bg-sun-orange px-5 py-2 font-bold text-white shadow-md hover:shadow-orange-glow hover:bg-sun-orange-600 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Send Message to Customer
+                    {sendMessage.isPending ? 'Sending…' : 'Send Message to Customer'}
                   </button>
                 </div>
               </form>

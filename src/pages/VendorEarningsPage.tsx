@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   FileText,
   Download,
-  ShieldCheck,
   Search,
   CheckCircle2,
+  AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
 import {
   Dialog,
   DialogContent,
@@ -17,172 +18,182 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { exportToCsv } from '../lib/export-csv';
+import { useVendorBalance, useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
 
-interface LedgerRecord {
-  id: string;
-  datetime: string;
-  refOrder: string;
-  type: 'Sale' | 'Refund' | 'Fee' | 'Promotion Reimb.';
-  gross: number;
-  fee: number;
-  net: number;
-  status: 'Settled' | 'Processing';
-}
+/** The picker's labels mapped onto the months of history `vendor_earnings` reads. */
+const RANGE_MONTHS: Record<'30d' | '90d' | '1y' | 'ytd', number> = {
+  '30d': 1,
+  '90d': 3,
+  '1y': 12,
+  ytd: new Date().getMonth() + 1,
+};
+
+const money = (value: number) =>
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** 'YYYY-MM' from the RPC to the month's short name. */
+const monthLabel = (month: string) => {
+  const [year, number] = month.split('-');
+  const date = new Date(Number(year), Number(number) - 1, 1);
+  return Number.isNaN(date.getTime())
+    ? month
+    : `${date.toLocaleDateString('en-US', { month: 'short' })} ${String(year).slice(2)}`;
+};
+
+const longMonth = (month: string) => {
+  const [year, number] = month.split('-');
+  const date = new Date(Number(year), Number(number) - 1, 1);
+  return Number.isNaN(date.getTime())
+    ? month
+    : `${date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+};
+
+/** The statuses `vendor_earnings` counts as settled; anything else is still open. */
+const isSettled = (status: string) => status === 'delivered' || status === 'available';
 
 export const VendorEarningsPage: React.FC = () => {
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
-  const [isTaxDocModalOpen, setIsTaxDocModalOpen] = useState(false);
-  const [statementFormat, setStatementFormat] = useState<'pdf' | 'csv'>('csv');
-  const [activeTab, setActiveTab] = useState<'All' | 'Sales' | 'Refunds' | 'Fees'>('All');
+  const [timeRange, setTimeRange] = useState<'30d' | '90d' | '1y' | 'ytd'>('90d');
+  const [activeTab, setActiveTab] = useState<'All' | 'Physical' | 'Digital'>('All');
+  const [settlementFilter, setSettlementFilter] = useState<'all' | 'settled' | 'open'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [timeRange, setTimeRange] = useState<'30d' | '90d' | '1y' | 'ytd'>('30d');
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP'>('USD');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 8;
+  const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
+  const [statementMonth, setStatementMonth] = useState<string>('window');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const months = RANGE_MONTHS[timeRange];
+  const earnings = useVendorEarnings(months);
+  const balance = useVendorBalance();
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleDownloadTaxPdf = (year: string) => {
-    const element = document.createElement('a');
-    const content = `IRS FORM 1099-K (${year})\nRecipient: Nova Electronics\nTIN: ***-**-4921\nGross Payment Volume: $34,820.00\nPlatform: Vendora Marketplace Inc.\nStatus: Certified\nGenerated: ${new Date().toLocaleDateString()}`;
-    const file = new Blob([content], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `Form-1099-K-${year}-Nova-Electronics.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-    showToast(`Downloaded ${year} Form 1099-K`);
-  };
+  const totals = earnings.data?.totals;
+  const series = earnings.data?.months ?? [];
+  const ledger = earnings.data?.ledger ?? [];
+  const wallet = balance.data;
 
-  const ledgerRecords: LedgerRecord[] = [
-    {
-      id: 'TXN-884929-81',
-      datetime: 'May 28, 2024 • 14:32',
-      refOrder: '#ORD-9821',
-      type: 'Sale',
-      gross: 349.0,
-      fee: -41.88,
-      net: 307.12,
-      status: 'Settled',
-    },
-    {
-      id: 'TXN-884918-84',
-      datetime: 'May 28, 2024 • 11:15',
-      refOrder: '#ORD-9820',
-      type: 'Sale',
-      gross: 129.5,
-      fee: -15.54,
-      net: 113.96,
-      status: 'Settled',
-    },
-    {
-      id: 'TXN-884893-89',
-      datetime: 'May 27, 2024 • 19:04',
-      refOrder: '#ORD-9812',
-      type: 'Refund',
-      gross: -210.0,
-      fee: 25.2,
-      net: -184.8,
-      status: 'Settled',
-    },
-    {
-      id: 'TXN-884852-82',
-      datetime: 'May 27, 2024 • 09:20',
-      refOrder: '#ORD-9807',
-      type: 'Sale',
-      gross: 890.0,
-      fee: -106.8,
-      net: 783.2,
-      status: 'Processing',
-    },
-    {
-      id: 'TXN-884799-81',
-      datetime: 'May 26, 2024 • 16:48',
-      refOrder: '#ORD-9799',
-      type: 'Sale',
-      gross: 450.0,
-      fee: -54.0,
-      net: 396.0,
-      status: 'Settled',
-    },
-    {
-      id: 'TXN-884743-89',
-      datetime: 'May 26, 2024 • 10:11',
-      refOrder: '#ORD-9788',
-      type: 'Promotion Reimb.',
-      gross: 45.0,
-      fee: 0.0,
-      net: 45.0,
-      status: 'Settled',
-    },
-  ];
+  const maxMonth = series.reduce((max, m) => Math.max(max, m.gross), 0);
+  const peakMonth = series.reduce((peak, m) => (m.gross > (peak?.gross ?? 0) ? m : peak), null as null | (typeof series)[number]);
 
-  const filteredRecords = ledgerRecords.filter((r) => {
-    if (activeTab === 'Sales' && r.type !== 'Sale') return false;
-    if (activeTab === 'Refunds' && r.type !== 'Refund') return false;
-    if (activeTab === 'Fees' && r.type !== 'Fee') return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        r.id.toLowerCase().includes(q) ||
-        r.refOrder.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
-
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage) || 1;
-  const paginatedRecords = filteredRecords.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  /** Months that actually booked something, newest first: the only periods worth stating. */
+  const monthsWithData = useMemo(
+    () => series.filter((m) => m.gross > 0 || m.packages > 0).reverse(),
+    [series],
   );
 
+  /** A polyline across a 900x200 box, scaled to the biggest month in the window. */
+  const points = (pick: (m: (typeof series)[number]) => number) =>
+    series
+      .map((m, i) => {
+        const x = series.length === 1 ? 450 : (i / (series.length - 1)) * 890 + 5;
+        const y = maxMonth > 0 ? 190 - (pick(m) / maxMonth) * 170 : 190;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+  const grossPoints = points((m) => m.gross);
+  const netPoints = points((m) => m.net);
+
+  const filteredLedger = useMemo(
+    () =>
+      ledger.filter((r) => {
+        if (activeTab === 'Physical' && r.type !== 'physical') return false;
+        if (activeTab === 'Digital' && r.type !== 'digital') return false;
+        if (settlementFilter === 'settled' && !isSettled(r.status)) return false;
+        if (settlementFilter === 'open' && isSettled(r.status)) return false;
+        if (searchQuery) {
+          return r.id.toLowerCase().includes(searchQuery.toLowerCase());
+        }
+        return true;
+      }),
+    [ledger, activeTab, settlementFilter, searchQuery],
+  );
+
+  const totalPages = Math.ceil(filteredLedger.length / itemsPerPage) || 1;
+  const pagedLedger = filteredLedger.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const statementRows = () =>
+    statementMonth === 'window'
+      ? filteredLedger
+      : ledger.filter((r) => r.settledAt.slice(0, 7) === statementMonth);
+
+  const exportStatement = () => {
+    const rows = statementRows().map((r) => ({
+      packageId: r.id,
+      status: r.status,
+      type: r.type,
+      goodsSubtotal: r.subtotal.toFixed(2),
+      freight: r.shipping.toFixed(2),
+      gross: r.gross.toFixed(2),
+      commission: r.fees.toFixed(2),
+      netToStore: r.net.toFixed(2),
+      settledAt: r.settledAt,
+    }));
+    exportToCsv(`vendor-statement-${statementMonth}-${new Date().toISOString().slice(0, 10)}.csv`, rows, {
+      packageId: 'Package ID',
+      status: 'Package Status',
+      type: 'Fulfilment Type',
+      goodsSubtotal: 'Goods Subtotal ($)',
+      freight: 'Freight ($)',
+      gross: 'Gross Booked ($)',
+      commission: 'Commission ($)',
+      netToStore: 'Net To Store ($)',
+      settledAt: 'Settled At',
+    });
+    setIsStatementModalOpen(false);
+    showToast(
+      rows.length === 0
+        ? 'That period booked nothing - the statement is an empty ledger.'
+        : `Exported ${rows.length} ledger line${rows.length === 1 ? '' : 's'}.`,
+    );
+  };
+
+  const isLoading = earnings.isPending;
+  const loadError = earnings.error ?? balance.error;
+
+  /** Shares of the goods subtotal, which is what the commission is taken on. */
+  const netMarginPct = totals && totals.subtotal > 0 ? (totals.net / totals.subtotal) * 100 : null;
+  const feePct = totals && totals.subtotal > 0 ? (totals.fees / totals.subtotal) * 100 : null;
+  const avgMonthGross = series.length > 0 ? series.reduce((s, m) => s + m.gross, 0) / series.length : 0;
+  const avgNetPerPackage = totals && totals.packages > 0 ? totals.net / totals.packages : 0;
+
   return (
-    <WorkspaceLayout
-      role="vendor"
-      roleBadgeText="VENDOR PARTNER"
-      sidebar={<VendorNav onOpenAddProduct={() => setIsProductModalOpen(true)} />}
-    >
+    <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
       <div className="space-y-6">
-        {/* ── Breadcrumb & Page Header ────────────────────────────── */}
+        {/* ── Page Header ───────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               FINANCIAL MANAGEMENT <span className="text-slate-300">/</span> EARNINGS
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-              Earnings &amp; Financial Analytics
+              Earnings &amp; Settlement Ledger
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Review gross merchandise value, marketplace commissions, tax deductions, and net seller profit margins.
+            <p className="mt-1 text-xs text-slate-500 max-w-2xl">
+              Every figure here is summed by Postgres from your packages, using the same columns a
+              payout is settled against. Cancelled packages are excluded.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
+              onChange={(e) => {
+                setTimeRange(e.target.value as '30d' | '90d' | '1y' | 'ytd');
+                setCurrentPage(1);
+              }}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
             >
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-              <option value="1y">Last 12 Months</option>
-              <option value="ytd">Year to Date (YTD)</option>
-            </select>
-
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value as any)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
-            >
-              <option value="USD">$ (USD)</option>
-              <option value="EUR">€ (EUR)</option>
-              <option value="GBP">£ (GBP)</option>
+              <option value="30d">Last 1 month</option>
+              <option value="90d">Last 3 months</option>
+              <option value="1y">Last 12 months</option>
+              <option value="ytd">Year to date</option>
             </select>
 
             <button
@@ -190,343 +201,347 @@ export const VendorEarningsPage: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors"
             >
               <FileText className="h-4 w-4" />
-              Statement PDF/CSV
+              Statement CSV
             </button>
           </div>
         </div>
 
-        {/* ── 4 Top KPI Cards ─────────────────────────────────────── */}
+        {loadError && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-600" />
+            <span>{loadError instanceof Error ? loadError.message : String(loadError)}</span>
+            <button
+              type="button"
+              onClick={() => {
+                void earnings.refetch();
+                void balance.refetch();
+              }}
+              className="ml-auto rounded-lg border border-rose-200 px-2.5 py-1 hover:bg-rose-100 cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* ── KPI Cards ─────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Card 1: Gross Merchandise Value */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>GROSS MERCHANDISE VALUE</span>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              GROSS BOOKED
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {totals ? money(totals.gross) : '—'}
+            </div>
+            <div className="mt-2 text-xs text-slate-500 font-medium">
+              {totals ? `${totals.packages} package${totals.packages === 1 ? '' : 's'} · freight included` : 'Reading your ledger…'}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                NET TO YOUR STORE
+              </span>
               <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                +18.2%
+                goods − commission
               </span>
             </div>
-            <div className="mt-3 text-3xl font-extrabold text-slate-900">$14,923.40</div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {totals ? money(totals.net) : '—'}
+            </div>
             <div className="mt-2 text-xs text-slate-500 font-medium">
-              342 total customer orders
+              {netMarginPct === null
+                ? 'No settled goods yet'
+                : `${netMarginPct.toFixed(1)}% of your goods subtotal`}
             </div>
           </div>
 
-          {/* Card 2: Net Profit Disbursable */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>NET PROFIT DISBURSABLE</span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                +19.4%
-              </span>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              MARKETPLACE COMMISSION
             </div>
-            <div className="mt-3 text-3xl font-extrabold text-slate-900">$12,431.89</div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {totals ? `-${money(totals.fees)}` : '—'}
+            </div>
             <div className="mt-2 text-xs text-slate-500 font-medium">
-              83.3% net seller margin rate
+              {feePct === null
+                ? 'Taken per package at its category rate'
+                : `${feePct.toFixed(1)}% of goods · never on freight`}
             </div>
           </div>
 
-          {/* Card 3: Marketplace Fees & Comm */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>MARKETPLACE FEES &amp; COMM</span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
-                12.0% blended
-              </span>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              AVAILABLE TO WITHDRAW
             </div>
-            <div className="mt-3 text-3xl font-extrabold text-slate-900">-$1,790.81</div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {wallet ? money(wallet.available) : '—'}
+            </div>
             <div className="mt-2 text-xs text-slate-500 font-medium">
-              Platform commission &amp; handling
+              {wallet
+                ? `${money(wallet.reserve)} held in reserve · ${wallet.pendingPayouts} payout${wallet.pendingPayouts === 1 ? '' : 's'} pending`
+                : 'Reading your balance…'}
             </div>
-          </div>
-
-          {/* Card 4: Refunds & Chargebacks */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>REFUNDS &amp; CHARGEBACKS</span>
-              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                ↓ -4.7%
-              </span>
-            </div>
-            <div className="mt-3 text-3xl font-extrabold text-slate-900">-$700.70</div>
-            <div className="mt-2 text-xs text-slate-500 font-medium">
-              4 approved return claims deducted
-            </div>
+            <Link
+              to="/vendor/payouts"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-slate-900 hover:underline"
+            >
+              Request a payout <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
 
-        {/* ── Mid Section: Velocity Chart & Fee Breakdown (7 cols / 5 cols) ── */}
+        {/* ── Monthly series & fee waterfall ────────────────────── */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left: Revenue & Net Profit Velocity (7 cols) */}
           <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Revenue &amp; Net Profit Velocity
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Daily volume comparison between Gross Sales and Net Settled Payouts
-                  </p>
-                </div>
+              <h2 className="text-base font-bold text-slate-900">Monthly Gross &amp; Net</h2>
+              <p className="text-xs text-slate-500">
+                One point per calendar month, bucketed by the date each package settled.
+              </p>
 
-                <div className="flex items-center gap-4 text-xs font-semibold">
-                  <div className="flex items-center gap-1.5 text-slate-800">
-                    <span className="h-2.5 w-2.5 rounded-xs bg-slate-900" />
-                    <span>Gross GMV</span>
+              <div className="mt-6 h-56 w-full">
+                {series.length === 0 || maxMonth === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                    <p className="text-xs font-semibold text-slate-600">
+                      Nothing booked in this window
+                    </p>
+                    <p className="text-[11px] mt-0.5">
+                      Widen the range, or the chart fills as packages settle.
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-500">
-                    <span className="h-2 w-2 rounded-full border border-slate-400 bg-slate-200" />
-                    <span>Net Disbursed</span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 900 200" className="w-full h-full overflow-visible">
+                      <defs>
+                        <linearGradient id="grossGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0f172a" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#0f172a" stopOpacity="0.02" />
+                        </linearGradient>
+                      </defs>
+                      <line x1="0" y1="30" x2="900" y2="30" stroke="#f1f5f9" strokeDasharray="4 4" />
+                      <line x1="0" y1="75" x2="900" y2="75" stroke="#f1f5f9" strokeDasharray="4 4" />
+                      <line x1="0" y1="120" x2="900" y2="120" stroke="#f1f5f9" strokeDasharray="4 4" />
+                      <line x1="0" y1="190" x2="900" y2="190" stroke="#e2e8f0" />
+                      <polyline
+                        points={`5,190 ${grossPoints} 895,190`}
+                        fill="url(#grossGradient)"
+                        stroke="none"
+                      />
+                      <polyline
+                        points={grossPoints}
+                        fill="none"
+                        stroke="#0f172a"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                      <polyline
+                        points={netPoints}
+                        fill="none"
+                        stroke="#64748b"
+                        strokeWidth="2"
+                        strokeDasharray="4 4"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 px-1">
+                      {series.map((m) => (
+                        <span key={m.month}>{monthLabel(m.month)}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Area SVG Chart */}
-              <div className="mt-6 h-56 w-full">
-                <svg viewBox="0 0 500 180" className="w-full h-full overflow-visible">
-                  <defs>
-                    <linearGradient id="grossGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#0f172a" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#0f172a" stopOpacity="0.02" />
-                    </linearGradient>
-                    <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#94a3b8" stopOpacity="0.02" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Horizontal Guide lines */}
-                  <line x1="0" y1="30" x2="500" y2="30" stroke="#f1f5f9" strokeDasharray="4 4" />
-                  <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" strokeDasharray="4 4" />
-                  <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" strokeDasharray="4 4" />
-                  <line x1="0" y1="160" x2="500" y2="160" stroke="#e2e8f0" />
-
-                  {/* Gross GMV Area & Line */}
-                  <path
-                    d="M 0,140 Q 60,130 100,105 T 200,90 T 300,70 T 400,45 T 500,35 L 500,160 L 0,160 Z"
-                    fill="url(#grossGradient)"
-                  />
-                  <path
-                    d="M 0,140 Q 60,130 100,105 T 200,90 T 300,70 T 400,45 T 500,35"
-                    fill="none"
-                    stroke="#0f172a"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Net Disbursed Area & Dashed Line */}
-                  <path
-                    d="M 0,150 Q 60,145 100,125 T 200,110 T 300,90 T 400,70 T 500,55 L 500,160 L 0,160 Z"
-                    fill="url(#netGradient)"
-                  />
-                  <path
-                    d="M 0,150 Q 60,145 100,125 T 200,110 T 300,90 T 400,70 T 500,55"
-                    fill="none"
-                    stroke="#64748b"
-                    strokeWidth="2"
-                    strokeDasharray="4 4"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Point circles */}
-                  <circle cx="300" cy="70" r="4" fill="#0f172a" />
-                  <circle cx="300" cy="90" r="3.5" fill="#64748b" />
-                  <circle cx="500" cy="35" r="4" fill="#0f172a" />
-                  <circle cx="500" cy="55" r="3.5" fill="#64748b" />
-                </svg>
-
-                {/* X Axis Labels */}
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1">
-                  <span>May 01</span>
-                  <span>May 06</span>
-                  <span>May 12</span>
-                  <span>May 18</span>
-                  <span>May 24</span>
-                  <span>May 30</span>
-                </div>
+              <div className="flex items-center gap-4 text-xs font-semibold mt-3">
+                <span className="flex items-center gap-1.5 text-slate-800">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-slate-900" /> Gross booked
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-500">
+                  <span className="h-2 w-2 rounded-full border border-slate-400 bg-slate-200" /> Net to store
+                </span>
               </div>
             </div>
 
-            {/* 3 Metric Pills at bottom */}
             <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="rounded-lg bg-slate-50 p-3">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Daily Average Gross
+                  Average Month (Gross)
                 </div>
-                <div className="mt-1 text-lg font-black text-slate-900">$497.44</div>
+                <div className="mt-1 text-lg font-black text-slate-900">{money(avgMonthGross)}</div>
+                <div className="text-[10px] text-slate-400">across {series.length} months</div>
               </div>
-
               <div className="rounded-lg bg-slate-50 p-3">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Peak Single Day
+                  Peak Month (Gross)
                 </div>
-                <div className="mt-1 text-lg font-black text-slate-900">$1,284.10</div>
+                <div className="mt-1 text-lg font-black text-slate-900">
+                  {peakMonth ? money(peakMonth.gross) : '—'}
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  {peakMonth ? longMonth(peakMonth.month) : 'no month has booked yet'}
+                </div>
               </div>
-
               <div className="rounded-lg bg-slate-50 p-3">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Avg Net Order Realization
+                  Avg Net Per Package
                 </div>
-                <div className="mt-1 text-lg font-black text-slate-900">$36.35</div>
+                <div className="mt-1 text-lg font-black text-slate-900">{money(avgNetPerPackage)}</div>
+                <div className="text-[10px] text-slate-400">
+                  {totals ? `over ${totals.packages} package${totals.packages === 1 ? '' : 's'}` : '—'}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right: Fee & Cost Breakdown (5 cols) */}
+          {/* Fee & cost breakdown, from the totals the RPC returned */}
           <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between space-y-4">
             <div>
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-slate-900">Fee &amp; Cost Breakdown</h2>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  Normalized
-                </span>
-              </div>
+              <h2 className="text-base font-bold text-slate-900">How Gross Becomes Net</h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Waterfall deduction analysis from gross sales
+                The commission is taken on goods only; freight the buyer paid is reported apart and
+                never enters your payout.
               </p>
 
-              {/* Waterfall items */}
               <div className="mt-5 space-y-3.5 text-xs">
-                {/* 1 */}
                 <div>
                   <div className="flex justify-between font-bold text-slate-900">
-                    <span>Product Gross Sales</span>
-                    <span>$14,923.40 (100%)</span>
+                    <span>Goods subtotal</span>
+                    <span>{totals ? money(totals.subtotal) : '—'}</span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                     <div className="h-full bg-slate-900 rounded-full" style={{ width: '100%' }} />
                   </div>
                 </div>
 
-                {/* 2 */}
                 <div>
                   <div className="flex justify-between font-medium text-slate-600">
-                    <span>Marketplace Category Commission</span>
-                    <span className="font-bold text-rose-600">-$1,790.81 (12.0%)</span>
+                    <span>Freight collected from buyers</span>
+                    <span className="font-bold text-slate-500">
+                      +{totals ? money(totals.shipping) : '—'}
+                    </span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full bg-rose-500 rounded-full" style={{ width: '12%' }} />
+                    <div
+                      className="h-full bg-slate-300 rounded-full"
+                      style={{
+                        width: `${totals && totals.subtotal > 0 ? Math.min(100, (totals.shipping / totals.subtotal) * 100) : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
 
-                {/* 3 */}
                 <div>
                   <div className="flex justify-between font-medium text-slate-600">
-                    <span>Payment Processing (2.9% + $0.30)</span>
-                    <span className="font-bold text-rose-600">-$432.78 (2.9%)</span>
+                    <span>Marketplace commission</span>
+                    <span className="font-bold text-rose-600">
+                      -{totals ? money(totals.fees) : '—'}
+                      {feePct === null ? '' : ` (${feePct.toFixed(1)}%)`}
+                    </span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full bg-rose-400 rounded-full" style={{ width: '2.9%' }} />
+                    <div
+                      className="h-full bg-rose-500 rounded-full"
+                      style={{ width: `${feePct === null ? 0 : Math.min(100, feePct)}%` }}
+                    />
                   </div>
                 </div>
 
-                {/* 4 */}
                 <div>
                   <div className="flex justify-between font-medium text-slate-600">
-                    <span>Shipping Label Subsidies</span>
-                    <span className="font-bold text-rose-600">-$210.00 (1.4%)</span>
+                    <span>Settled into your balance</span>
+                    <span className="font-bold text-emerald-700">
+                      {totals ? money(totals.settled) : '—'}
+                    </span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full bg-rose-400 rounded-full" style={{ width: '1.4%' }} />
+                    <div
+                      className="h-full bg-emerald-500 rounded-full"
+                      style={{
+                        width: `${totals && totals.net > 0 ? Math.min(100, (totals.settled / totals.net) * 100) : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
 
-                {/* 5 */}
                 <div>
                   <div className="flex justify-between font-medium text-slate-600">
-                    <span>Tax Collected &amp; Remitted (Vendora Marketplace)</span>
-                    <span className="text-slate-500">-$980.20 (Pass-through)</span>
+                    <span>Still awaiting settlement</span>
+                    <span className="font-bold text-amber-700">
+                      {totals ? money(totals.processing) : '—'}
+                    </span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full bg-slate-400 rounded-full" style={{ width: '6.5%' }} />
+                    <div
+                      className="h-full bg-amber-500 rounded-full"
+                      style={{
+                        width: `${totals && totals.net > 0 ? Math.min(100, (totals.processing / totals.net) * 100) : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Total realized payout highlight */}
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-                    NET REALIZED PAYOUT
+                    NET IN THIS WINDOW
                   </div>
-                  <div className="text-2xl font-black text-slate-900">$12,431.89</div>
+                  <div className="text-2xl font-black text-slate-900">
+                    {totals ? money(totals.net) : '—'}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] font-medium text-emerald-700">
-                    Effective take-home conversion
+                    Lifetime net across all windows
                   </div>
                   <span className="inline-block mt-0.5 rounded-full bg-emerald-600 px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
-                    83.3% Conversion
+                    {wallet ? money(wallet.lifetimeNet) : '—'}
                   </span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Form 1099-K Compliance Banner ───────────────────────── */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs shadow-2xs">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs">
-              <ShieldCheck className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-xs">
-                  Form 1099-K Compliance Status
-                </span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                  ✓ TIN Verified
-                </span>
-              </div>
-              <p className="mt-0.5 text-slate-500 text-[11px] leading-relaxed">
-                YTD Threshold: <strong className="text-slate-700">$12,431.89</strong> / $20,000.00 reporting limit (62.1% utilized). State sales tax remitted automatically under Marketplace Facilitator Laws.
+              <p className="mt-2 text-[10px] text-emerald-800/80">
+                Settled {totals ? money(totals.settled) : '—'} of that is already in your balance;
+                the rest waits on delivery.
               </p>
             </div>
           </div>
-
-          <button
-            onClick={() => setIsTaxDocModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 shrink-0 self-start sm:self-auto"
-          >
-            <FileText className="h-3.5 w-3.5 text-slate-500" />
-            <span>View Tax Documents</span>
-          </button>
         </div>
 
-        {/* ── Ledger Table: Earnings Ledger & Order Line Items ─────── */}
+        {/* ── Ledger ────────────────────────────────────────────── */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex flex-col gap-4">
             <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Earnings Ledger &amp; Order Line Items
-              </h2>
+              <h2 className="text-base font-bold text-slate-900">Settlement Ledger</h2>
               <p className="text-xs text-slate-500">
-                Auditable settlement record of credits, marketplace commissions, and disbursements
+                One line per package you have not cancelled, with the commission the database took
+                on it.
               </p>
             </div>
 
-            {/* Filter Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Filter Order ID or SKU..."
+                  placeholder="Filter by package id..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
                 />
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold">
-                  {(['All', 'Sales', 'Refunds', 'Fees'] as const).map((tab) => (
+                  {(['All', 'Physical', 'Digital'] as const).map((tab) => (
                     <button
                       key={tab}
-                      onClick={() => setActiveTab(tab)}
+                      onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
                       className={`rounded-md px-3 py-1 transition-all ${
                         activeTab === tab
                           ? 'bg-white text-slate-900 shadow-2xs font-bold'
@@ -538,22 +553,40 @@ export const VendorEarningsPage: React.FC = () => {
                   ))}
                 </div>
 
+                <select
+                  value={settlementFilter}
+                  onChange={(e) => setSettlementFilter(e.target.value as 'all' | 'settled' | 'open')}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
+                >
+                  <option value="all">Any settlement state</option>
+                  <option value="settled">Settled</option>
+                  <option value="open">Awaiting settlement</option>
+                </select>
+
                 <button
                   onClick={() => {
-                    exportToCsv({
-                      filename: `vendor-ledger-${new Date().toISOString().slice(0, 10)}.csv`,
-                      columns: [
-                        { header: 'Transaction ID', key: 'id' },
-                        { header: 'Datetime', key: 'datetime' },
-                        { header: 'Reference Order', key: 'refOrder' },
-                        { header: 'Type', key: 'type' },
-                        { header: 'Gross ($)', key: 'gross' },
-                        { header: 'Fee ($)', key: 'fee' },
-                        { header: 'Net Payout ($)', key: 'net' },
-                        { header: 'Settlement Status', key: 'status' },
-                      ],
-                      data: filteredRecords,
+                    exportToCsv(`vendor-ledger-${new Date().toISOString().slice(0, 10)}.csv`, filteredLedger.map((r) => ({
+                      packageId: r.id,
+                      status: r.status,
+                      type: r.type,
+                      goodsSubtotal: r.subtotal.toFixed(2),
+                      freight: r.shipping.toFixed(2),
+                      gross: r.gross.toFixed(2),
+                      commission: r.fees.toFixed(2),
+                      netToStore: r.net.toFixed(2),
+                      settledAt: r.settledAt,
+                    })), {
+                      packageId: 'Package ID',
+                      status: 'Package Status',
+                      type: 'Type',
+                      goodsSubtotal: 'Goods Subtotal ($)',
+                      freight: 'Freight ($)',
+                      gross: 'Gross Booked ($)',
+                      commission: 'Commission ($)',
+                      netToStore: 'Net To Store ($)',
+                      settledAt: 'Settled At',
                     });
+                    showToast(`Exported ${filteredLedger.length} visible ledger lines.`);
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
                   title="Export filtered records"
@@ -569,61 +602,71 @@ export const VendorEarningsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">DATE &amp; TIME</th>
-                  <th className="px-4 py-3">TRANSACTION ID</th>
-                  <th className="px-4 py-3">REFERENCE ORDER</th>
+                  <th className="px-4 py-3">SETTLED</th>
+                  <th className="px-4 py-3">PACKAGE</th>
                   <th className="px-4 py-3">TYPE</th>
-                  <th className="px-4 py-3">GROSS AMOUNT</th>
-                  <th className="px-4 py-3">FEE / COMM.</th>
-                  <th className="px-4 py-3">NET CREDITED</th>
-                  <th className="px-4 py-3 text-right">SETTLEMENT STATUS</th>
+                  <th className="px-4 py-3">GOODS</th>
+                  <th className="px-4 py-3">FREIGHT</th>
+                  <th className="px-4 py-3">GROSS</th>
+                  <th className="px-4 py-3">COMMISSION</th>
+                  <th className="px-4 py-3">NET</th>
+                  <th className="px-4 py-3 text-right">STATUS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {paginatedRecords.map((r) => (
+                {isLoading && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
+                      <p className="font-semibold text-slate-700">Reading your settlement ledger…</p>
+                    </td>
+                  </tr>
+                )}
+                {!isLoading && pagedLedger.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
+                      <p className="font-semibold text-slate-700">
+                        {ledger.length === 0
+                          ? 'No packages have booked earnings yet'
+                          : 'Nothing matches these filters'}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {ledger.length === 0
+                          ? 'Every non-cancelled package lands here with its commission.'
+                          : 'Clear the search or filters to see the rest.'}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+                {pagedLedger.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-4 py-3.5 text-slate-600 font-medium">
-                      {r.datetime}
+                      {new Date(r.settledAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
                     </td>
-                    <td className="px-4 py-3.5 font-mono text-slate-900 font-bold">
-                      {r.id}
-                    </td>
-                    <td className="px-4 py-3.5 font-bold text-slate-900">
-                      <span className="hover:underline cursor-pointer">{r.refOrder}</span>
+                    <td className="px-4 py-3.5 font-mono text-slate-900 font-bold text-[11px]">
+                      <Link to={`/vendor/orders/${r.id}`} className="hover:underline">
+                        #{r.id.slice(0, 8)}
+                      </Link>
                     </td>
                     <td className="px-4 py-3.5">
-                      {r.type === 'Sale' && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
-                          Sale
-                        </span>
-                      )}
-                      {r.type === 'Refund' && (
-                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
-                          Refund
-                        </span>
-                      )}
-                      {r.type === 'Fee' && (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                          Fee
-                        </span>
-                      )}
-                      {r.type === 'Promotion Reimb.' && (
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                          Promotion Reimb.
-                        </span>
-                      )}
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 capitalize">
+                        {r.type}
+                      </span>
                     </td>
-                    <td className="px-4 py-3.5 font-semibold text-slate-900">
-                      {r.gross < 0 ? `-$${Math.abs(r.gross).toFixed(2)}` : `$${r.gross.toFixed(2)}`}
-                    </td>
+                    <td className="px-4 py-3.5 font-semibold text-slate-900">{money(r.subtotal)}</td>
+                    <td className="px-4 py-3.5 text-slate-500">{money(r.shipping)}</td>
+                    <td className="px-4 py-3.5 font-semibold text-slate-900">{money(r.gross)}</td>
                     <td className="px-4 py-3.5 font-semibold text-rose-600">
-                      {r.fee === 0 ? '$0.00' : r.fee < 0 ? `-$${Math.abs(r.fee).toFixed(2)}` : `+$${r.fee.toFixed(2)}`}
+                      {r.fees === 0 ? '$0.00' : `-${money(r.fees)}`}
                     </td>
                     <td className={`px-4 py-3.5 font-bold ${r.net >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-                      {r.net >= 0 ? `+$${r.net.toFixed(2)}` : `-$${Math.abs(r.net).toFixed(2)}`}
+                      {r.net >= 0 ? `+${money(r.net)}` : `-${money(Math.abs(r.net))}`}
                     </td>
                     <td className="px-4 py-3.5 text-right">
-                      {r.status === 'Settled' ? (
+                      {isSettled(r.status) ? (
                         <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold text-[11px]">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                           Settled
@@ -631,7 +674,7 @@ export const VendorEarningsPage: React.FC = () => {
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold text-[11px]">
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          Processing
+                          {r.status.replace(/_/g, ' ')}
                         </span>
                       )}
                     </td>
@@ -641,10 +684,11 @@ export const VendorEarningsPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Table Footer */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500 gap-3">
             <span>
-              Showing {filteredRecords.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredRecords.length)} of {filteredRecords.length} ledger records
+              Showing {filteredLedger.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredLedger.length)} of {filteredLedger.length}{' '}
+              ledger lines · {ledger.length} in this window
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -670,63 +714,49 @@ export const VendorEarningsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Statement PDF/CSV Modal ─────────────────────────────── */}
+        {/* ── Statement Modal ───────────────────────────────────── */}
         <Dialog open={isStatementModalOpen} onOpenChange={setIsStatementModalOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <FileText className="h-5 w-5 text-slate-700" />
-                Download Account Statement
+                Download Your Statement
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Generate official financial reconciliation statements for accounting and bookkeeping.
+                Exports the settlement ledger for a calendar month, exactly as the database
+                computed it.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3.5 py-2 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Statement Period</label>
-                <select className="w-full rounded-lg border border-slate-200 p-2 text-xs">
-                  <option>May 2024 (Monthly Consolidated)</option>
-                  <option>April 2024 (Monthly Consolidated)</option>
-                  <option>Q1 2024 (Quarterly Summary)</option>
-                  <option>Full Year 2023 Comprehensive</option>
+                <select
+                  value={statementMonth}
+                  onChange={(e) => setStatementMonth(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 p-2 text-xs"
+                >
+                  <option value="window">
+                    Whole selected window ({months} month{months === 1 ? '' : 's'})
+                  </option>
+                  {monthsWithData.map((m) => (
+                    <option key={m.month} value={m.month}>
+                      {longMonth(m.month)} · {money(m.gross)} gross · {m.packages} package
+                      {m.packages === 1 ? '' : 's'}
+                    </option>
+                  ))}
                 </select>
+                {monthsWithData.length === 0 && (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    No month in this window has booked anything yet.
+                  </p>
+                )}
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Export Format</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label
-                    onClick={() => setStatementFormat('pdf')}
-                    className={`flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors ${
-                      statementFormat === 'pdf' ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="format"
-                      checked={statementFormat === 'pdf'}
-                      onChange={() => setStatementFormat('pdf')}
-                    />
-                    <span className="font-semibold text-slate-800">PDF Report</span>
-                  </label>
-                  <label
-                    onClick={() => setStatementFormat('csv')}
-                    className={`flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors ${
-                      statementFormat === 'csv' ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="format"
-                      checked={statementFormat === 'csv'}
-                      onChange={() => setStatementFormat('csv')}
-                    />
-                    <span className="font-semibold text-slate-800">CSV Spreadsheet</span>
-                  </label>
-                </div>
-              </div>
+              <p className="text-[11px] text-slate-500">
+                There is no PDF generator behind this screen: the CSV is the auditable statement, and
+                your browser can print it to PDF from there.
+              </p>
             </div>
 
             <div className="flex justify-end gap-2.5 pt-2">
@@ -739,97 +769,16 @@ export const VendorEarningsPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (statementFormat === 'csv') {
-                    exportToCsv({
-                      filename: `vendor-statement-${new Date().toISOString().slice(0, 10)}.csv`,
-                      columns: [
-                        { header: 'Transaction ID', key: 'id' },
-                        { header: 'Datetime', key: 'datetime' },
-                        { header: 'Reference Order', key: 'refOrder' },
-                        { header: 'Type', key: 'type' },
-                        { header: 'Gross ($)', key: 'gross' },
-                        { header: 'Fee ($)', key: 'fee' },
-                        { header: 'Net Payout ($)', key: 'net' },
-                        { header: 'Settlement Status', key: 'status' },
-                      ],
-                      data: filteredRecords,
-                    });
-                  } else {
-                    window.print();
-                  }
-                  setIsStatementModalOpen(false);
-                }}
+                onClick={exportStatement}
                 className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
               >
-                Generate &amp; Download
+                Export {statementMonth === 'window' ? 'window' : longMonth(statementMonth)}
               </button>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* ── Tax Documents Modal ─────────────────────────────────── */}
-        <Dialog open={isTaxDocModalOpen} onOpenChange={setIsTaxDocModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                Tax Documents &amp; Form 1099-K
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Access official IRS tax forms and state sales tax reporting records.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 py-2 text-xs">
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-slate-900">2023 Form 1099-K</div>
-                  <div className="text-[11px] text-slate-500">Issued Jan 31, 2024 • TIN ending in 4921</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleDownloadTaxPdf('2023')}
-                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
-                >
-                  Download
-                </button>
-              </div>
-
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-slate-900">2022 Form 1099-K</div>
-                  <div className="text-[11px] text-slate-500">Issued Jan 30, 2023 • TIN ending in 4921</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleDownloadTaxPdf('2022')}
-                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
-                >
-                  Download
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setIsTaxDocModalOpen(false)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-              >
-                Done
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Product Form Modal ───────────────────────────────────── */}
-        <ProductFormModal
-          open={isProductModalOpen}
-          onOpenChange={setIsProductModalOpen}
-        />
-
-        {/* ── Floating Toast Notification ───────────────────────────── */}
+        {/* ── Toast ─────────────────────────────────────────────── */}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
             <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />

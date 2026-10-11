@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   RefreshCcw,
@@ -14,12 +14,9 @@ import {
   Boxes,
   Store,
   ArrowRight,
-  ArrowUpRight,
   AlertCircle,
   AlertTriangle,
   Calendar,
-  Wallet,
-  Percent,
   ShieldCheck,
   RotateCw,
   ExternalLink,
@@ -28,45 +25,181 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
 import { exportToCsv } from '../lib/export-csv';
-import {
-  getVendorSubOrders,
-  advanceSubOrderStatus,
-  getVendorProducts,
-} from '../features/vendor/vendorData';
-import type { SubOrder, SubOrderStatus, Product } from '../types/domain';
-import { useAuthStore } from '../store/auth-store';
+import type { SubOrderStatus, Product } from '../types/domain';
+import { useVendorData } from '../features/vendor/hooks/useVendorData';
+import { useVendorDashboard } from '../features/vendor/hooks/useVendorDashboard';
+import { useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
+import { useShippingSettings } from '../features/vendor/hooks/useVendorStore';
+
+/** The picker's labels mapped onto the months of history the earnings RPC should read. */
+const RANGE_MONTHS: Record<'30D' | '3M' | 'YTD', number> = {
+  '30D': 1,
+  '3M': 3,
+  // Year to date: this calendar month counted as one of the window's months.
+  YTD: new Date().getMonth() + 1,
+};
+
+/** 'YYYY-MM' from the earnings RPC to the month's short name. */
+const monthLabel = (month: string) => {
+  const [year, number] = month.split('-');
+  const date = new Date(Number(year), Number(number) - 1, 1);
+  return Number.isNaN(date.getTime())
+    ? month
+    : date.toLocaleDateString('en-US', { month: 'short' });
+};
 
 export const VendorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const vendorId = user?.vendorId || 'vendor-tech-1';
-  const storeName = user?.name ? `${user.name.split(' ')[0]} Electronics` : 'Nova Electronics';
+  const {
+    vendorId,
+    activeProfile,
+    storeName,
+    products,
+    orders,
+    kpis,
+    error,
+    isRefreshing,
+    refresh,
+    advanceOrderStatus,
+  } = useVendorData();
 
-  const [orders, setOrders] = useState<SubOrder[]>(() => getVendorSubOrders(vendorId));
-  const [products, setProducts] = useState<Product[]>(() => getVendorProducts(vendorId));
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [vendorPreviewStatus, setVendorPreviewStatus] = useState<'approved' | 'pending' | 'suspended' | 'empty'>('approved');
   const [salesTimeRange, setSalesTimeRange] = useState<'30D' | '3M' | 'YTD'>('3M');
   const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const dashboard = useVendorDashboard();
+  const earnings = useVendorEarnings(RANGE_MONTHS[salesTimeRange]);
+  const shipping = useShippingSettings();
+  const tiles = dashboard.data;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setOrders(getVendorSubOrders(vendorId));
-      setProducts(getVendorProducts(vendorId));
-      setIsRefreshing(false);
-      showToast('Storefront metrics and sub-order queues synchronized.');
-    }, 600);
+  const handleRefresh = async () => {
+    await refresh();
+    showToast('Store metrics, queues and earnings re-read from the database.');
   };
 
-  const handleAdvanceStatus = (subOrderId: string, currentStatus: SubOrderStatus) => {
+  // Stage counts come from the same RPC that counts the payout, so the cards and the
+  // ledger can never disagree about what is still to do.
+  const placedCount = tiles?.stages.placed ?? 0;
+  const confirmedCount = tiles?.stages.confirmed ?? 0;
+  const packedCount = tiles?.stages.packed ?? 0;
+  const readyCount = orders.filter((o) => o.status === 'ready_for_pickup').length + packedCount;
+
+  const liveListings = tiles?.catalog.approved ?? 0;
+
+  // `vendor_dashboard` ranks listings by the quantity lines inside packages that have reached
+  // a buyer (delivered, or available for a digital key) - nothing else appears here.
+  const topProducts = tiles?.topProducts ?? [];
+
+  // Monthly series, in order, straight from `vendor_earnings`.
+  const months = earnings.data?.months ?? [];
+  const maxMonthGross = months.reduce((max, m) => Math.max(max, m.gross), 0);
+  const maxMonthPackages = months.reduce((max, m) => Math.max(max, m.packages), 0);
+  const lastMonth = months[months.length - 1];
+  const previousMonth = months[months.length - 2];
+  const monthChangePct =
+    previousMonth && previousMonth.gross > 0 && lastMonth
+      ? ((lastMonth.gross - previousMonth.gross) / previousMonth.gross) * 100
+      : null;
+
+  const trend = (value: number | null) =>
+    value === null ? null : `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}%`;
+
+  // SVG points across a 900x200 box, scaled to the biggest month in the window.
+  const seriesPoints = (pick: (m: (typeof months)[number]) => number) =>
+    months
+      .map((m, i) => {
+        const x = months.length === 1 ? 450 : (i / (months.length - 1)) * 890 + 5;
+        const y = 190 - (pick(m) / maxMonthGross) * 170;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+  const grossPoints = seriesPoints((m) => m.gross);
+  const netPoints = seriesPoints((m) => m.net);
+
+  // Dynamic low stock items from the store's own catalog tile
+  const lowStockProducts = useMemo(() => products.filter((p) => (p.stock ?? 0) <= 5), [products]);
+
+  const physicalSales = tiles?.kpis.physicalSales ?? 0;
+  const digitalSales = tiles?.kpis.digitalSales ?? 0;
+
+  // What the store keeps, as a share of what buyers were charged for the goods the
+  // commission is taken on. No data, no percentage - never a placeholder number.
+  const booked = kpis.grossSalesNum;
+  const netRetentionPct = booked > 0 ? `${((kpis.netPayoutNum / booked) * 100).toFixed(1)}` : null;
+  const commissionPct = booked > 0 ? `${((kpis.commissionDeductedNum / booked) * 100).toFixed(1)}` : null;
+  const grossGrowth = trend(monthChangePct);
+
+  // The queues' own age and the store's stated handling window, instead of an invented
+  // courier SLA the database has no record of.
+  const handlingWindow = shipping.data?.slaWindow?.trim() ?? '';
+  const oldestPlaced = orders
+    .filter((o) => o.status === 'placed')
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+  const oldestPlacedLabel = oldestPlaced
+    ? `Waiting since ${new Date(oldestPlaced.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })}`
+    : 'Nothing waiting to be confirmed';
+
+  // The newest entries in each package's own history - the audit trail the database wrote,
+  // not a story the page invents about it.
+  const recentActivities = useMemo(() => {
+    const list: {
+      title: string;
+      meta: string;
+      icon: React.ReactNode;
+      badge: React.ReactNode;
+    }[] = [];
+
+    orders.slice(0, 3).forEach((ord) => {
+      const lastEvent = ord.history[ord.history.length - 1];
+      const when = lastEvent?.timestamp ?? ord.createdAt;
+      const dateStr = when
+        ? new Date(when).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : 'Recent';
+      const status = lastEvent?.status ?? ord.status;
+      const isCancelled = status === 'cancelled';
+
+      list.push({
+        title: `Package #${ord.id.slice(0, 8)} ${String(status).replace(/_/g, ' ')}`,
+        meta: `${lastEvent?.note ?? `Recorded by ${lastEvent?.actor || 'the platform'}`} • ${dateStr}`,
+        icon: isCancelled ? (
+          <RotateCw className="h-3.5 w-3.5 text-rose-600" />
+        ) : (
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+        ),
+        badge: isCancelled ? (
+          <span className="text-xs font-bold text-rose-600">no payout</span>
+        ) : (
+          <span className="text-xs font-bold text-emerald-600">${ord.netPayout.toFixed(2)} net</span>
+        ),
+      });
+    });
+
+    products.slice(0, 2).forEach((p) => {
+      list.push({
+        title: `Listing "${p.title.slice(0, 28)}${p.title.length > 28 ? '…' : ''}"`,
+        meta: `Catalog SKU • ${p.stock} units on hand`,
+        icon: <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />,
+        badge: (
+          <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            {p.status || 'draft'}
+          </span>
+        ),
+      });
+    });
+
+    return list.slice(0, 4);
+  }, [orders, products]);
+
+  const handleAdvanceStatus = async (subOrderId: string, currentStatus: SubOrderStatus) => {
     let nextStatus: SubOrderStatus | null = null;
     let actionLabel = '';
 
@@ -82,35 +215,54 @@ export const VendorDashboardPage: React.FC = () => {
     }
 
     if (nextStatus) {
-      const updated = advanceSubOrderStatus(subOrderId, nextStatus, 'Vendor', actionLabel);
-      setOrders((prev) => prev.map((o) => (o.id === subOrderId ? updated : o)));
-      showToast(`Sub-order #${subOrderId} updated to ${nextStatus.replace(/_/g, ' ')}.`);
+      try {
+        await advanceOrderStatus(subOrderId, nextStatus, 'Vendor', actionLabel);
+        showToast(`Package #${subOrderId.slice(0, 8)} is now ${nextStatus.replace(/_/g, ' ')}.`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Could not update this package.');
+      }
     }
   };
 
-  const handleProductSaved = (newProduct: Product) => {
-    setProducts((prev) => [newProduct, ...prev]);
-    showToast(`Product "${newProduct.title}" created successfully.`);
+  /** The modal has already written the listing; this only reports what came back. */
+  const handleProductSaved = (saved: Product) => {
+    showToast(
+      saved.status === 'approved'
+        ? `Listing "${saved.title}" is live in the catalogue.`
+        : `Listing "${saved.title}" saved as ${saved.status}.`,
+    );
   };
 
   const handleExportSummary = () => {
     exportToCsv({
       filename: `vendora_vendor_operational_report_${new Date().toISOString().slice(0, 10)}.csv`,
       data: [
-        { metric: 'Gross Sales', value: '$34,820.00', trend: '+18.2%' },
-        { metric: 'Commission Deducted (10%)', value: '$3,482.00', trend: 'Contractual 10%' },
-        { metric: 'Net Payout Balance', value: '$31,338.00', trend: 'Bi-weekly release' },
-        { metric: 'Pending Orders', value: `${orders.filter((o) => o.status === 'placed').length}`, trend: 'Action Required' },
-        { metric: 'Active Catalog SKUs', value: `${products.length}`, trend: 'Published live' },
-        { metric: 'Store Satisfaction Rating', value: '4.7 / 5.0', trend: '1,288 reviews' },
+        { metric: 'Gross Sales', value: kpis.grossSales, detail: 'Booked from settled sub-orders' },
+        {
+          metric: 'Commission Deducted',
+          value: kpis.commissionDeducted,
+          detail: commissionPct ? `${commissionPct}% of gross booked` : 'no gross booked',
+        },
+        {
+          metric: 'Net Payout',
+          value: kpis.netPayout,
+          detail: `payout schedule: ${activeProfile?.payoutSchedule ?? 'not set'}`,
+        },
+        { metric: 'Packages Awaiting Confirmation', value: `${kpis.pendingOrders}`, detail: 'placed stage' },
+        { metric: 'Approved Catalog Listings', value: `${liveListings}`, detail: `${products.length} listings owned` },
+        {
+          metric: 'Store Rating',
+          value: `${activeProfile?.rating ?? 0} / 5.0`,
+          detail: `${activeProfile?.reviewCount ?? 0} reviews`,
+        },
       ],
       columns: [
         { header: 'Store Operational Metric', key: 'metric' },
-        { header: 'Current Aggregate Value', key: 'value' },
-        { header: 'Performance Status', key: 'trend' },
+        { header: 'Value From The Ledger', key: 'value' },
+        { header: 'How It Is Derived', key: 'detail' },
       ],
     });
-    showToast('Merchant operational summary exported to CSV.');
+    showToast('Operational summary exported to CSV.');
   };
 
   return (
@@ -123,100 +275,33 @@ export const VendorDashboardPage: React.FC = () => {
         {/* ── Test Accessibility Invariants (Hidden from vision, available for Vitest) ── */}
         <div className="sr-only" aria-hidden="false">
           <div>Gross Sales</div>
-          <div>$34,820</div>
+          <div>{kpis.grossSales}</div>
           <div>Platform Commission Deducted</div>
-          <div>$3,482</div>
+          <div>{kpis.commissionDeducted}</div>
           <div>Net Payout</div>
-          <div>$31,338</div>
-          <div>Pending Orders</div>
-          <div>14</div>
+          <div>{kpis.netPayout}</div>
+          <div>{kpis.pendingOrders}</div>
           <div>Low Stock</div>
-          <div>3</div>
+          <div>{kpis.lowStockCount}</div>
           <Link to="/vendor/orders">Manage Orders</Link>
-          <Link to="/vendor/products">Inventory</Link>
-          <Link to={`/vendors/${vendorId}`}>Public Storefront</Link>
+          <Link to="/vendor/inventory">Inventory</Link>
           <Link to={`/vendors/${vendorId}`}>Public Storefront</Link>
         </div>
-
-        {/* ── Developer Environment: Vendor Status Preview Toolbar ──────── */}
-        {import.meta.env.DEV && (
-          <details className="group rounded-xl border border-dashed border-amber-300 dark:border-amber-700/60 bg-amber-50/50 dark:bg-amber-950/20 p-2 text-xs shadow-2xs">
-            <summary className="flex items-center justify-between cursor-pointer list-none font-bold text-amber-800 dark:text-amber-300 text-[11px]">
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                🛠️ DEV SIMULATOR: Toggle Vendor Account State ({vendorPreviewStatus.toUpperCase()})
-              </span>
-              <span className="text-[10px] font-normal text-amber-600 dark:text-amber-400">Click to expand</span>
-            </summary>
-            <div className="flex flex-wrap items-center gap-2 pt-2 mt-2 border-t border-amber-200/60 dark:border-amber-800/40">
-              <button
-                type="button"
-                onClick={() => setVendorPreviewStatus('approved')}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
-                  vendorPreviewStatus === 'approved'
-                    ? 'bg-amber-600 text-white shadow-2xs'
-                    : 'text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
-                }`}
-              >
-                Approved (Default)
-              </button>
-              <button
-                type="button"
-                onClick={() => setVendorPreviewStatus('pending')}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
-                  vendorPreviewStatus === 'pending'
-                    ? 'bg-amber-600 text-white shadow-2xs'
-                    : 'text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
-                }`}
-              >
-                Pending Review
-              </button>
-              <button
-                type="button"
-                onClick={() => setVendorPreviewStatus('suspended')}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
-                  vendorPreviewStatus === 'suspended'
-                    ? 'bg-amber-600 text-white shadow-2xs'
-                    : 'text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
-                }`}
-              >
-                Suspended / Rejected
-              </button>
-              <button
-                type="button"
-                onClick={() => setVendorPreviewStatus('empty')}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
-                  vendorPreviewStatus === 'empty'
-                    ? 'bg-amber-600 text-white shadow-2xs'
-                    : 'text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40'
-                }`}
-              >
-                New Vendor (Empty State)
-              </button>
-            </div>
-          </details>
-        )}
 
         {/* =====================================================================
             1. Dashboard Page Title & Operational Status (Admin Unified Style)
             ===================================================================== */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white font-outfit">
               Dashboard
             </h1>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Welcome back, <strong className="text-slate-800 dark:text-slate-200 font-semibold">{storeName}</strong> ({products.length} catalog items live). Here is your operational summary.
+              Welcome back, <strong className="text-slate-800 dark:text-slate-200 font-semibold">{storeName}</strong> ({liveListings} approved listing{liveListings === 1 ? '' : 's'}). Here is your operational summary.
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-            {/* Storefront Operational Status Pill */}
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/40 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Storefront Live</span>
-            </div>
-
             {/* Timeframe Dropdown */}
             <div className="relative">
               <button
@@ -258,26 +343,27 @@ export const VendorDashboardPage: React.FC = () => {
               )}
             </div>
 
-            {/* Refresh Button */}
+            {/* Sync Live Database Button */}
             <button
               type="button"
               onClick={handleRefresh}
-              aria-label="Refresh metrics"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors shadow-2xs cursor-pointer"
-              title="Refresh store metrics"
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Synchronize store metrics and orders"
             >
-              <RefreshCcw
-                className={`h-3.5 w-3.5 transition-transform ${isRefreshing ? 'animate-spin' : ''}`}
-              />
+              <RefreshCcw className={`h-3.5 w-3.5 text-slate-400 ${isRefreshing ? 'animate-spin text-[#FF7A1A]' : ''}`} />
+              <span className="hidden sm:inline">Sync</span>
             </button>
 
             {/* Primary Add New Product Button */}
             <button
               type="button"
+              aria-label="+ Add New Product"
               onClick={() => setIsProductModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              + Add New Product
+              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              <span>Add Product</span>
             </button>
           </div>
         </div>
@@ -329,7 +415,7 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
             </div>
             <span className="shrink-0 rounded-full bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-              12
+              {orders.length}
             </span>
           </Link>
 
@@ -348,7 +434,7 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
             </div>
             <span className="shrink-0 rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-              4 low
+              {kpis.lowStockCount} low
             </span>
           </Link>
 
@@ -392,12 +478,27 @@ export const VendorDashboardPage: React.FC = () => {
           </Link>
         </div>
 
+        {/* A failed read is shown as a failure. Zeros here would look like a quiet store. */}
+        {error && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-600" />
+            <span>{error instanceof Error ? error.message : String(error)}</span>
+            <button
+              type="button"
+              onClick={() => void handleRefresh()}
+              className="ml-auto rounded-lg border border-rose-200 px-2.5 py-1 hover:bg-rose-100 cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* ── Operational Attention Alert Banner ───────────────────── */}
         <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs shadow-2xs">
           <div className="flex items-center gap-2.5 text-amber-900 dark:text-amber-200">
             <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>
-              <strong>Attention needed:</strong> 4 products require restock • 1 customer return pending inspection • 12 sub-orders ready to pack.
+              <strong>Attention needed:</strong> {kpis.lowStockCount} products require restock • {kpis.pendingOrders} sub-orders awaiting fulfillment.
             </span>
           </div>
           <Link
@@ -425,12 +526,13 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                $12,431.89
+                {kpis.netPayout}
               </div>
-              <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <TrendingUp className="h-3.5 w-3.5" />
-                <span>+18.2%</span>
-                <span className="text-[11px] font-normal text-slate-400">from last month</span>
+                <span>
+                  {grossGrowth ? `${grossGrowth} gross vs last month` : 'net of platform commission'}
+                </span>
               </div>
             </div>
           </div>
@@ -447,12 +549,11 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                342
+                {orders.length}
               </div>
-              <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <TrendingUp className="h-3.5 w-3.5" />
-                <span>+9.4%</span>
-                <span className="text-[11px] font-normal text-slate-400">from last month</span>
+                <span>packages all-time; {tiles?.kpis.orders7d ?? 0} booked in the last 7 days</span>
               </div>
             </div>
           </div>
@@ -469,7 +570,7 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                12
+                {kpis.pendingOrders}
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
                 <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
@@ -491,12 +592,20 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-baseline gap-1">
-                <span>4.7</span>
-                <span className="text-xs font-normal text-slate-400">/ 5.0</span>
+                {(activeProfile?.reviewCount ?? 0) > 0 ? (
+                  <>
+                    <span>{activeProfile?.rating}</span>
+                    <span className="text-xs font-normal text-slate-400">/ 5.0</span>
+                  </>
+                ) : (
+                  <span className="text-base">No ratings yet</span>
+                )}
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <span>★ Top Rated Merchant</span>
-                <span className="text-[11px] font-normal text-slate-400">(1,288 reviews)</span>
+                <span className="capitalize">{activeProfile?.status === 'suspended' ? 'Store suspended' : 'Store active'}</span>
+                <span className="text-[11px] font-normal text-slate-400">
+                  ({activeProfile?.reviewCount ?? 0} review{(activeProfile?.reviewCount ?? 0) === 1 ? '' : 's'} from buyers)
+                </span>
               </div>
             </div>
           </div>
@@ -516,70 +625,108 @@ export const VendorDashboardPage: React.FC = () => {
                 </span>
               </div>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">+342</span>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">+6.4% vs last period</span>
+                <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {tiles?.kpis.orders7d ?? 0}
+                </span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  packages booked in the last 7 days
+                </span>
               </div>
             </div>
 
-            {/* Monthly Bar Chart */}
+            {/* Packages settled per calendar month, from `vendor_earnings`. */}
             <div className="mt-6 flex h-32 items-end justify-between gap-2 px-1">
-              {[
-                { m: 'Jan', h: '38%' },
-                { m: 'Feb', h: '45%' },
-                { m: 'Mar', h: '35%' },
-                { m: 'Apr', h: '55%' },
-                { m: 'May', h: '62%' },
-                { m: 'Jun', h: '70%' },
-                { m: 'Jul', h: '80%' },
-                { m: 'Aug', h: '95%' },
-              ].map((bar, i) => (
-                <div key={i} className="flex flex-1 flex-col items-center gap-1.5 h-full justify-end">
+              {months.length > 0 ? (
+                months.map((m) => (
                   <div
-                    className="w-full rounded-xs bg-slate-900 dark:bg-slate-100 transition-all duration-300 hover:bg-orange-500"
-                    style={{ height: bar.h }}
-                  />
-                  <span className="text-[10px] font-medium text-slate-400">{bar.m}</span>
+                    key={m.month}
+                    className="flex flex-1 flex-col items-center gap-1.5 h-full justify-end"
+                    title={`${m.packages} package${m.packages === 1 ? '' : 's'} settled in ${monthLabel(m.month)}`}
+                  >
+                    <div
+                      className="w-full rounded-xs bg-slate-900 dark:bg-slate-100 transition-all duration-300 hover:bg-orange-500"
+                      style={{
+                        height: `${
+                          maxMonthPackages > 0
+                            ? Math.max(4, (m.packages / maxMonthPackages) * 100)
+                            : 4
+                        }%`,
+                      }}
+                    />
+                    <span className="text-[10px] font-medium text-slate-400">
+                      {monthLabel(m.month)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="w-full text-center text-[11px] text-slate-400 self-center">
+                  {earnings.isPending ? 'Loading the monthly series…' : 'No settled packages yet'}
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
-          {/* Card 2: Gross Sales Volume (Trajectory Curve Line) */}
+          {/* Card 2: Gross Sales Volume over the selected range */}
           <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">Gross Volume</span>
                 <span className="rounded border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                  Trailing 30d
+                  {salesTimeRange === '30D' ? 'Last month' : salesTimeRange === '3M' ? 'Last 3 months' : 'Year to date'}
                 </span>
               </div>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">$14,923.40</span>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">+18.2% vs last month</span>
+                <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  ${months.reduce((sum, m) => sum + m.gross, 0).toFixed(2)}
+                </span>
+                <span className={`text-xs font-semibold ${grossGrowth && grossGrowth.startsWith('−') ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {grossGrowth ? `${grossGrowth} vs last month` : 'first month of trading'}
+                </span>
               </div>
             </div>
 
-            {/* Trajectory Line Chart */}
+            {/* Gross settled per month, plotted from the same series as the bars. */}
             <div className="mt-6">
               <div className="h-28 w-full">
-                <svg viewBox="0 0 300 100" className="h-full w-full overflow-visible">
-                  <path
-                    d="M 10 80 Q 75 55, 140 60 T 220 40 T 290 15"
-                    fill="none"
-                    stroke="#FF7A1A"
-                    strokeWidth="2.5"
-                  />
-                  <circle cx="10" cy="80" r="3" fill="#FF7A1A" />
-                  <circle cx="100" cy="62" r="3" fill="#FF7A1A" />
-                  <circle cx="190" cy="50" r="3" fill="#FF7A1A" />
-                  <circle cx="290" cy="15" r="3" fill="#FF7A1A" />
-                </svg>
+                {months.length > 1 && maxMonthGross > 0 ? (
+                  <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="h-full w-full overflow-visible">
+                    <polyline
+                      fill="none"
+                      stroke="#FF7A1A"
+                      strokeWidth="2.5"
+                      points={months
+                        .map((m, i) => {
+                          const x = (i / (months.length - 1)) * 290 + 5;
+                          const y = 90 - (m.gross / maxMonthGross) * 75;
+                          return `${x.toFixed(1)},${y.toFixed(1)}`;
+                        })
+                        .join(' ')}
+                    />
+                    {months.map((m, i) => {
+                      const x = (i / (months.length - 1)) * 290 + 5;
+                      const y = 90 - (m.gross / maxMonthGross) * 75;
+                      return <circle key={m.month} cx={x} cy={y} r="3" fill="#FF7A1A" />;
+                    })}
+                  </svg>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-[11px] text-slate-400">
+                    {earnings.isPending
+                      ? 'Loading the volume series…'
+                      : months.length === 1
+                        ? 'One month of history - a trend needs two.'
+                        : 'No settled volume in this range'}
+                  </div>
+                )}
               </div>
               <div className="mt-2 flex justify-between text-[10px] text-slate-400 font-medium">
-                <span>Week 1</span>
-                <span>Week 2</span>
-                <span>Week 3</span>
-                <span>Week 4</span>
+                {months.length > 0 ? (
+                  <>
+                    <span>{monthLabel(months[0].month)}</span>
+                    <span>{monthLabel(months[months.length - 1].month)}</span>
+                  </>
+                ) : (
+                  <span className="mx-auto">Settled months appear here</span>
+                )}
               </div>
             </div>
           </div>
@@ -589,35 +736,49 @@ export const VendorDashboardPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">Earnings Retention</span>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">$12,431 / $14,923</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">{kpis.netPayout} / {kpis.grossSales}</span>
               </div>
               <div className="mt-1 flex justify-between text-[11px] text-slate-400">
                 <span>Net payout yield</span>
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">83.3% net retained</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                  {netRetentionPct ? `${netRetentionPct}% net retained` : 'nothing booked yet'}
+                </span>
               </div>
             </div>
 
-            {/* Progress Bars */}
+            {/* The two shares the ledger actually books: what the store keeps and what the
+                platform takes. Nothing else is deducted from a payout. */}
             <div className="mt-5 space-y-3">
-              {[
-                { label: 'Merchant Net Payout', pct: 83.3, color: 'bg-emerald-500' },
-                { label: 'Platform Commission (10%)', pct: 10.0, color: 'bg-orange-500' },
-                { label: 'Customer Returns Reserve', pct: 4.1, color: 'bg-amber-500' },
-                { label: 'Logistics SLA Offset', pct: 2.6, color: 'bg-blue-500' },
-              ].map((item, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    <span>{item.label}</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{item.pct}%</span>
+              {netRetentionPct && commissionPct ? (
+                [
+                  { label: 'Merchant Net Payout', pct: netRetentionPct, color: 'bg-emerald-500' },
+                  { label: `Platform Commission (${commissionPct}%)`, pct: commissionPct, color: 'bg-orange-500' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      <span>{item.label}</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{item.pct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full ${item.color} rounded-full`}
+                        style={{ width: `${Math.min(100, Number(item.pct))}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                    <div
-                      className={`h-full ${item.color} rounded-full`}
-                      style={{ width: `${item.pct}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-[11px] text-slate-400">
+                  Retention is shown once the store has booked its first package.
+                </p>
+              )}
+              <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+                <span>Payout schedule</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 capitalize">
+                  {activeProfile?.payoutSchedule ?? 'not set'} ·{' '}
+                  {activeProfile ? `${(activeProfile.payoutReservePct * 100).toFixed(1)}% held back` : 'reserve not set'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -628,8 +789,8 @@ export const VendorDashboardPage: React.FC = () => {
         <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Store Sales Velocity</h2>
-              <p className="text-xs text-slate-400">Physical merchandise vs digital add-on protection warranty sales</p>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Settled Volume by Month</h2>
+              <p className="text-xs text-slate-400">Gross charged to buyers against the net payout the ledger books, per calendar month</p>
             </div>
             <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-0.5 text-xs font-semibold">
               <button
@@ -668,98 +829,63 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Dual Area Curve Chart */}
+          {/* Settled gross and net payout per calendar month, both from `vendor_earnings`. */}
           <div className="mt-6 h-56 w-full">
-            <svg
-              viewBox="0 0 900 200"
-              preserveAspectRatio="none"
-              className="h-full w-full overflow-visible"
-            >
-              <defs>
-                <linearGradient id="vendorPhysicalGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#FF7A1A" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#FF7A1A" stopOpacity="0.02" />
-                </linearGradient>
-                <linearGradient id="vendorDigitalGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.02" />
-                </linearGradient>
-              </defs>
+            {months.length > 0 && maxMonthGross > 0 ? (
+              <svg viewBox="0 0 900 200" preserveAspectRatio="none" className="h-full w-full overflow-visible">
+                <defs>
+                  <linearGradient id="vendorGrossGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#FF7A1A" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#FF7A1A" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
 
-              {/* Physical Goods Area (Upper) */}
-              <path
-                d="M 10 120 
-                   C 100 100, 200 115, 300 105 
-                   C 400 95, 500 75, 600 70 
-                   C 700 75, 800 80, 890 35
-                   L 890 190 L 10 190 Z"
-                fill="url(#vendorPhysicalGrad)"
-              />
-
-              {/* Digital Care Area (Lower) */}
-              <path
-                d="M 10 145 
-                   C 100 135, 200 140, 300 130 
-                   C 400 125, 500 110, 600 105 
-                   C 700 110, 800 115, 890 80
-                   L 890 190 L 10 190 Z"
-                fill="url(#vendorDigitalGrad)"
-              />
-
-              {/* Digital Line */}
-              <path
-                d="M 10 145 
-                   C 100 135, 200 140, 300 130 
-                   C 400 125, 500 110, 600 105 
-                   C 700 110, 800 115, 890 80"
-                fill="none"
-                stroke="#3B82F6"
-                strokeWidth="2"
-              />
-
-              {/* Physical Goods Line */}
-              <path
-                d="M 10 120 
-                   C 100 100, 200 115, 300 105 
-                   C 400 95, 500 75, 600 70 
-                   C 700 75, 800 80, 890 35"
-                fill="none"
-                stroke="#FF7A1A"
-                strokeWidth="2.5"
-              />
-
-              {/* Endpoint Dot */}
-              <circle cx="890" cy="35" r="4" fill="#FF7A1A" />
-              <circle cx="890" cy="35" r="2" fill="#FFFFFF" />
-            </svg>
+                <polygon
+                  points={`5,190 ${grossPoints} 895,190`}
+                  fill="url(#vendorGrossGrad)"
+                />
+                <polyline
+                  points={grossPoints}
+                  fill="none"
+                  stroke="#FF7A1A"
+                  strokeWidth="2.5"
+                />
+                <polyline
+                  points={netPoints}
+                  fill="none"
+                  stroke="#3B82F6"
+                  strokeWidth="2"
+                />
+              </svg>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+                {earnings.isPending
+                  ? 'Loading the settled series…'
+                  : 'Nothing has settled yet - this chart fills in as payouts are booked.'}
+              </div>
+            )}
           </div>
 
-          {/* X-axis date labels */}
+          {/* X-axis month labels */}
           <div className="mt-3 flex justify-between text-[10px] text-slate-400 font-medium px-1">
-            <span>Apr 6</span>
-            <span>Apr 12</span>
-            <span>Apr 18</span>
-            <span>Apr 24</span>
-            <span>May 2</span>
-            <span>May 10</span>
-            <span>May 18</span>
-            <span>May 26</span>
-            <span>Jun 4</span>
-            <span>Jun 12</span>
-            <span>Jun 20</span>
-            <span>Jun 30</span>
+            {months.map((m) => (
+              <span key={m.month}>{monthLabel(m.month)}</span>
+            ))}
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex items-center justify-center gap-6 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-6 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-xs bg-[#FF7A1A]" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">Physical Goods ($11,848.00)</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">Gross settled</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-xs bg-blue-500" />
-              <span className="font-medium text-slate-500 dark:text-slate-400">Digital Care &amp; Warranty ($3,063.40)</span>
+              <span className="font-medium text-slate-500 dark:text-slate-400">Net payout</span>
             </div>
+            <span className="text-[11px] text-slate-400">
+              Lifetime split: ${physicalSales.toFixed(2)} physical · ${digitalSales.toFixed(2)} digital
+            </span>
           </div>
         </div>
 
@@ -775,7 +901,7 @@ export const VendorDashboardPage: React.FC = () => {
                   <Clock className="h-4 w-4" />
                 </div>
                 <span className="rounded-full border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
-                  12 Pending
+                  {placedCount} Pending
                 </span>
               </div>
               <div className="mt-3">
@@ -784,21 +910,26 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>SLA Dispatch: Within 24h</span>
+                <span>{oldestPlacedLabel}</span>
               </div>
             </div>
 
             <div className="mt-5">
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: '43%' }} />
+                <div
+                  className="h-full bg-amber-500 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, orders.length > 0 ? (placedCount / orders.length) * 100 : 0)}%` }}
+                />
               </div>
               <div className="mt-2 flex justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
-                <span>12 / 28 daily quota</span>
-                <span className="text-slate-500 font-normal">43% capacity</span>
+                <span>{placedCount} unconfirmed</span>
+                <span className="text-slate-500 font-normal">
+                  {orders.length > 0 ? Math.round((placedCount / orders.length) * 100) : 0}% of orders
+                </span>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                 <Link to="/vendor/orders" className="flex items-center justify-between text-xs font-bold text-[#EA6C13] hover:underline">
-                  <span>Process 12 orders</span>
+                  <span>Process {placedCount} orders</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -813,7 +944,7 @@ export const VendorDashboardPage: React.FC = () => {
                   <Boxes className="h-4 w-4" />
                 </div>
                 <span className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">
-                  8 in Queue
+                  {confirmedCount} in Queue
                 </span>
               </div>
               <div className="mt-3">
@@ -822,20 +953,29 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>Next Courier Window: Today 4 PM</span>
+                <span>
+                  {handlingWindow
+                    ? `Handling window: ${handlingWindow}`
+                    : 'No handling window set - add one under Shipping & Logistics.'}
+                </span>
               </div>
             </div>
 
             <div className="mt-5">
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full" style={{ width: '65%' }} />
+                <div
+                  className="h-full bg-sun-orange rounded-full transition-all"
+                  style={{ width: `${Math.min(100, orders.length > 0 ? (confirmedCount / orders.length) * 100 : 0)}%` }}
+                />
               </div>
               <div className="mt-2 flex justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
-                <span>8 / 12 packed</span>
-                <span className="text-slate-500 font-normal">65% complete</span>
+                <span>{confirmedCount} packing</span>
+                <span className="text-slate-500 font-normal">
+                  {orders.length > 0 ? Math.round((confirmedCount / orders.length) * 100) : 0}% of orders
+                </span>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-                <Link to="/vendor/orders" className="flex items-center justify-between text-xs font-bold text-blue-600 hover:underline">
+                <Link to="/vendor/orders" className="flex items-center justify-between text-xs font-bold text-sun-orange hover:underline">
                   <span>Print packing slips</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -851,7 +991,7 @@ export const VendorDashboardPage: React.FC = () => {
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
                 <span className="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-                  5 Staged
+                  {readyCount} Staged
                 </span>
               </div>
               <div className="mt-3">
@@ -860,21 +1000,30 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>Courier SLA: On Schedule</span>
+                <span>
+                  {readyCount > 0
+                    ? `${readyCount} parcel${readyCount === 1 ? '' : 's'} waiting on a courier scan`
+                    : 'Nothing staged for handover'}
+                </span>
               </div>
             </div>
 
             <div className="mt-5">
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full bg-emerald-600 rounded-full" style={{ width: '85%' }} />
+                <div
+                  className="h-full bg-emerald-600 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, orders.length > 0 ? (readyCount / orders.length) * 100 : 0)}%` }}
+                />
               </div>
               <div className="mt-2 flex justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
-                <span>5 / 6 parcels</span>
-                <span className="text-slate-500 font-normal">85% staged</span>
+                <span>{readyCount} staged</span>
+                <span className="text-slate-500 font-normal">
+                  {orders.length > 0 ? Math.round((readyCount / orders.length) * 100) : 0}% of orders
+                </span>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                 <Link to="/vendor/orders" className="flex items-center justify-between text-xs font-bold text-emerald-600 hover:underline">
-                  <span>View courier schedule</span>
+                  <span>Open the handover queue</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -917,80 +1066,100 @@ export const VendorDashboardPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {orders.slice(0, 5).map((order) => (
-                      <tr key={order.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white text-[11px]">
-                          #{order.id}
-                        </td>
-                        <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">
-                          Sarah Jenkins
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-slate-900 dark:text-slate-100 truncate block max-w-xs">
-                            {order.items[0]?.title || 'Aura Precision Studio Reference In-Ear Monitors'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                          ${(order.subtotal + order.shippingFee).toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3">
-                          {order.status === 'placed' && (
-                            <span className="rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                              Placed
-                            </span>
-                          )}
-                          {order.status === 'confirmed' && (
-                            <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                              Confirmed
-                            </span>
-                          )}
-                          {order.status === 'packed' && (
-                            <span className="rounded-full bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-                              Packed
-                            </span>
-                          )}
-                          {order.status === 'ready_for_pickup' && (
-                            <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                              Ready
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {order.status === 'placed' && (
-                            <button
-                              type="button"
-                              onClick={() => handleAdvanceStatus(order.id, 'placed')}
-                              className="rounded-lg bg-slate-900 dark:bg-slate-100 px-3 py-1 text-xs font-bold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white shadow-2xs cursor-pointer transition-colors"
-                            >
-                              Confirm Order
-                            </button>
-                          )}
-                          {order.status === 'confirmed' && (
-                            <button
-                              type="button"
-                              onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
-                              className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-700 shadow-2xs cursor-pointer transition-colors"
-                            >
-                              Mark Packed
-                            </button>
-                          )}
-                          {order.status === 'packed' && (
-                            <button
-                              type="button"
-                              onClick={() => handleAdvanceStatus(order.id, 'packed')}
-                              className="rounded-lg bg-purple-600 px-3 py-1 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs cursor-pointer transition-colors"
-                            >
-                              Ready for Pickup
-                            </button>
-                          )}
-                          {order.status === 'ready_for_pickup' && (
-                            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                              Staged ✓
-                            </span>
+                    {orders.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                          <ShoppingBag className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                            {error ? 'This queue is unknown - the read failed' : 'No customer sub-orders yet'}
+                          </p>
+                          {!error && (
+                            <p className="text-[11px] text-slate-400">Incoming buyer orders for {storeName} will appear here in real-time.</p>
                           )}
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      orders.slice(0, 5).map((order) => (
+                        <tr key={order.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white text-[11px]">
+                            #{order.id}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">
+                            {order.buyerEmail || 'No buyer contact on this order'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-medium text-slate-900 dark:text-slate-100 truncate block max-w-xs">
+                              {order.items[0]?.title || 'Package contents unavailable'}
+                            </span>
+                            {order.items.length > 1 && (
+                              <span className="text-[10px] text-slate-400">
+                                +{order.items.length - 1} more line
+                                {order.items.length > 2 ? 's' : ''}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
+                            ${order.gross.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3">
+                            {order.status === 'placed' && (
+                              <span className="rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                                Placed
+                              </span>
+                            )}
+                            {order.status === 'confirmed' && (
+                              <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                                Confirmed
+                              </span>
+                            )}
+                            {order.status === 'packed' && (
+                              <span className="rounded-full bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                                Packed
+                              </span>
+                            )}
+                            {order.status === 'ready_for_pickup' && (
+                              <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                                Ready
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {order.status === 'placed' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdvanceStatus(order.id, 'placed')}
+                                className="rounded-full bg-slate-900 dark:bg-slate-100 px-3 py-1 text-xs font-bold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white shadow-2xs cursor-pointer transition-colors"
+                              >
+                                Confirm Order
+                              </button>
+                            )}
+                            {order.status === 'confirmed' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
+                                className="rounded-full bg-sun-orange px-3 py-1 text-xs font-bold text-white hover:bg-sun-orange-600 shadow-2xs cursor-pointer transition-colors"
+                              >
+                                Mark Packed
+                              </button>
+                            )}
+                            {order.status === 'packed' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdvanceStatus(order.id, 'packed')}
+                                className="rounded-full bg-purple-600 px-3 py-1 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs cursor-pointer transition-colors"
+                              >
+                                Ready for Pickup
+                              </button>
+                            )}
+                            {order.status === 'ready_for_pickup' && (
+                              <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                Staged ✓
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1010,7 +1179,7 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div>
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white">Top Selling Products</h2>
-                  <p className="text-xs text-slate-400">Highest volume generators</p>
+                  <p className="text-xs text-slate-400">Ranked by delivered units</p>
                 </div>
                 <Link
                   to="/vendor/products"
@@ -1021,44 +1190,63 @@ export const VendorDashboardPage: React.FC = () => {
                 </Link>
               </div>
 
-              {/* Total Store Revenue Banner (Admin Style) */}
-              <div className="mt-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    TOTAL STORE REVENUE
-                  </span>
-                  <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
-                    $34,820.00
+              {/* What buyers have been charged for this store's packages, all time. */}
+              <div className="mt-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Booked by buyers
+                    </span>
+                    <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
+                      {kpis.grossSales}
+                    </div>
                   </div>
+                  <span className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
+                    {liveListings} approved {liveListings === 1 ? 'listing' : 'listings'}
+                  </span>
                 </div>
-                <span className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
-                  Active SKU Yield
-                </span>
+                <p className="mt-2 text-[10px] text-slate-400">
+                  Includes freight, which the commission is not taken on · {kpis.commissionDeducted}{' '}
+                  commission · {kpis.netPayout} net to the store
+                </p>
               </div>
 
-              {/* Ranked Product List */}
+              {/* Ranked by delivered units */}
               <div className="mt-4 space-y-3">
-                {[
-                  { name: 'Sony WH-1000XM5', units: '154 units sold', rev: '$14,230', change: '+22%' },
-                  { name: 'Keychron Q1 Pro', units: '86 units sold', rev: '$8,430', change: '+14%' },
-                  { name: 'Anker 737 GaN (140W)', units: '73 units sold', rev: '$7,020', change: '+8%' },
-                  { name: 'Logitech MX Master 3S', units: '64 units sold', rev: '$6,030', change: '+9%' },
-                  { name: 'USB-C 240W Cable (2m)', units: '142 units sold', rev: '$3,564', change: '0%' },
-                ].map((p, idx) => (
-                  <div key={p.name} className="flex items-center justify-between py-1.5 px-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-bold text-slate-400 text-xs w-4">#{idx + 1}</span>
-                      <div className="min-w-0">
-                        <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-[#FF7A1A] transition-colors">{p.name}</div>
-                        <div className="text-[11px] text-slate-400">{p.units}</div>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-bold text-slate-900 dark:text-white">{p.rev}</div>
-                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{p.change}</div>
-                    </div>
+                {dashboard.isPending ? (
+                  <div className="py-8 text-center text-slate-400">
+                    <Boxes className="h-6 w-6 mx-auto mb-2 opacity-40 animate-pulse" />
+                    <p className="text-[10px] text-slate-400">Reading your delivered sales…</p>
                   </div>
-                ))}
+                ) : topProducts.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400">
+                    <Boxes className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      No delivered sales yet
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      A listing ranks here once its package is delivered, or a digital key is
+                      issued.
+                    </p>
+                  </div>
+                ) : (
+                  topProducts.map((p, idx) => (
+                    <div key={p.productId} className="flex items-center justify-between py-1.5 px-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="font-bold text-slate-400 text-xs w-4">#{idx + 1}</span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-[#FF7A1A] transition-colors">{p.title}</div>
+                          <div className="text-[10px] text-slate-400">
+                            {p.units} {p.units === 1 ? 'unit' : 'units'} delivered
+                          </div>
+                        </div>
+                      </div>
+                      <span className="shrink-0 font-bold text-xs text-slate-900 dark:text-white font-mono">
+                        ${p.revenue.toFixed(2)}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -1080,42 +1268,55 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div>
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white">Low Stock Alerts</h2>
-                  <p className="text-xs text-slate-400">4 catalog SKUs at or below reorder threshold</p>
+                  <p className="text-xs text-slate-400">
+                    {lowStockProducts.length} catalog SKUs at or below reorder threshold
+                  </p>
                 </div>
-                <span className="rounded bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">
-                  Critical
+                <span className={`rounded px-2 py-0.5 text-[10px] font-bold border ${
+                  lowStockProducts.length > 0
+                    ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                }`}>
+                  {lowStockProducts.length > 0 ? 'Critical' : 'Healthy'}
                 </span>
               </div>
 
               <div className="mt-4 space-y-2.5 text-xs">
-                {[
-                  { name: 'Anker 737 GaN Power Bank', variant: 'Space Gray / 24,000mAh', count: '2 left', pill: 'bg-rose-50 text-rose-700 border-rose-200' },
-                  { name: 'Keychron Double-shot PBT Keycaps', variant: 'Carbon Black / OEM Profile', count: '3 left', pill: 'bg-rose-50 text-rose-700 border-rose-200' },
-                  { name: 'Sony WH-1000XM5 Cushions', variant: 'Silver / Memory Foam', count: '5 left', pill: 'bg-amber-50 text-amber-700 border-amber-200' },
-                  { name: 'MX Master 3S Travel Hardcase', variant: 'Matte Graphite', count: '4 left', pill: 'bg-amber-50 text-amber-700 border-amber-200' },
-                ].map((item, idx) => (
-                  <div key={item.name} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-slate-400 font-bold">0{idx + 1}</span>
-                      <div>
-                        <div className="font-bold text-slate-900 dark:text-white">{item.name}</div>
-                        <div className="text-[10px] text-slate-400">{item.variant}</div>
+                {lowStockProducts.length === 0 ? (
+                  <div className="py-6 text-center text-slate-400">
+                    <CheckCircle2 className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Catalog Inventory Healthy</p>
+                    <p className="text-[10px] text-slate-400">All {products.length} catalog listings are above the 5 unit reorder threshold.</p>
+                  </div>
+                ) : (
+                  lowStockProducts.slice(0, 4).map((item, idx) => (
+                    <div key={item.id} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono text-slate-400 font-bold">0{idx + 1}</span>
+                        <div>
+                          <div className="font-bold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-xs">{item.title}</div>
+                          <div className="text-[10px] text-slate-400">{item.brand || item.category}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                          item.stock === 0
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {item.stock} left
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/vendor/inventory')}
+                          className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
+                        >
+                          Restock
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${item.pill}`}>
-                        {item.count}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/vendor/inventory')}
-                        className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
-                      >
-                        Restock
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -1135,42 +1336,13 @@ export const VendorDashboardPage: React.FC = () => {
                   <p className="text-xs text-slate-400">Merchant audit trail</p>
                 </div>
                 <span className="rounded border border-slate-200 dark:border-slate-800 px-2 py-0.5 text-xs font-medium text-slate-500">
-                  This Week
+                  Live DB
                 </span>
               </div>
 
               {/* Activity rows (Admin Style) */}
               <div className="mt-4 space-y-3.5">
-                {[
-                  {
-                    title: 'Order #ORD-9821 completed',
-                    meta: 'Settled to balance • Today, 11:20 AM',
-                    icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />,
-                    badge: <span className="text-xs font-bold text-emerald-600">+$349.99</span>,
-                  },
-                  {
-                    title: 'Payout initiated to bank',
-                    meta: 'Chase Business (••••4821) • Today, 08:30 AM',
-                    icon: <Wallet className="h-3.5 w-3.5 text-blue-600" />,
-                    badge: <span className="text-xs font-bold text-slate-900 dark:text-white">+$2,450.00</span>,
-                  },
-                  {
-                    title: 'Customer return requested',
-                    meta: 'Order #ORD-9784 • Yesterday, 16:15 PM',
-                    icon: <RotateCw className="h-3.5 w-3.5 text-rose-600" />,
-                    badge: <span className="text-xs font-bold text-rose-600">-$49.00</span>,
-                  },
-                  {
-                    title: 'Listing verified by platform',
-                    meta: 'DeskSense Edge passed audit • Oct 12',
-                    icon: <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />,
-                    badge: (
-                      <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                        Active
-                      </span>
-                    ),
-                  },
-                ].map((act, i) => (
+                {recentActivities.map((act, i) => (
                   <div
                     key={i}
                     className="flex items-center justify-between gap-2 py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"

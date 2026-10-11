@@ -110,7 +110,13 @@ function tsType(pg: string): string {
   if (trimmed.endsWith('[]')) return `${tsType(trimmed.slice(0, -2))}[]`;
   const base = trimmed.replace(/^public\./, '').replace(/\(.*\)$/, '').trim();
   if (base === 'boolean') return 'boolean';
-  if (['smallint', 'integer', 'bigint', 'real', 'double precision', 'money', 'oid'].includes(base)) return 'number';
+  // `numeric` is included because PostgREST serialises it as a JSON number, which is what
+  // the Supabase generator emits; leaving it out would type every money column as string.
+  if (
+    ['smallint', 'integer', 'bigint', 'real', 'double precision', 'numeric', 'decimal', 'money', 'oid'].includes(base)
+  ) {
+    return 'number';
+  }
   if (['json', 'jsonb'].includes(base)) return 'Json';
   if (enumLabels.has(base)) return enumLabels.get(base)!.map(esc).join(' | ');
   if (base === 'record' || base === 'void') return 'Record<string, unknown>';

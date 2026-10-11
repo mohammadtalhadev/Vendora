@@ -27,7 +27,12 @@ const counts = await rows(`
     (select count(*)::int from products) as products,
     (select count(*)::int from promotions) as promotions,
     (select count(*)::int from rider_profiles) as riders,
-    (select count(*)::int from content_blocks) as content
+    (select count(*)::int from content_blocks) as content,
+    (select count(*)::int from vendor_shipping_settings) as shipping,
+    (select count(*)::int from vendor_notification_prefs) as notif_prefs,
+    (select count(*)::int from bank_accounts) as banks,
+    (select count(*)::int from media_items) as media,
+    (select count(*)::int from product_qa) as qa
 `);
 console.log(counts[0]);
 
@@ -38,6 +43,9 @@ const problems = await rows(`
   union all select 'stores with no products', count(*)::int from vendor_profiles v where not exists (select 1 from products p where p.seller_id = v.id)
   union all select 'duplicate product slugs', count(*)::int from (select slug from products group by slug having count(*) > 1) d
   union all select 'profiles without roles', count(*)::int from profiles where array_length(roles,1) is null
+  union all select 'questions attached to the wrong store', count(*)::int from product_qa q where q.vendor_id <> (select p.seller_id from products p where p.id = q.product_id)
+  union all select 'login-able vendors with no shipping profile', count(*)::int from vendor_profiles v where v.user_id is not null and v.seller_type = 'vendor' and not exists (select 1 from vendor_shipping_settings s where s.vendor_id = v.id)
+  union all select 'stores with more than one default bank account', count(*)::int from (select vendor_id from bank_accounts group by vendor_id having count(*) filter (where is_default) > 1) d
 `);
 for (const p of problems) console.log(`${p.k}: ${p.n}`);
 

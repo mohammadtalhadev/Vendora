@@ -1,25 +1,20 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Tag,
   Plus,
   Calendar,
   Copy,
   Check,
-  TrendingUp,
-  Clock,
-  Sparkles,
   Search,
   Download,
-  RotateCw,
   CheckCircle2,
-  ArrowRight,
-  Headphones,
-  Keyboard,
-  Store,
+  AlertCircle,
+  Trash2,
+  Pause,
+  Play,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
 import {
   Dialog,
   DialogContent,
@@ -27,142 +22,115 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../components/ui/dialog';
-
 import { exportToCsv } from '../lib/export-csv';
+import {
+  useCreatePromotion,
+  useDeletePromotion,
+  useSetPromotionActive,
+  useVendorPromotions,
+  type VendorPromotion,
+} from '../features/vendor/hooks/useVendorPromotions';
 
-interface PromoCampaign {
-  id: string;
-  name: string;
-  code: string;
-  typeValue: string;
-  minOrder: string;
-  scope: string;
-  scopeIcon: 'audio' | 'keyboard' | 'storewide';
-  window: string;
-  windowSubtext: string;
-  redemptionsCurrent: number;
-  redemptionsMax: number | 'unlimited';
-  salesAttributed: number;
-  ordersAttributed: number;
-  status: 'active' | 'scheduled' | 'expired' | 'draft';
-  isEnabled: boolean;
+const money = (value: number) =>
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const dateLabel = (iso: string) =>
+  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+/** `promotions.discount_value` read according to `discount_type`. */
+const discountLabel = (promo: VendorPromotion) =>
+  promo.discountType === 'percentage'
+    ? `${promo.discountValue}% off`
+    : `${money(promo.discountValue)} off`;
+
+type PromoStatus = 'live' | 'scheduled' | 'exhausted' | 'expired' | 'off';
+
+/**
+ * `quote_checkout` refuses a code that is inactive, outside its window, or already at its
+ * usage cap, so a campaign is only claimable when none of those apply.
+ */
+function statusOf(promo: VendorPromotion, now: number): PromoStatus {
+  if (!promo.active) return 'off';
+  if (promo.startsAt && new Date(promo.startsAt).getTime() > now) return 'scheduled';
+  if (promo.endsAt && new Date(promo.endsAt).getTime() < now) return 'expired';
+  if (promo.usageCount >= promo.usageLimit) return 'exhausted';
+  return 'live';
+}
+
+const STATUS_STYLE: Record<PromoStatus, string> = {
+  live: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  scheduled: 'border-blue-200 bg-blue-50 text-blue-700',
+  exhausted: 'border-amber-200 bg-amber-50 text-amber-800',
+  expired: 'border-slate-200 bg-slate-100 text-slate-600',
+  off: 'border-slate-200 bg-slate-100 text-slate-600',
+};
+
+const STATUS_TEXT: Record<PromoStatus, string> = {
+  live: 'Claimable',
+  scheduled: 'Not open yet',
+  exhausted: 'Cap reached',
+  expired: 'Window closed',
+  off: 'Switched off',
+};
+
+type Tab = 'all' | 'live' | 'scheduled' | 'exhausted' | 'off';
+
+function isoFromLocalInput(value: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 export const VendorPromotionsPage: React.FC = () => {
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isCreatePromoModalOpen, setIsCreatePromoModalOpen] = useState(false);
-  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-  const [isNominateModalOpen, setIsNominateModalOpen] = useState(false);
+  const promotions = useVendorPromotions();
+  const create = useCreatePromotion();
+  const setActive = useSetPromotionActive();
+  const remove = useDeletePromotion();
+
+  const [activeTab, setActiveTab] = useState<Tab>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+
+  const [formTitle, setFormTitle] = useState('');
+  const [formCode, setFormCode] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formDiscountType, setFormDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [formDiscountValue, setFormDiscountValue] = useState('10');
+  const [formMinOrder, setFormMinOrder] = useState('0');
+  const [formMaxDiscount, setFormMaxDiscount] = useState('');
+  const [formUsageLimit, setFormUsageLimit] = useState('1000');
+  const [formStarts, setFormStarts] = useState('');
+  const [formEnds, setFormEnds] = useState('');
+  const [formActive, setFormActive] = useState(true);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 4500);
   };
 
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'scheduled' | 'expired' | 'draft'>('all');
-  const [discountTypeFilter, setDiscountTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
+  const rows = useMemo(() => promotions.data ?? [], [promotions.data]);
+  const now = Date.now();
+  const statuses = rows.map((p) => statusOf(p, now));
 
-  // Form states
-  const [formTitle, setFormTitle] = useState('');
-  const [formCode, setFormCode] = useState('');
-  const [formDiscountType, setFormDiscountType] = useState('Percentage Off (%)');
-  const [formDiscountValue, setFormDiscountValue] = useState('15');
-  const [formMinOrder, setFormMinOrder] = useState('50');
-  const [formScope, setFormScope] = useState('Storewide (All Active Products)');
+  const countOf = (tab: Tab) =>
+    tab === 'all' ? rows.length : statuses.filter((s) => s === tab).length;
 
-  const [campaigns, setCampaigns] = useState<PromoCampaign[]>([
-    {
-      id: 'promo-1',
-      name: 'Fall Audio Blowout',
-      code: 'FALLAUDIO15',
-      typeValue: '15% Off',
-      minOrder: 'Min order $75',
-      scope: 'Category: Audio',
-      scopeIcon: 'audio',
-      window: 'Oct 01 – Oct 31',
-      windowSubtext: '14 days left',
-      redemptionsCurrent: 74,
-      redemptionsMax: 100,
-      salesAttributed: 2140.0,
-      ordersAttributed: 18,
-      status: 'active',
-      isEnabled: true,
-    },
-    {
-      id: 'promo-2',
-      name: 'Mechanical Keyboard Bundle',
-      code: 'BUNDLE20',
-      typeValue: '$20.00 Off',
-      minOrder: 'Min 2 items',
-      scope: 'Keychron Q1 + Rest',
-      scopeIcon: 'keyboard',
-      window: 'Oct 05 – Nov 05',
-      windowSubtext: '19 days left',
-      redemptionsCurrent: 45,
-      redemptionsMax: 500,
-      salesAttributed: 1280.0,
-      ordersAttributed: 11,
-      status: 'active',
-      isEnabled: true,
-    },
-    {
-      id: 'promo-3',
-      name: 'New Customer Welcome',
-      code: 'WELCOME10',
-      typeValue: '10% Storewide',
-      minOrder: 'First-time buyers',
-      scope: 'Storewide',
-      scopeIcon: 'storewide',
-      window: 'Ongoing',
-      windowSubtext: 'Auto-renews',
-      redemptionsCurrent: 52,
-      redemptionsMax: 'unlimited',
-      salesAttributed: 940.5,
-      ordersAttributed: 12,
-      status: 'active',
-      isEnabled: true,
-    },
-    {
-      id: 'promo-4',
-      name: 'Flash Headphones 24H Deal',
-      code: 'SONYFLASH',
-      typeValue: '$50.00 Off',
-      minOrder: 'Instant checkout discount',
-      scope: 'Sony WH-1000XM5',
-      scopeIcon: 'audio',
-      window: 'Oct 18 – Oct 19',
-      windowSubtext: 'Starts in 3 days',
-      redemptionsCurrent: 0,
-      redemptionsMax: 50,
-      salesAttributed: 0.0,
-      ordersAttributed: 0,
-      status: 'scheduled',
-      isEnabled: true,
-    },
-    {
-      id: 'promo-5',
-      name: 'Free Express Shipping Kickoff',
-      code: 'FREESHIP',
-      typeValue: 'Free Domestic',
-      minOrder: 'Min order $50',
-      scope: 'Storewide',
-      scopeIcon: 'storewide',
-      window: 'Sep 01 – Sep 30',
-      windowSubtext: 'Expired 15 days ago',
-      redemptionsCurrent: 150,
-      redemptionsMax: 150,
-      salesAttributed: 450.0,
-      ordersAttributed: 35,
-      status: 'expired',
-      isEnabled: false,
-    },
-  ]);
+  const filtered = rows.filter((p, idx) => {
+    if (activeTab !== 'all' && statuses[idx] !== activeTab) return false;
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return p.code.toLowerCase().includes(q) || p.title.toLowerCase().includes(q);
+  });
+
+  const redemptions = rows.reduce((sum, p) => sum + p.usageCount, 0);
+  const caps = rows.reduce((sum, p) => sum + p.usageLimit, 0);
+  const claimable = statuses.filter((s) => s === 'live').length;
+
+  const topRedeemed = [...rows].sort((a, b) => b.usageCount - a.usageCount).slice(0, 3);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard?.writeText(code);
@@ -170,808 +138,746 @@ export const VendorPromotionsPage: React.FC = () => {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleTogglePromo = (promoId: string) => {
-    setCampaigns((prev) =>
-      prev.map((c) =>
-        c.id === promoId ? { ...c, isEnabled: !c.isEnabled } : c
-      )
-    );
+  const handleToggle = async (promo: VendorPromotion) => {
+    setFormError(null);
+    try {
+      const next = await setActive.mutateAsync({
+        promotionId: promo.id,
+        active: !promo.active,
+      });
+      showToast(
+        next.active
+          ? `${next.code} is switchable on again - checkout will accept it while it is inside its window.`
+          : `${next.code} is off. Buyers typing it now get "Invalid or expired coupon code".`,
+      );
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : String(err));
+    }
   };
 
-  const filteredCampaigns = campaigns.filter((c) => {
-    if (activeTab === 'active' && c.status !== 'active') return false;
-    if (activeTab === 'scheduled' && c.status !== 'scheduled') return false;
-    if (activeTab === 'expired' && c.status !== 'expired') return false;
-    if (activeTab === 'draft' && c.status !== 'draft') return false;
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.code.toLowerCase().includes(q) ||
-        c.scope.toLowerCase().includes(q)
-      );
+  const handleDelete = async (promo: VendorPromotion) => {
+    setFormError(null);
+    try {
+      await remove.mutateAsync(promo.id);
+      showToast(`Deleted ${promo.code}. Its redemption count went with the row; orders it cheapened keep their booked totals.`);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : String(err));
     }
-    return true;
-  });
+  };
 
-  const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage) || 1;
-  const paginatedCampaigns = filteredCampaigns.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleCreate = async () => {
+    setFormError(null);
+    const code = formCode.trim().toUpperCase();
+    const value = Number.parseFloat(formDiscountValue);
+    if (!code) {
+      setFormError('A coupon needs a code - that is what buyers type at checkout.');
+      return;
+    }
+    if (!Number.isFinite(value) || value < 0) {
+      setFormError('Discount value must be zero or more.');
+      return;
+    }
+    try {
+      const created = await create.mutateAsync({
+        code,
+        title: formTitle.trim(),
+        description: formDescription.trim(),
+        discountType: formDiscountType,
+        discountValue: value,
+        minimumOrder: Number.parseFloat(formMinOrder) || 0,
+        maxDiscount: formMaxDiscount.trim() === '' ? null : Number.parseFloat(formMaxDiscount),
+        usageLimit: Number.parseInt(formUsageLimit, 10) || 0,
+        active: formActive,
+        startsAt: isoFromLocalInput(formStarts),
+        endsAt: isoFromLocalInput(formEnds),
+      });
+      setIsCreateOpen(false);
+      setFormCode('');
+      setFormTitle('');
+      setFormDescription('');
+      showToast(`Created ${created.code}. It is live on this store's seller group only.`);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleExportCsv = () => {
+    const data = filtered.map((p) => ({
+      code: p.code,
+      title: p.title,
+      discount: discountLabel(p),
+      minimumOrder: money(p.minimumOrder),
+      maxDiscount: p.maxDiscount === undefined ? '' : money(p.maxDiscount),
+      usageCount: p.usageCount,
+      usageLimit: p.usageLimit,
+      window:
+        p.startsAt || p.endsAt
+          ? `${p.startsAt ? dateLabel(p.startsAt) : 'open'} - ${p.endsAt ? dateLabel(p.endsAt) : 'open'}`
+          : 'always open',
+      status: statusOf(p, now),
+      active: p.active ? 'yes' : 'no',
+    }));
+    exportToCsv(`vendor-promotions-${new Date().toISOString().split('T')[0]}.csv`, data, {
+      code: 'Code',
+      title: 'Campaign',
+      discount: 'Discount',
+      minimumOrder: 'Minimum order',
+      maxDiscount: 'Max discount',
+      usageCount: 'Redemptions',
+      usageLimit: 'Usage cap',
+      window: 'Window',
+      status: 'Status',
+      active: 'Switched on',
+    });
+    showToast('Campaigns exported to CSV');
+  };
 
   return (
-    <WorkspaceLayout
-      role="vendor"
-      roleBadgeText="VENDOR PARTNER"
-      sidebar={<VendorNav onOpenAddProduct={() => setIsProductModalOpen(true)} />}
-    >
+    <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
       <div className="space-y-6">
-        {/* ── Breadcrumb & Header ─────────────────────────────────── */}
+        {/* ── Header ──────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              MARKETING &amp; SALES <span className="text-slate-300">/</span> PROMOTIONS
+              MARKETING <span className="text-slate-300">/</span> PROMOTIONS
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-              Promotions &amp; Coupons
+              Coupon Codes
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Create discount coupon codes, flash deals, bundle offers, and monitor promotional campaign conversion ROI.
+            <p className="mt-1 max-w-2xl text-xs text-slate-500">
+              A code you create here is matched by <code className="font-mono">quote_checkout</code>.
+              It discounts only your own seller group, only once per order, and only when your cart
+              subtotal reaches its minimum.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
             <button
-              onClick={() => setIsCalendarModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              onClick={() => setIsScheduleOpen(true)}
+              className="inline-flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 sm:self-auto"
             >
               <Calendar className="h-4 w-4 text-slate-500" />
-              Campaign Calendar
+              Campaign windows
             </button>
             <button
-              onClick={() => setIsCreatePromoModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors"
+              onClick={() => {
+                setFormError(null);
+                setIsCreateOpen(true);
+              }}
+              className="inline-flex items-center gap-2 self-start rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-slate-800 sm:self-auto"
             >
               <Plus className="h-4 w-4" />
-              + Create Promotion
+              New coupon code
             </button>
           </div>
         </div>
 
-        {/* ── 4 Top KPI Cards ─────────────────────────────────────── */}
+        {toastMessage && (
+          <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {formError && (
+          <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <span>{formError}</span>
+          </div>
+        )}
+
+        {/* ── KPI cards ───────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Card 1: Active Campaigns */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Active Campaigns</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  2 Scheduled
-                </span>
-              </div>
-              <div className="mt-3 text-3xl font-extrabold text-slate-900">4 Running</div>
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                <Clock className="h-3.5 w-3.5 text-slate-400" />
-                <span>Next flash deal starts in 18 hrs</span>
-              </div>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              CLAIMABLE RIGHT NOW
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {promotions.isPending ? '—' : claimable}
+            </div>
+            <div className="mt-2 text-xs text-slate-500">
+              {rows.length} campaign(s) on this store
             </div>
           </div>
 
-          {/* Card 2: Promo-Driven Revenue */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Promo-Driven Revenue</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  +14.2%
-                </span>
-              </div>
-              <div className="mt-3 text-3xl font-extrabold text-slate-900">$4,820.50</div>
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-                <span>32.3% of total store volume</span>
-              </div>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              REDEMPTIONS BOOKED
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">{redemptions}</div>
+            <div className="mt-2 text-xs text-slate-500">
+              Counted by checkout when a code discounted an order
             </div>
           </div>
 
-          {/* Card 3: Coupons Redeemed */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Coupons Redeemed</span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  30 Days
-                </span>
-              </div>
-              <div className="mt-3 text-3xl font-extrabold text-slate-900">186 Redemptions</div>
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                <Tag className="h-3.5 w-3.5 text-slate-400" />
-                <span>Avg. Discount: $12.40 / order</span>
-              </div>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              CAP CONSUMED
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {caps ? `${Math.min(100, Math.round((redemptions / caps) * 100))}%` : '—'}
+            </div>
+            <div className="mt-2 text-xs text-slate-500">
+              {redemptions} of {caps} claimed units
             </div>
           </div>
 
-          {/* Card 4: Promo ROI / ROAS */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                <span>Promo ROI / ROAS</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                  High Efficiency
-                </span>
-              </div>
-              <div className="mt-3 text-3xl font-extrabold text-slate-900">6.4x Return</div>
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                <span>Net Margin Preserved: 24.8%</span>
-              </div>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              SWITCHED OFF
+            </div>
+            <div className="mt-3 text-3xl font-extrabold text-slate-900">
+              {statuses.filter((s) => s === 'off').length}
+            </div>
+            <div className="mt-2 text-xs text-slate-500">
+              {statuses.filter((s) => s === 'expired').length} past their window,{' '}
+              {statuses.filter((s) => s === 'exhausted').length} at cap
             </div>
           </div>
         </div>
 
-        {/* ── Tabs & Search Bar ───────────────────────────────────── */}
+        {/* ── Tabs + search ───────────────────────────────────────── */}
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200 pb-2">
+          <div className="flex flex-col gap-3 border-b border-slate-200 pb-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" data-lenis-prevent>
-              {[
-                { id: 'all', label: 'All Campaigns', count: campaigns.length },
-                { id: 'active', label: 'Active', count: campaigns.filter((c) => c.status === 'active').length },
-                { id: 'scheduled', label: 'Scheduled', count: campaigns.filter((c) => c.status === 'scheduled').length },
-                { id: 'expired', label: 'Expired', count: campaigns.filter((c) => c.status === 'expired').length },
-                { id: 'draft', label: 'Draft', count: campaigns.filter((c) => c.status === 'draft').length },
-              ].map((tab) => (
+              {(['all', 'live', 'scheduled', 'exhausted', 'off'] as Tab[]).map((tab) => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
                   className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'text-slate-600 hover:bg-slate-100'
+                    activeTab === tab ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <span>{tab.label}</span>
+                  <span className="capitalize">{tab === 'off' ? 'Switched off' : tab}</span>
                   <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-semibold ${
-                      activeTab === tab.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-200 text-slate-600'
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                      activeTab === tab ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
                     }`}
                   >
-                    {tab.count}
+                    {countOf(tab)}
                   </span>
                 </button>
               ))}
             </div>
 
             <button
-              onClick={() => {
-                exportToCsv({
-                  filename: `vendor-promotions-${new Date().toISOString().slice(0, 10)}.csv`,
-                  columns: [
-                    { header: 'Campaign Name', key: 'name' },
-                    { header: 'Coupon Code', key: 'code' },
-                    { header: 'Discount', key: 'typeValue' },
-                    { header: 'Scope', key: 'scope' },
-                    { header: 'Window', key: 'window' },
-                    { header: 'Redemptions', key: 'redemptionsCurrent' },
-                    { header: 'Sales Attributed ($)', key: 'salesAttributed' },
-                    { header: 'Status', key: 'status' },
-                    { header: 'Enabled', key: 'isEnabled' },
-                  ],
-                  data: filteredCampaigns,
-                });
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 self-start sm:self-auto cursor-pointer"
+              type="button"
+              onClick={handleExportCsv}
+              className="inline-flex items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 sm:self-auto"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Export CSV</span>
+              Export CSV
             </button>
           </div>
 
-          {/* Search Row */}
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Filter by promo code, keyword, or campaign name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
-              />
-            </div>
-
-            <select
-              value={discountTypeFilter}
-              onChange={(e) => setDiscountTypeFilter(e.target.value)}
-              className="w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
-            >
-              <option value="all">All Discount Types</option>
-              <option value="percent">Percentage Off</option>
-              <option value="fixed">Fixed Dollar Off</option>
-              <option value="shipping">Free Shipping</option>
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
-            >
-              <option value="all">Status: All Active &amp; Paused</option>
-              <option value="active">Active Only</option>
-              <option value="paused">Paused Only</option>
-            </select>
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Filter by code or campaign title"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+            />
           </div>
         </div>
 
-        {/* ── Table: Active & Scheduled Promotions ─────────────────── */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-slate-900">
-                Active &amp; Scheduled Promotions
-              </h2>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                {filteredCampaigns.length} items shown
-              </span>
+        {/* ── Table ───────────────────────────────────────────────── */}
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+          {promotions.isError && (
+            <div className="flex items-start gap-2 p-5 text-xs text-rose-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{(promotions.error as Error).message}</span>
             </div>
+          )}
 
-            <div className="flex items-center gap-2 text-slate-400">
-              <button className="p-1 hover:text-slate-700" title="Refresh">
-                <RotateCw className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">CAMPAIGN &amp; COUPON CODE</th>
-                  <th className="px-4 py-3">TYPE &amp; VALUE</th>
-                  <th className="px-4 py-3">PRODUCT SCOPE</th>
-                  <th className="px-4 py-3">CAMPAIGN WINDOW</th>
-                  <th className="px-4 py-3">REDEMPTIONS</th>
-                  <th className="px-4 py-3">SALES ATTRIBUTED</th>
-                  <th className="px-4 py-3">STATUS</th>
-                  <th className="px-4 py-3 text-right">ACTIVE</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {paginatedCampaigns.map((c) => {
-                  const percent =
-                    c.redemptionsMax === 'unlimited'
-                      ? 100
-                      : Math.round((c.redemptionsCurrent / c.redemptionsMax) * 100);
-
-                  return (
-                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                      {/* Campaign & Code */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900 text-xs">{c.name}</div>
-                        <div className="mt-1 flex items-center gap-1.5">
-                          <span className="rounded bg-slate-100 font-mono text-[11px] font-bold text-slate-800 px-2 py-0.5 border border-slate-200">
-                            {c.code}
-                          </span>
-                          <button
-                            onClick={() => handleCopyCode(c.code)}
-                            className="text-slate-400 hover:text-slate-700"
-                            title="Copy code"
-                          >
-                            {copiedCode === c.code ? (
-                              <Check className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Type & Value */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900">{c.typeValue}</div>
-                        <div className="text-[11px] text-slate-500">{c.minOrder}</div>
-                      </td>
-
-                      {/* Product Scope */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5 text-slate-700 font-medium">
-                          {c.scopeIcon === 'audio' && <Headphones className="h-3.5 w-3.5 text-slate-400" />}
-                          {c.scopeIcon === 'keyboard' && <Keyboard className="h-3.5 w-3.5 text-slate-400" />}
-                          {c.scopeIcon === 'storewide' && <Store className="h-3.5 w-3.5 text-slate-400" />}
-                          <span>{c.scope}</span>
-                        </div>
-                      </td>
-
-                      {/* Campaign Window */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-semibold text-slate-900">{c.window}</div>
-                        <div className="text-[11px] text-slate-500">{c.windowSubtext}</div>
-                      </td>
-
-                      {/* Redemptions */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center justify-between text-[11px] text-slate-700 font-semibold mb-1">
-                          <span>
-                            {c.redemptionsCurrent} /{' '}
-                            {c.redemptionsMax === 'unlimited' ? '∞' : c.redemptionsMax}
-                          </span>
-                          <span className="text-slate-400">{percent}%</span>
-                        </div>
-                        <div className="h-1.5 w-24 rounded-full bg-slate-100 overflow-hidden">
-                          <div
-                            className="h-full bg-slate-900 rounded-full"
-                            style={{ width: `${Math.min(100, percent)}%` }}
-                          />
-                        </div>
-                      </td>
-
-                      {/* Sales Attributed */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900">
-                          ${c.salesAttributed.toFixed(2)}
-                        </div>
-                        <div className="text-[10px] text-emerald-700 font-semibold">
-                          +{c.ordersAttributed} orders
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3.5">
-                        {c.status === 'active' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                            Active
-                          </span>
-                        )}
-                        {c.status === 'scheduled' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
-                            <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-                            Scheduled
-                          </span>
-                        )}
-                        {c.status === 'expired' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                            Expired
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Switch */}
-                      <td className="px-4 py-3.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePromo(c.id)}
-                          className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            c.isEnabled ? 'bg-slate-900' : 'bg-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              c.isEnabled ? 'translate-x-3' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Table Footer */}
-          <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
-            <span>
-              Showing {filteredCampaigns.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredCampaigns.length)} of {filteredCampaigns.length} results
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="rounded border border-slate-200 px-2 py-0.5 text-xs hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                &lt;
-              </button>
-              <span className="px-2 font-medium text-slate-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded border border-slate-200 px-2 py-0.5 text-xs hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                &gt;
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Bottom 2-Column Section (5 cols / 7 cols) ────────────── */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left: Top Performing Promo Codes (5 cols) */}
-          <div className="lg:col-span-5 rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-slate-700" />
-                  <h2 className="text-base font-bold text-slate-900">Top Performing Promo Codes</h2>
-                </div>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  Last 30 Days
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Ranked by total revenue attribution and conversion efficiency.
+          {!promotions.isError && rows.length === 0 && (
+            <div className="space-y-2 p-8 text-center">
+              <Tag className="mx-auto h-8 w-8 text-slate-300" />
+              <div className="text-sm font-bold text-slate-900">No coupon codes yet</div>
+              <p className="mx-auto max-w-xl text-xs text-slate-500">
+                Create one and it is immediately readable by checkout. Codes are unique across the
+                whole marketplace, so a popular string may already belong to another store.
               </p>
+            </div>
+          )}
 
-              {/* Top 3 List */}
-              <div className="mt-4 space-y-3">
-                {[
-                  {
-                    rank: 1,
-                    code: 'FALLAUDIO15',
-                    meta: 'Audio Category • 74 Redemptions',
-                    rev: '$2,140.00',
-                    pill: '+22% AOV Boost',
-                  },
-                  {
-                    rank: 2,
-                    code: 'BUNDLE20',
-                    meta: 'Keyboards SKU • 45 Redemptions',
-                    rev: '$1,280.00',
-                    pill: '+34% Cross-sell',
-                  },
-                  {
-                    rank: 3,
-                    code: 'WELCOME10',
-                    meta: 'First Orders • 52 Redemptions',
-                    rev: '$940.50',
-                    pill: '8.9% Conversion',
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.code}
-                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50/60 text-xs"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white font-bold text-[11px]">
-                        {item.rank}
-                      </div>
-                      <div>
-                        <div className="font-mono font-bold text-slate-900">{item.code}</div>
-                        <div className="text-[11px] text-slate-400">{item.meta}</div>
-                      </div>
+          {!promotions.isError && rows.length > 0 && (
+            <>
+              <div className="border-b border-slate-100 p-4">
+                <h2 className="text-sm font-bold text-slate-900">Your campaigns</h2>
+                <p className="text-xs text-slate-500">{filtered.length} shown of {rows.length}</p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">CODE &amp; CAMPAIGN</th>
+                      <th className="px-4 py-3">DISCOUNT</th>
+                      <th className="px-4 py-3">MINIMUM / CAP</th>
+                      <th className="px-4 py-3">WINDOW</th>
+                      <th className="px-4 py-3">REDEMPTIONS</th>
+                      <th className="px-4 py-3">STATUS</th>
+                      <th className="px-4 py-3 text-right">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filtered.map((promo) => {
+                      const status = statusOf(promo, now);
+                      const pct = promo.usageLimit
+                        ? Math.min(100, Math.round((promo.usageCount / promo.usageLimit) * 100))
+                        : 0;
+                      return (
+                        <tr key={promo.id} className="transition-colors hover:bg-slate-50/70">
+                          <td className="px-4 py-3.5">
+                            <div className="font-bold text-slate-900">
+                              {promo.title || 'Untitled campaign'}
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
+                                {promo.code}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyCode(promo.code)}
+                                className="text-slate-400 hover:text-slate-700"
+                                title="Copy code"
+                              >
+                                {copiedCode === promo.code ? (
+                                  <Check className="h-3 w-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </button>
+                            </div>
+                            {promo.description && (
+                              <div className="mt-1 max-w-xs text-[11px] text-slate-400">
+                                {promo.description}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="font-bold text-slate-900">{discountLabel(promo)}</div>
+                            {promo.maxDiscount !== undefined && (
+                              <div className="text-[11px] text-slate-500">
+                                Capped at {money(promo.maxDiscount)}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="text-slate-700">
+                              {promo.minimumOrder > 0
+                                ? `Spend ${money(promo.minimumOrder)}`
+                                : 'No minimum'}
+                            </div>
+                            <div className="text-[11px] text-slate-500">
+                              Cap {promo.usageLimit.toLocaleString()} claim(s)
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="font-semibold text-slate-900">
+                              {promo.startsAt || promo.endsAt ? 'Scheduled window' : 'Always open'}
+                            </div>
+                            <div className="text-[11px] text-slate-500">
+                              {promo.startsAt ? dateLabel(promo.startsAt) : 'from creation'}
+                              {' → '}
+                              {promo.endsAt ? dateLabel(promo.endsAt) : 'no end'}
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-slate-700">
+                              <span>
+                                {promo.usageCount} / {promo.usageLimit.toLocaleString()}
+                              </span>
+                              <span className="text-slate-400">{pct}%</span>
+                            </div>
+                            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className="h-full rounded-full bg-slate-900"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[status]}`}
+                            >
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                              {STATUS_TEXT[status]}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggle(promo)}
+                                disabled={setActive.isPending}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                {promo.active ? (
+                                  <>
+                                    <Pause className="h-3 w-3" /> Switch off
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="h-3 w-3" /> Switch on
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(promo)}
+                                disabled={remove.isPending}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
+                              >
+                                <Trash2 className="h-3 w-3" /> Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
+                No order stores which code was typed. Checkout freezes the discounted subtotal onto the
+                package and increments the campaign, so deleting a code loses its redemption count
+                while the orders it cheapened keep the totals they were booked with.
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Bottom: most redeemed + how it applies ──────────────── */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-slate-700" />
+                <h2 className="text-base font-bold text-slate-900">Most redeemed codes</h2>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Ranked on <code className="font-mono">usage_count</code>, which only checkout can
+                increment
+              </p>
+            </div>
+
+            {topRedeemed.length === 0 && <p className="text-xs text-slate-500">Nothing to rank yet.</p>}
+
+            <div className="space-y-3">
+              {topRedeemed.map((promo, idx) => (
+                <div
+                  key={promo.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/60 p-3 text-xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+                      {idx + 1}
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-slate-900">{item.rev}</div>
-                      <div className="text-[10px] font-semibold text-emerald-700">{item.pill}</div>
+                    <div>
+                      <div className="font-mono font-bold text-slate-900">{promo.code}</div>
+                      <div className="text-[11px] text-slate-400">
+                        {discountLabel(promo)} · {promo.usageCount} claim(s)
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[statusOf(promo, now)]}`}
+                  >
+                    {STATUS_TEXT[statusOf(promo, now)]}
+                  </span>
+                </div>
+              ))}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
-              <span>Aggregated average order value increase:</span>
-              <strong className="text-emerald-700">+19.4% on promo transactions</strong>
-            </div>
+            <p className="border-t border-slate-100 pt-3 text-[11px] text-slate-400">
+              There is no revenue-attribution table behind this list. The database records that a code
+              was applied and how many times, not what the discounted order earned.
+            </p>
           </div>
 
-          {/* Right: Featured Campaign Banner (7 cols) */}
-          <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between space-y-4">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-7">
             <div>
-              <div className="flex items-center justify-between">
-                <span className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                  FEATURED CAMPAIGN
-                </span>
-                <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  <Clock className="h-3 w-3" />
-                  Deadline: Oct 20
-                </span>
-              </div>
-
-              <h2 className="mt-3 text-lg font-black text-slate-900 tracking-tight">
-                Vendora Tech Week 2026 Nomination Open
-              </h2>
-              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                Submit your top consumer electronics and high-rated inventory for curated spotlight placement on the Vendora primary marketplace home banner and mobile push deals carousel.
+              <h2 className="text-base font-bold text-slate-900">What happens when a buyer types your code</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Straight from <code className="font-mono">quote_checkout</code> and{' '}
+                <code className="font-mono">place_order</code>
               </p>
-
-              {/* Inner eligible box */}
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs">
-                <div className="flex items-center gap-2 font-bold text-slate-900">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <span>3 Products Eligible in Your Catalog</span>
-                </div>
-                <div className="mt-1 text-slate-500 text-[11px] pl-6">
-                  Sony WH-1000XM5, Keychron Q1, Anker 737 GaN Charger
-                </div>
-              </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-                <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
-                <span>Expected Traffic Uplift: ~340%</span>
-              </div>
+            <ol className="space-y-3 text-xs">
+              {[
+                [
+                  'The code must exist, be switched on, and sit inside its window.',
+                  'Otherwise checkout raises "Invalid or expired coupon code" - a code past its end date is refused even when it is still switched on.',
+                ],
+                [
+                  'It has to have cap left.',
+                  'A claim is only possible while usage_count is below the limit you set.',
+                ],
+                [
+                  'It discounts your seller group only.',
+                  'A code created by your store is ignored for another store\'s lines in the same cart, and the minimum order is measured against your subtotal, not the whole basket. A platform code (no vendor) applies to any group.',
+                ],
+                [
+                  'One code per order, and it is taken off the goods.',
+                  'A percentage is applied to your subtotal and can be held down by the max discount; a fixed amount is subtracted once. The discount never exceeds the subtotal and freight is untouched, and the platform commission is then charged on the discounted number - so a coupon lowers your fee as well.',
+                ],
+                [
+                  'The redemption is counted when the order is booked.',
+                  'Quoting alone does not consume a claim; placing the order increments usage_count inside the same transaction.',
+                ],
+              ].map(([title, body], idx) => (
+                <li key={idx} className="flex gap-3">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">
+                    {idx + 1}
+                  </span>
+                  <span>
+                    <span className="block font-bold text-slate-900">{title}</span>
+                    <span className="mt-0.5 block text-[11px] text-slate-500">{body}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
 
-              <button
-                onClick={() => setIsNominateModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors self-start sm:self-auto"
-              >
-                <span>Nominate Products</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
+              There is no flash-deal engine, product-scope filter, or nomination programme wired into
+              this build. <code className="font-mono">promotions</code> has no column for which SKUs a
+              code covers, so every code here is storewide.
+            </p>
           </div>
         </div>
 
-        {/* ── Create Promotion Modal ───────────────────────────────── */}
-        <Dialog open={isCreatePromoModalOpen} onOpenChange={setIsCreatePromoModalOpen}>
+        {/* ── Create modal ────────────────────────────────────────── */}
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <Tag className="h-5 w-5 text-slate-700" />
-                Create New Promotion
+                New coupon code
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Configure discount rules, coupon code, audience criteria, and redemption caps.
+                These are the columns on <code className="font-mono">promotions</code>. Anything you
+                leave blank keeps its database default.
               </DialogDescription>
             </DialogHeader>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!formTitle || !formCode) return;
-                const newPromo: PromoCampaign = {
-                  id: `promo-${Date.now()}`,
-                  name: formTitle,
-                  code: formCode.toUpperCase(),
-                  typeValue:
-                    formDiscountType === 'Percentage Off (%)'
-                      ? `${formDiscountValue}% Off`
-                      : formDiscountType === 'Free Domestic Shipping'
-                      ? 'Free Shipping'
-                      : `$${formDiscountValue} Off`,
-                  minOrder: formMinOrder ? `Min order $${formMinOrder}` : 'No min order',
-                  scope: formScope,
-                  scopeIcon: formScope.includes('Audio') ? 'audio' : formScope.includes('Keyboard') ? 'keyboard' : 'storewide',
-                  window: 'Active today',
-                  windowSubtext: '30 days left',
-                  redemptionsCurrent: 0,
-                  redemptionsMax: 500,
-                  salesAttributed: 0,
-                  ordersAttributed: 0,
-                  status: 'active',
-                  isEnabled: true,
-                };
-                setCampaigns([newPromo, ...campaigns]);
-                setFormTitle('');
-                setFormCode('');
-                setIsCreatePromoModalOpen(false);
-              }}
-              className="space-y-3.5 py-2 text-xs"
-            >
+            <div className="space-y-3.5 py-2 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block font-bold text-slate-700">Campaign title</label>
+                  <input
+                    type="text"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="Autumn audio deal"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block font-bold text-slate-700">Code (unique, uppercase)</label>
+                  <input
+                    type="text"
+                    value={formCode}
+                    onChange={(e) => setFormCode(e.target.value.toUpperCase())}
+                    placeholder="AUTUMN15"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs focus:border-slate-900 focus:outline-none"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Campaign Title</label>
+                <label className="mb-1 block font-bold text-slate-700">Description for your own log</label>
                 <input
                   type="text"
-                  required
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="e.g. Cyber Monday Super Sale"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Week-one push on audio listings"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Coupon Code</label>
-                  <input
-                    type="text"
-                    required
-                    value={formCode}
-                    onChange={(e) => setFormCode(e.target.value)}
-                    placeholder="CYBER50"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-mono uppercase focus:outline-none focus:border-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Discount Type</label>
+                  <label className="mb-1 block font-bold text-slate-700">Discount type</label>
                   <select
                     value={formDiscountType}
-                    onChange={(e) => setFormDiscountType(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                    onChange={(e) => setFormDiscountType(e.target.value as 'percentage' | 'fixed')}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
                   >
-                    <option>Percentage Off (%)</option>
-                    <option>Fixed Dollar Amount ($)</option>
-                    <option>Free Domestic Shipping</option>
+                    <option value="percentage">Percentage off</option>
+                    <option value="fixed">Fixed amount off</option>
                   </select>
+                </div>
+                <div>
+                  <label className="mb-1 block font-bold text-slate-700">
+                    {formDiscountType === 'percentage' ? 'Percent' : 'Amount ($)'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formDiscountValue}
+                    onChange={(e) => setFormDiscountValue(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Discount Value</label>
+                  <label className="mb-1 block font-bold text-slate-700">Minimum order ($)</label>
                   <input
                     type="number"
-                    required
-                    value={formDiscountValue}
-                    onChange={(e) => setFormDiscountValue(e.target.value)}
-                    placeholder="15"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                    min="0"
+                    step="0.01"
+                    value={formMinOrder}
+                    onChange={(e) => setFormMinOrder(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Min. Order Value ($)</label>
+                  <label className="mb-1 block font-bold text-slate-700">Max discount (optional)</label>
                   <input
                     type="number"
-                    value={formMinOrder}
-                    onChange={(e) => setFormMinOrder(e.target.value)}
-                    placeholder="50"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                    min="0"
+                    step="0.01"
+                    value={formMaxDiscount}
+                    onChange={(e) => setFormMaxDiscount(e.target.value)}
+                    placeholder="no cap"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block font-bold text-slate-700">Usage cap</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formUsageLimit}
+                    onChange={(e) => setFormUsageLimit(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block font-bold text-slate-700">Opens</label>
+                  <input
+                    type="datetime-local"
+                    value={formStarts}
+                    onChange={(e) => setFormStarts(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Product Scope</label>
-                <select
-                  value={formScope}
-                  onChange={(e) => setFormScope(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
-                >
-                  <option>Storewide (All Active Products)</option>
-                  <option>Specific Category: Audio</option>
-                  <option>Specific Category: Keyboards &amp; Peripherals</option>
-                  <option>Selected SKU Listings</option>
-                </select>
+                <label className="mb-1 block font-bold text-slate-700">Closes</label>
+                <input
+                  type="datetime-local"
+                  value={formEnds}
+                  onChange={(e) => setFormEnds(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
+                />
               </div>
 
-              <div className="flex justify-end gap-2.5 pt-3">
+              <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                <input
+                  type="checkbox"
+                  checked={formActive}
+                  onChange={(e) => setFormActive(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-300"
+                />
+                <span>
+                  <span className="block font-bold text-slate-900">Switched on</span>
+                  <span className="mt-0.5 block text-[11px] text-slate-500">
+                    An inactive row still exists, but checkout rejects it outright.
+                  </span>
+                </span>
+              </label>
+
+              <div className="flex justify-end gap-2.5 pt-1">
                 <button
                   type="button"
-                  onClick={() => setIsCreatePromoModalOpen(false)}
+                  onClick={() => setIsCreateOpen(false)}
                   className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={create.isPending}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
-                  Launch Promotion
+                  {create.isPending ? 'Writing…' : 'Create coupon'}
                 </button>
               </div>
-            </form>
+            </div>
           </DialogContent>
         </Dialog>
 
-        {/* ── Campaign Calendar Modal ──────────────────────────────── */}
-        <Dialog open={isCalendarModalOpen} onOpenChange={setIsCalendarModalOpen}>
+        {/* ── Windows modal ───────────────────────────────────────── */}
+        <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-slate-700" />
-                Promotional Campaign Schedule
+                Campaign windows
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Timeline roadmap of scheduled discount windows and flash sales.
+                Sorted by when each code opens. Codes with no window are always claimable.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 py-2 text-xs">
-              <div className="rounded-lg border border-slate-200 p-3 bg-slate-50">
-                <div className="flex justify-between font-bold text-slate-900">
-                  <span>Fall Audio Blowout</span>
-                  <span className="text-emerald-700">Active</span>
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">Oct 01, 2026 – Oct 31, 2026</div>
-              </div>
-
-              <div className="rounded-lg border border-slate-200 p-3 bg-slate-50">
-                <div className="flex justify-between font-bold text-slate-900">
-                  <span>Flash Headphones 24H Deal</span>
-                  <span className="text-blue-700">Scheduled</span>
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">Oct 18, 2026 – Oct 19, 2026</div>
-              </div>
-
-              <div className="rounded-lg border border-slate-200 p-3 bg-slate-50">
-                <div className="flex justify-between font-bold text-slate-900">
-                  <span>Vendora Tech Week Spotlight</span>
-                  <span className="text-amber-700">Upcoming Nomination</span>
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">Nov 10, 2026 – Nov 17, 2026</div>
-              </div>
+            <div className="max-h-80 space-y-3 overflow-y-auto py-2 text-xs">
+              {rows.length === 0 && (
+                <p className="text-slate-500">No campaigns to schedule yet.</p>
+              )}
+              {[...rows]
+                .sort((a, b) =>
+                  (a.startsAt ?? a.createdAt).localeCompare(b.startsAt ?? b.createdAt),
+                )
+                .map((promo) => (
+                  <div key={promo.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between font-bold text-slate-900">
+                      <span className="font-mono">{promo.code}</span>
+                      <span className="text-[10px] uppercase text-slate-500">
+                        {STATUS_TEXT[statusOf(promo, now)]}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-slate-500">
+                      {promo.startsAt ? dateLabel(promo.startsAt) : 'from creation'}
+                      {' → '}
+                      {promo.endsAt ? dateLabel(promo.endsAt) : 'no end date'}
+                    </div>
+                  </div>
+                ))}
             </div>
 
             <div className="flex justify-end pt-2">
               <button
                 type="button"
-                onClick={() => setIsCalendarModalOpen(false)}
+                onClick={() => setIsScheduleOpen(false)}
                 className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
               >
-                Close Calendar
+                Close
               </button>
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* ── Nominate Products Modal ──────────────────────────────── */}
-        <Dialog open={isNominateModalOpen} onOpenChange={setIsNominateModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                Nominate Products for Tech Week 2026
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Select from your highest-rated verified inventory for prime marketplace hero banners.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 py-2 text-xs">
-              {[
-                { name: 'Sony WH-1000XM5 Wireless Headphones', stock: '12 in stock', rating: '4.9 ★' },
-                { name: 'Keychron Q1 Pro Custom Mechanical Keyboard', stock: '8 in stock', rating: '4.8 ★' },
-                { name: 'Anker 737 GaN 140W Fast Charger', stock: '24 in stock', rating: '4.7 ★' },
-              ].map((p) => (
-                <label
-                  key={p.name}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer"
-                >
-                  <input type="checkbox" defaultChecked className="rounded text-slate-900" />
-                  <div className="flex-1">
-                    <div className="font-bold text-slate-900">{p.name}</div>
-                    <div className="text-[11px] text-slate-400">
-                      {p.stock} • {p.rating}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsNominateModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('3 products nominated for Vendora Tech Week spotlight review!');
-                  setIsNominateModalOpen(false);
-                }}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
-              >
-                Submit Nomination
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Product Form Modal ───────────────────────────────────── */}
-        <ProductFormModal
-          open={isProductModalOpen}
-          onOpenChange={setIsProductModalOpen}
-        />
-
-        {/* ── Floating Toast Notification ───────────────────────────── */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
       </div>
     </WorkspaceLayout>
   );

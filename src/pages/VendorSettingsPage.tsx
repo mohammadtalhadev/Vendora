@@ -1,1403 +1,742 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Eye,
-  EyeOff,
+  Store,
+  Wallet,
+  RotateCcw,
+  BellRing,
   Check,
   CheckCircle2,
-  Users,
   AlertTriangle,
-  Upload,
-  Trash2,
-  Plus,
-  Download,
-  ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
-import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '../components/ui/dialog';
+  useNotificationPrefs,
+  useSaveNotificationPrefs,
+  useUpdateVendorStore,
+  useVendorStore,
+} from '../features/vendor/hooks/useVendorStore';
+import type { VendorNotificationPrefs } from '../features/vendor/api/shipping';
+import type { VendorStore, VendorStoreUpdate } from '../features/vendor/api/store';
+
+type Tab = 'general' | 'policies' | 'settlement' | 'alerts';
+
+const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'general', label: 'Storefront & Contact', icon: Store },
+  { id: 'policies', label: 'Return & Warranty Policy', icon: RotateCcw },
+  { id: 'settlement', label: 'Settlement', icon: Wallet },
+  { id: 'alerts', label: 'Operational Alerts', icon: BellRing },
+];
+
+const CARD = 'rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4';
+const FIELD =
+  'w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-slate-900 focus:outline-none';
+const LABEL = 'mb-1 block font-bold text-slate-700';
+
+const number = (value: string, fallback = 0) => {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+/** The form holds numbers as strings so a half-typed value does not become NaN. */
+type StoreForm = {
+  storeName: string;
+  slug: string;
+  tagline: string;
+  description: string;
+  logo: string;
+  banner: string;
+  supportEmail: string;
+  supportPhone: string;
+  vacationMode: boolean;
+  vacationMessage: string;
+  carriers: string;
+  returnWindowDays: string;
+  restockingFee: string;
+  returnShippingPayer: string;
+  warrantyPeriod: string;
+  autoApproveReturns: boolean;
+  payoutSchedule: string;
+  payoutReservePct: string;
+};
+
+const BLANK_FORM: StoreForm = {
+  storeName: '',
+  slug: '',
+  tagline: '',
+  description: '',
+  logo: '',
+  banner: '',
+  supportEmail: '',
+  supportPhone: '',
+  vacationMode: false,
+  vacationMessage: '',
+  carriers: '',
+  returnWindowDays: '30',
+  restockingFee: '0',
+  returnShippingPayer: 'buyer',
+  warrantyPeriod: '',
+  autoApproveReturns: false,
+  payoutSchedule: 'weekly',
+  payoutReservePct: '0',
+};
+
+function formOf(store: VendorStore): StoreForm {
+  return {
+    storeName: store.storeName,
+    slug: store.slug,
+    tagline: store.tagline,
+    description: store.description,
+    logo: store.logo,
+    banner: store.banner ?? '',
+    supportEmail: store.supportEmail ?? '',
+    supportPhone: store.supportPhone ?? '',
+    vacationMode: store.vacationMode,
+    vacationMessage: store.vacationMessage,
+    carriers: store.carriers.join(', '),
+    returnWindowDays: String(store.returnWindowDays),
+    restockingFee: String(store.restockingFee),
+    returnShippingPayer: store.returnShippingPayer,
+    warrantyPeriod: store.warrantyPeriod,
+    autoApproveReturns: store.autoApproveReturns,
+    payoutSchedule: store.payoutSchedule,
+    payoutReservePct: (store.payoutReservePct * 100).toFixed(1).replace(/\.0$/, ''),
+  };
+}
 
 export const VendorSettingsPage: React.FC = () => {
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isInviteTeamModalOpen, setIsInviteTeamModalOpen] = useState(false);
-  const [isOffboardingModalOpen, setIsOffboardingModalOpen] = useState(false);
-  const [showTaxId, setShowTaxId] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const storeQuery = useVendorStore();
+  const updateStore = useUpdateVendorStore();
+  const prefsQuery = useNotificationPrefs();
+  const savePrefs = useSaveNotificationPrefs();
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  const [tab, setTab] = useState<Tab>('general');
+  const [form, setForm] = useState<StoreForm>(BLANK_FORM);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<
-    'profile' | 'shipping' | 'policies' | 'team' | 'payout'
-  >('profile');
-
-  // Form states
-  const [storeName, setStoreName] = useState('Nova Electronics');
-  const [storeSlug, setStoreSlug] = useState('nova-electronics');
-  const [tagline, setTagline] = useState(
-    'Curated high-performance consumer tech and workspace essentials'
-  );
-  const [sellerStory, setSellerStory] = useState(
-    'Nova Electronics specializes in benchmark-tested mechanical keyboards, ergonomic workstation gear, and noise-cancelling audiophile equipment. All items are rigorously inspected, packed in climate-controlled facilities, and dispatched with tamper-evident authentication seals.'
-  );
-
-  // Carriers
-  const [fedexActive, setFedexActive] = useState(true);
-  const [upsActive, setUpsActive] = useState(true);
-  const [dhlActive, setDhlActive] = useState(false);
-  const [vendoraExpressActive, setVendoraExpressActive] = useState(true);
-  const [freeShippingActive, setFreeShippingActive] = useState(true);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState('75.00');
-
-  // Vacation mode
-  const [vacationMode, setVacationMode] = useState(false);
-  const [vacationMessage, setVacationMessage] = useState(
-    'We are performing annual inventory counts from Dec 24 to Jan 2. Shipping resumes Jan 3.'
-  );
-
-  // Policies
-  const [returnWindowDays, setReturnWindowDays] = useState('30');
-  const [restockingFee, setRestockingFee] = useState('0');
-  const [returnShippingPayer, setReturnShippingPayer] = useState<'buyer' | 'seller'>('seller');
-  const [warrantyPeriod, setWarrantyPeriod] = useState('1 Year Full Manufacturer Replacement');
-  const [autoApproveReturns, setAutoApproveReturns] = useState(true);
-
-  // Team
-  const [teamMembers, setTeamMembers] = useState([
-    { id: 'tm-1', name: 'Alex Vance', email: 'alex.vance@novatech.test', role: 'Owner', pill: 'bg-slate-900 text-white' },
-    { id: 'tm-2', name: 'Elena Rostova', email: 'elena@novatech.test', role: 'Support', pill: 'bg-slate-100 text-slate-700' },
-    { id: 'tm-3', name: 'David Miller', email: 'miller.warehouse@novatech.test', role: 'Warehouse Ops', pill: 'bg-slate-100 text-slate-700' },
-  ]);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('Customer Support (Messages & Returns)');
-
-  // Payout & Banking
-  const [payoutSchedule, setPayoutSchedule] = useState<'daily' | 'weekly' | 'biweekly'>('weekly');
-  const [bankAccount, setBankAccount] = useState('Chase Commercial •••• 4820');
-  const [routingNumber, setRoutingNumber] = useState('111000025');
-
-  // Media
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
-
-  // Alerts
-  const [smsDispatch, setSmsDispatch] = useState(true);
-  const [lowInventoryAlert, setLowInventoryAlert] = useState(true);
-  const [rmaPushAlert, setRmaPushAlert] = useState(true);
-  const [dailyDigest, setDailyDigest] = useState(true);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const store = storeQuery.data;
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('vd:v1:vendor_settings');
-      if (raw) {
-        const d = JSON.parse(raw);
-        if (d.storeName) setStoreName(d.storeName);
-        if (d.storeSlug) setStoreSlug(d.storeSlug);
-        if (d.tagline) setTagline(d.tagline);
-        if (d.sellerStory) setSellerStory(d.sellerStory);
-        if (d.vacationMode !== undefined) setVacationMode(d.vacationMode);
-        if (d.vacationMessage) setVacationMessage(d.vacationMessage);
-        if (d.freeShippingThreshold) setFreeShippingThreshold(d.freeShippingThreshold);
-        if (d.returnWindowDays) setReturnWindowDays(d.returnWindowDays);
-        if (d.restockingFee) setRestockingFee(d.restockingFee);
-        if (d.returnShippingPayer) setReturnShippingPayer(d.returnShippingPayer);
-        if (d.warrantyPeriod) setWarrantyPeriod(d.warrantyPeriod);
-        if (d.autoApproveReturns !== undefined) setAutoApproveReturns(d.autoApproveReturns);
-        if (d.payoutSchedule) setPayoutSchedule(d.payoutSchedule);
-        if (d.bankAccount) setBankAccount(d.bankAccount);
-        if (d.routingNumber) setRoutingNumber(d.routingNumber);
-        if (d.logoUrl) setLogoUrl(d.logoUrl);
-        if (d.bannerUrl) setBannerUrl(d.bannerUrl);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+    if (store) setForm(formOf(store));
+  }, [store]);
 
-  const handleSave = () => {
-    try {
-      localStorage.setItem(
-        'vd:v1:vendor_settings',
-        JSON.stringify({
-          storeName,
-          storeSlug,
-          tagline,
-          sellerStory,
-          vacationMode,
-          vacationMessage,
-          freeShippingThreshold,
-          fedexActive,
-          upsActive,
-          dhlActive,
-          vendoraExpressActive,
-          returnWindowDays,
-          restockingFee,
-          returnShippingPayer,
-          warrantyPeriod,
-          autoApproveReturns,
-          payoutSchedule,
-          bankAccount,
-          routingNumber,
-          logoUrl,
-          bannerUrl,
-        })
-      );
-    } catch {
-      // ignore
-    }
-    setSaveSuccess(true);
-    showToast('Settings saved successfully!');
-    setTimeout(() => setSaveSuccess(false), 2500);
+  const set = <K extends keyof StoreForm>(key: K, value: StoreForm[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const showSaved = (message: string) => {
+    setBanner(message);
+    window.setTimeout(() => setBanner(null), 3500);
   };
 
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setBannerUrl(reader.result as string);
-        showToast('Store banner updated!');
-      };
-      reader.readAsDataURL(file);
-    }
+  const saveStore = (updates: VendorStoreUpdate, message: string) => {
+    setError(null);
+    updateStore.mutate(updates, {
+      onSuccess: (saved) => {
+        setForm(formOf(saved));
+        showSaved(message);
+      },
+      onError: (cause: Error) => setError(cause.message),
+    });
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setLogoUrl(reader.result as string);
-        showToast('Store logo emblem updated!');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const buildDraft = (): VendorStoreUpdate => ({
+    storeName: form.storeName.trim(),
+    slug: form.slug.trim().toLowerCase().replace(/\s+/g, '-'),
+    tagline: form.tagline.trim(),
+    description: form.description,
+    logo: form.logo.trim(),
+    banner: form.banner.trim(),
+    supportEmail: form.supportEmail.trim(),
+    supportPhone: form.supportPhone.trim(),
+    vacationMode: form.vacationMode,
+    vacationMessage: form.vacationMessage,
+    carriers: form.carriers
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean),
+    returnWindowDays: Math.round(number(form.returnWindowDays, 30)),
+    restockingFee: number(form.restockingFee),
+    returnShippingPayer: form.returnShippingPayer === 'seller' ? 'seller' : 'buyer',
+    warrantyPeriod: form.warrantyPeriod,
+    autoApproveReturns: form.autoApproveReturns,
+    payoutSchedule: form.payoutSchedule,
+    payoutReservePct: number(form.payoutReservePct) / 100,
+  });
 
-  const handleInviteTeam = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteEmail) return;
-    const newMember = {
-      id: `tm-${Date.now()}`,
-      name: inviteEmail.split('@')[0],
-      email: inviteEmail,
-      role: inviteRole.split('(')[0].trim(),
-      pill: 'bg-slate-100 text-slate-700',
-    };
-    setTeamMembers((prev) => [...prev, newMember]);
-    setInviteEmail('');
-    setIsInviteTeamModalOpen(false);
-    showToast(`Invitation sent to ${inviteEmail}!`);
-  };
+  const prefs = prefsQuery.data;
 
-  const handleRemoveTeamMember = (id: string) => {
-    setTeamMembers((prev) => prev.filter((m) => m.id !== id));
-    showToast('Team member removed.');
+  const setPref = (key: keyof VendorNotificationPrefs, value: boolean, title: string) => {
+    const patch: Partial<VendorNotificationPrefs> = {};
+    patch[key] = value;
+    setError(null);
+    savePrefs.mutate(patch, {
+      onSuccess: () => showSaved(`${title} ${value ? 'on' : 'off'}`),
+      onError: (cause: Error) => setError(cause.message),
+    });
   };
 
   return (
-    <WorkspaceLayout
-      role="vendor"
-      roleBadgeText="VENDOR PARTNER"
-      sidebar={<VendorNav onOpenAddProduct={() => setIsProductModalOpen(true)} />}
-    >
+    <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
       <div className="space-y-6">
-        {/* ── Breadcrumb & Header ─────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              STORE CONFIGURATION <span className="text-slate-300">/</span> SETTINGS
+              SETTINGS <span className="text-slate-300">/</span> STORE
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
               Store Settings
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Configure public storefront details, warehouse fulfillment rules, shipping policies, team access, and notification alerts.
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500">
+              Every field here is a column on your own <code>vendor_profiles</code> row or your
+              notification preferences, and saving re-reads the row so the form shows what the
+              database kept.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Link
-              to="/vendors/vendor-tech-1"
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <Eye className="h-4 w-4 text-slate-500" />
-              View Public Storefront
-            </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {store && (
+              <Link
+                to={`/vendors/${store.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+              >
+                <ExternalLink className="h-4 w-4 text-slate-500" />
+                View public storefront
+              </Link>
+            )}
             <button
-              onClick={handleSave}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer"
+              type="button"
+              onClick={() => store && setForm(formOf(store))}
+              disabled={!store}
+              className="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             >
-              <Check className="h-4 w-4" />
-              {saveSuccess ? 'Saved ✓' : 'Save Changes'}
+              Revert to saved
             </button>
-            {saveSuccess && (
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">
-                Configuration Updated!
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* ── Settings Tabs ───────────────────────────────────────── */}
-        <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1 text-xs font-bold" data-lenis-prevent>
-          {[
-            { id: 'profile', label: 'General Profile' },
-            { id: 'shipping', label: 'Shipping & Fulfillment' },
-            { id: 'policies', label: 'Policies & Returns' },
-            { id: 'team', label: 'Team & Permissions' },
-            { id: 'payout', label: 'Payout & Tax Info' },
-          ].map((tab) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`rounded-lg px-3.5 py-2 whitespace-nowrap transition-all ${
-                activeTab === tab.id
-                  ? 'bg-slate-900 text-white shadow-2xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
+              type="button"
+              onClick={() => saveStore(buildDraft(), 'Store settings saved')}
+              disabled={updateStore.isPending || !store}
+              className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {tab.label}
+              <Check className="h-3.5 w-3.5" />
+              {updateStore.isPending ? 'Saving…' : 'Save settings'}
             </button>
-          ))}
-        </div>
-
-        {/* ── 2-Column Section (8 cols / 4 cols) ──────────────────── */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-          {/* ── Left Column (8 cols): Setting Forms ───────────────── */}
-          <div className="space-y-6 lg:col-span-8">
-            {/* ══════════════ TAB 1: PROFILE ══════════════ */}
-            {activeTab === 'profile' && (
-              <>
-                {/* Card 1: Storefront Identity */}
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">Storefront Identity</h2>
-                      <p className="text-xs text-slate-500">
-                        Visual appearance and public catalog metadata displayed to buyers on Vendora Marketplace.
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                      Public Facing
-                    </span>
-                  </div>
-
-                  {/* Brand Assets row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
-                    {/* Logo Emblem */}
-                    <div className="sm:col-span-4 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-bold text-slate-700">
-                          Logo Emblem
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => logoInputRef.current?.click()}
-                          className="text-[11px] font-bold text-slate-900 hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Upload className="h-3 w-3" />
-                          Change
-                        </button>
-                      </div>
-                      <input
-                        type="file"
-                        ref={logoInputRef}
-                        onChange={handleLogoUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                      <div className="h-28 w-28 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-2xl shadow-inner border border-slate-800 overflow-hidden">
-                        {logoUrl ? (
-                          <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
-                        ) : (
-                          <span>{storeName.slice(0, 2).toUpperCase()}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Banner Artwork */}
-                    <div className="sm:col-span-8 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-bold text-slate-700">
-                          Store Banner Artwork (Aspect 16:9)
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => bannerInputRef.current?.click()}
-                          className="text-xs font-bold text-slate-900 hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Upload className="h-3 w-3" />
-                          Change Cover
-                        </button>
-                      </div>
-                      <input
-                        type="file"
-                        ref={bannerInputRef}
-                        onChange={handleBannerUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                      <div className="h-28 w-full rounded-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950 p-3.5 flex flex-col justify-end text-white border border-slate-700 shadow-inner overflow-hidden relative">
-                        {bannerUrl && (
-                          <img
-                            src={bannerUrl}
-                            alt="Banner"
-                            className="absolute inset-0 h-full w-full object-cover opacity-60"
-                          />
-                        )}
-                        <div className="relative z-10">
-                          <div className="text-[10px] text-slate-300 font-mono">
-                            1920 × 600 px active cover
-                          </div>
-                          <div className="text-xs font-bold truncate">
-                            {storeName} Setup Showcase
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Text Fields */}
-                  <div className="space-y-4 pt-2 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          Store Display Name
-                        </label>
-                        <input
-                          type="text"
-                          value={storeName}
-                          onChange={(e) => setStoreName(e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          Store Slug &amp; Web Link
-                        </label>
-                        <div className="flex rounded-lg border border-slate-200 bg-slate-50 overflow-hidden focus-within:border-slate-900">
-                          <span className="px-2.5 py-2 text-xs text-slate-400 bg-slate-100 border-r border-slate-200 font-mono">
-                            vendora.com/stores/
-                          </span>
-                          <input
-                            type="text"
-                            value={storeSlug}
-                            onChange={(e) => setStoreSlug(e.target.value)}
-                            className="w-full bg-white px-2.5 py-2 text-xs font-mono text-slate-800 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Storefront Tagline
-                      </label>
-                      <input
-                        type="text"
-                        value={tagline}
-                        onChange={(e) => setTagline(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="font-bold text-slate-700">
-                          Store Overview &amp; Seller Story
-                        </label>
-                        <span className="text-[10px] text-slate-400">Markdown supported</span>
-                      </div>
-                      <textarea
-                        rows={4}
-                        value={sellerStory}
-                        onChange={(e) => setSellerStory(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 p-3 text-xs text-slate-800 leading-relaxed focus:outline-none focus:border-slate-900"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card 2: Business Contact & Legal Entity */}
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">
-                        Business Contact &amp; Legal Entity
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        Official entity registry used for invoices, commercial tax filings, and verified checkout manifests.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-1 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          Registered Entity Name
-                        </label>
-                        <input
-                          type="text"
-                          defaultValue="Nova Tech Solutions LLC"
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="font-bold text-slate-700">EIN / Tax ID</label>
-                          <span className="rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-bold text-emerald-700">
-                            ✓ Verified
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <input
-                            type={showTaxId ? 'text' : 'password'}
-                            defaultValue="84-9102918"
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-slate-900"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowTaxId(!showTaxId)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                          >
-                            {showTaxId ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          Customer Support Email
-                        </label>
-                        <input
-                          type="email"
-                          defaultValue="support@nova-electronics.demo"
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          Direct Merchant Telephone
-                        </label>
-                        <input
-                          type="tel"
-                          defaultValue="+1 (512) 883-4920"
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Physical Warehouse &amp; Return Address
-                      </label>
-                      <input
-                        type="text"
-                        defaultValue="401 Congress Ave, Suite 1500"
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                      />
-                      <div className="grid grid-cols-3 gap-3 mt-2">
-                        <input
-                          type="text"
-                          defaultValue="Austin"
-                          placeholder="City"
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                        <input
-                          type="text"
-                          defaultValue="TX"
-                          placeholder="State"
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                        <input
-                          type="text"
-                          defaultValue="78701, USA"
-                          placeholder="Postal Code"
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ══════════════ TAB 2: SHIPPING ══════════════ */}
-            {activeTab === 'shipping' && (
-              <>
-                {/* Card 1: Shipping & Warehouse Fulfillment */}
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">
-                        Shipping &amp; Warehouse Fulfillment
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        Default dispatch parameters, SLA commitments, carrier routing, and shipping incentive rules.
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
-                      SLAs Passing 99.4%
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Primary Fulfillment Hub
-                      </label>
-                      <select className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900">
-                        <option>Austin Central Facility Hub (Primary)</option>
-                        <option>Dallas Regional Overflow Center</option>
-                        <option>Phoenix West Coast Fulfillment Dock</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Handling Time Commitment
-                      </label>
-                      <select className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900">
-                        <option>Same-day dispatch for orders before 2:00 PM</option>
-                        <option>1 Business Day (Guaranteed 24hr packing)</option>
-                        <option>2 Business Days (Custom assembled orders)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Carrier Integrations */}
-                  <div className="pt-2 space-y-2.5">
-                    <div className="text-xs font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-                      Integrated Carrier Integrations
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      {/* FedEx */}
-                      <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-slate-900">FedEx Ground</div>
-                          <div className="text-[11px] text-slate-500">Commercial rate active</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setFedexActive(!fedexActive)}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            fedexActive ? 'bg-slate-900' : 'bg-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              fedexActive ? 'translate-x-4' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* UPS */}
-                      <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-slate-900">UPS 2-Day Air</div>
-                          <div className="text-[11px] text-slate-500">Expedited tracking sync</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setUpsActive(!upsActive)}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            upsActive ? 'bg-slate-900' : 'bg-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              upsActive ? 'translate-x-4' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* DHL */}
-                      <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-slate-900">DHL Express</div>
-                          <div className="text-[11px] text-slate-500">Worldwide cross-border</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setDhlActive(!dhlActive)}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            dhlActive ? 'bg-slate-900' : 'bg-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              dhlActive ? 'translate-x-4' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* Vendora Express Fulfilled */}
-                      <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-slate-900">Vendora Express Fulfilled</div>
-                          <div className="text-[11px] text-slate-500">Platform guaranteed 48hr</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setVendoraExpressActive(!vendoraExpressActive)}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            vendoraExpressActive ? 'bg-slate-900' : 'bg-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              vendoraExpressActive ? 'translate-x-4' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Free Shipping threshold */}
-                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-                    <div>
-                      <div className="font-bold text-slate-900">Free-Shipping Order Threshold</div>
-                      <div className="text-[11px] text-slate-500">
-                        Encourage larger basket size by waiving ground delivery fees above minimum spend.
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs">
-                        <span className="text-slate-400 mr-1">$</span>
-                        <input
-                          type="text"
-                          value={freeShippingThreshold}
-                          onChange={(e) => setFreeShippingThreshold(e.target.value)}
-                          className="w-14 font-bold text-slate-900 focus:outline-none"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setFreeShippingActive(!freeShippingActive)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                          freeShippingActive ? 'bg-slate-900' : 'bg-slate-200'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            freeShippingActive ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card 2: Vacation & Store Status Mode */}
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">
-                        Vacation &amp; Store Status Mode
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        Temporarily pause customer checkouts during holiday downtime, physical inventory audits, or warehouse upgrades.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-slate-900">Holiday / Vacation Mode</div>
-                        <div className="text-[11px] text-slate-500">
-                          {vacationMode ? 'Currently Active (Store Paused)' : 'Currently Disabled (Store Active)'}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setVacationMode(!vacationMode)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                          vacationMode ? 'bg-amber-600' : 'bg-slate-200'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            vacationMode ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                      When activated, product listings remain browsable in read-only mode. Customers will see an informational banner and checkout buttons are held. Pending open orders must still be honored.
-                    </p>
-
-                    {vacationMode && (
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          Storefront Notice Message
-                        </label>
-                        <input
-                          type="text"
-                          value={vacationMessage}
-                          onChange={(e) => setVacationMessage(e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ══════════════ TAB 3: POLICIES & RETURNS ══════════════ */}
-            {activeTab === 'policies' && (
-              <>
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">Return &amp; Refund Policy</h2>
-                      <p className="text-xs text-slate-500">
-                        Define customer return terms, automated approval windows, and return shipping fee assignments.
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
-                      Platform Guaranteed
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Return Window (Days)
-                      </label>
-                      <select
-                        value={returnWindowDays}
-                        onChange={(e) => setReturnWindowDays(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                      >
-                        <option value="14">14 Days from Delivery</option>
-                        <option value="30">30 Days Standard Hassle-Free</option>
-                        <option value="60">60 Days Extended Guarantee</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Restocking Fee
-                      </label>
-                      <select
-                        value={restockingFee}
-                        onChange={(e) => setRestockingFee(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                      >
-                        <option value="0">0% (No Restocking Fee)</option>
-                        <option value="10">10% Opened Box Inspection Fee</option>
-                        <option value="15">15% Discretionary Return Fee</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Return Shipping Label Cost
-                      </label>
-                      <div className="flex gap-4 pt-1">
-                        <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-                          <input
-                            type="radio"
-                            name="return_payer"
-                            checked={returnShippingPayer === 'seller'}
-                            onChange={() => setReturnShippingPayer('seller')}
-                          />
-                          <span>Prepaid by Merchant (Recommended)</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-                          <input
-                            type="radio"
-                            name="return_payer"
-                            checked={returnShippingPayer === 'buyer'}
-                            onChange={() => setReturnShippingPayer('buyer')}
-                          />
-                          <span>Deducted from Buyer Refund</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Automated RMA Approvals
-                      </label>
-                      <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-slate-50">
-                        <span className="text-[11px] text-slate-600">Auto-generate return labels for items under $150</span>
-                        <input
-                          type="checkbox"
-                          checked={autoApproveReturns}
-                          onChange={(e) => setAutoApproveReturns(e.target.checked)}
-                          className="rounded text-slate-900 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">Warranty &amp; Authenticity Commitments</h2>
-                      <p className="text-xs text-slate-500">
-                        Hardware warranty periods and tamper-evident authentication seal verification.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Default Manufacturer Warranty Coverage
-                      </label>
-                      <input
-                        type="text"
-                        value={warrantyPeriod}
-                        onChange={(e) => setWarrantyPeriod(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                      />
-                    </div>
-
-                    <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/70 space-y-2 text-[11px] text-slate-600">
-                      <div className="flex items-center gap-2 font-bold text-slate-800">
-                        <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                        <span>Platform Anti-Counterfeit Escrow Guarantee Active</span>
-                      </div>
-                      <p>
-                        All shipments through Vendora Express are scanned with serialized barcodes. Items returned missing serialized proof will trigger arbitration review prior to debiting seller balance.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ══════════════ TAB 4: TEAM & PERMISSIONS ══════════════ */}
-            {activeTab === 'team' && (
-              <>
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">Active Team Collaborators</h2>
-                      <p className="text-xs text-slate-500">
-                        Manage personnel permissions, assign operational roles, and revoke account credentials.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setIsInviteTeamModalOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-colors cursor-pointer"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>+ Invite Collaborator</span>
-                    </button>
-                  </div>
-
-                  <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white overflow-hidden">
-                    {teamMembers.map((member) => (
-                      <div key={member.id} className="p-3.5 flex items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white font-bold text-xs shrink-0">
-                            {member.name.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-900 flex items-center gap-2">
-                              <span>{member.name}</span>
-                              <span className={`rounded px-1.5 py-0.2 text-[9px] font-bold ${member.pill}`}>
-                                {member.role}
-                              </span>
-                            </div>
-                            <div className="text-[11px] text-slate-400">{member.email}</div>
-                          </div>
-                        </div>
-
-                        {member.role !== 'Owner' && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTeamMember(member.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title="Remove collaborator"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <h2 className="text-base font-bold text-slate-900">Role Permissions Matrix</h2>
-                  <div className="overflow-x-auto text-xs">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase">
-                          <th className="py-2">Permission Scope</th>
-                          <th className="py-2 text-center">Owner</th>
-                          <th className="py-2 text-center">Support</th>
-                          <th className="py-2 text-center">Warehouse</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
-                        <tr>
-                          <td className="py-2 font-medium">View &amp; Edit Product Listings</td>
-                          <td className="py-2 text-center text-emerald-600 font-bold">✓</td>
-                          <td className="py-2 text-center text-slate-300">-</td>
-                          <td className="py-2 text-center text-emerald-600 font-bold">✓</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 font-medium">Respond to Customer Chat &amp; RMAs</td>
-                          <td className="py-2 text-center text-emerald-600 font-bold">✓</td>
-                          <td className="py-2 text-center text-emerald-600 font-bold">✓</td>
-                          <td className="py-2 text-center text-slate-300">-</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 font-medium">Generate Shipping Labels &amp; Pack Orders</td>
-                          <td className="py-2 text-center text-emerald-600 font-bold">✓</td>
-                          <td className="py-2 text-center text-slate-300">-</td>
-                          <td className="py-2 text-center text-emerald-600 font-bold">✓</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 font-medium">Modify Bank Payout &amp; Tax Information</td>
-                          <td className="py-2 text-center text-emerald-600 font-bold">✓</td>
-                          <td className="py-2 text-center text-slate-300">-</td>
-                          <td className="py-2 text-center text-slate-300">-</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ══════════════ TAB 5: PAYOUT & TAX ══════════════ */}
-            {activeTab === 'payout' && (
-              <>
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">Direct Deposit &amp; Bank Account</h2>
-                      <p className="text-xs text-slate-500">
-                        Automated ACH settlement destination for completed marketplace transactions.
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                      ✓ Stripe Connect Verified
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Bank Account Reference
-                      </label>
-                      <input
-                        type="text"
-                        value={bankAccount}
-                        onChange={(e) => setBankAccount(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900 font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Routing Transit Number
-                      </label>
-                      <input
-                        type="text"
-                        value={routingNumber}
-                        onChange={(e) => setRoutingNumber(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900 font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Payout Frequency
-                      </label>
-                      <select
-                        value={payoutSchedule}
-                        onChange={(e) => setPayoutSchedule(e.target.value as any)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-900"
-                      >
-                        <option value="daily">Daily Settlement (Available for Platinum Tier)</option>
-                        <option value="weekly">Weekly Settlement (Every Monday)</option>
-                        <option value="biweekly">Bi-Weekly Settlement (1st &amp; 15th)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        Settlement Currency
-                      </label>
-                      <input
-                        type="text"
-                        readOnly
-                        value="USD - United States Dollar ($)"
-                        className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs text-slate-600 cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-900">Commercial Tax Filings &amp; 1099-K</h2>
-                      <p className="text-xs text-slate-500">
-                        IRS Form 1099-K annual gross reporting and sales tax exemption documentation.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-slate-900">2025 Form 1099-K Annual Statement</div>
-                        <div className="text-[11px] text-slate-500">Gross volume: $184,231.89 across 2,491 orders</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => showToast('Downloading Form 1099-K (PDF)...')}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        <span>Download PDF</span>
-                      </button>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
-                      <span>W-9 Certificate: <strong>Electronically Signed &amp; Stamped</strong></span>
-                      <span className="text-emerald-700 font-bold">Compliant</span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* ── Right Column (4 cols): Health, Team, Alerts, Danger Zone ─ */}
-          <div className="space-y-6 lg:col-span-4">
-            {/* Card 1: Store Health & Trust */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-slate-900">Store Health &amp; Trust</h2>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                  ✓ Verified Merchant
-                </span>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    <div>
-                      <div className="font-bold text-slate-900">Identity Verification</div>
-                      <div className="text-[10px] text-slate-400">KYC cleared March 2024</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-slate-900">Marketplace Tier</div>
-                    <div className="text-[10px] text-slate-400">Level 3 Platinum Seller</div>
-                  </div>
-                  <span className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white">
-                    -0.5% Fee
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs font-bold text-slate-900 mb-1">
-                    <span>Quarterly Seller Score</span>
-                    <span>98.6 / 100</span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '98.6%' }} />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                  Eligible for Top Banner placement and algorithmic spotlight.
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Team Members */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Team Members</h2>
-                  <p className="text-[11px] text-slate-400">3 collaborators with console access</p>
-                </div>
-                <button
-                  onClick={() => setIsInviteTeamModalOpen(true)}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  + Invite
-                </button>
-              </div>
-
-              <div className="space-y-2.5 text-xs">
-                {[
-                  { name: 'Alex Vance', email: 'alex.vance@novatech.test', role: 'Owner', pill: 'bg-slate-900 text-white' },
-                  { name: 'Elena Rostova', email: 'elena@novatech.test', role: 'Support', pill: 'bg-slate-100 text-slate-700' },
-                  { name: 'David Miller', email: 'miller.warehouse@novatech.test', role: 'Warehouse Ops', pill: 'bg-slate-100 text-slate-700' },
-                ].map((member) => (
-                  <div
-                    key={member.email}
-                    className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/60 flex items-center justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="font-bold text-slate-900 text-xs truncate">
-                        {member.name}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        {member.email}
-                      </div>
-                    </div>
-                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${member.pill}`}>
-                      {member.role}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Card 3: Operational Alerts */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
-              <h2 className="text-base font-bold text-slate-900">Operational Alerts</h2>
-
-              <div className="space-y-2.5 text-xs">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={smsDispatch}
-                    onChange={(e) => setSmsDispatch(e.target.checked)}
-                    className="rounded text-slate-900 mt-0.5"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">Instant Order SMS Dispatch</div>
-                    <div className="text-[11px] text-slate-400">
-                      Real-time mobile ping on high-priority express checkouts.
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={lowInventoryAlert}
-                    onChange={(e) => setLowInventoryAlert(e.target.checked)}
-                    className="rounded text-slate-900 mt-0.5"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">Low Inventory Warning Trigger</div>
-                    <div className="text-[11px] text-slate-400">
-                      Automated digest when SKU units drop beneath 10 units.
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rmaPushAlert}
-                    onChange={(e) => setRmaPushAlert(e.target.checked)}
-                    className="rounded text-slate-900 mt-0.5"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">Disputes &amp; RMA Push Notifications</div>
-                    <div className="text-[11px] text-slate-400">
-                      Immediate notice to maintain &lt; 24hr response metrics.
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={dailyDigest}
-                    onChange={(e) => setDailyDigest(e.target.checked)}
-                    className="rounded text-slate-900 mt-0.5"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">Daily Settlement Payout Digest</div>
-                    <div className="text-[11px] text-slate-400">
-                      End-of-day reconciliation PDF sent to finance inbox.
-                    </div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Card 4: Danger Zone */}
-            <div className="rounded-xl border border-rose-200 bg-rose-50/40 p-5 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
-                <AlertTriangle className="h-4 w-4 text-rose-600" />
-                <span>Danger Zone</span>
-              </div>
-              <p className="text-[11px] text-rose-700 leading-relaxed">
-                Permanently close Nova Electronics, disconnect external sales channels, and archive order manifests.
-              </p>
-              <div className="text-[10px] text-slate-500">
-                Pending payouts ($12,400.00) will be paid out following 30-day standard reserve clearance.
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsOffboardingModalOpen(true)}
-                className="w-full rounded-lg border border-rose-300 bg-white py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors"
-              >
-                Close Store / Request Offboarding
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* ── Invite Team Member Modal ────────────────────────────── */}
-        <Dialog open={isInviteTeamModalOpen} onOpenChange={setIsInviteTeamModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Users className="h-5 w-5 text-slate-700" />
-                Invite Team Member
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Grant staff or agency access with granular role-based permissions.
-              </DialogDescription>
-            </DialogHeader>
-
-            <form
-              onSubmit={handleInviteTeam}
-              className="space-y-3 py-2 text-xs"
-            >
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="colleague@yourcompany.com"
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Access Role</label>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-                >
-                  <option>Warehouse &amp; Fulfillment Ops (Packing &amp; Labels)</option>
-                  <option>Customer Support (Messages &amp; Returns)</option>
-                  <option>Catalog Manager (Products &amp; Pricing)</option>
-                  <option>Store Administrator (Full Access)</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsInviteTeamModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-                >
-                  Send Invitation
-                </button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Offboarding / Close Store Modal ──────────────────────── */}
-        <Dialog open={isOffboardingModalOpen} onOpenChange={setIsOffboardingModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-rose-700 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-rose-600" />
-                Confirm Store Offboarding
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Are you sure you want to deactivate Nova Electronics?
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-2 py-2 text-xs text-slate-700 leading-relaxed">
-              <p>
-                All active product listings will be removed from customer search results immediately.
-              </p>
-              <p>
-                Any existing customer orders must be fulfilled or refunded prior to account closure.
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsOffboardingModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('Offboarding request submitted to platform compliance.');
-                  setIsOffboardingModalOpen(false);
-                }}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 cursor-pointer"
-              >
-                Confirm Request
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* ── Product Form Modal ───────────────────────────────────── */}
-        <ProductFormModal
-          open={isProductModalOpen}
-          onOpenChange={setIsProductModalOpen}
-        />
-
-        {/* ── Floating Toast Notification ───────────────────────────── */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
+        {storeQuery.isLoading && (
+          <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-xs">
+            Loading your store record…
           </div>
         )}
+        {storeQuery.error && (
+          <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700">
+            <AlertTriangle className="h-4 w-4" />
+            {(storeQuery.error as Error).message}
+          </div>
+        )}
+        {banner && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            {banner}
+          </div>
+        )}
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700">
+            <AlertTriangle className="h-4 w-4" />
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 overflow-x-auto border-b border-slate-200 pb-1 text-xs font-bold" data-lenis-prevent>
+          {TABS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 transition-all ${
+                  tab === item.id ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          <div className="space-y-6 lg:col-span-8">
+            {tab === 'general' && (
+              <>
+                <section className={CARD}>
+                  <div className="border-b border-slate-100 pb-3">
+                    <h2 className="text-sm font-bold text-slate-900">Storefront identity</h2>
+                    <p className="text-[11px] text-slate-500">
+                      These columns are what a buyer sees on your public store page.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className={LABEL} htmlFor="store-name">
+                        Store display name
+                      </label>
+                      <input
+                        id="store-name"
+                        value={form.storeName}
+                        onChange={(event) => set('storeName', event.target.value)}
+                        className={FIELD}
+                      />
+                    </div>
+                    <div>
+                      <label className={LABEL} htmlFor="store-slug">
+                        URL slug
+                      </label>
+                      <input
+                        id="store-slug"
+                        value={form.slug}
+                        onChange={(event) => set('slug', event.target.value)}
+                        className={`${FIELD} font-mono`}
+                      />
+                      <span className="mt-1 block text-[11px] text-slate-400">
+                        Spaces become hyphens when saved. A buyer reaching you by slug uses this
+                        value, so changing it moves the link.
+                      </span>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className={LABEL} htmlFor="store-tagline">
+                        Tagline
+                      </label>
+                      <input
+                        id="store-tagline"
+                        value={form.tagline}
+                        onChange={(event) => set('tagline', event.target.value)}
+                        className={FIELD}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className={LABEL} htmlFor="store-description">
+                        About this store
+                      </label>
+                      <textarea
+                        id="store-description"
+                        rows={4}
+                        value={form.description}
+                        onChange={(event) => set('description', event.target.value)}
+                        className={`${FIELD} leading-relaxed`}
+                      />
+                    </div>
+                    <div>
+                      <label className={LABEL} htmlFor="store-logo">
+                        Logo URL
+                      </label>
+                      <input
+                        id="store-logo"
+                        value={form.logo}
+                        onChange={(event) => set('logo', event.target.value)}
+                        className={`${FIELD} font-mono`}
+                        placeholder="https://…"
+                      />
+                    </div>
+                    <div>
+                      <label className={LABEL} htmlFor="store-banner">
+                        Banner URL
+                      </label>
+                      <input
+                        id="store-banner"
+                        value={form.banner}
+                        onChange={(event) => set('banner', event.target.value)}
+                        className={`${FIELD} font-mono`}
+                        placeholder="https://…"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] leading-relaxed text-slate-500">
+                    Images are stored as a URL on your profile row. To host a file, upload it on
+                    the Files &amp; Media page and paste the address it gives you - a pasted
+                    base64 blob would be stored too, and it makes every read of your store heavy.
+                  </p>
+                </section>
+
+                <section className={CARD}>
+                  <div className="border-b border-slate-100 pb-3">
+                    <h2 className="text-sm font-bold text-slate-900">Contact &amp; carriers</h2>
+                    <p className="text-[11px] text-slate-500">
+                      Where buyers reach you, and the carriers you list on your storefront.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className={LABEL} htmlFor="support-email">
+                        Support email
+                      </label>
+                      <input
+                        id="support-email"
+                        type="email"
+                        value={form.supportEmail}
+                        onChange={(event) => set('supportEmail', event.target.value)}
+                        className={FIELD}
+                      />
+                    </div>
+                    <div>
+                      <label className={LABEL} htmlFor="support-phone">
+                        Support phone
+                      </label>
+                      <input
+                        id="support-phone"
+                        value={form.supportPhone}
+                        onChange={(event) => set('supportPhone', event.target.value)}
+                        className={FIELD}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className={LABEL} htmlFor="carriers">
+                        Carriers (comma separated)
+                      </label>
+                      <input
+                        id="carriers"
+                        value={form.carriers}
+                        onChange={(event) => set('carriers', event.target.value)}
+                        className={FIELD}
+                        placeholder="DHL Express, UPS, Local courier"
+                      />
+                      <span className="mt-1 block text-[11px] text-slate-400">
+                        A description only. No carrier API is connected, and a rider is assigned by
+                        the platform, not chosen from this list.
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section className={CARD}>
+                  <div className="border-b border-slate-100 pb-3">
+                    <h2 className="text-sm font-bold text-slate-900">Vacation mode</h2>
+                    <p className="text-[11px] text-slate-500">
+                      A flag and a message on your store row.
+                    </p>
+                  </div>
+
+                  <label className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={form.vacationMode}
+                      onChange={(event) => set('vacationMode', event.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded"
+                    />
+                    <span>
+                      <span className="block font-bold text-slate-900">Paused for new orders</span>
+                      <span className="text-[11px] text-slate-500">
+                        Your dashboard banner reads this flag. Checkout does not: a buyer can still
+                        complete an order while it is on, so keep listings honest separately.
+                      </span>
+                    </span>
+                  </label>
+
+                  {form.vacationMode && (
+                    <div>
+                      <label className={LABEL} htmlFor="vacation-message">
+                        Notice shown on your dashboard
+                      </label>
+                      <input
+                        id="vacation-message"
+                        value={form.vacationMessage}
+                        onChange={(event) => set('vacationMessage', event.target.value)}
+                        className={FIELD}
+                      />
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
+
+            {tab === 'policies' && (
+              <section className={CARD}>
+                <div className="border-b border-slate-100 pb-3">
+                  <h2 className="text-sm font-bold text-slate-900">Return &amp; warranty policy</h2>
+                  <p className="text-[11px] text-slate-500">
+                    Stored on your store row so the terms you publish are the terms you can read
+                    back.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={LABEL} htmlFor="return-window">
+                      Return window (days after delivery)
+                    </label>
+                    <input
+                      id="return-window"
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={form.returnWindowDays}
+                      onChange={(event) => set('returnWindowDays', event.target.value)}
+                      className={FIELD}
+                    />
+                  </div>
+                  <div>
+                    <label className={LABEL} htmlFor="restocking-fee">
+                      Restocking fee (percent of goods, 0-100)
+                    </label>
+                    <input
+                      id="restocking-fee"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.restockingFee}
+                      onChange={(event) => set('restockingFee', event.target.value)}
+                      className={FIELD}
+                    />
+                  </div>
+                  <div>
+                    <span className={LABEL}>Who pays return freight</span>
+                    <div className="flex gap-4 pt-1">
+                      {['buyer', 'seller'].map((value) => (
+                        <label key={value} className="flex cursor-pointer items-center gap-2">
+                          <input
+                            type="radio"
+                            name="return_payer"
+                            checked={form.returnShippingPayer === value}
+                            onChange={() => set('returnShippingPayer', value)}
+                          />
+                          <span className="font-medium text-slate-700">
+                            {value === 'buyer' ? 'Deducted from the buyer refund' : 'Prepaid by the store'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={LABEL} htmlFor="warranty-period">
+                      Warranty statement
+                    </label>
+                    <input
+                      id="warranty-period"
+                      value={form.warrantyPeriod}
+                      onChange={(event) => set('warrantyPeriod', event.target.value)}
+                      className={FIELD}
+                      placeholder="1 year, parts and labour"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-start gap-2.5 border-t border-slate-100 pt-3">
+                  <input
+                    type="checkbox"
+                    checked={form.autoApproveReturns}
+                    onChange={(event) => set('autoApproveReturns', event.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded"
+                  />
+                  <span>
+                    <span className="block font-bold text-slate-900">Auto-approve returns</span>
+                    <span className="text-[11px] text-slate-500">
+                      Saved and readable, but nothing acts on it. A return stays
+                      &quot;requested&quot; until you decide it on the Returns page, and the refund
+                      the database books is the goods total - it does not subtract the restocking
+                      fee you set above.
+                    </span>
+                  </span>
+                </label>
+
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  Publish these terms honestly: no page in the storefront currently displays them,
+                  so a buyer&apos;s expectation comes from your listing copy and the platform
+                  policy, not from this row.
+                </p>
+              </section>
+            )}
+
+            {tab === 'settlement' && (
+              <section className={CARD}>
+                <div className="border-b border-slate-100 pb-3">
+                  <h2 className="text-sm font-bold text-slate-900">Settlement preferences</h2>
+                  <p className="text-[11px] text-slate-500">
+                    One of these two fields changes real money; the other is a note.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={LABEL} htmlFor="payout-schedule">
+                      Preferred cadence
+                    </label>
+                    <select
+                      id="payout-schedule"
+                      value={form.payoutSchedule}
+                      onChange={(event) => set('payoutSchedule', event.target.value)}
+                      className={FIELD}
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Every two weeks</option>
+                    </select>
+                    <span className="mt-1 block text-[11px] text-slate-400">
+                      Stored on your row. No scheduler reads it - a payout happens when you
+                      request one on the Payouts page.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className={LABEL} htmlFor="payout-reserve">
+                      Held back as reserve (percent)
+                    </label>
+                    <input
+                      id="payout-reserve"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={form.payoutReservePct}
+                      onChange={(event) => set('payoutReservePct', event.target.value)}
+                      className={FIELD}
+                    />
+                    <span className="mt-1 block text-[11px] text-slate-400">
+                      This one is live: your available balance is earned net payout minus this
+                      percentage, so raising it immediately lowers what you can withdraw.
+                    </span>
+                  </div>
+                </div>
+
+                {store && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-[11px] leading-relaxed text-slate-600">
+                    <div className="font-bold text-slate-800">Your store record</div>
+                    <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1">
+                      <span>
+                        Seller type: <strong>{store.sellerType}</strong>
+                      </span>
+                      <span>
+                        Status: <strong>{store.status}</strong>
+                      </span>
+                      <span>
+                        Rating: <strong>{store.rating.toFixed(2)}</strong> from{' '}
+                        <strong>{store.reviewCount}</strong> reviews
+                      </span>
+                      <span>
+                        Opened: <strong>{new Date(store.createdAt).toLocaleDateString()}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Link
+                    to="/vendor/payouts"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+                  >
+                    <Wallet className="h-4 w-4 text-slate-500" />
+                    Bank accounts and payout requests live on the Payouts page
+                  </Link>
+                </div>
+              </section>
+            )}
+
+            {tab === 'alerts' && (
+              <section className={CARD}>
+                <div className="border-b border-slate-100 pb-3">
+                  <h2 className="text-sm font-bold text-slate-900">Operational alerts</h2>
+                  <p className="text-[11px] text-slate-500">
+                    Saved as one jsonb bag keyed to your store, and re-read after each write.
+                  </p>
+                </div>
+
+                {prefsQuery.isLoading && <p className="text-[11px] text-slate-500">Loading…</p>}
+                {prefsQuery.error && (
+                  <p className="text-[11px] font-bold text-rose-700">
+                    {(prefsQuery.error as Error).message}
+                  </p>
+                )}
+
+                {prefs && (
+                  <div className="space-y-3">
+                    {(
+                      [
+                        ['smsDispatch', 'Dispatch SMS to the store phone', 'Order handover events'],
+                        ['lowInventoryAlert', 'Low inventory warning', 'When a listing runs short'],
+                        ['rmaPushAlert', 'Return and dispute pings', 'A buyer opens a return'],
+                        ['dailyDigest', 'Daily settlement digest', 'End-of-day earnings summary'],
+                      ] as [keyof VendorNotificationPrefs, string, string][]
+                    ).map(([key, title, note]) => (
+                      <label key={key} className="flex items-start justify-between gap-3">
+                        <span>
+                          <span className="block font-bold text-slate-900">{title}</span>
+                          <span className="text-[11px] text-slate-500">{note}</span>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={prefs[key]}
+                          onChange={(event) => setPref(key, event.target.checked, title)}
+                          disabled={savePrefs.isPending}
+                          className="mt-0.5 h-4 w-4 rounded"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <p className="border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-500">
+                  These switches are stored and will gate the notification fan-out once realtime is
+                  wired. Nothing sends them today, so switching one off changes no delivery.
+                </p>
+              </section>
+            )}
+          </div>
+
+          <aside className="space-y-6 lg:col-span-4">
+            <div className={CARD}>
+              <h2 className="text-sm font-bold text-slate-900">Not editable by a seller</h2>
+              <ul className="space-y-2 text-[11px] leading-relaxed text-slate-600">
+                <li>
+                  · <strong>Store status</strong> (active or suspended) - the owner update policy
+                  freezes the column, so only staff can change it.
+                </li>
+                <li>
+                  · <strong>Rating and review count</strong> - written by the review triggers, never
+                  by this form.
+                </li>
+                <li>
+                  · <strong>Commission rate</strong> - a platform decision on your row; the override
+                  column is admin-only.
+                </li>
+                <li>
+                  · <strong>Account roles</strong> - frozen by the profile update policy, so a
+                  seller cannot promote themselves.
+                </li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 text-[11px] leading-relaxed text-slate-500 shadow-xs">
+              <div className="mb-2 font-bold uppercase tracking-wider text-slate-400">
+                Not in this build
+              </div>
+              <p>
+                There is no team-member table, so this page cannot invite staff or set per-user
+                permissions - one account owns one store. There is also no tax form, entity
+                registry or offboarding request stored anywhere; ask the Support desk for those and
+                it becomes a ticket a person can action.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-5 text-xs shadow-xs space-y-3">
+              <div className="flex items-center gap-2 font-bold text-rose-800">
+                <AlertTriangle className="h-4 w-4 text-rose-600" />
+                Closing the store
+              </div>
+              <p className="text-[11px] leading-relaxed text-rose-700">
+                No seller-facing RPC deactivates a store row, so there is no button here that would
+                only look like it worked. Open a ticket on the Help &amp; Support page and staff
+                suspend the store from the admin side.
+              </p>
+            </div>
+          </aside>
+        </div>
       </div>
     </WorkspaceLayout>
   );

@@ -1,12 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { WorkspaceLayout } from './WorkspaceLayout';
 import { VendorNav } from '../vendor/components/VendorNav';
 import { AdminNav } from '../admin/components/AdminNav';
 import { RiderHeader } from '../rider/components/RiderHeader';
 import { SupportHeader } from '../support/components/SupportHeader';
 import { useAuthStore, DEMO_ACCOUNTS } from '../../store/auth-store';
+import { renderWorkspace, signInVendor } from '../../test/vendor-render';
+import { dashboardJson, supabaseDouble } from '../../test/supabase-double';
+
+// WorkspaceLayout's sign-out needs the auth provider; these tests never click it.
+vi.mock('../../lib/auth-context', async () => {
+  const { useAuthStub } = await import('../../test/auth-context-stub');
+  return { useAuth: useAuthStub };
+});
+// VendorNav's badges come from the vendor dashboard query.
+vi.mock('../../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
 
 describe('Workspace Navigation & Layout Shell', () => {
   beforeEach(() => {
@@ -100,63 +113,69 @@ describe('Workspace Navigation & Layout Shell', () => {
   });
 
   describe('VendorNav', () => {
-    it('renders all 5 required navigation links with correct hrefs', () => {
-      render(
-        <MemoryRouter initialEntries={['/vendor']}>
-          <VendorNav />
-        </MemoryRouter>
+    beforeEach(() => {
+      supabaseDouble.reset();
+      signInVendor();
+    });
+
+    it('links each workspace screen to the route the router actually serves', () => {
+      renderWorkspace(<VendorNav />);
+
+      const routes: [RegExp, string][] = [
+        [/overview/i, '/vendor'],
+        [/products/i, '/vendor/products'],
+        [/stock console/i, '/vendor/inventory'],
+        [/import export/i, '/vendor/products/import-export'],
+        [/orders/i, '/vendor/orders'],
+        [/returns/i, '/vendor/returns'],
+        [/earnings/i, '/vendor/earnings'],
+        [/payouts/i, '/vendor/payouts'],
+        [/product qa/i, '/vendor/qa'],
+        [/shipping & origin/i, '/vendor/shipping-settings'],
+        [/settings/i, '/vendor/store-settings'],
+      ];
+      for (const [name, href] of routes) {
+        expect(screen.getByRole('link', { name })).toHaveAttribute('href', href);
+      }
+    });
+
+    it('names the store the session owns rather than a hardcoded seller', async () => {
+      renderWorkspace(<VendorNav />);
+
+      await waitFor(() => expect(screen.getByText('Nova Tech')).toBeInTheDocument());
+      expect(screen.getByRole('link', { name: /public storefront/i })).toHaveAttribute(
+        'href',
+        '/vendors/store-1',
       );
+    });
 
-      // 1. /vendor (Overview)
-      const overviewLink = screen.getByRole('link', { name: /overview/i });
-      expect(overviewLink).toBeInTheDocument();
-      expect(overviewLink).toHaveAttribute('href', '/vendor');
+    it('badges the queues with the counts the dashboard query returns, and hides zeros', async () => {
+      supabaseDouble.setDashboard({
+        ...dashboardJson(),
+        stages: { placed: 2, confirmed: 1, packed: 0, inTransit: 0, delivered: 0, returns: 0, cancelled: 0 },
+        engagement: { openThreads: 0, unreadMessages: 4, activePromotions: 0, unansweredQuestions: 0 },
+      });
+      renderWorkspace(<VendorNav />);
 
-      // 2. /vendor/products (Products)
-      const productsLink = screen.getByRole('link', { name: /products/i });
-      expect(productsLink).toBeInTheDocument();
-      expect(productsLink).toHaveAttribute('href', '/vendor/products');
-
-      // 3. /vendor/orders (Orders)
-      const ordersLink = screen.getByRole('link', { name: /orders/i });
-      expect(ordersLink).toBeInTheDocument();
-      expect(ordersLink).toHaveAttribute('href', '/vendor/orders');
-
-      // 4. /vendor/earnings (Earnings)
-      const earningsLink = screen.getByRole('link', { name: /earnings/i });
-      expect(earningsLink).toBeInTheDocument();
-      expect(earningsLink).toHaveAttribute('href', '/vendor/earnings');
-
-      // 5. /vendor/store-settings (Settings)
-      const settingsLink = screen.getByRole('link', { name: /settings/i });
-      expect(settingsLink).toBeInTheDocument();
-      expect(settingsLink).toHaveAttribute('href', '/vendor/store-settings');
+      await waitFor(() => expect(screen.getByRole('link', { name: /orders/i })).toHaveTextContent('3'));
+      expect(screen.getByRole('link', { name: /messages/i })).toHaveTextContent('4');
+      // returns and Q&A are zero, so they carry no badge.
+      expect(screen.getByRole('link', { name: /returns/i })).toHaveTextContent('Returns');
     });
 
     it('triggers onNavigate callback when a link is clicked', () => {
       const handleNavigate = vi.fn();
-      render(
-        <MemoryRouter initialEntries={['/vendor']}>
-          <VendorNav onNavigate={handleNavigate} />
-        </MemoryRouter>
-      );
+      renderWorkspace(<VendorNav onNavigate={handleNavigate} />);
 
-      const productsLink = screen.getByRole('link', { name: /products/i });
-      fireEvent.click(productsLink);
+      fireEvent.click(screen.getByRole('link', { name: /products/i }));
       expect(handleNavigate).toHaveBeenCalledTimes(1);
     });
 
     it('highlights active route correctly', () => {
-      render(
-        <MemoryRouter initialEntries={['/vendor/orders']}>
-          <Routes>
-            <Route path="/vendor/*" element={<VendorNav />} />
-          </Routes>
-        </MemoryRouter>
-      );
+      renderWorkspace(<VendorNav />, ['/vendor/orders']);
 
-      const ordersLink = screen.getByRole('link', { name: /orders/i });
-      expect(ordersLink.className).toContain('text-[#EA6C13]');
+      expect(screen.getByRole('link', { name: /orders/i }).className).toContain('text-[#EA6C13]');
+      expect(screen.getByRole('link', { name: /earnings/i }).className).not.toContain('text-[#EA6C13]');
     });
   });
 

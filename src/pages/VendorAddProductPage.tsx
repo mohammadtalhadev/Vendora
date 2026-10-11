@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Package,
@@ -11,73 +11,94 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowLeft,
+  Upload,
   UploadCloud,
   DollarSign,
   Globe,
   Image as ImageIcon,
   Check,
   Percent,
+  Loader2,
+  ChevronDown,
+  Store,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import type { Product, ProductType, Variant } from '../types/domain';
-import { addVendorProduct } from '../features/vendor/vendorData';
-import { mockDb } from '../mocks/db';
-import { useMarketplaceStore } from '../store/marketplace-store';
+import type { ProductType, Variant } from '../types/domain';
+import { useCategories } from '../features/catalog/hooks/useProducts';
+import { useCreateVendorProduct } from '../features/vendor/hooks/useVendorProducts';
+import type { VendorProductDraft } from '../features/vendor/api/products';
+import { useVendorData } from '../features/vendor/hooks/useVendorData';
+import { useUploadMedia } from '../features/vendor/hooks/useVendorMedia';
 import { cn } from '../lib/utils';
 
 export const VendorAddProductPage: React.FC = () => {
   const navigate = useNavigate();
+  const { vendorId, storeName } = useVendorData();
+  const { data: categoryData } = useCategories();
+  const categories = categoryData?.categories ?? [];
+  const createListing = useCreateVendorProduct();
+  const upload = useUploadMedia();
 
   // Basic Information
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
-  const [category, setCategory] = useState('cat-audio');
-  const [brand, setBrand] = useState('SoundWave Direct');
+  const [categoryId, setCategoryId] = useState('');
+  const [brand, setBrand] = useState('');
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
 
   // Media
-  const [images, setImages] = useState<string[]>([
-    'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
-  ]);
+  const [images, setImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pricing & Inventory
-  const [price, setPrice] = useState('189.00');
-  const [compareAtPrice, setCompareAtPrice] = useState('229.00');
-  const [costPerItem, setCostPerItem] = useState('95.00');
+  const [price, setPrice] = useState('');
+  const [compareAtPrice, setCompareAtPrice] = useState('');
+  const [costPerItem, setCostPerItem] = useState('');
   const [chargeTax, setChargeTax] = useState(true);
 
   // Stock
-  const [sku, setSku] = useState('SW-AUD-8801');
-  const [barcode, setBarcode] = useState('840192841029');
+  const [sku, setSku] = useState('');
+  const [barcode, setBarcode] = useState('');
   const [trackQuantity, setTrackQuantity] = useState(true);
-  const [stock, setStock] = useState('45');
+  const [stock, setStock] = useState('');
   const [lowStockThreshold, setLowStockThreshold] = useState('5');
 
   // Fulfillment
   const [productType, setProductType] = useState<ProductType>('physical');
-  const [weightKg, setWeightKg] = useState('0.45');
-  const [shippingFee, setShippingFee] = useState('8.50');
+  const [weightKg, setWeightKg] = useState('');
+  const [shippingFee, setShippingFee] = useState('');
   const [freeShipping, setFreeShipping] = useState(false);
-  const [licenseType, setLicenseType] = useState('Commercial Single-Store License');
-  const [downloadUrl, setDownloadUrl] = useState('/downloads/audio-driver-suite.zip');
+  const [licenseType, setLicenseType] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
 
   // Variants
   const [hasVariants, setHasVariants] = useState(false);
   const [optionName, setOptionName] = useState('Color');
   const [optionValues, setOptionValues] = useState('Matte Black, Lunar Silver, Glacier Blue');
   const [variants, setVariants] = useState<Variant[]>([]);
+  const [isOptionDropdownOpen, setIsOptionDropdownOpen] = useState(false);
+  const optionDropdownRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (optionDropdownRef.current && !optionDropdownRef.current.contains(e.target as Node)) {
+        setIsOptionDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Organization & Visibility
-  const [status, setStatus] = useState<'approved' | 'draft' | 'pending_review'>('approved');
-  const [tags, setTags] = useState<string[]>(['Audiophile', 'ANC', 'Studio-Grade', 'Wireless']);
+  const [tags, setTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
-  const [collection, setCollection] = useState('Featured Equipment');
-  const [isFeaturedOnStore, setIsFeaturedOnStore] = useState(true);
+  const [collection, setCollection] = useState('');
 
   // SEO
   const [seoTitle, setSeoTitle] = useState('');
@@ -122,6 +143,33 @@ export const VendorAddProductPage: React.FC = () => {
       return [chosen, ...copy];
     });
     showToast('Primary cover image updated.');
+  };
+
+  const uploadFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    let uploadedCount = 0;
+    let failure: string | null = null;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        try {
+          const asset = await upload.mutateAsync({ file, folder: 'products' });
+          setImages((prev) => [...prev, asset.cdnUrl]);
+          uploadedCount++;
+        } catch (cause) {
+          // A file that did not reach the bucket is reported, not swapped for a local
+          // blob URL that would break the moment anyone else opens the listing.
+          failure = cause instanceof Error ? cause.message : String(cause);
+        }
+      }
+      if (uploadedCount > 0) showToast(`${uploadedCount} image(s) uploaded to your media library.`);
+      if (failure) showToast(failure);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleAddTag = (e: React.KeyboardEvent | React.MouseEvent) => {
@@ -182,20 +230,38 @@ export const VendorAddProductPage: React.FC = () => {
   const grossProfit = priceNum > 0 ? priceNum - costNum : 0;
   const profitMargin = priceNum > 0 ? ((grossProfit / priceNum) * 100).toFixed(1) : '0';
 
-  // Completion calculation for Health Score
-  let completionScore = 0;
-  if (title.trim()) completionScore += 20;
-  if (description.trim()) completionScore += 20;
-  if (images.length > 0) completionScore += 20;
-  if (priceNum > 0) completionScore += 20;
-  if (parseInt(stock, 10) > 0) completionScore += 10;
-  if (sku.trim()) completionScore += 10;
+  // Completion calculation for Health Score based on actual filled fields
+  const completionFields = [
+    Boolean(title.trim()),
+    Boolean(slug.trim()),
+    Boolean(categoryId.trim()),
+    Boolean(brand.trim()),
+    Boolean(description.trim()),
+    images.length > 0,
+    priceNum > 0,
+    Boolean(sku.trim()),
+    Boolean(barcode.trim()),
+    parseInt(stock, 10) > 0,
+    productType === 'digital' ? Boolean(downloadUrl.trim()) : Boolean(weightKg.trim()),
+    tags.length > 0,
+    Boolean(collection.trim()),
+    Boolean(seoTitle.trim()),
+    Boolean(seoDescription.trim()),
+  ];
+  const filledFieldsCount = completionFields.filter(Boolean).length;
+  const completionScore = Math.round((filledFieldsCount / completionFields.length) * 100);
 
-  const handleSaveProduct = (targetStatus: 'approved' | 'draft' = 'approved') => {
+  const handleSaveProduct = async (targetStatus: 'pending_review' | 'draft' = 'pending_review') => {
     setErrorMessage(null);
 
     if (!title.trim()) {
       setErrorMessage('Please provide a product title before saving.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (!categoryId) {
+      setErrorMessage('Choose the category this listing belongs in.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -213,64 +279,49 @@ export const VendorAddProductPage: React.FC = () => {
       return;
     }
 
-    const newProduct: Product = {
-      id: `prod-${Date.now()}`,
+    // `seller_id` is stamped by the database from the session, and the rating columns
+    // belong to the review triggers, so neither is sent here.
+    const draft: VendorProductDraft = {
       title: title.trim(),
-      slug: slug || title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      description: description.trim() || headline.trim() || title.trim(),
-      category,
-      brand: brand.trim() || 'SoundWave Direct',
-      images: images.length > 0 ? images : [
-        'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
-      ],
+      slug: slug.trim() || undefined,
+      description: description.trim() || headline.trim(),
+      categoryId,
+      brand: brand.trim() || storeName,
+      images,
       price: priceNum,
-      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : undefined,
+      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       type: productType,
-      sellerId: 'vendor-tech-1',
-      sellerName: 'SoundWave Direct',
-      sellerType: 'vendor',
-      variants: hasVariants && variants.length > 0 ? variants : [],
+      variants: hasVariants ? variants : [],
       stock: stockNum,
       shippingSettings:
         productType === 'physical'
           ? {
               standardFee: freeShipping ? 0 : parseFloat(shippingFee) || 0,
-              freeShipping: freeShipping || parseFloat(shippingFee) === 0,
-              weightKg: parseFloat(weightKg) || 0.5,
+              freeShipping: freeShipping || (parseFloat(shippingFee) || 0) === 0,
+              weightKg: parseFloat(weightKg) || undefined,
             }
           : undefined,
       digitalAssetInfo:
         productType === 'digital'
-          ? {
-              licenseType,
-              downloadUrl: downloadUrl || '/downloads/package.zip',
-            }
+          ? { licenseType: licenseType || undefined, downloadUrl: downloadUrl.trim() || undefined }
           : undefined,
-      rating: 5.0,
-      reviewCount: 0,
       status: targetStatus,
-      createdAt: new Date().toISOString(),
     };
 
-    // 1. Commit to mockDb & localStorage
-    addVendorProduct(newProduct);
-
-    // 2. Commit to Zustand Marketplace Store
     try {
-      useMarketplaceStore.getState().addProduct(newProduct);
-    } catch {
-      // Ignore if unseeded
+      const saved = await createListing.mutateAsync(draft);
+      showToast(
+        targetStatus === 'draft'
+          ? `Draft "${saved.title}" saved. It stays out of the catalogue until you submit it for review.`
+          : `Listing "${saved.title}" sent to moderation. It goes live once the platform approves it.`,
+      );
+      setTimeout(() => {
+        navigate('/vendor/products');
+      }, 800);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Could not save the listing.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
-    showToast(
-      targetStatus === 'approved'
-        ? `Product "${newProduct.title}" published to marketplace!`
-        : `Product "${newProduct.title}" saved as draft.`
-    );
-
-    setTimeout(() => {
-      navigate('/vendor/products');
-    }, 800);
   };
 
   return (
@@ -301,16 +352,12 @@ export const VendorAddProductPage: React.FC = () => {
               <ArrowLeft className="h-4 w-4" />
             </Link>
             <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                <span>Catalog</span>
-                <span>/</span>
-                <Link to="/vendor/products" className="hover:text-slate-700">Products</Link>
-                <span>/</span>
-                <span className="text-[#EA6C13]">Add Product</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-0.5">
-                Create Listing
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 font-outfit">
+                Add New Product
               </h1>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Create and publish a product listing to your storefront catalog.
+              </p>
             </div>
           </div>
 
@@ -329,19 +376,22 @@ export const VendorAddProductPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => handleSaveProduct('draft')}
+              disabled={createListing.isPending}
               className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700"
             >
               Save as Draft
             </Button>
-            <Button
+            <button
               type="button"
-              size="sm"
-              onClick={() => handleSaveProduct('approved')}
-              className="text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-white gap-2 shadow-xs"
+              onClick={() => handleSaveProduct('pending_review')}
+              disabled={createListing.isPending}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
             >
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              <span>Publish Product</span>
-            </Button>
+              <Upload className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <span className="text-white">
+                {createListing.isPending ? 'Saving…' : 'Submit for Review'}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -368,7 +418,6 @@ export const VendorAddProductPage: React.FC = () => {
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Basic Information</h3>
                 </div>
-                <span className="text-[11px] text-slate-400 font-medium">Core Catalog Metadata</span>
               </div>
 
               <div>
@@ -410,24 +459,16 @@ export const VendorAddProductPage: React.FC = () => {
                     Category <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
                   >
-                    {mockDb.categories.length > 0 ? (
-                      mockDb.categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="cat-audio">Audio &amp; Acoustics</option>
-                        <option value="cat-computing">Keyboards &amp; Hardware</option>
-                        <option value="cat-smart-home">Smart Living</option>
-                        <option value="cat-digital">Digital Licenses</option>
-                      </>
-                    )}
+                    <option value="">Choose a category</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -482,15 +523,47 @@ export const VendorAddProductPage: React.FC = () => {
                 <span className="text-[11px] text-slate-400 font-medium">{images.length} assets attached</span>
               </div>
 
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void uploadFiles(e.target.files)}
+              />
+
               {/* Upload Dropzone */}
-              <div className="rounded-xl border-2 border-dashed border-slate-200 p-6 text-center hover:border-slate-300 transition-colors bg-slate-50/50">
-                <UploadCloud className="mx-auto h-8 w-8 text-slate-400" />
-                <p className="mt-2 text-xs font-bold text-slate-800">
-                  Drag and drop high-res photography here
-                </p>
-                <p className="mt-1 text-[11px] text-slate-400">
-                  PNG, JPG, or WebP up to 12MB. Recommended 2000x2000 square resolution.
-                </p>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  void uploadFiles(e.dataTransfer.files);
+                }}
+                className="cursor-pointer rounded-xl border-2 border-dashed border-slate-200 p-6 text-center hover:border-slate-400 hover:bg-slate-50/80 transition-all bg-slate-50/50"
+              >
+                {isUploading ? (
+                  <div className="flex flex-col items-center justify-center py-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#FF7A1A]" />
+                    <p className="mt-2 text-xs font-bold text-slate-800">
+                      Uploading to Supabase Storage...
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-400">Please wait</p>
+                  </div>
+                ) : (
+                  <>
+                    <UploadCloud className="mx-auto h-8 w-8 text-slate-400 transition-transform group-hover:scale-110" />
+                    <p className="mt-2 text-xs font-bold text-slate-800">
+                      Click to browse or drag & drop high-res photography here
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      PNG, JPG or WebP. Each file is stored under your store's own folder in the{' '}
+                      <span className="font-mono">vendor-assets</span> bucket and recorded in your
+                      media library as pending review.
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Fast URL input */}
@@ -564,7 +637,10 @@ export const VendorAddProductPage: React.FC = () => {
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Pricing &amp; Margins</h3>
                 </div>
-                <span className="text-[11px] text-slate-400 font-medium">Financial settlement values</span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  The listing stores the selling price and compare-at price; cost and tax are
+                  planning figures for this draft only.
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -887,30 +963,64 @@ export const VendorAddProductPage: React.FC = () => {
                         <label className="block text-[11px] font-bold text-slate-500 mb-1">
                           Option Name
                         </label>
-                        <select
-                          value={optionName}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setOptionName(val);
-                            if (val === 'Color') setOptionValues('Matte Black, Lunar Silver, Glacier Blue');
-                            else if (val === 'Size') setOptionValues('Small, Medium, Large, XL');
-                            else if (val === 'Storage Capacity') setOptionValues('128GB, 256GB, 512GB, 1TB');
-                            else if (val === 'Material') setOptionValues('Aluminum, Stainless Steel, Leather');
-                            else if (val === 'Style') setOptionValues('Classic, Modern, Minimalist');
-                            else if (val === 'Weight') setOptionValues('500g, 1kg, 2kg');
-                            else if (val === 'Pack Quantity') setOptionValues('1-Pack, 2-Pack, 4-Pack');
-                          }}
-                          className="w-full admin-select h-9"
-                        >
-                          <option value="Color">Color (e.g. Black, White, Silver)</option>
-                          <option value="Size">Size (e.g. S, M, L, XL)</option>
-                          <option value="Storage Capacity">Storage Capacity (e.g. 128GB, 256GB)</option>
-                          <option value="Material">Material (e.g. Aluminum, Leather)</option>
-                          <option value="Style">Style (e.g. Modern, Vintage)</option>
-                          <option value="Weight">Weight (e.g. 500g, 1kg)</option>
-                          <option value="Pack Quantity">Pack Quantity (e.g. 1-Pack, 2-Pack)</option>
-                          <option value="Custom Option">Custom Option</option>
-                        </select>
+                        <div className="relative" ref={optionDropdownRef}>
+                          <button
+                            type="button"
+                            onClick={() => setIsOptionDropdownOpen(!isOptionDropdownOpen)}
+                            className="w-full flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer h-9 text-left"
+                          >
+                            <span className="truncate">
+                              {[
+                                { label: 'Color (e.g. Black, White, Silver)', value: 'Color' },
+                                { label: 'Size (e.g. S, M, L, XL)', value: 'Size' },
+                                { label: 'Storage Capacity (e.g. 128GB, 256GB)', value: 'Storage Capacity' },
+                                { label: 'Material (e.g. Aluminum, Leather)', value: 'Material' },
+                                { label: 'Style (e.g. Modern, Vintage)', value: 'Style' },
+                                { label: 'Weight (e.g. 500g, 1kg)', value: 'Weight' },
+                                { label: 'Pack Quantity (e.g. 1-Pack, 2-Pack)', value: 'Pack Quantity' },
+                                { label: 'Custom Option', value: 'Custom Option' },
+                              ].find((o) => o.value === optionName)?.label || optionName}
+                            </span>
+                            <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 shrink-0 ml-1.5 transition-transform", isOptionDropdownOpen && "rotate-180")} />
+                          </button>
+
+                          {isOptionDropdownOpen && (
+                            <div className="absolute top-10 left-0 w-full min-w-[260px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 space-y-0.5">
+                              {[
+                                { label: 'Color (e.g. Black, White, Silver)', value: 'Color', defaultValues: 'Matte Black, Lunar Silver, Glacier Blue' },
+                                { label: 'Size (e.g. S, M, L, XL)', value: 'Size', defaultValues: 'Small, Medium, Large, XL' },
+                                { label: 'Storage Capacity (e.g. 128GB, 256GB)', value: 'Storage Capacity', defaultValues: '128GB, 256GB, 512GB, 1TB' },
+                                { label: 'Material (e.g. Aluminum, Leather)', value: 'Material', defaultValues: 'Aluminum, Stainless Steel, Leather' },
+                                { label: 'Style (e.g. Modern, Vintage)', value: 'Style', defaultValues: 'Classic, Modern, Minimalist' },
+                                { label: 'Weight (e.g. 500g, 1kg)', value: 'Weight', defaultValues: '500g, 1kg, 2kg' },
+                                { label: 'Pack Quantity (e.g. 1-Pack, 2-Pack)', value: 'Pack Quantity', defaultValues: '1-Pack, 2-Pack, 4-Pack' },
+                                { label: 'Custom Option', value: 'Custom Option', defaultValues: '' },
+                              ].map((opt) => {
+                                const isSelected = optionName === opt.value;
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => {
+                                      setOptionName(opt.value);
+                                      if (opt.defaultValues) setOptionValues(opt.defaultValues);
+                                      setIsOptionDropdownOpen(false);
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors text-left cursor-pointer",
+                                      isSelected
+                                        ? "bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A] font-bold"
+                                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
+                                    )}
+                                  >
+                                    <span className="truncate">{opt.label}</span>
+                                    {isSelected && <Check className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0 ml-1.5" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold text-slate-500 mb-1">
@@ -981,76 +1091,103 @@ export const VendorAddProductPage: React.FC = () => {
               Right / Sidebar Column (lg:col-span-4)
               ===================================================================== */}
           <div className="lg:col-span-4 space-y-6">
-            {/* 1. Publishing Status & Visibility Card */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900">Publishing Status</h3>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Ready
+            {/* 1. Official Store Identity Card */}
+            <div className="rounded-2xl border border-orange-200 bg-orange-50/50 p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-orange-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FF7A1A] text-white">
+                    <Store className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900">Store Identity</h3>
+                </div>
+                <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-2xs">
+                  Verified Merchant
                 </span>
               </div>
 
-              <div className="space-y-2">
-                <label
-                  onClick={() => setStatus('approved')}
-                  className={cn(
-                    'flex items-center justify-between rounded-xl border p-3 cursor-pointer transition-colors text-xs font-semibold',
-                    status === 'approved'
-                      ? 'border-slate-900 bg-slate-50 text-slate-900 ring-1 ring-slate-900'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <Check className={cn('h-4 w-4', status === 'approved' ? 'text-emerald-600' : 'text-transparent')} />
-                    <span>Active (Live on Store)</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-normal">Publicly visible</span>
-                </label>
-
-                <label
-                  onClick={() => setStatus('draft')}
-                  className={cn(
-                    'flex items-center justify-between rounded-xl border p-3 cursor-pointer transition-colors text-xs font-semibold',
-                    status === 'draft'
-                      ? 'border-slate-900 bg-slate-50 text-slate-900 ring-1 ring-slate-900'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <Check className={cn('h-4 w-4', status === 'draft' ? 'text-amber-600' : 'text-transparent')} />
-                    <span>Draft (Unpublished)</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-normal">Hidden from buyers</span>
-                </label>
+              <div className="rounded-xl bg-white border border-orange-200/80 p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-medium">Storefront:</span>
+                  <span className="text-xs font-black text-slate-900 flex items-center gap-1">
+                    {storeName}
+                    <span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A]" />
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium">Merchant ID:</span>
+                  <span className="font-mono text-[11px] text-slate-700 font-bold">{vendorId}</span>
+                </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-600 font-medium">Storefront Featured</span>
-                <input
-                  type="checkbox"
-                  checked={isFeaturedOnStore}
-                  onChange={(e) => setIsFeaturedOnStore(e.target.checked)}
-                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 h-4 w-4"
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Products created here will be published directly to your official store catalog with instant live indexing across search facets.
+              </p>
+            </div>
+
+            {/* 2. Listing Quality & Completeness Score Meter */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-900">Listing Completeness</h3>
+                <span className="text-xs font-black text-slate-900">{completionScore}%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  style={{ width: `${completionScore}%` }}
                 />
               </div>
+              <p className="text-[11px] text-slate-400">
+                A 100% score guarantees optimal search ranking and higher conversion rates across marketplace facets.
+              </p>
+            </div>
 
-              <div className="pt-2">
-                <Button
-                  type="button"
-                  onClick={() => handleSaveProduct('approved')}
-                  className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 shadow-xs"
-                >
-                  Publish to Storefront
-                </Button>
+            {/* 3. Search Engine Optimization (SEO) Preview Card */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-3">
+              <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">SEO Search Engine Preview</h3>
+                  <p className="text-xs text-slate-400">
+                    Preview only - the catalogue has no SEO columns, so this text is not saved.
+                  </p>
+                </div>
+                <Globe className="h-4 w-4 text-slate-400" />
+              </div>
+
+              {/* Google Result Preview Snippet */}
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 space-y-1 text-xs">
+                <span className="text-[11px] text-slate-500 font-mono block truncate">
+                  https://vendora.shop/products/{slug || 'product-handle'}
+                </span>
+                <h4 className="text-sm font-semibold text-blue-700 truncate hover:underline cursor-pointer">
+                  {seoTitle || title || 'Product Title'} | Vendora Marketplace
+                </h4>
+                <p className="text-slate-600 text-[11px] line-clamp-2">
+                  {seoDescription || description || 'Product description will appear in search results across Google and marketplace queries.'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Custom Search Meta Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  placeholder="Custom snippet for search engines (defaults to product description)..."
+                  className="w-full rounded-xl border border-slate-200 p-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+                />
               </div>
             </div>
 
-            {/* 2. Organization & Tags Card */}
+            {/* 4. Organization & Taxonomy Card */}
             <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
               <div className="border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-bold text-slate-900">Organization &amp; Taxonomy</h3>
-                <p className="text-xs text-slate-400">Classify your item in discovery filters</p>
+                <p className="text-xs text-slate-400">
+                  Not saved yet - the catalogue stores title, category, price, stock and media.
+                  Collections and tags stay in this draft only.
+                </p>
               </div>
 
               <div>
@@ -1100,80 +1237,14 @@ export const VendorAddProductPage: React.FC = () => {
                   />
                   <Button
                     type="button"
-                    variant="outline"
                     size="sm"
                     onClick={handleAddTag}
-                    className="text-xs rounded-xl"
+                    className="rounded-xl text-xs bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] text-white font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 border-0"
                   >
                     Add
                   </Button>
                 </div>
               </div>
-            </div>
-
-            {/* 3. Search Engine Optimization (SEO) Preview Card */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-3">
-              <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">SEO Search Engine Preview</h3>
-                  <p className="text-xs text-slate-400">Search snippet preview</p>
-                </div>
-                <Globe className="h-4 w-4 text-slate-400" />
-              </div>
-
-              {/* Google Result Preview Snippet */}
-              <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 space-y-1 text-xs">
-                <span className="text-[11px] text-slate-500 font-mono block truncate">
-                  https://vendora.shop/products/{slug || 'product-handle'}
-                </span>
-                <h4 className="text-sm font-semibold text-blue-700 truncate hover:underline cursor-pointer">
-                  {seoTitle || title || 'Product Title'} | Vendora Marketplace
-                </h4>
-                <p className="text-slate-600 text-[11px] line-clamp-2">
-                  {seoDescription || description || 'Product description will appear in search results across Google and marketplace queries.'}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Custom Search Meta Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  placeholder="Custom snippet for search engines (defaults to product description)..."
-                  className="w-full rounded-xl border border-slate-200 p-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* 4. Listing Health Meter Card */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900">Listing Completeness</h3>
-                <span className="text-xs font-bold text-slate-900">{completionScore}%</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full bg-slate-900 rounded-full transition-all duration-300"
-                  style={{ width: `${completionScore}%` }}
-                />
-              </div>
-              <ul className="text-[11px] text-slate-500 space-y-1.5 pt-1">
-                <li className={cn('flex items-center gap-1.5', title.trim() ? 'text-emerald-700 font-semibold' : '')}>
-                  <Check className="h-3 w-3" /> Title specified
-                </li>
-                <li className={cn('flex items-center gap-1.5', images.length > 0 ? 'text-emerald-700 font-semibold' : '')}>
-                  <Check className="h-3 w-3" /> High-res assets attached
-                </li>
-                <li className={cn('flex items-center gap-1.5', priceNum > 0 ? 'text-emerald-700 font-semibold' : '')}>
-                  <Check className="h-3 w-3" /> Price &amp; cost configured
-                </li>
-                <li className={cn('flex items-center gap-1.5', sku.trim() ? 'text-emerald-700 font-semibold' : '')}>
-                  <Check className="h-3 w-3" /> SKU identifier set
-                </li>
-              </ul>
             </div>
           </div>
         </div>

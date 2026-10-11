@@ -379,6 +379,262 @@ ok('the re-issued code completes the delivery', (await q(`select status from sub
 await as('authenticated', CU2);
 await expectThrow('a closed delivery cannot be re-coded', () => q(`select issue_delivery_code($1)`, [bPhys.id]), 'already closed');
 
+console.log('\n[vendor workspace] money, returns and listings are decided in SQL');
+await as('authenticated', VENDOR);
+
+// -- dashboard: the tiles the seller sees, aggregated by Postgres --------------
+const dash = (await q(`select vendor_dashboard(5) as d`))[0].d;
+ok('the dashboard is the acting store, not the whole marketplace', dash.store.id === STORE);
+ok(
+  'net paid out = booked gross - frozen commission',
+  Math.abs(
+    Number(dash.kpis.netPayout) - (Number(dash.kpis.grossBooked) - Number(dash.kpis.commission)),
+  ) < 0.01,
+  `(gross ${dash.kpis.grossBooked}, fees ${dash.kpis.commission}, net ${dash.kpis.netPayout})`,
+);
+ok(
+  'physical + digital sales are the booked gross',
+  Math.abs(Number(dash.kpis.physicalSales) + Number(dash.kpis.digitalSales) - Number(dash.kpis.grossBooked)) < 0.01,
+);
+{
+  await as('postgres');
+  const placedCount = (
+    await q(`select count(*)::int c from sub_orders where seller_id = $1 and status = 'placed'`, [STORE])
+  )[0].c;
+  await as('authenticated', VENDOR);
+  ok('stage counts match the rows the store actually has', Number(dash.stages.placed) === placedCount, `(placed ${dash.stages.placed})`);
+}
+ok(
+  'recent packages name the buyer (orders are readable through the vendor policy)',
+  dash.recentPackages.length > 0 && dash.recentPackages.every((p: any) => /@demo\.test$/.test(p.buyerEmail)),
+);
+ok(
+  'the catalog counts only this store\'s listings',
+  (await q(`select count(*)::int c from products where seller_id=$1 and status='approved'`, [STORE]))[0].c === Number(dash.catalog.approved),
+);
+
+await as('authenticated', CU);
+await expectThrow('a customer calling vendor_dashboard is turned away', () => q(`select vendor_dashboard()`), 'No vendor store');
+
+// -- balance: earned, paid, reserved ------------------------------------------
+await as('authenticated', VENDOR);
+const balanceFree = (await q(`select vendor_balance() as b`))[0].b;
+ok(
+  'available = earned - paid - reserve, with no reserve configured',
+  Math.abs(Number(balanceFree.available) - (Number(balanceFree.lifetimeNet) - Number(balanceFree.paidOut))) < 0.01,
+  `(available ${balanceFree.available})`,
+);
+await as('postgres');
+await q(`update vendor_profiles set payout_reserve_pct = 0.2 where id = $1`, [STORE]);
+await q(`insert into payouts (vendor_id, amount, status) values ($1, 50, 'failed')`, [STORE]);
+await as('authenticated', VENDOR);
+const balanceReserve = (await q(`select vendor_balance() as b`))[0].b;
+ok(
+  'a rolling reserve holds back exactly its percentage of earnings',
+  Math.abs(Number(balanceReserve.reserve) - Number(balanceReserve.lifetimeNet) * 0.2) < 0.01,
+  `(reserve ${balanceReserve.reserve} of ${balanceReserve.lifetimeNet})`,
+);
+ok(
+  'a failed payout returns the money to the balance',
+  Number(balanceReserve.paidOut) === Number(balanceFree.paidOut),
+  `(paidOut ${balanceReserve.paidOut}, was ${balanceFree.paidOut})`,
+);
+const instant = (await q(`select request_payout(10) as r`))[0].r;
+ok(
+  'the instant transfer fee is recorded, not implied',
+  Number(instant.fee) === 0.15 && Number(instant.deposit) === 9.85,
+  `(fee ${instant.fee}, deposit ${instant.deposit})`,
+);
+await expectThrow(
+  'you cannot withdraw the reserve',
+  () => q(`select request_payout($1)`, [String(Number(instant.deposit) + Number(balanceReserve.available))]),
+  'exceeds available balance',
+);
+
+// -- earnings ledger -----------------------------------------------------------
+const earnings = (await q(`select vendor_earnings(6) as e`))[0].e;
+ok(
+  'what the buyer paid splits into goods and freight',
+  Math.abs(
+    Number(earnings.totals.subtotal) + Number(earnings.totals.shipping) - Number(earnings.totals.gross),
+  ) < 0.01,
+  `(gross ${earnings.totals.gross}, goods ${earnings.totals.subtotal}, freight ${earnings.totals.shipping})`,
+);
+ok(
+  'ledger totals are internally consistent (goods - fees = net)',
+  Math.abs(
+    Number(earnings.totals.subtotal) - Number(earnings.totals.fees) - Number(earnings.totals.net),
+  ) < 0.01,
+  `(goods ${earnings.totals.subtotal}, fees ${earnings.totals.fees}, net ${earnings.totals.net})`,
+);
+ok('the chart has one point per month, even for empty months', earnings.months.length === 6);
+ok(
+  'every ledger row is settled from the fee frozen at booking',
+  earnings.ledger.every(
+    (r: any) =>
+      Math.abs(Number(r.subtotal) - Number(r.fees) - Number(r.net)) < 0.01 &&
+      Math.abs(Number(r.subtotal) + Number(r.shipping) - Number(r.gross)) < 0.01,
+  ),
+);
+
+// -- tracking: sellers have no UPDATE policy on sub_orders ---------------------
+await as('authenticated', CU);
+await expectThrow('the buyer cannot attach a tracking number', () => q(`select update_sub_order_tracking($1,'DHL','DHL123')`, [phys.id]), 'not yours');
+await as('authenticated', VENDOR);
+await expectThrow('a digital package has nothing to track', () => q(`select update_sub_order_tracking($1,'DHL','DHL123')`, [digi.id]), 'nothing to track');
+await expectThrow('an empty tracking number is rejected', () => q(`select update_sub_order_tracking($1,'DHL','  ')`, [phys.id]), 'tracking number is required');
+const tracked = (await q(`select update_sub_order_tracking($1,'DHL','DHL-445566') as r`, [phys.id]))[0].r;
+ok('carrier and tracking number land on the package', tracked.trackingNumber === 'DHL-445566');
+ok(
+  'the tracking write is appended to the history trail',
+  (await q(`select history from sub_orders where id=$1`, [phys.id]))[0].history.some((h: any) => /DHL-445566/.test(h.note)),
+);
+// RLS on UPDATE filters the row instead of raising: the browser statement
+// succeeds and changes nothing, which is exactly why tracking goes through the RPC.
+const hacked = await q(`update sub_orders set carrier_name='Hacked' where id=$1`, [phys.id]);
+ok(
+  'sub_orders is still not writable straight from the browser',
+  hacked.length === 0 &&
+    (await q(`select carrier_name from sub_orders where id=$1`, [phys.id]))[0].carrier_name === 'DHL',
+);
+
+// -- returns: decide, then restock ---------------------------------------------
+await as('authenticated', CU2);
+await q(`select advance_sub_order_status($1,'return_requested')`, [bPhys.id]);
+await as('authenticated', VENDOR);
+await expectThrow('a decline without a reason is not allowed', () => q(`select decide_return($1,'decline')`, [bPhys.id]), 'why the return was declined');
+const declined = (await q(`select decide_return($1,'decline',null,'Outside the 30-day window') as r`, [bPhys.id]))[0].r;
+ok('declining records the reason and closes the request', declined.status === 'return_rejected');
+ok(
+  'the buyer sees the reason on the package',
+  (await q(`select return_reject_reason r from sub_orders where id=$1`, [bPhys.id]))[0].r === 'Outside the 30-day window',
+);
+await expectThrow('a decided return cannot be decided twice', () => q(`select decide_return($1,'approve')`, [bPhys.id]), 'Nothing to decide');
+
+await as('authenticated', CU);
+await q(`select advance_sub_order_status($1,'return_requested')`, [phys.id]);
+await as('authenticated', VENDOR);
+await expectThrow(
+  'another store cannot decide a return that is not theirs',
+  () => q(`select decide_return($1,'approve')`, [digi.id]),
+  'not yours to decide',
+);
+const approved = (await q(`select decide_return($1,'approve',100) as r`, [phys.id]))[0].r;
+ok('approving mints an RMA the buyer can quote', /^RMA-[0-9A-F]{8}$/.test(approved.rmaCode), `(got ${approved.rmaCode})`);
+ok('the refund amount is stored on the package', Number(approved.refundAmount) === 100);
+await as('postgres');
+const units = (
+  await q(
+    `select coalesce(sum((i->>'quantity')::int),0)::int u
+     from sub_orders so, jsonb_array_elements(so.items) i where so.id=$1`,
+    [phys.id],
+  )
+)[0].u;
+const stockBefore = (await q(`select stock::int s from products where id=$1`, [P_PHYS]))[0].s;
+await as('authenticated', VENDOR);
+const restocked = (await q(`select complete_return($1) as r`, [phys.id]))[0].r;
+ok(
+  'restocking puts exactly the returned units back on the shelf',
+  (await q(`select stock::int s from products where id=$1`, [P_PHYS]))[0].s === stockBefore + units,
+  `(was ${stockBefore}, returned ${units})`,
+);
+ok('the package is marked returned', restocked.status === 'returned');
+await expectThrow('an already restocked return cannot be restocked again', () => q(`select complete_return($1)`, [phys.id]), 'Only an approved return');
+await as('authenticated', ADMIN);
+await q(`select advance_sub_order_status($1,'refunded')`, [phys.id]);
+ok('a returned package can be refunded', (await q(`select status from sub_orders where id=$1`, [phys.id]))[0].status === 'refunded');
+
+// -- listings: submit and withdraw, never self-approve -------------------------
+await as('authenticated', VENDOR);
+const draftId = (
+  await q(
+    `insert into products (title, slug, category_id, price, seller_id, status)
+     values ('Draft Gadget','draft-gadget',$1,15,$2,'draft') returning id`,
+    [CAT, STORE],
+  )
+)[0].id;
+const submitted = (await q(`select set_vendor_product_listing($1,'submit') as r`, [draftId]))[0].r;
+ok('a draft goes up for review only through the RPC', submitted.status === 'pending_review');
+await as('authenticated', ADMIN);
+await q(`select moderate_product($1,'rejected','Photos do not match the item')`, [draftId]);
+await as('authenticated', VENDOR);
+const resubmitted = (await q(`select set_vendor_product_listing($1,'submit') as r`, [draftId]))[0].r;
+ok(
+  'resubmitting clears the rejection the seller just answered',
+  resubmitted.status === 'pending_review' &&
+    (await q(`select rejection_reason from products where id=$1`, [draftId]))[0].rejection_reason === null,
+);
+await as('authenticated', ADMIN);
+await q(`select moderate_product($1,'approved')`, [draftId]);
+await as('authenticated', VENDOR);
+await expectThrow('an approved listing is withdrawn by the platform, not the seller', () => q(`select set_vendor_product_listing($1,'withdraw')`, [draftId]), 'withdrawn by the platform');
+await expectThrow('a live listing is not resubmitted', () => q(`select set_vendor_product_listing($1,'submit')`, [draftId]), 'does not need to be submitted');
+await as('authenticated', CU);
+await expectThrow('someone else cannot move the listing', () => q(`select set_vendor_product_listing($1,'withdraw')`, [draftId]), 'not yours');
+
+// -- the redemption counter belongs to the platform -----------------------------
+await as('authenticated', VENDOR);
+const promoId = (
+  await q(
+    `insert into promotions (vendor_id, code, title, discount_type, discount_value, usage_limit)
+     values ($1,'MYSTORE5','My store 5%','percentage',5,10) returning id`,
+    [STORE],
+  )
+)[0].id;
+await q(`update promotions set active = false where id = $1`, [promoId]);
+ok('a seller can switch their own campaign off', (await q(`select active from promotions where id=$1`, [promoId]))[0].active === false);
+await expectThrow(
+  'a seller cannot rewrite how many times the code was claimed',
+  () => q(`update promotions set usage_count = 99 where id=$1`, [promoId]),
+  'row-level security',
+);
+
+// -- settings, media and Q&A ----------------------------------------------------
+await q(
+  `insert into vendor_shipping_settings (vendor_id, street, city, sla_window, standard_rate)
+   values ($1,'1 Warehouse Rd','Karachi','24h',6)
+   on conflict (vendor_id) do update set street = excluded.street`,
+  [STORE],
+);
+ok('the store saves its own shipping profile', (await q(`select street from vendor_shipping_settings where vendor_id=$1`, [STORE]))[0].street === '1 Warehouse Rd');
+await as('authenticated', CU);
+await expectThrow('a customer cannot write a vendor shipping profile', () => q(`insert into vendor_shipping_settings (vendor_id, street) values ($1,'x')`, [STORE]), 'row-level security');
+
+await as('authenticated', VENDOR);
+await expectThrow(
+  'an upload cannot approve itself into the media library',
+  () => q(`insert into media_items (vendor_id, name, status) values ($1,'hero.jpg','approved')`, [STORE]),
+  'row-level security',
+);
+const mediaId = (await q(`insert into media_items (vendor_id, name, status) values ($1,'hero.jpg','pending') returning id`, [STORE]))[0].id;
+await q(`update media_items set name='hero-shot.jpg' where id=$1`, [mediaId]);
+ok('a seller renames their own asset', (await q(`select name from media_items where id=$1`, [mediaId]))[0].name === 'hero-shot.jpg');
+await expectThrow('a seller cannot moderate their own asset', () => q(`update media_items set status='approved' where id=$1`, [mediaId]), 'row-level security');
+await as('authenticated', ADMIN);
+await q(`update media_items set status='flagged' where id=$1`, [mediaId]);
+ok('the platform can flag it', (await q(`select status from media_items where id=$1`, [mediaId]))[0].status === 'flagged');
+
+await as('authenticated', CU);
+const questionId = (
+  await q(
+    `insert into product_qa (product_id, vendor_id, customer_id, customer_name, question)
+     values ($1,$2,$3,'Sarah','Does it fit a 3.5mm jack?') returning id`,
+    [P_PHYS, STORE, CU],
+  )
+)[0].id;
+await as('authenticated', CU2);
+ok('an unanswered question is not public yet', (await q('select count(*)::int c from product_qa where id=$1', [questionId]))[0].c === 0);
+await as('authenticated', VENDOR);
+await q(`update product_qa set answer='Yes, with the included adapter', answered_at=now(), published=true where id=$1`, [questionId]);
+ok('the seller answers and publishes', (await q('select published from product_qa where id=$1', [questionId]))[0].published === true);
+await expectThrow(
+  'the seller cannot edit the question itself',
+  () => q(`update product_qa set question='Rewritten' where id=$1`, [questionId]),
+  'row-level security',
+);
+await as('anon');
+ok('an anonymous visitor sees the published answer only', (await q('select count(*)::int c from product_qa'))[0].c === 1);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

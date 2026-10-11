@@ -1,149 +1,194 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Boxes,
   Key,
   AlertTriangle,
+  AlertCircle,
   Search,
   CheckCircle2,
-  Calendar,
   Save,
-  Plus,
   Copy,
   Check,
+  SlidersHorizontal,
+  DollarSign,
+  Layers,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
+import { useVendorPackages } from '../features/vendor/hooks/useVendorPackages';
+import { useSetProductStock, useVendorProducts } from '../features/vendor/hooks/useVendorProducts';
+import type { ModerationStatus } from '../types/domain';
 
-interface InventoryItem {
-  id: string;
-  sku: string;
-  title: string;
-  category: string;
-  stock: number;
-  lowStockThreshold: number;
-  expectedRestockDate?: string;
-  price: number;
-  status: 'in_stock' | 'low_stock' | 'out_of_stock';
-}
+/**
+ * What this page calls low stock. `vendor_dashboard(p_low_stock)` counts the same way with
+ * the same default, so the alert here matches the dashboard's - it is a view setting, not a
+ * per-listing minimum the database stores.
+ */
+const LOW_STOCK_AT = 5;
 
-interface DigitalLicenseKey {
-  id: string;
-  productTitle: string;
-  key: string;
-  isUsed: boolean;
-  addedAt: string;
-}
+type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
 
-const INITIAL_INVENTORY: InventoryItem[] = [
-  {
-    id: 'prod-1',
-    sku: 'AUDIO-HP-01',
-    title: 'Apex Pro Noise-Cancelling Wireless Headphones (Black)',
-    category: 'electronics',
-    stock: 3,
-    lowStockThreshold: 5,
-    expectedRestockDate: '2026-10-14',
-    price: 189.99,
-    status: 'low_stock',
-  },
-  {
-    id: 'prod-2',
-    sku: 'AUDIO-CASE-02',
-    title: 'Hard Shell Protective Travel Case',
-    category: 'accessories',
-    stock: 0,
-    lowStockThreshold: 10,
-    expectedRestockDate: '2026-10-11',
-    price: 24.50,
-    status: 'out_of_stock',
-  },
-  {
-    id: 'prod-3',
-    sku: 'CABLE-USB-03',
-    title: 'Braided Gold-Plated 3.5mm Audio Cable (1.5m)',
-    category: 'accessories',
-    stock: 45,
-    lowStockThreshold: 10,
-    price: 14.99,
-    status: 'in_stock',
-  },
-  {
-    id: 'prod-4',
-    sku: 'AUDIO-MIC-04',
-    title: 'Studio Condenser Podcast Microphone with Boom Arm',
-    category: 'electronics',
-    stock: 18,
-    lowStockThreshold: 5,
-    price: 99.00,
-    status: 'in_stock',
-  },
-];
+const stockStatusOf = (stock: number): StockStatus =>
+  stock === 0 ? 'out_of_stock' : stock <= LOW_STOCK_AT ? 'low_stock' : 'in_stock';
 
-const INITIAL_KEYS: DigitalLicenseKey[] = [
-  { id: 'k-1', productTitle: 'Vendora Audio Master Preset Pack', key: 'AUD-PRE-8841-XN19', isUsed: false, addedAt: '2026-10-01' },
-  { id: 'k-2', productTitle: 'Vendora Audio Master Preset Pack', key: 'AUD-PRE-8842-XN20', isUsed: false, addedAt: '2026-10-01' },
-  { id: 'k-3', productTitle: 'Vendora Audio Master Preset Pack', key: 'AUD-PRE-7123-PA88', isUsed: true, addedAt: '2026-09-28' },
-  { id: 'k-4', productTitle: 'Acoustic Soundscapes Vol. 2', key: 'SFX-VOL2-4412-MK', isUsed: false, addedAt: '2026-10-04' },
-];
+const MODERATION_LABEL: Record<ModerationStatus, string> = {
+  draft: 'Draft',
+  pending_review: 'In review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  archived: 'Archived',
+};
+
+const money = (value: number) =>
+  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** Static classes per KPI count: Tailwind cannot generate an interpolated class name. */
+const KPI_GRID: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+};
 
 export const VendorInventoryPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'physical' | 'digital'>('physical');
-  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
-  const [digitalKeys, setDigitalKeys] = useState<DigitalLicenseKey[]>(INITIAL_KEYS);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [savedSuccess, setSavedSuccess] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const productsQuery = useVendorProducts();
+  const packagesQuery = useVendorPackages();
+  const setStock = useSetProductStock();
 
-  // Digital key adder
-  const [isAddKeyOpen, setIsAddKeyOpen] = useState(false);
-  const [newKeyProduct, setNewKeyProduct] = useState('Vendora Audio Master Preset Pack');
-  const [newKeysBatch, setNewKeysBatch] = useState('');
+  const [activeTab, setActiveTab] = useState<'physical' | 'digital'>('physical');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [saveErrors, setSaveErrors] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  /** Stepper values that have not been written yet, keyed by product id. */
+  const [stockEdits, setStockEdits] = useState<Record<string, number>>({});
+
+  const [isKpiSelectorOpen, setIsKpiSelectorOpen] = useState(false);
+  const [selectedKpis, setSelectedKpis] = useState<string[]>([
+    'physical_listings',
+    'low_stock',
+    'total_valuation',
+    'keys_issued',
+  ]);
+
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const listings = productsQuery.data ?? [];
+  const packages = packagesQuery.data ?? [];
+
+  /**
+   * One row per physical listing you own, at its saved stock unless a stepper holds an
+   * unsaved edit. Nothing here exists that the `products` table does not have a column for.
+   */
+  const rows = useMemo(() => {
+    return listings
+      .filter((p) => p.type === 'physical')
+      .map((p) => {
+        const savedStock = p.stock ?? 0;
+        const shownStock = Math.max(0, stockEdits[p.id] ?? savedStock);
+        return {
+          id: p.id,
+          // A listing without a variant SKU gets a display code derived from its own id.
+          sku: p.variants?.[0]?.sku || `SKU-${p.id.slice(-6).toUpperCase()}`,
+          title: p.title,
+          category: p.category.replace('cat-', '').replace('-', ' '),
+          savedStock,
+          stock: shownStock,
+          dirty: shownStock !== savedStock,
+          status: stockStatusOf(shownStock),
+          price: p.price,
+          listingStatus: p.status,
+          imageUrl: p.images?.[0],
+        };
+      });
+  }, [listings, stockEdits]);
+
+  const digitalPackages = useMemo(
+    () =>
+      packages
+        .filter((o) => o.type === 'digital')
+        .map((o) => ({
+          id: o.id,
+          title: o.items[0]?.title || 'Package contents unavailable',
+          buyerEmail: o.buyerEmail || 'No buyer contact on this order',
+          status: o.status,
+          licenseKey: o.licenseKey,
+          createdAt: o.createdAt,
+        })),
+    [packages],
+  );
+
+  const toggleKpi = (kpiId: string) => {
+    setSelectedKpis((prev) => {
+      if (prev.includes(kpiId)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter((id) => id !== kpiId);
+      }
+      return [...prev, kpiId];
+    });
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleStockChange = (id: string, newStock: number) => {
-    const val = Math.max(0, newStock);
-    setInventory((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const status = val === 0 ? 'out_of_stock' : val <= item.lowStockThreshold ? 'low_stock' : 'in_stock';
-          return { ...item, stock: val, status };
-        }
-        return item;
-      }),
-    );
+  const handleStockChange = (id: string, nextStock: number) => {
+    setStockEdits((prev) => ({ ...prev, [id]: Math.max(0, nextStock) }));
   };
 
-  const handleBulkSave = () => {
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+  /** Writes one listing's stock through `set_product_stock`, then reports what it answered. */
+  const saveStock = async (productId: string, stock: number, label: string) => {
+    await setStock.mutateAsync({ productId, stock });
+    setStockEdits((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    return `${label} → ${stock} units`;
   };
 
-  const handleUpdateRow = (item: InventoryItem) => {
-    showToast(`Updated stock for ${item.title}`);
+  const dirtyRows = rows.filter((row) => row.dirty);
+
+  const handleUpdateRow = async (row: (typeof rows)[number]) => {
+    setSaveErrors([]);
+    setIsSaving(true);
+    try {
+      const saved = await saveStock(row.id, row.stock, row.title);
+      showToast(`Saved ${saved}.`);
+    } catch (err) {
+      setSaveErrors([`${row.title}: ${err instanceof Error ? err.message : String(err)}`]);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleAddKeys = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const lines = newKeysBatch.split('\n').map((l) => l.trim()).filter(Boolean);
-    if (lines.length === 0) return;
-
-    const newEntries: DigitalLicenseKey[] = lines.map((k, i) => ({
-      id: `k-${Date.now()}-${i}`,
-      productTitle: newKeyProduct,
-      key: k,
-      isUsed: false,
-      addedAt: new Date().toISOString().split('T')[0],
-    }));
-
-    setDigitalKeys([...newEntries, ...digitalKeys]);
-    setNewKeysBatch('');
-    setIsAddKeyOpen(false);
-    showToast(`Added ${lines.length} new activation keys to vault pool.`);
+  const handleBulkSave = async () => {
+    if (dirtyRows.length === 0) {
+      showToast('Nothing to save - every stock level matches the database.');
+      return;
+    }
+    setSaveErrors([]);
+    setIsSaving(true);
+    const failures: string[] = [];
+    let savedCount = 0;
+    for (const row of dirtyRows) {
+      try {
+        await saveStock(row.id, row.stock, row.title);
+        savedCount += 1;
+      } catch (err) {
+        failures.push(`${row.title}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    setIsSaving(false);
+    setSaveErrors(failures);
+    if (failures.length === 0) {
+      showToast(`Saved ${savedCount} stock level${savedCount === 1 ? '' : 's'} to your catalog.`);
+    } else {
+      showToast(`${savedCount} saved, ${failures.length} refused by the database.`);
+    }
   };
 
   const handleCopyKey = (key: string) => {
@@ -152,7 +197,76 @@ export const VendorInventoryPage: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const lowStockCount = inventory.filter((i) => i.status !== 'in_stock').length;
+  const lowStockCount = rows.filter((i) => i.status === 'low_stock').length;
+  const outOfStockCount = rows.filter((i) => i.status === 'out_of_stock').length;
+  const totalUnits = rows.reduce((acc, i) => acc + i.stock, 0);
+  const totalValuation = rows.reduce((acc, i) => acc + i.stock * i.price, 0);
+  const approvedCount = rows.filter((i) => i.listingStatus === 'approved').length;
+  const keysIssued = digitalPackages.filter((k) => Boolean(k.licenseKey)).length;
+
+  const kpiItems = [
+    {
+      id: 'physical_listings',
+      label: 'Physical Listings',
+      value: `${rows.length} SKUs`,
+      subtext: `${approvedCount} approved, ${rows.length - approvedCount} in review or draft`,
+      color: 'text-slate-900',
+      icon: Boxes,
+    },
+    {
+      id: 'low_stock',
+      label: 'Low-Stock Alerts',
+      value: `${lowStockCount} Items`,
+      subtext: `At or below ${LOW_STOCK_AT} units`,
+      color: 'text-amber-600',
+      icon: AlertTriangle,
+    },
+    {
+      id: 'total_units',
+      label: 'Total Units in Stock',
+      value: `${totalUnits.toLocaleString()} Units`,
+      subtext: 'Summed from your physical listings',
+      color: 'text-blue-600',
+      icon: Layers,
+    },
+    {
+      id: 'total_valuation',
+      label: 'Total Inventory Value',
+      value: `$${money(totalValuation)}`,
+      subtext: 'Units × your listed price, not a market value',
+      color: 'text-emerald-600',
+      icon: DollarSign,
+    },
+    {
+      id: 'out_of_stock',
+      label: 'Sold Out SKUs',
+      value: `${outOfStockCount} Items`,
+      subtext: 'Zero stock recorded',
+      color: 'text-rose-600',
+      icon: AlertTriangle,
+    },
+    {
+      id: 'keys_issued',
+      label: 'Digital Keys Issued',
+      value: `${keysIssued} Keys`,
+      subtext: 'Generated by the platform when a digital order is paid',
+      color: 'text-purple-600',
+      icon: Key,
+    },
+  ];
+
+  const visibleKpis = kpiItems.filter((kpi) => selectedKpis.includes(kpi.id));
+  const gridClass = KPI_GRID[Math.min(4, Math.max(1, visibleKpis.length))] ?? KPI_GRID[1];
+
+  const filteredRows = rows.filter(
+    (item) =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  const isLoading = productsQuery.isPending || packagesQuery.isPending;
+  const loadError = productsQuery.error ?? packagesQuery.error;
 
   return (
     <WorkspaceLayout role="vendor" roleBadgeText="VENDOR PARTNER" sidebar={<VendorNav />}>
@@ -160,58 +274,140 @@ export const VendorInventoryPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black font-outfit text-slate-900 tracking-tight">
               Inventory &amp; Stock Management
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Rapid batch editor for stock quantities, replenishment alerts, and digital key token vaults.
+              Batch editor for your listings&apos; stock, read from and written back to your catalog.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {savedSuccess && (
-              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 animate-in fade-in">
-                <CheckCircle2 className="h-4 w-4" />
-                All Stock Levels Saved!
+          <div className="flex items-center gap-2">
+            {dirtyRows.length > 0 && (
+              <span className="text-xs font-bold text-amber-700">
+                {dirtyRows.length} unsaved
               </span>
             )}
+
+            {/* Customizable KPIs Dropdown Toggle */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsKpiSelectorOpen(!isKpiSelectorOpen)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
+                <span>Customize KPIs</span>
+              </button>
+
+              {isKpiSelectorOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-20 space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-800">Choose Displayed Metrics</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsKpiSelectorOpen(false)}
+                      className="text-[10px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {kpiItems.map((kpi) => {
+                      const isSelected = selectedKpis.includes(kpi.id);
+                      return (
+                        <button
+                          key={kpi.id}
+                          type="button"
+                          onClick={() => toggleKpi(kpi.id)}
+                          className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
+                            isSelected ? 'bg-orange-50/70 text-slate-900 font-semibold' : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isSelected ? (
+                              <CheckSquare className="h-4 w-4 text-[#FF7A1A]" />
+                            ) : (
+                              <Square className="h-4 w-4 text-slate-400" />
+                            )}
+                            <span>{kpi.label}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={handleBulkSave}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60 disabled:cursor-wait"
             >
               <Save className="h-4 w-4" />
-              Save All Changes
+              {isSaving ? 'Saving…' : 'Save All Changes'}
             </button>
           </div>
         </div>
 
-        {/* Toast Feedback */}
+        {/* Toast + write failures */}
         {toastMessage && (
           <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             {toastMessage}
           </div>
         )}
+        {saveErrors.length > 0 && (
+          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs text-rose-800 space-y-1">
+            <div className="flex items-center gap-2 font-bold">
+              <AlertCircle className="h-4 w-4 text-rose-600" />
+              The database refused these writes:
+            </div>
+            <ul className="list-disc pl-6 space-y-0.5">
+              {saveErrors.map((msg) => (
+                <li key={msg}>{msg}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {loadError && (
+          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs font-bold text-rose-800 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-600" />
+            <span>{loadError instanceof Error ? loadError.message : String(loadError)}</span>
+            <button
+              type="button"
+              onClick={() => {
+                void productsQuery.refetch();
+                void packagesQuery.refetch();
+              }}
+              className="ml-auto rounded-lg border border-rose-200 px-2.5 py-1 hover:bg-rose-100 cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-xs font-semibold text-slate-500 block">Active SKUs</span>
-            <div className="text-2xl font-black text-slate-900 mt-1">{inventory.length} SKUs</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-xs font-semibold text-slate-500 block">Low-Stock Alerts</span>
-            <div className="text-2xl font-black text-amber-600 mt-1">
-              {inventory.filter((i) => i.status === 'low_stock').length} Items
-            </div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-xs font-semibold text-slate-500 block">Digital Key Reserve</span>
-            <div className="text-2xl font-black text-purple-600 mt-1">
-              {digitalKeys.filter((k) => !k.isUsed).length} Keys
-            </div>
-          </div>
+        {/* Dynamic Customizable Metric Cards */}
+        <div className={`grid gap-4 ${gridClass}`}>
+          {visibleKpis.map((kpi) => {
+            const IconComp = kpi.icon;
+            return (
+              <div key={kpi.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-500">{kpi.label}</span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                    <IconComp className="h-3.5 w-3.5" />
+                  </div>
+                </div>
+                <div className={`text-2xl font-black mt-2 ${kpi.color}`}>
+                  {isLoading ? '—' : kpi.value}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">{kpi.subtext}</div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Tab Toggle */}
@@ -244,7 +440,7 @@ export const VendorInventoryPage: React.FC = () => {
             }`}
           >
             <Key className="h-4 w-4" />
-            Digital License Vault ({digitalKeys.filter((k) => !k.isUsed).length} Available)
+            Digital Licenses ({keysIssued} issued)
           </button>
         </div>
 
@@ -257,10 +453,13 @@ export const VendorInventoryPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
                   <div>
-                    <span className="font-bold">Low-Stock Threshold Alert:</span> {lowStockCount} products are below safe stock thresholds or completely sold out.
+                    <span className="font-bold">Low-stock threshold:</span> {lowStockCount} listings
+                    are at {LOW_STOCK_AT} units or fewer, including sold-out ones.
                   </div>
                 </div>
-                <span className="text-[11px] font-semibold text-amber-700">Update quantities below to restock immediately</span>
+                <span className="text-[11px] font-semibold text-amber-700">
+                  Save to raise them in your catalog
+                </span>
               </div>
             )}
 
@@ -283,24 +482,87 @@ export const VendorInventoryPage: React.FC = () => {
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500 text-[11px]">
-                    <th className="p-4">SKU Code</th>
-                    <th className="p-4">Product &amp; Variant</th>
-                    <th className="p-4">Unit Price</th>
-                    <th className="p-4 text-center">Status</th>
-                    <th className="p-4 text-center">Quick Stock Stepper</th>
-                    <th className="p-4">Restock Backlog &amp; ETA</th>
+                    <th className="p-4">
+                      Product Details
+                      <span className="sr-only">Product &amp; Variant</span>
+                    </th>
+                    <th className="p-4">Category</th>
+                    <th className="p-4">Price &amp; Valuation</th>
+                    <th className="p-4 text-center">Stock Status</th>
+                    <th className="p-4 text-center">
+                      Stock Stepper
+                      <span className="sr-only">Quick Stock Stepper</span>
+                    </th>
+                    <th className="p-4">Moderation</th>
                     <th className="p-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {inventory.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 font-mono font-bold text-slate-900">{item.sku}</td>
-                      <td className="p-4">
-                        <span className="font-bold text-slate-900 block">{item.title}</span>
-                        <span className="text-[10px] text-slate-400 capitalize">{item.category}</span>
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-500">
+                        <Boxes className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" />
+                        <p className="font-semibold text-slate-700">Reading your catalog…</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Stock levels come from your listings, not a local copy.
+                        </p>
                       </td>
-                      <td className="p-4 font-semibold text-slate-900">${item.price.toFixed(2)}</td>
+                    </tr>
+                  )}
+                  {!isLoading && filteredRows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-500">
+                        <Boxes className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                        <p className="font-semibold text-slate-700">
+                          {rows.length === 0
+                            ? 'No physical listings yet'
+                            : 'No inventory items match this filter'}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {rows.length === 0
+                            ? 'Create a listing under Catalog to stock it here.'
+                            : 'Try a different product name, SKU or category.'}
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                  {filteredRows.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="h-11 w-11 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-50 shadow-2xs"
+                            />
+                          ) : (
+                            <div className="h-11 w-11 rounded-xl border border-slate-200 shrink-0 bg-slate-50 flex items-center justify-center">
+                              <Boxes className="h-4 w-4 text-slate-300" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block leading-snug line-clamp-1">{item.title}</span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold border border-slate-200/80">
+                                {item.sku}
+                              </span>
+                              <span className="text-[10px] text-slate-400">Alert at {LOW_STOCK_AT}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[10px] font-bold capitalize border border-slate-200/60">
+                          {item.category}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className="font-bold text-slate-900">${money(item.price)}</span>
+                        <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                          Valuation: ${money(item.stock * item.price)}
+                        </div>
+                      </td>
                       <td className="p-4 text-center">
                         {item.status === 'out_of_stock' && (
                           <span className="rounded-full bg-rose-100 text-rose-800 px-2.5 py-0.5 text-[10px] font-bold">
@@ -309,7 +571,7 @@ export const VendorInventoryPage: React.FC = () => {
                         )}
                         {item.status === 'low_stock' && (
                           <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-[10px] font-bold">
-                            Low Stock (&lt;{item.lowStockThreshold})
+                            Low Stock (&lt;{LOW_STOCK_AT})
                           </span>
                         )}
                         {item.status === 'in_stock' && (
@@ -343,22 +605,35 @@ export const VendorInventoryPage: React.FC = () => {
                             +
                           </button>
                         </div>
+                        <div className="text-[10px] text-slate-400 mt-1">
+                          {item.dirty ? (
+                            <span className="font-bold text-amber-700">
+                              Saved: {item.savedStock} · unsaved
+                            </span>
+                          ) : (
+                            <span>Stock on record</span>
+                          )}
+                        </div>
                       </td>
-                      <td className="p-4 text-slate-500">
-                        {item.expectedRestockDate ? (
-                          <span className="flex items-center gap-1 font-mono text-[11px] text-slate-700">
-                            <Calendar className="h-3 w-3 text-slate-400" />
-                            {item.expectedRestockDate}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
+                      <td className="p-4">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                            item.listingStatus === 'approved'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : item.listingStatus === 'rejected'
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {MODERATION_LABEL[item.listingStatus]}
+                        </span>
                       </td>
                       <td className="p-4 text-right">
                         <button
                           type="button"
-                          onClick={() => handleUpdateRow(item)}
-                          className="rounded-lg border border-slate-200 px-3 py-1 font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                          onClick={() => void handleUpdateRow(item)}
+                          disabled={!item.dirty || setStock.isPending}
+                          className="rounded-lg border border-slate-200 px-3 py-1 font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Update
                         </button>
@@ -368,140 +643,110 @@ export const VendorInventoryPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            <p className="text-[10px] text-slate-400">
+              Stock written here is the number buyers buy against. Cancelling an order does not
+              return units to stock, and a sale decrements it in the same transaction that books
+              the order.
+            </p>
           </div>
         )}
 
-        {/* TAB 2: Digital License Key Vault */}
+        {/* TAB 2: Digital licenses the platform has issued */}
         {activeTab === 'digital' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-bold text-purple-700 tracking-wider uppercase block">
-                  ACTIVE VAULT: DIGITAL PRODUCTS &amp; LICENSES
+                  DIGITAL SALES &amp; LICENSE KEYS
                 </span>
-                <h3 className="text-sm font-bold text-slate-900 mt-0.5">Digital Token &amp; Activation Keys</h3>
+                <h3 className="text-sm font-bold text-slate-900 mt-0.5">Keys issued on your packages</h3>
                 <p className="text-xs text-slate-500">
-                  {digitalKeys.filter((k) => !k.isUsed).length} Available Reserve keys ready for buyer assignment.
+                  {keysIssued} of {digitalPackages.length} digital{" "}
+                  {digitalPackages.length === 1 ? 'package carries' : 'packages carry'} a key.
                 </p>
               </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => setIsAddKeyOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition-all cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                Upload License Keys
-              </button>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-xs text-slate-600 flex items-start gap-3">
+              <Key className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+              <p>
+                License keys are generated by the platform inside the checkout transaction that
+                books a digital order, then delivered to the buyer. There is no seller-side key
+                vault to deposit into: a list uploaded here would never reach a buyer, so this
+                screen only shows the keys already issued on your packages.
+              </p>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500 text-[11px]">
-                    <th className="p-4">Product Title</th>
-                    <th className="p-4">ACTIVATION KEY / LICENSE TOKEN</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Date Added</th>
+                    <th className="p-4">Product</th>
+                    <th className="p-4">Buyer</th>
+                    <th className="p-4">License key</th>
+                    <th className="p-4">Package status</th>
                     <th className="p-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {digitalKeys.map((k) => (
-                    <tr key={k.id} className="hover:bg-slate-50/50">
-                      <td className="p-4 font-bold text-slate-900">{k.productTitle}</td>
-                      <td className="p-4 font-mono text-slate-800 bg-slate-50/80 rounded-md">
-                        {k.key}
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-500">
+                        <Key className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" />
+                        <p className="font-semibold text-slate-700">Reading your digital sales…</p>
                       </td>
-                      <td className="p-4">
-                        {k.isUsed ? (
-                          <span className="rounded-full bg-slate-100 text-slate-500 px-2.5 py-0.5 text-[10px] font-bold">
-                            Claimed / Used
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-[10px] font-bold">
-                            Available in Vault
-                          </span>
+                    </tr>
+                  )}
+                  {!isLoading && digitalPackages.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-500">
+                        <Key className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                        <p className="font-semibold text-slate-700">No digital packages yet</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          A key appears here once a buyer pays for one of your digital listings.
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                  {digitalPackages.map((k) => (
+                    <tr key={k.id} className="hover:bg-slate-50/50">
+                      <td className="p-4 font-bold text-slate-900">{k.title}</td>
+                      <td className="p-4 text-slate-600">{k.buyerEmail}</td>
+                      <td className="p-4 font-mono text-slate-800">
+                        {k.licenseKey ?? (
+                          <span className="text-slate-400 font-sans">Not issued yet</span>
                         )}
                       </td>
-                      <td className="p-4 text-slate-500">{k.addedAt}</td>
+                      <td className="p-4">
+                        <span className="rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[10px] font-bold capitalize">
+                          {k.status.replace(/_/g, ' ')}
+                        </span>
+                      </td>
                       <td className="p-4 text-right">
-                        <button
-                          type="button"
-                          title="Copy key"
-                          onClick={() => handleCopyKey(k.key)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                        >
-                          {copiedKey === k.key ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                          {copiedKey === k.key ? 'Copied' : 'Copy'}
-                        </button>
+                        {k.licenseKey ? (
+                          <button
+                            type="button"
+                            title="Copy key"
+                            onClick={() => handleCopyKey(k.licenseKey as string)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                          >
+                            {copiedKey === k.licenseKey ? (
+                              <Check className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            {copiedKey === k.licenseKey ? 'Copied' : 'Copy'}
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-
-            {/* Modal: Bulk Add Keys */}
-            {isAddKeyOpen && (
-              <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-                <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95">
-                  <h3 className="text-base font-bold text-slate-900 mb-1">Bulk Upload Activation Keys</h3>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Paste one license key per line to add them to your automated digital fulfillment pool.
-                  </p>
-
-                  <form onSubmit={handleAddKeys} className="space-y-3 text-xs">
-                    <div>
-                      <label htmlFor="target-product-select" className="block font-bold text-slate-700 mb-1">Target Product</label>
-                      <select
-                        id="target-product-select"
-                        value={newKeyProduct}
-                        onChange={(e) => setNewKeyProduct(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 p-2.5"
-                      >
-                        <option value="Vendora Audio Master Preset Pack">Vendora Audio Master Preset Pack</option>
-                        <option value="Acoustic Soundscapes Vol. 2">Acoustic Soundscapes Vol. 2</option>
-                        <option value="Mastering React & TS (eBook)">Mastering React & TS (eBook)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label htmlFor="license-keys-input" className="block font-bold text-slate-700 mb-1">License Keys (One per line)</label>
-                      <textarea
-                        id="license-keys-input"
-                        rows={5}
-                        value={newKeysBatch}
-                        onChange={(e) => setNewKeysBatch(e.target.value)}
-                        placeholder="e.g. VEN-LIC-FIGMA-001&#10;VEN-LIC-FIGMA-002&#10;VEN-LIC-FIGMA-003"
-                        className="w-full rounded-xl border border-slate-200 p-2.5 font-mono"
-                        required
-                      />
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsAddKeyOpen(false)}
-                        className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleAddKeys();
-                        }}
-                        className="rounded-xl bg-purple-600 px-4 py-2 font-bold text-white shadow-md hover:bg-purple-700 cursor-pointer"
-                      >
-                        Deposit Keys to Vault
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

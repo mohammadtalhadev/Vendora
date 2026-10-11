@@ -1,62 +1,98 @@
 import React, { useState, useMemo } from 'react';
 import {
   Download,
-  Upload,
-  Plus,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   X,
   Search,
   ChevronDown,
   Edit2,
-  Trash2,
   Box,
+  Send,
+  RotateCcw,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
-import { useMarketplaceStore } from '../store/marketplace-store';
 import { exportToCsv } from '../lib/export-csv';
-import type { Product } from '../types/domain';
-import { useAuthStore } from '../store/auth-store';
+import type { ModerationStatus, Product } from '../types/domain';
+import {
+  useSetProductListing,
+  useVendorProducts,
+} from '../features/vendor/hooks/useVendorProducts';
 
-interface TableProduct {
+/** The same threshold the dashboard and inventory count low stock with. */
+const LOW_STOCK_AT = 5;
+
+type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
+
+const stockStatusOf = (stock: number): StockStatus =>
+  stock === 0 ? 'out_of_stock' : stock <= LOW_STOCK_AT ? 'low_stock' : 'in_stock';
+
+const MODERATION_LABEL: Record<ModerationStatus, string> = {
+  draft: 'Draft',
+  pending_review: 'Pending Review',
+  approved: 'Active',
+  rejected: 'Rejected',
+  archived: 'Archived',
+};
+
+interface ListingRow {
   id: string;
-  image: string;
+  image?: string;
   title: string;
   sku: string;
   category: string;
   fulfillmentType: string;
-  status: 'Active' | 'Low Stock' | 'Pending Review' | 'Rejected' | 'Out of Stock' | 'Draft';
+  listingStatus: ModerationStatus;
+  stockStatus: StockStatus;
   price: string;
   priceNum: number;
   originalPrice?: string;
   inventoryCount: number;
-  inventoryStatusText: string;
-  inventoryStatusColor: string;
+  /** Width against the store's own deepest shelf, not an assumed capacity. */
   inventoryProgress: number;
-  salesCount: string;
-  revenue: string;
+  rating: number;
+  reviewCount: number;
+  rejectionReason?: string;
+  createdAt: string;
 }
 
-export const VendorProductsPage: React.FC = () => {
-  const { user } = useAuthStore();
-  const vendorId = user?.vendorId || 'vendor-tech-1';
+const toRow = (p: Product, maxStock: number): ListingRow => ({
+  id: p.id,
+  image: p.images?.[0],
+  title: p.title,
+  sku: p.variants?.[0]?.sku || `SKU-${p.id.slice(-6).toUpperCase()}`,
+  category: p.category.replace('cat-', '').replace('-', ' ').toUpperCase(),
+  fulfillmentType: p.type === 'digital' ? 'Digital Key' : 'Physical Parcel',
+  listingStatus: p.status,
+  stockStatus: stockStatusOf(p.stock ?? 0),
+  price: `$${p.price.toFixed(2)}`,
+  priceNum: p.price,
+  originalPrice: p.compareAtPrice ? `$${p.compareAtPrice.toFixed(2)}` : undefined,
+  inventoryCount: p.stock ?? 0,
+  inventoryProgress: maxStock > 0 ? Math.min(100, Math.round(((p.stock ?? 0) / maxStock) * 100)) : 0,
+  rating: p.rating,
+  reviewCount: p.reviewCount,
+  rejectionReason: p.rejectionReason,
+  createdAt: p.createdAt,
+});
 
-  const storeProducts = useMarketplaceStore((state) => state.products);
-  const addProduct = useMarketplaceStore((state) => state.addProduct);
-  const updateProduct = useMarketplaceStore((state) => state.updateProduct);
-  const deleteProduct = useMarketplaceStore((state) => state.deleteProduct);
+export const VendorProductsPage: React.FC = () => {
+  const productsQuery = useVendorProducts();
+  const setListing = useSetProductListing();
 
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
-  const [stockLevelFilter, setStockLevelFilter] = useState('All Stock Levels');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [showHealthBanner, setShowHealthBanner] = useState(true);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const listings = useMemo(() => productsQuery.data ?? [], [productsQuery.data]);
 
   const showNotification = (msg: string) => {
     setFeedback(msg);
@@ -66,59 +102,26 @@ export const VendorProductsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // Filter products belonging to this vendor (exclude platform 1P Vendora products)
-  const myStoreProducts = useMemo(() => {
-    return storeProducts.filter((p) => {
-      if (p.sellerId) {
-        return p.sellerId === vendorId || p.sellerId === user?.id;
-      }
-      return p.sellerName !== 'Vendora' && p.sellerName !== 'Vendora Direct' && p.sellerType !== 'platform';
-    });
-  }, [storeProducts, vendorId, user?.id]);
+  /**
+   * Every listing this store owns, in any moderation state, straight from `products` - RLS
+   * already scopes the read to the signed-in store, so there is no local catalog behind it.
+   */
+  const maxStock = listings.reduce((max, p) => Math.max(max, p.stock ?? 0), 0);
+  const rows = useMemo(
+    () => listings.map((p) => toRow(p, maxStock)),
+    [listings, maxStock],
+  );
 
-  // Build reactive table items from vendor's store products
-  const tableProducts: TableProduct[] = useMemo(() => {
-    return myStoreProducts.map((p) => {
-      let statusText: TableProduct['status'] = 'Active';
-      if (p.status === 'draft') statusText = 'Draft';
-      else if (p.status === 'pending_review') statusText = 'Pending Review';
-      else if (p.status === 'rejected') statusText = 'Rejected';
-      else if (p.stock === 0) statusText = 'Out of Stock';
-      else if (p.stock <= 5) statusText = 'Low Stock';
-
-      let invColor = 'bg-emerald-500';
-      if (p.stock === 0) invColor = 'bg-rose-500';
-      else if (p.stock <= 5) invColor = 'bg-amber-500';
-
-      const progress = Math.min(100, Math.max(0, Math.round((p.stock / 50) * 100)));
-      const sku = p.variants?.[0]?.sku || `SKU-${p.id.slice(-6).toUpperCase()}`;
-
-      return {
-        id: p.id,
-        image: p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=120&q=80',
-        title: p.title,
-        sku,
-        category: p.category.replace('cat-', '').replace('-', ' ').toUpperCase(),
-        fulfillmentType: p.type === 'digital' ? 'Digital Key' : 'Physical Parcel',
-        status: statusText,
-        price: `$${p.price.toFixed(2)}`,
-        priceNum: p.price,
-        originalPrice: p.compareAtPrice ? `$${p.compareAtPrice.toFixed(2)}` : undefined,
-        inventoryCount: p.stock,
-        inventoryStatusText: p.stock === 0 ? '0 in stock (Restock)' : `${p.stock} in stock`,
-        inventoryStatusColor: invColor,
-        inventoryProgress: progress,
-        salesCount: `${p.reviewCount || 12} sold`,
-        revenue: `$${((p.reviewCount || 12) * p.price).toLocaleString()}`,
-      };
-    });
-  }, [myStoreProducts]);
+  const categories = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.category).filter(Boolean))).sort(),
+    [rows],
+  );
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === tableProducts.length) {
+    if (selectedIds.length === filteredRows.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(tableProducts.map((p) => p.id));
+      setSelectedIds(filteredRows.map((p) => p.id));
     }
   };
 
@@ -133,32 +136,58 @@ export const VendorProductsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  /**
+   * `ProductFormModal` has already written the listing through `products_insert_vendor` /
+   * `products_update_vendor` by the time it reports back, so this only acknowledges it -
+   * writing again here would book the same listing twice.
+   */
   const handleProductSaved = (savedProduct: Product) => {
-    const exists = storeProducts.some((p) => p.id === savedProduct.id);
-    if (exists) {
-      updateProduct(savedProduct.id, savedProduct);
-      showNotification(`Product "${savedProduct.title}" updated successfully`);
-    } else {
-      addProduct({
-        ...savedProduct,
-        sellerId: vendorId,
-        sellerName: 'SoundWave Direct',
-        sellerType: 'vendor',
-      });
-      showNotification(`Product "${savedProduct.title}" added to inventory`);
-    }
+    showNotification(`"${savedProduct.title}" saved${editingProduct ? '' : ' as a submission for review'}.`);
     setIsModalOpen(false);
     setEditingProduct(null);
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    deleteProduct(productId);
-    setSelectedIds((prev) => prev.filter((i) => i !== productId));
-    showNotification('Product deleted from catalog');
+  /** `set_vendor_product_listing` owns both transitions and refuses the illegal ones. */
+  const handleListingAction = async (row: ListingRow, action: 'submit' | 'withdraw') => {
+    setActionError(null);
+    try {
+      await setListing.mutateAsync({ productId: row.id, action });
+      showNotification(
+        action === 'submit'
+          ? `"${row.title}" is with the review queue.`
+          : `"${row.title}" is back in your drafts.`,
+      );
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleBatchSubmit = async () => {
+    const eligible = rows.filter(
+      (r) => selectedIds.includes(r.id) && (r.listingStatus === 'draft' || r.listingStatus === 'rejected'),
+    );
+    if (eligible.length === 0) {
+      showNotification('Selected listings are already with moderation or live on the shelf.');
+      return;
+    }
+    setActionError(null);
+    const failures: string[] = [];
+    let sent = 0;
+    for (const row of eligible) {
+      try {
+        await setListing.mutateAsync({ productId: row.id, action: 'submit' });
+        sent += 1;
+      } catch (err) {
+        failures.push(`${row.title}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    setSelectedIds([]);
+    if (failures.length > 0) setActionError(failures.join(' · '));
+    showNotification(`${sent} of ${eligible.length} selected listings sent to moderation.`);
   };
 
   const handleExportCsv = () => {
-    const exportData = filteredProducts.map((p) => ({
+    const exportData = filteredRows.map((p) => ({
       ID: p.id,
       Title: p.title,
       SKU: p.sku,
@@ -166,9 +195,9 @@ export const VendorProductsPage: React.FC = () => {
       Fulfillment: p.fulfillmentType,
       Price: p.price,
       Stock: p.inventoryCount,
-      Status: p.status,
-      Sales: p.salesCount,
-      Revenue: p.revenue,
+      Status: MODERATION_LABEL[p.listingStatus],
+      Rating: p.rating ? p.rating.toFixed(2) : 'No ratings',
+      Reviews: p.reviewCount,
     }));
 
     exportToCsv(`vendor-products-${new Date().toISOString().split('T')[0]}.csv`, exportData, {
@@ -180,27 +209,14 @@ export const VendorProductsPage: React.FC = () => {
       Price: 'Price',
       Stock: 'Stock Count',
       Status: 'Moderation Status',
-      Sales: 'Estimated Sales',
-      Revenue: 'Estimated Revenue',
+      Rating: 'Average Rating',
+      Reviews: 'Review Count',
     });
-    showNotification('Product catalog exported to CSV successfully');
+    showNotification('Your listings exported to CSV.');
   };
 
-  const handleImportClick = () => {
-    showNotification('Product CSV template ready for import');
-  };
-
-  const handleBatchDelete = () => {
-    if (selectedIds.length === 0) return;
-    for (const id of selectedIds) {
-      deleteProduct(id);
-    }
-    showNotification(`Deleted ${selectedIds.length} selected products`);
-    setSelectedIds([]);
-  };
-
-  const filteredProducts = useMemo(() => {
-    return tableProducts.filter((product) => {
+  const filteredRows = useMemo(() => {
+    return rows.filter((product) => {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         product.title.toLowerCase().includes(q) ||
@@ -208,41 +224,43 @@ export const VendorProductsPage: React.FC = () => {
 
       if (!matchesSearch) return false;
 
-      // Category filter
       if (categoryFilter !== 'All Categories') {
-        const catNorm = categoryFilter.toLowerCase();
-        if (!product.category.toLowerCase().includes(catNorm)) {
+        if (!product.category.toLowerCase().includes(categoryFilter.toLowerCase())) {
           return false;
         }
       }
 
-      // Stock Level filter
-      if (stockLevelFilter === 'In Stock' && product.inventoryCount <= 5) return false;
-      if (stockLevelFilter === 'Low Stock' && (product.inventoryCount === 0 || product.inventoryCount > 5)) return false;
-      if (stockLevelFilter === 'Out of Stock' && product.inventoryCount > 0) return false;
-
-      // Tab filter
-      if (activeTab === 'active' && product.status !== 'Active') return false;
-      if (activeTab === 'draft' && product.status !== 'Draft') return false;
-      if (activeTab === 'low_stock' && product.status !== 'Low Stock') return false;
-      if (activeTab === 'out_of_stock' && product.status !== 'Out of Stock') return false;
-      if (activeTab === 'pending' && product.status !== 'Pending Review') return false;
-      if (activeTab === 'rejected' && product.status !== 'Rejected') return false;
+      if (activeTab === 'approved' && product.listingStatus !== 'approved') return false;
+      if (activeTab === 'low_stock' &&
+        (product.stockStatus !== 'low_stock' || product.listingStatus !== 'approved')) return false;
+      if (activeTab === 'out_of_stock' &&
+        (product.stockStatus !== 'out_of_stock' || product.listingStatus !== 'approved')) return false;
+      if (activeTab === 'pending' && product.listingStatus !== 'pending_review') return false;
+      if (activeTab === 'draft' && product.listingStatus !== 'draft') return false;
+      if (activeTab === 'rejected' && product.listingStatus !== 'rejected') return false;
 
       return true;
     });
-  }, [tableProducts, activeTab, searchQuery, categoryFilter, stockLevelFilter]);
+  }, [rows, activeTab, searchQuery, categoryFilter]);
 
-  // Dynamic counts
-  const countAll = tableProducts.length;
-  const countActive = tableProducts.filter((p) => p.status === 'Active').length;
-  const countLowStock = tableProducts.filter((p) => p.status === 'Low Stock').length;
-  const countPending = tableProducts.filter((p) => p.status === 'Pending Review' || p.status === 'Draft').length;
+  const countAll = rows.length;
+  const countApproved = rows.filter((p) => p.listingStatus === 'approved').length;
+  const countLowStock = rows.filter((p) => p.stockStatus === 'low_stock').length;
+  const countOutOfStock = rows.filter((p) => p.stockStatus === 'out_of_stock').length;
+  const countPending = rows.filter((p) => p.listingStatus === 'pending_review').length;
+  const countDraft = rows.filter((p) => p.listingStatus === 'draft').length;
+  const countRejected = rows.filter((p) => p.listingStatus === 'rejected').length;
+  const selectedSubmittable = rows.filter(
+    (r) => selectedIds.includes(r.id) && (r.listingStatus === 'draft' || r.listingStatus === 'rejected'),
+  ).length;
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
-  const paginatedProducts = useMemo(() => {
-    return filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  }, [filteredProducts, currentPage, itemsPerPage]);
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage) || 1;
+  const paginatedRows = useMemo(() => {
+    return filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [filteredRows, currentPage, itemsPerPage]);
+
+  const isLoading = productsQuery.isPending;
+  const loadError = productsQuery.error;
 
   return (
     <WorkspaceLayout
@@ -256,7 +274,8 @@ export const VendorProductsPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900">Products</h1>
             <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-              Manage your product inventory, pricing, catalog approvals, and stock levels.
+              Your listings, their stock and where each one sits in moderation. Approval is the
+              platform's decision; you send work in and pull it back.
             </p>
           </div>
 
@@ -274,13 +293,6 @@ export const VendorProductsPage: React.FC = () => {
               Export CSV
             </button>
             <button
-              onClick={handleImportClick}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
-            >
-              <Upload className="h-4 w-4 text-slate-500" />
-              Import
-            </button>
-            <button
               type="button"
               onClick={handleOpenAddModal}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
@@ -290,55 +302,84 @@ export const VendorProductsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Catalog Health Callout Banner */}
-        {showHealthBanner && (
+        {/* Real moderation summary in place of a health score nobody computed */}
+        {countAll > 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs shadow-xs">
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
                 <CheckCircle2 className="h-4 w-4" />
               </div>
               <span className="text-slate-700">
-                <strong>Catalog Health: 96%</strong> of your listings comply with Vendora Express shipping &amp; 4K multi-angle asset criteria.
+                <strong>{countApproved} live</strong> of {countAll} listings ·{' '}
+                {countPending} awaiting review · {countDraft} in draft ·{' '}
+                {countRejected} rejected
               </span>
             </div>
-            <div className="flex items-center gap-3 self-end sm:self-auto">
-              <button
-                onClick={() => setShowHealthBanner(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            {(countLowStock > 0 || countOutOfStock > 0) && (
+              <span className="flex items-center gap-1.5 text-amber-700 font-semibold self-end sm:self-auto">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {countLowStock} low, {countOutOfStock} sold out
+              </span>
+            )}
+          </div>
+        )}
+
+        {actionError && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-800 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+            <span>{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="ml-auto text-rose-500 hover:text-rose-700"
+              aria-label="Dismiss"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {loadError && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-600" />
+            <span>{loadError instanceof Error ? loadError.message : String(loadError)}</span>
+            <button
+              type="button"
+              onClick={() => void productsQuery.refetch()}
+              className="ml-auto rounded-lg border border-rose-200 px-2.5 py-1 hover:bg-rose-100 cursor-pointer"
+            >
+              Retry
+            </button>
           </div>
         )}
 
         {/* 4 Top KPI Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Card 1: Total Products */}
+          {/* Card 1: Total listings */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>TOTAL PRODUCTS</span>
+              <span>TOTAL LISTINGS</span>
               <Box className="h-4 w-4 text-slate-400" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">{countAll}</span>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                +100% in sync
+              <span className="text-[11px] font-bold text-slate-500">
+                owned by your store
               </span>
             </div>
             <div className="mt-4 h-1 w-full bg-slate-900 rounded-full" />
           </div>
 
-          {/* Card 2: Active Listings */}
+          {/* Card 2: Approved listings */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>ACTIVE LISTINGS</span>
+              <span>APPROVED LISTINGS</span>
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">{countActive}</span>
+              <span className="text-3xl font-extrabold text-slate-900">{countApproved}</span>
               <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                {countAll > 0 ? `${Math.round((countActive / countAll) * 100)}% live` : '0%'}
+                {countAll > 0 ? `${Math.round((countApproved / countAll) * 100)}% of your catalog` : 'No listings yet'}
               </span>
             </div>
             <div className="mt-4 h-1 w-full bg-emerald-500 rounded-full" />
@@ -351,94 +392,64 @@ export const VendorProductsPage: React.FC = () => {
               <AlertTriangle className="h-4 w-4 text-amber-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">{countLowStock}</span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                {countLowStock + countOutOfStock}
+              </span>
               <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
-                Needs Restock
+                {countOutOfStock} sold out
               </span>
             </div>
-            <div className="mt-4 h-1 w-full bg-amber-500 rounded-full" />
+            <div className="mt-1 text-[10px] text-slate-400">
+              At {LOW_STOCK_AT} units or fewer · edit on Inventory
+            </div>
+            <div className="mt-3 h-1 w-full bg-amber-500 rounded-full" />
           </div>
 
-          {/* Card 4: Pending / Review */}
+          {/* Card 4: In moderation */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>PENDING / REJECTED</span>
+              <span>IN MODERATION</span>
               <span className="h-2 w-2 rounded-full bg-rose-500" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">{countPending}</span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                {countPending + countDraft + countRejected}
+              </span>
               <span className="text-xs text-rose-600 font-bold">
-                {countPending} in queue
+                {countPending} with the reviewers
               </span>
             </div>
-            <div className="mt-4 h-1 w-full bg-rose-500 rounded-full" />
+            <div className="mt-1 text-[10px] text-slate-400">
+              {countDraft} draft · {countRejected} rejected
+            </div>
+            <div className="mt-3 h-1 w-full bg-rose-500 rounded-full" />
           </div>
         </div>
 
         {/* Tab Filters Bar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100/90 p-1 text-xs font-bold text-slate-600">
-            <button
-              onClick={() => { setActiveTab('all'); setCurrentPage(1); }}
-              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                activeTab === 'all'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>All</span> <span className="opacity-70">{countAll}</span>
-            </button>
-            <button
-              onClick={() => { setActiveTab('active'); setCurrentPage(1); }}
-              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                activeTab === 'active'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>Active</span> <span className="opacity-70">{countActive}</span>
-            </button>
-            <button
-              onClick={() => { setActiveTab('low_stock'); setCurrentPage(1); }}
-              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                activeTab === 'low_stock'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>Low Stock</span>{' '}
-              <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-800">{countLowStock}</span>
-            </button>
-            <button
-              onClick={() => { setActiveTab('out_of_stock'); setCurrentPage(1); }}
-              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                activeTab === 'out_of_stock'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>Out of Stock</span>
-            </button>
-            <button
-              onClick={() => { setActiveTab('pending'); setCurrentPage(1); }}
-              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                activeTab === 'pending'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>Pending</span>
-            </button>
-            <button
-              onClick={() => { setActiveTab('rejected'); setCurrentPage(1); }}
-              className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                activeTab === 'rejected'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>Rejected</span>
-            </button>
+            {[
+              { id: 'all', label: 'All', count: countAll },
+              { id: 'approved', label: 'Approved', count: countApproved },
+              { id: 'low_stock', label: 'Low Stock', count: countLowStock },
+              { id: 'out_of_stock', label: 'Out of Stock', count: countOutOfStock },
+              { id: 'pending', label: 'Pending', count: countPending },
+              { id: 'draft', label: 'Draft', count: countDraft },
+              { id: 'rejected', label: 'Rejected', count: countRejected },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
+                className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>{tab.label}</span> <span className="opacity-70">{tab.count}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -450,7 +461,7 @@ export const VendorProductsPage: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              placeholder="Search product title, SKU, barcode..."
+              placeholder="Search product title or SKU..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
             />
           </div>
@@ -463,24 +474,9 @@ export const VendorProductsPage: React.FC = () => {
                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
               >
                 <option>All Categories</option>
-                <option>Audio</option>
-                <option>Computing</option>
-                <option>Gaming</option>
-                <option>Digital</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            </div>
-
-            <div className="relative">
-              <select
-                value={stockLevelFilter}
-                onChange={(e) => { setStockLevelFilter(e.target.value); setCurrentPage(1); }}
-                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
-              >
-                <option>All Stock Levels</option>
-                <option>In Stock</option>
-                <option>Low Stock</option>
-                <option>Out of Stock</option>
+                {categories.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
@@ -490,17 +486,18 @@ export const VendorProductsPage: React.FC = () => {
                 {selectedIds.length} selected
               </span>
               <button
-                disabled={selectedIds.length === 0}
-                onClick={handleBatchDelete}
-                className="rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                disabled={selectedSubmittable === 0 || setListing.isPending}
+                onClick={() => void handleBatchSubmit()}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
               >
-                Delete Selected
+                <Send className="h-3.5 w-3.5" />
+                Submit {selectedSubmittable > 0 ? selectedSubmittable : ''} to review
               </button>
             </div>
           </div>
         </div>
 
-        {/* Products Data Table */}
+        {/* Listings Data Table */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -509,7 +506,7 @@ export const VendorProductsPage: React.FC = () => {
                   <th className="w-10 px-4 py-3.5 text-center">
                     <input
                       type="checkbox"
-                      checked={filteredProducts.length > 0 && selectedIds.length === filteredProducts.length}
+                      checked={filteredRows.length > 0 && selectedIds.length === filteredRows.length}
                       onChange={toggleSelectAll}
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                     />
@@ -519,12 +516,38 @@ export const VendorProductsPage: React.FC = () => {
                   <th className="px-4 py-3.5">Moderation Status</th>
                   <th className="px-4 py-3.5">Price</th>
                   <th className="px-4 py-3.5">Stock Level</th>
+                  <th className="px-4 py-3.5">Buyer Feedback</th>
                   <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {paginatedProducts.map((p) => {
+                {isLoading && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
+                      <Box className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" />
+                      <p className="font-semibold text-slate-700">Reading your catalog…</p>
+                    </td>
+                  </tr>
+                )}
+                {!isLoading && paginatedRows.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
+                      <Box className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                      <p className="font-semibold text-slate-700">
+                        {countAll === 0 ? 'No listings yet' : 'Nothing matches these filters'}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {countAll === 0
+                          ? 'Add a product and it goes to the platform for review.'
+                          : 'Clear the search, category or tab filter to see the rest.'}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+                {paginatedRows.map((p) => {
                   const isChecked = selectedIds.includes(p.id);
+                  const canSubmit = p.listingStatus === 'draft' || p.listingStatus === 'rejected';
+                  const canWithdraw = p.listingStatus === 'pending_review';
                   return (
                     <tr
                       key={p.id}
@@ -542,11 +565,17 @@ export const VendorProductsPage: React.FC = () => {
                       {/* Product Details */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={p.image}
-                            alt={p.title}
-                            className="h-10 w-10 shrink-0 rounded-lg object-cover border border-slate-200"
-                          />
+                          {p.image ? (
+                            <img
+                              src={p.image}
+                              alt={p.title}
+                              className="h-10 w-10 shrink-0 rounded-lg object-cover border border-slate-200"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 shrink-0 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
+                              <Box className="h-4 w-4 text-slate-300" />
+                            </div>
+                          )}
                           <div className="min-w-0 max-w-sm">
                             <span className="font-bold text-slate-900 line-clamp-1">
                               {p.title}
@@ -567,39 +596,46 @@ export const VendorProductsPage: React.FC = () => {
 
                       {/* Moderation Status */}
                       <td className="px-4 py-3.5">
-                        {p.status === 'Active' && (
+                        {p.listingStatus === 'approved' && (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            Active
+                            Approved
                           </span>
                         )}
-                        {p.status === 'Low Stock' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                            Low Stock
-                          </span>
-                        )}
-                        {p.status === 'Pending Review' && (
+                        {p.listingStatus === 'pending_review' && (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
                             <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
                             Pending Review
                           </span>
                         )}
-                        {p.status === 'Rejected' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">
+                        {p.listingStatus === 'rejected' && (
+                          <span
+                            className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700"
+                            title={p.rejectionReason ?? 'No reason recorded'}
+                          >
                             <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
                             Rejected
                           </span>
                         )}
-                        {p.status === 'Out of Stock' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
-                            Out of Stock
-                          </span>
-                        )}
-                        {p.status === 'Draft' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+                        {p.listingStatus === 'draft' && (
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
                             Draft
                           </span>
+                        )}
+                        {p.listingStatus === 'archived' && (
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+                            Archived by platform
+                          </span>
+                        )}
+                        {p.rejectionReason && p.listingStatus === 'rejected' && (
+                          <div className="mt-1 text-[10px] text-rose-600 max-w-[18rem]">
+                            {p.rejectionReason}
+                          </div>
+                        )}
+                        {p.listingStatus === 'approved' && p.stockStatus !== 'in_stock' && (
+                          <div className="mt-1 text-[10px] text-amber-700 font-semibold">
+                            {p.stockStatus === 'out_of_stock' ? 'Sold out' : `Low stock (${p.inventoryCount})`}
+                          </div>
                         )}
                       </td>
 
@@ -616,13 +652,34 @@ export const VendorProductsPage: React.FC = () => {
                       {/* Stock Level */}
                       <td className="px-4 py-3.5">
                         <div className="text-xs font-semibold text-slate-800">
-                          {p.inventoryStatusText}
+                          {p.inventoryCount} in stock
                         </div>
-                        <div className="mt-1 h-1.5 w-24 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="mt-1 h-1.5 w-24 rounded-full bg-slate-100 overflow-hidden"
+                          title={`Relative to your deepest shelf (${maxStock} units)`}
+                        >
                           <div
-                            className={`h-full rounded-full ${p.inventoryStatusColor}`}
+                            className={`h-full rounded-full ${
+                              p.stockStatus === 'out_of_stock'
+                                ? 'bg-rose-500'
+                                : p.stockStatus === 'low_stock'
+                                  ? 'bg-amber-500'
+                                  : 'bg-emerald-500'
+                            }`}
                             style={{ width: `${p.inventoryProgress}%` }}
                           />
+                        </div>
+                      </td>
+
+                      {/* Real review rollup, frozen by the platform */}
+                      <td className="px-4 py-3.5">
+                        <div className="text-xs font-semibold text-slate-800">
+                          {p.reviewCount === 0
+                            ? 'No reviews yet'
+                            : `${p.rating.toFixed(1)} ★ · ${p.reviewCount} ${p.reviewCount === 1 ? 'review' : 'reviews'}`}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          Written by buyers, not editable here
                         </div>
                       </td>
 
@@ -631,24 +688,37 @@ export const VendorProductsPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => {
-                              const found = storeProducts.find((pr) => pr.id === p.id);
-                              if (found) {
-                                setEditingProduct(found);
-                              }
+                              const found = listings.find((pr) => pr.id === p.id) ?? null;
+                              setEditingProduct(found);
                               setIsModalOpen(true);
                             }}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                            title="Edit Product"
+                            title="Edit listing"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleDeleteProduct(p.id)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                            title="Delete Product"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          {canSubmit && (
+                            <button
+                              onClick={() => void handleListingAction(p, 'submit')}
+                              disabled={setListing.isPending}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer disabled:opacity-40"
+                              title="Send this listing to moderation"
+                            >
+                              <Send className="h-3 w-3" />
+                              Submit
+                            </button>
+                          )}
+                          {canWithdraw && (
+                            <button
+                              onClick={() => void handleListingAction(p, 'withdraw')}
+                              disabled={setListing.isPending}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer disabled:opacity-40"
+                              title="Pull this submission back to draft"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Withdraw
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -663,11 +733,11 @@ export const VendorProductsPage: React.FC = () => {
             <div>
               Showing{' '}
               <strong>
-                {filteredProducts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to{' '}
-                {Math.min(currentPage * itemsPerPage, filteredProducts.length)}
+                {filteredRows.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredRows.length)}
               </strong>{' '}
-              of <strong>{filteredProducts.length}</strong> items
-              {filteredProducts.length !== countAll && ` (filtered from ${countAll})`}
+              of <strong>{filteredRows.length}</strong> listings
+              {filteredRows.length !== countAll && ` (filtered from ${countAll})`}
             </div>
             <div className="flex items-center gap-1 self-end sm:self-auto">
               <button
@@ -702,6 +772,11 @@ export const VendorProductsPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          <p className="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5 text-[10px] text-slate-500">
+            Listings are withdrawn, never deleted: past orders keep referencing them, and archiving
+            is the platform's action.
+          </p>
         </div>
 
         {/* Product Create / Edit Modal */}

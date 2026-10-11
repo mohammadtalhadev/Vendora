@@ -1,113 +1,174 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// WorkspaceLayout's sign-out needs the auth provider; these tests never click it.
+vi.mock('../lib/auth-context', async () => {
+  const { useAuthStub } = await import('../test/auth-context-stub');
+  return { useAuth: useAuthStub };
+});
+vi.mock('../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { VendorQAPage } from './VendorQAPage';
+import { renderWorkspace, signInVendor } from '../test/vendor-render';
+import { productRow, questionRow, storeRow, supabaseDouble } from '../test/supabase-double';
 
-describe('VendorQAPage component', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
+const PRODUCT = '00000000-0000-4000-8000-000000000101';
+const QUESTION = '00000000-0000-4000-8000-000000000701';
 
-  it('renders Q&A inbox with tabs for Unanswered, Answered, and All questions', () => {
-    render(
-      <MemoryRouter>
-        <VendorQAPage />
-      </MemoryRouter>
+beforeEach(() => {
+  supabaseDouble.reset();
+  signInVendor();
+  supabaseDouble.seedVendorProfile(storeRow({ id: 'store-2', store_name: 'Other Shop' }));
+  supabaseDouble.seedProduct(productRow({ id: PRODUCT, seller_id: 'store-1' }));
+});
+
+describe('VendorQAPage', () => {
+  it('lists the questions buyers asked on this store’s listings, newest first', async () => {
+    supabaseDouble.seedQuestion(
+      questionRow({
+        id: QUESTION,
+        product_id: PRODUCT,
+        vendor_id: 'store-1',
+        created_at: '2026-10-08T00:00:00.000Z',
+      }),
+    );
+    supabaseDouble.seedQuestion(
+      questionRow({
+        id: 'q-older',
+        product_id: PRODUCT,
+        vendor_id: 'store-1',
+        question: 'Is the warranty international?',
+        answer: 'Yes, two years worldwide.',
+        published: true,
+        answered_at: '2026-10-07T00:00:00.000Z',
+        created_at: '2026-10-06T00:00:00.000Z',
+      }),
+    );
+    supabaseDouble.seedQuestion(
+      questionRow({
+        id: 'q-other',
+        vendor_id: 'store-2',
+        question: 'A question on another store’s listing',
+      }),
     );
 
-    expect(
-      screen.getByRole('heading', { name: /Customer Product Q&A Inbox/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Unanswered 3/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Answered 12/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /All 15/i })).toBeInTheDocument();
-  });
+    renderWorkspace(<VendorQAPage />);
 
-  it('displays unanswered question cards with product thumbnails and customer usernames', () => {
-    render(
-      <MemoryRouter>
-        <VendorQAPage />
-      </MemoryRouter>
+    await waitFor(() =>
+      expect(screen.getByText(/Does this work with a USB-C hub\?/)).toBeInTheDocument(),
+    );
+    expect(screen.getByRole('button', { name: 'Unanswered 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Answered 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All 2' })).toBeInTheDocument();
+
+    expect(screen.getByRole('link', { name: 'Reference Headphones' })).toHaveAttribute(
+      'href',
+      '/products/reference-headphones',
     );
 
-    expect(screen.getByText('@mech_enthusiast88')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Does this keyboard support magnetic rapid-trigger actuation adjustment/i)
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /Compose Answer/i })[0]).toBeInTheDocument();
+    // Another store's inbox is not this one's to read.
+    expect(screen.queryByText(/another store’s listing/)).not.toBeInTheDocument();
   });
 
-  it('allows composing an answer and publishing to product detail page', async () => {
-    render(
-      <MemoryRouter>
-        <VendorQAPage />
-      </MemoryRouter>
+  it('writes an answer to the database and publishes it on the listing', async () => {
+    supabaseDouble.seedQuestion(questionRow({ id: QUESTION, product_id: PRODUCT, vendor_id: 'store-1' }));
+    renderWorkspace(<VendorQAPage />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Compose Answer/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Compose Answer/i }));
+
+    fireEvent.change(screen.getByPlaceholderText(/Provide a clear, helpful response/i), {
+      target: { value: 'Yes, it charges over USB-C.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Submit Answer/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/Answered Alex Buyer's question and published it/i)).toBeInTheDocument(),
     );
-
-    const composeButtons = screen.getAllByRole('button', { name: /Compose Answer/i });
-    fireEvent.click(composeButtons[0]);
-
-    const textarea = screen.getByPlaceholderText(/Provide a clear, helpful response explaining/i);
-    fireEvent.change(textarea, {
-      target: {
-        value: 'Yes, our proprietary Hall Effect magnetic switches support 0.1mm increments.',
-      },
+    expect(supabaseDouble.tables.product_qa[0]).toMatchObject({
+      answer: 'Yes, it charges over USB-C.',
+      published: true,
     });
 
-    const submitBtn = screen.getByRole('button', { name: /Submit Answer/i });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Answer submitted and published to Product Detail Page!/i)
-      ).toBeInTheDocument();
-    });
-
-    // Count of unanswered should decrease
-    expect(screen.getByRole('button', { name: /Unanswered 2/i })).toBeInTheDocument();
+    // The queue moves the question to the Answered tab; the tab counts are its own rows.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Answered 1' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Answered 1' }));
+    expect(screen.getByText('Yes, it charges over USB-C.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Hide from listing/i })).toBeInTheDocument();
   });
 
-  it('switches to Answered tab and allows editing an answer', async () => {
-    render(
-      <MemoryRouter>
-        <VendorQAPage />
-      </MemoryRouter>
-    );
+  it('reports a write the database refused instead of pretending it saved', async () => {
+    supabaseDouble.seedQuestion(questionRow({ id: QUESTION, product_id: PRODUCT, vendor_id: 'store-1' }));
+    renderWorkspace(<VendorQAPage />);
 
-    const answeredTab = screen.getByRole('button', { name: /Answered 12/i });
-    fireEvent.click(answeredTab);
-
-    expect(screen.getByText('@minimal_desk')).toBeInTheDocument();
-    const editBtns = screen.getAllByRole('button', { name: /Edit Answer/i });
-    fireEvent.click(editBtns[0]);
-
-    const editTextarea = screen.getByDisplayValue(/Yes, absolutely! The surface features a hydrophobic/i);
-    fireEvent.change(editTextarea, {
-      target: { value: 'Updated response: nano-coated and completely spill-proof.' },
+    await waitFor(() => expect(screen.getByRole('button', { name: /Compose Answer/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Compose Answer/i }));
+    fireEvent.change(screen.getByPlaceholderText(/Provide a clear, helpful response/i), {
+      target: { value: 'An answer.' },
     });
 
-    const updateBtn = screen.getByRole('button', { name: /Update Answer/i });
-    fireEvent.click(updateBtn);
+    supabaseDouble.failures.product_qa = 'row-level security';
+    fireEvent.click(screen.getByRole('button', { name: /Submit Answer/i }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/Answer updated successfully/i)).toBeInTheDocument();
-      expect(
-        screen.getByText('Updated response: nano-coated and completely spill-proof.')
-      ).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText(/Failed to save the answer/i)).toBeInTheDocument());
+    expect(supabaseDouble.tables.product_qa[0].answer).toBeNull();
   });
 
-  it('filters questions via search input', () => {
-    render(
-      <MemoryRouter>
-        <VendorQAPage />
-      </MemoryRouter>
+  it('hides an answer from the listing without deleting it', async () => {
+    supabaseDouble.seedQuestion(
+      questionRow({
+        id: QUESTION,
+        product_id: PRODUCT,
+        vendor_id: 'store-1',
+        question: 'Is the warranty international?',
+        answer: 'Yes, two years worldwide.',
+        published: true,
+        answered_at: '2026-10-07T00:00:00.000Z',
+      }),
     );
+    renderWorkspace(<VendorQAPage />);
 
-    const searchInput = screen.getByPlaceholderText(/Search by question, product or user\.\.\./i);
-    fireEvent.change(searchInput, { target: { value: 'rapid-trigger' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Answered 1' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Answered 1' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Hide from listing/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Hide from listing/i }));
 
-    expect(screen.getByText('@mech_enthusiast88')).toBeInTheDocument();
-    expect(screen.queryByText('@nomad_coder')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/The answer is hidden from shoppers/i)).toBeInTheDocument());
+    expect(supabaseDouble.tables.product_qa[0]).toMatchObject({ published: false });
+    expect(supabaseDouble.tables.product_qa[0].answer).toBe('Yes, two years worldwide.');
+  });
+
+  it('filters the queue by the text a seller types', async () => {
+    supabaseDouble.seedQuestion(questionRow({ id: QUESTION, product_id: PRODUCT, vendor_id: 'store-1' }));
+    supabaseDouble.seedQuestion(
+      questionRow({
+        id: 'q-2',
+        product_id: PRODUCT,
+        vendor_id: 'store-1',
+        question: 'Which colour is the carry case?',
+      }),
+    );
+    renderWorkspace(<VendorQAPage />);
+
+    await waitFor(() => expect(screen.getByText(/Does this work with a USB-C hub\?/)).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText(/Search by question, product or user/i), {
+      target: { value: 'carry case' },
+    });
+
+    expect(screen.getByText(/Which colour is the carry case\?/)).toBeInTheDocument();
+    expect(screen.queryByText(/Does this work with a USB-C hub\?/)).not.toBeInTheDocument();
+  });
+
+  it('shows the failed read as an error, not as an empty inbox', async () => {
+    supabaseDouble.failures.product_qa = 'connection terminated';
+    renderWorkspace(<VendorQAPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/Failed to load your questions: connection terminated/i)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/No buyer has asked a question/i)).not.toBeInTheDocument();
   });
 });
