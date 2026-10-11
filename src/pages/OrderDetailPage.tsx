@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import type { SubOrder } from '../types/domain';
 import { deriveOrderGroupStatus } from '../lib/order-state-machine';
 import type { OrderGroupDerivedStatus } from '../lib/order-state-machine';
-import { useOrderDetail, useUpdateSubOrderStatus } from '../features/orders/hooks/useOrders';
+import { useOrderDetail, useUpdateSubOrderStatus, useIssueDeliveryCode } from '../features/orders/hooks/useOrders';
 import { TrackingTimeline } from '../features/orders/components/TrackingTimeline';
 import { QueryState } from '../components/common/QueryState';
 import { Badge } from '../components/ui/badge';
@@ -27,6 +27,7 @@ import {
   CreditCard,
   Calendar,
   ShieldCheck,
+  KeyRound,
 } from 'lucide-react';
 
 function formatTimestamp(isoString: string): string {
@@ -74,6 +75,11 @@ export const OrderDetailPage: React.FC = () => {
 
   const { data, isLoading, isError, error, refetch } = useOrderDetail(effectiveOrderId);
   const updateStatusMutation = useUpdateSubOrderStatus();
+  const issueCodeMutation = useIssueDeliveryCode(effectiveOrderId);
+
+  // A handover code is stored hashed, so the page cannot read the one checkout showed.
+  // Issuing a new one is the only honest recovery, and it invalidates the old code.
+  const [issuedCode, setIssuedCode] = useState<{ subOrderId: string; code: string } | null>(null);
 
   // Cancel dialog state
   const [subOrderToCancel, setSubOrderToCancel] = useState<SubOrder | null>(null);
@@ -93,6 +99,19 @@ export const OrderDetailPage: React.FC = () => {
 
   const derivedBadge = getDerivedBadgeVariant(derivedStatus);
 
+  // What the server recorded about settlement. A card is never named here unless the order
+  // actually carries those digits, and COD stays a promise to pay the courier, not a payment.
+  const paymentBadge: { label: string; variant: 'in-stock' | 'secondary' | 'discount-coral' } =
+    orderGroup?.paymentStatus === 'succeeded'
+      ? { label: 'Paid', variant: 'in-stock' }
+      : orderGroup?.paymentStatus === 'pending'
+        ? { label: 'Due on delivery', variant: 'secondary' }
+        : orderGroup?.paymentStatus === 'failed'
+          ? { label: 'Payment failed', variant: 'discount-coral' }
+          : orderGroup?.paymentStatus === 'refunded'
+            ? { label: 'Refunded', variant: 'secondary' }
+            : { label: 'Settlement not recorded', variant: 'secondary' };
+
   // Financial calculations
   const itemsSubtotal = subOrders.reduce((sum, so) => sum + so.subtotal, 0);
   const totalShipping = subOrders.reduce((sum, so) => sum + so.shippingFee, 0);
@@ -101,6 +120,14 @@ export const OrderDetailPage: React.FC = () => {
   // Print Invoice handler
   const handlePrintInvoice = () => {
     window.print();
+  };
+
+  // The courier's handover code is only ever shown at checkout. Re-issuing mints a new one
+  // and invalidates the old, so a customer who lost it can still prove the drop-off.
+  const handleIssueCode = (subOrderId: string) => {
+    issueCodeMutation.mutate(subOrderId, {
+      onSuccess: (code) => setIssuedCode({ subOrderId, code }),
+    });
   };
 
   // Confirm sub-order cancellation
@@ -156,6 +183,19 @@ export const OrderDetailPage: React.FC = () => {
   // Helper to determine if a sub-order can request return (delivered)
   const isSubOrderReturnable = (so: SubOrder): boolean => {
     return so.status === 'delivered';
+  };
+
+  // Mirrors the statuses `issue_delivery_code` accepts; a closed delivery keeps its code.
+  const isSubOrderCodeReissuable = (so: SubOrder): boolean => {
+    if (so.type !== 'physical') return false;
+    return (
+      so.status === 'placed' ||
+      so.status === 'confirmed' ||
+      so.status === 'packed' ||
+      so.status === 'ready_for_pickup' ||
+      so.status === 'shipped' ||
+      so.status === 'out_for_delivery'
+    );
   };
 
   return (
@@ -317,11 +357,13 @@ export const OrderDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900 capitalize">
                         {orderGroup.paymentMethod === 'card'
-                          ? `${orderGroup.paymentDetails?.brand || 'Credit Card'} ending in ${orderGroup.paymentDetails?.last4 || '4242'}`
+                          ? orderGroup.paymentDetails?.last4
+                            ? `${orderGroup.paymentDetails.brand || 'Card'} ending in •••• ${orderGroup.paymentDetails.last4}`
+                            : 'Card'
                           : 'Cash on Delivery (COD)'}
                       </span>
-                      <Badge variant="in-stock" size="sm">
-                        Verified
+                      <Badge variant={paymentBadge.variant} size="sm">
+                        {paymentBadge.label}
                       </Badge>
                     </div>
                     <p className="text-slate-500">
@@ -329,7 +371,7 @@ export const OrderDetailPage: React.FC = () => {
                     </p>
                     <div className="flex items-center gap-1 text-[11px] text-emerald-700 pt-1">
                       <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>Encrypted SSL Transaction · Multi-Vendor Split Payouts Enabled</span>
+                      <span>Settled by the server at booking · Multi-vendor split payouts enabled</span>
                     </div>
                   </div>
                 </div>
@@ -352,6 +394,7 @@ export const OrderDetailPage: React.FC = () => {
               {subOrders.map((subOrder, subIndex) => {
                 const canCancel = isSubOrderCancellable(subOrder);
                 const canReturn = isSubOrderReturnable(subOrder);
+                const canReissueCode = isSubOrderCodeReissuable(subOrder);
                 const isCancelled = subOrder.status === 'cancelled';
                 const isReturnRequested = subOrder.status === 'return_requested';
                 const isReturnApproved = subOrder.status === 'return_approved';
@@ -382,7 +425,7 @@ export const OrderDetailPage: React.FC = () => {
                               size="sm"
                             >
                               {subOrder.sellerType === 'platform'
-                                ? 'Vendora Direct'
+                                ? 'Vendora'
                                 : 'Vendor Partner'}
                             </Badge>
                           </div>
@@ -445,6 +488,44 @@ export const OrderDetailPage: React.FC = () => {
                         )}
                       </div>
                     </div>
+
+                    {canReissueCode && (
+                      <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 bg-slate-50/40 px-5 py-3 sm:px-6">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleIssueCode(subOrder.id)}
+                          disabled={issueCodeMutation.isPending}
+                          className="text-xs font-bold text-slate-800"
+                          data-testid={`reissue-code-${subOrder.id}`}
+                        >
+                          <KeyRound className="h-3.5 w-3.5" />
+                          <span>New handover code</span>
+                        </Button>
+
+                        {issuedCode?.subOrderId === subOrder.id ? (
+                          <p className="text-xs text-slate-600">
+                            New code:{' '}
+                            <span className="font-mono text-sm font-black text-slate-900">{issuedCode.code}</span>{' '}
+                            <span className="text-slate-400">Read it now — the old code no longer works.</span>
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-slate-500">
+                            Lost the code the courier asks for? Issue a new one.
+                          </p>
+                        )}
+
+                        {issueCodeMutation.isError && issueCodeMutation.variables === subOrder.id && (
+                          <p
+                            className="w-full text-[11px] font-semibold text-rose-700"
+                            data-testid={`reissue-code-error-${subOrder.id}`}
+                          >
+                            {issueCodeMutation.error.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="p-5 sm:p-6 space-y-6">
                       {/* Package Items List */}

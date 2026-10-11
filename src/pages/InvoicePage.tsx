@@ -1,223 +1,255 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Printer, ArrowLeft, ShieldCheck } from 'lucide-react';
-import { mockDb } from '../mocks/db';
+import { Printer, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
+import { useOrderDetail } from '../features/orders/hooks/useOrders';
+import { QueryState } from '../components/common/QueryState';
+
+const money = (value: number) => `$${value.toFixed(2)}`;
+
+/** What the server recorded at booking. Nothing here is inferred from the payment method. */
+function settlementLine(status: string | undefined): { label: string; tone: string } {
+  switch (status) {
+    case 'succeeded':
+      return { label: 'PAID · SETTLEMENT RECORDED', tone: 'text-emerald-600 dark:text-emerald-400 print:text-emerald-800' };
+    case 'pending':
+      return { label: 'DUE ON DELIVERY', tone: 'text-amber-600 dark:text-amber-400 print:text-amber-800' };
+    case 'failed':
+      return { label: 'PAYMENT FAILED', tone: 'text-rose-600 dark:text-rose-400 print:text-rose-800' };
+    case 'refunded':
+      return { label: 'REFUNDED', tone: 'text-slate-600 dark:text-slate-400 print:text-slate-600' };
+    default:
+      return { label: 'SETTLEMENT NOT RECORDED', tone: 'text-slate-600 dark:text-slate-400 print:text-slate-600' };
+  }
+}
 
 export const InvoicePage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const effectiveOrderId = orderId ?? '';
 
-  // Fetch or mock order details
-  const order = mockDb.orderGroups.find((og) => og.id === orderId) || {
-    id: orderId || 'ORD-98421',
-    customerId: 'usr-customer-1',
-    customerEmail: 'customer@demo.test',
-    shippingAddress: {
-      fullName: 'Sarah Customer',
-      street: '742 Evergreen Terrace, Apt 4B',
-      city: 'Springfield',
-      state: 'OR',
-      zipCode: '97477',
-      country: 'United States',
-      phone: '+1 (555) 019-2834',
-    },
-    paymentMethod: 'card' as const,
-    paymentDetails: {
-      brand: 'Visa',
-      last4: '4242',
-    },
-    subOrderIds: ['SUB-98421-A', 'SUB-98421-B'],
-    createdAt: '2026-10-06T14:30:00Z',
-  };
+  const { data, isLoading, isError, error, refetch } = useOrderDetail(effectiveOrderId);
 
-  // Find suborders
-  const subOrders = mockDb.subOrders.filter((so) => order.subOrderIds.includes(so.id));
-
-  // Items fallback if none found
+  const order = data?.orderGroup;
+  const subOrders = data?.subOrders ?? [];
   const items = subOrders.flatMap((so) => so.items);
-  const totalSubtotal = subOrders.reduce((sum, so) => sum + so.subtotal, 0) || 189.98;
-  const totalShipping = subOrders.reduce((sum, so) => sum + so.shippingFee, 0) || 12.50;
-  const estimatedTax = totalSubtotal * 0.0825;
-  const grandTotal = totalSubtotal + totalShipping + estimatedTax;
+
+  // `sub_orders.subtotal` holds the post-discount net, so the gap between the printed line
+  // prices and that net is the discount the coupon earned. There is no tax column to read.
+  const grossLineTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const netSubtotal = subOrders.reduce((sum, so) => sum + so.subtotal, 0);
+  const discount = Math.max(0, Math.round((grossLineTotal - netSubtotal) * 100) / 100);
+  const shippingTotal = subOrders.reduce((sum, so) => sum + so.shippingFee, 0);
+  const grandTotal = netSubtotal + shippingTotal;
+
+  const settlement = settlementLine(order?.paymentStatus);
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/70 py-10 px-4 sm:px-6 print:p-0 print:bg-white">
-      <div className="mx-auto max-w-4xl">
+    <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-10 px-4 sm:px-6 print:p-0 print:bg-white overflow-hidden transition-colors">
+      {/* Ambient background glow orbs (hidden in print) */}
+      <div className="ambient-glow-wrapper print:hidden" aria-hidden="true">
+        <div className="ambient-orb-orange -top-20 -left-20 opacity-50" />
+        <div className="ambient-orb-aqua top-1/2 -right-32 opacity-40" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-4xl">
         {/* Top Action Bar (Hidden when printing) */}
         <div className="mb-6 flex items-center justify-between print:hidden">
           <Link
-            to={`/orders/${order.id}`}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
+            to={`/orders/${effectiveOrderId}`}
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-white/15 bg-white/90 dark:bg-slate-800/90 px-5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-white dark:hover:bg-slate-800 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Order Tracking
+            <span>Return to Order Tracking</span>
           </Link>
 
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-[#EA580C] transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-full bg-sun-orange px-6 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-orange-500/25 hover:bg-sun-orange-600 transition-all cursor-pointer active:scale-95"
           >
             <Printer className="h-4 w-4" />
-            Print Invoice
+            <span>Print Invoice (PDF)</span>
           </button>
         </div>
 
-        {/* Invoice Paper Document */}
-        <div className="rounded-3xl border border-slate-200/90 bg-white p-8 sm:p-12 shadow-xl print:shadow-none print:border-none print:p-0">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-200">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="w-8 h-8 text-[#FF7A1A] fill-current" viewBox="0 0 24 24">
-                  <path d="M12 2a1.5 1.5 0 0 1 1.5 1.5v3.5a1.5 1.5 0 0 1-3 0v-3.5A1.5 1.5 0 0 1 12 2zm0 13.5a1.5 1.5 0 0 1 1.5 1.5v3.5a1.5 1.5 0 0 1-3 0V17a1.5 1.5 0 0 1 1.5-1.5zm8.5-4.5a1.5 1.5 0 0 1-1.5 1.5h-3.5a1.5 1.5 0 0 1 0-3H19a1.5 1.5 0 0 1 1.5 1.5zM7 12.5a1.5 1.5 0 0 1-1.5 1.5H2a1.5 1.5 0 0 1 0-3h3.5A1.5 1.5 0 0 1 7 12.5zm10.78-6.72a1.5 1.5 0 0 1 0 2.12l-2.47 2.47a1.5 1.5 0 1 1-2.12-2.12l2.47-2.47a1.5 1.5 0 0 1 2.12 0zm-8.2 8.2a1.5 1.5 0 0 1 0 2.12L7.1 18.57a1.5 1.5 0 1 1-2.12-2.12l2.47-2.47a1.5 1.5 0 0 1 2.12 0zm8.2 2.12a1.5 1.5 0 0 1-2.12 0l-2.47-2.47a1.5 1.5 0 1 1 2.12-2.12l2.47 2.47a1.5 1.5 0 0 1 0 2.12zM8.78 5.78a1.5 1.5 0 0 1-2.12 2.12L4.19 5.43a1.5 1.5 0 1 1 2.12-2.12l2.47 2.47z" />
-                </svg>
-                <span className="text-2xl font-black text-slate-900 tracking-tight">Vendora</span>
+        <QueryState
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          onRetry={refetch}
+          isEmpty={!order}
+          emptyTitle="Invoice not found"
+          emptyMessage={`No booked order matches "${effectiveOrderId}". Invoices are only available for your own orders.`}
+          emptyAction={
+            <Link
+              to="/orders"
+              className="inline-flex items-center gap-2 rounded-full bg-sun-orange px-5 py-2.5 text-xs font-extrabold text-white"
+            >
+              Return to Orders
+            </Link>
+          }
+          skeletonType="card"
+        >
+          {order && (
+            // Invoice Paper Document
+            <div className="rounded-3xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-slate-900 p-8 sm:p-12 shadow-2xl print:shadow-none print:border-none print:p-0 print:bg-white text-slate-800 dark:text-slate-200 print:text-black">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-200 dark:border-white/10 print:border-slate-300">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sun-orange text-white shadow-md">
+                      <Sparkles className="h-5 w-5 fill-white" />
+                    </div>
+                    <span className="font-outfit text-2xl font-black text-slate-900 dark:text-white print:text-black tracking-tight">
+                      Vendora<span className="text-sun-orange">.</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 print:text-slate-600 leading-relaxed">
+                    Vendora Multi-Vendor Commerce Platform Inc.<br />
+                    100 Market Street, Suite 400<br />
+                    San Francisco, CA 94105 USA<br />
+                    VAT / Tax ID: US-948210492
+                  </p>
+                </div>
+
+                <div className="text-left sm:text-right">
+                  <span className="inline-block rounded-full bg-orange-50 dark:bg-orange-950/60 print:bg-slate-100 px-3.5 py-1 text-xs font-black uppercase tracking-wider text-sun-orange print:text-black mb-1">
+                    Invoice
+                  </span>
+                  <h2 className="font-outfit text-2xl font-black text-slate-900 dark:text-white print:text-black">
+                    #{order.id}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 print:text-slate-600 mt-1">
+                    Issued: {new Date(order.createdAt).toLocaleDateString('en-US', { dateStyle: 'long' })}
+                  </p>
+                  <div className={`flex items-center sm:justify-end gap-1.5 mt-1 text-xs font-bold ${settlement.tone}`}>
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>{settlement.label}</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-slate-500">
-                Vendora Multi-Vendor Commerce Platform Inc.<br />
-                100 Market Street, Suite 400<br />
-                San Francisco, CA 94105 USA<br />
-                VAT / Tax ID: US-948210492
-              </p>
-            </div>
 
-            <div className="text-left sm:text-right">
-              <span className="inline-block rounded-md bg-orange-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-[#FF7A1A] mb-1">
-                Official Receipt / Invoice
-              </span>
-              <h2 className="text-xl font-black text-slate-900">#{order.id}</h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Date: {new Date(order.createdAt).toLocaleDateString('en-US', { dateStyle: 'long' })}
-              </p>
-              <p className="text-xs text-slate-500">
-                Status: <span className="text-emerald-600 font-bold">PAID</span>
-              </p>
-            </div>
-          </div>
+              {/* Billing & Shipping Section */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 border-b border-slate-200 dark:border-white/10 print:border-slate-300 text-xs">
+                <div>
+                  <h3 className="font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Billed To</h3>
+                  <p className="font-bold text-slate-900 dark:text-white print:text-black text-sm">
+                    {order.shippingAddress?.fullName || order.customerEmail || 'Vendora account holder'}
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-400 print:text-slate-600 mt-0.5">{order.customerEmail}</p>
+                  <p className="text-slate-600 dark:text-slate-400 print:text-slate-600">{order.shippingAddress?.phone}</p>
+                </div>
 
-          {/* Billing & Shipping Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 border-b border-slate-200 text-xs">
-            <div>
-              <h3 className="font-bold uppercase tracking-wider text-slate-400 mb-2">Billed To</h3>
-              <p className="font-bold text-slate-900 text-sm">{order.shippingAddress?.fullName}</p>
-              <p className="text-slate-600">{order.customerEmail}</p>
-              <p className="text-slate-600">{order.shippingAddress?.phone}</p>
-            </div>
+                <div>
+                  <h3 className="font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Delivered To</h3>
+                  {order.shippingAddress ? (
+                    <>
+                      <p className="font-bold text-slate-900 dark:text-white print:text-black text-sm">{order.shippingAddress.fullName}</p>
+                      <p className="text-slate-600 dark:text-slate-400 print:text-slate-600 mt-0.5">{order.shippingAddress.street}</p>
+                      <p className="text-slate-600 dark:text-slate-400 print:text-slate-600">
+                        {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}
+                      </p>
+                      <p className="text-slate-600 dark:text-slate-400 print:text-slate-600">{order.shippingAddress.country}</p>
+                    </>
+                  ) : (
+                    <p className="text-slate-600 dark:text-slate-400 print:text-slate-600">
+                      Digital order · nothing to deliver
+                    </p>
+                  )}
+                </div>
+              </div>
 
-            <div>
-              <h3 className="font-bold uppercase tracking-wider text-slate-400 mb-2">Delivered To</h3>
-              <p className="font-bold text-slate-900 text-sm">{order.shippingAddress?.fullName}</p>
-              <p className="text-slate-600">{order.shippingAddress?.street}</p>
-              <p className="text-slate-600">
-                {order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}
-              </p>
-              <p className="text-slate-600">{order.shippingAddress?.country}</p>
-            </div>
-          </div>
-
-          {/* Items Table */}
-          <div className="py-8 border-b border-slate-200">
-            <h3 className="font-bold uppercase tracking-wider text-slate-400 text-xs mb-4">
-              Order Packages & Line Items
-            </h3>
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
-                  <th className="pb-3">Description</th>
-                  <th className="pb-3">Seller</th>
-                  <th className="pb-3 text-center">Qty</th>
-                  <th className="pb-3 text-right">Unit Price</th>
-                  <th className="pb-3 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {items.length > 0 ? (
-                  items.map((item, idx) => (
-                    <tr key={idx} className="py-3">
-                      <td className="py-3 font-medium text-slate-900">{item.title}</td>
-                      <td className="py-3 text-slate-600">
-                        {item.sellerType === 'platform' ? 'Sold by Vendora' : item.sellerName}
-                      </td>
-                      <td className="py-3 text-center text-slate-700">{item.quantity}</td>
-                      <td className="py-3 text-right text-slate-700">${item.price.toFixed(2)}</td>
-                      <td className="py-3 text-right font-bold text-slate-900">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </td>
+              {/* Line Items Table */}
+              <div className="py-8 border-b border-slate-200 dark:border-white/10 print:border-slate-300">
+                <h3 className="font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-xs mb-4">
+                  Order Packages & Line Items
+                </h3>
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-white/10 print:border-slate-300 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                      <th className="pb-3">Description</th>
+                      <th className="pb-3">Fulfillment Origin</th>
+                      <th className="pb-3 text-center">Qty</th>
+                      <th className="pb-3 text-right">Unit Price</th>
+                      <th className="pb-3 text-right">Total</th>
                     </tr>
-                  ))
-                ) : (
-                  <>
-                    <tr className="py-3">
-                      <td className="py-3 font-medium text-slate-900">
-                        Premium Noise-Cancelling Wireless Headphones
-                      </td>
-                      <td className="py-3 text-slate-600">Sold by Vendora</td>
-                      <td className="py-3 text-center text-slate-700">1</td>
-                      <td className="py-3 text-right text-slate-700">$129.99</td>
-                      <td className="py-3 text-right font-bold text-slate-900">$129.99</td>
-                    </tr>
-                    <tr className="py-3">
-                      <td className="py-3 font-medium text-slate-900">
-                        Ergonomic Wireless Optical Mouse
-                      </td>
-                      <td className="py-3 text-slate-600">Apex Tech Accessories</td>
-                      <td className="py-3 text-center text-slate-700">2</td>
-                      <td className="py-3 text-right text-slate-700">$29.99</td>
-                      <td className="py-3 text-right font-bold text-slate-900">$59.98</td>
-                    </tr>
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5 print:divide-slate-200">
+                    {items.map((item, idx) => (
+                      <tr key={`${item.id}-${idx}`} className="py-3.5">
+                        <td className="py-3.5 font-bold text-slate-900 dark:text-white print:text-black">{item.title}</td>
+                        <td className="py-3.5 text-slate-600 dark:text-slate-400 print:text-slate-600">
+                          {item.sellerType === 'platform' ? 'Vendora Central Fulfillment' : item.sellerName}
+                        </td>
+                        <td className="py-3.5 text-center text-slate-700 dark:text-slate-300 print:text-black font-semibold">{item.quantity}</td>
+                        <td className="py-3.5 text-right text-slate-700 dark:text-slate-300 print:text-black">{money(item.price)}</td>
+                        <td className="py-3.5 text-right font-black text-slate-900 dark:text-white print:text-black">
+                          {money(item.price * item.quantity)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Totals & Payment Summary */}
-          <div className="pt-8 flex flex-col sm:flex-row justify-between gap-8 text-xs">
-            <div className="space-y-2 max-w-xs">
-              <h4 className="font-bold uppercase tracking-wider text-slate-400">Payment Information</h4>
-              <p className="text-slate-700">
-                Method:{' '}
-                <strong className="text-slate-900 capitalize">
-                  {order.paymentMethod === 'card'
-                    ? `${order.paymentDetails.brand} ending in ${order.paymentDetails.last4}`
-                    : 'Cash on Delivery (COD)'}
-                </strong>
-              </p>
-              <div className="flex items-center gap-1.5 text-emerald-600 font-bold pt-1">
-                <ShieldCheck className="h-4 w-4" />
-                Verified & Processed Securely
+              {/* Totals & Payment Summary */}
+              <div className="pt-8 flex flex-col sm:flex-row justify-between gap-8 text-xs">
+                <div className="space-y-3 max-w-xs">
+                  <h4 className="font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Payment Breakdown</h4>
+                  <p className="text-slate-700 dark:text-slate-300 print:text-black leading-relaxed">
+                    Method:{' '}
+                    <strong className="text-slate-900 dark:text-white print:text-black capitalize">
+                      {order.paymentMethod === 'card'
+                        ? order.paymentDetails?.last4
+                          ? `${order.paymentDetails.brand || 'Card'} ending in •••• ${order.paymentDetails.last4}`
+                          : 'Card'
+                        : order.paymentMethod === 'cod'
+                          ? 'Cash on Delivery (COD)'
+                          : 'Recorded at booking'}
+                    </strong>
+                  </p>
+                  <div className="flex items-start gap-2 text-slate-500 dark:text-slate-400 print:text-slate-600">
+                    <p className="leading-relaxed">
+                      Each package is priced by the platform at booking, from the seller&apos;s live rules.
+                      Vendora records no sales tax on this invoice.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="w-full sm:w-72 space-y-2 text-right">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400 print:text-slate-600">
+                    <span>Items ({items.length}):</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 print:text-black">{money(grossLineTotal)}</span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-slate-600 dark:text-slate-400 print:text-slate-600">
+                      <span>Discount applied:</span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400 print:text-emerald-800">−{money(discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-600 dark:text-slate-400 print:text-slate-600">
+                    <span>Shipping ({subOrders.length} {subOrders.length === 1 ? 'package' : 'packages'}):</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 print:text-black">
+                      {shippingTotal > 0 ? money(shippingTotal) : 'FREE'}
+                    </span>
+                  </div>
+                  <div className="border-t border-slate-200 dark:border-white/10 print:border-slate-300 pt-3 flex justify-between text-base font-black text-slate-900 dark:text-white print:text-black">
+                    <span>Grand Total:</span>
+                    <span className="text-sun-orange text-lg">{money(grandTotal)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Notice */}
+              <div className="mt-12 pt-6 border-t border-slate-100 dark:border-white/10 print:border-slate-300 text-center text-[11px] text-slate-400 dark:text-slate-500 print:text-slate-500 leading-relaxed">
+                Thank you for shopping on Vendora. If you have any inquiries regarding this order, please visit our Help Center or file a claim in the Claims Center within 14 days of delivery.
               </div>
             </div>
-
-            <div className="w-full sm:w-64 space-y-2 text-right">
-              <div className="flex justify-between text-slate-600">
-                <span>Subtotal:</span>
-                <span className="font-medium text-slate-800">${totalSubtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Estimated Shipping:</span>
-                <span className="font-medium text-slate-800">${totalShipping.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Estimated Tax (8.25%):</span>
-                <span className="font-medium text-slate-800">${estimatedTax.toFixed(2)}</span>
-              </div>
-              <div className="border-t border-slate-200 pt-2 flex justify-between text-sm font-black text-slate-900">
-                <span>Grand Total:</span>
-                <span className="text-[#FF7A1A] text-base">${grandTotal.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Notice */}
-          <div className="mt-12 pt-6 border-t border-slate-100 text-center text-[11px] text-slate-400">
-            Thank you for shopping on Vendora. If you have any inquiries regarding this order, please visit our Help Center or file a dispute within 14 days of receipt.
-          </div>
-        </div>
+          )}
+        </QueryState>
       </div>
     </div>
   );

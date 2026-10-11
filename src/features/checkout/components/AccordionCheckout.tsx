@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import type { FC, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { ShippingAddress, SellerCartGroup } from '../../../types/domain';
+import { Link, useNavigate } from 'react-router-dom';
+import type { ShippingAddress } from '../../../types/domain';
 import { shippingAddressSchema } from '../../../types/domain';
 import type {
   CheckoutStep,
@@ -13,9 +13,9 @@ import type {
 import { TEST_CARD_PRESETS, findTestCardByNumber } from '../utils/test-cards';
 import { validateCardLuhn, detectCardBrand, validateExpiry, maskCardNumber } from '../utils/luhn';
 import { useCartStore } from '../../../store/cart-store';
-import { groupCartBySeller } from '../../cart/utils/totals';
-import { useCreateOrder } from '../../orders/hooks/useOrders';
 import { useAuthStore } from '../../../store/auth-store';
+import { useCheckoutDraftStore } from '../store/checkout-draft';
+import { useCheckoutTotals, usePlaceOrder } from '../hooks/useCheckout';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
@@ -80,15 +80,21 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
   const items = useCartStore((s) => s.items);
   const appliedCoupon = useCartStore((s) => s.appliedCoupon);
   const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const createOrderMutation = useCreateOrder();
+  const deliveryOptions = useCheckoutDraftStore((s) => s.deliveryOptions);
+  const chooseDeliveryOption = useCheckoutDraftStore((s) => s.chooseDeliveryOption);
+  const placeOrderMutation = usePlaceOrder();
+  const totals = useCheckoutTotals();
+  const quote = totals.data;
   const isSubmittingRef = useRef<boolean>(false);
 
   // Cart properties
   const hasPhysicalItems = useMemo(() => items.some((i) => i.type === 'physical'), [items]);
   const isDigitalOnly = items.length > 0 && !hasPhysicalItems;
 
-  const sellerGroups = useMemo<SellerCartGroup[]>(() => groupCartBySeller(items), [items]);
+  // Every package, named and priced by checkout_pricing rather than guessed here.
+  const quoteGroups = quote?.groups ?? [];
 
   // Initial step: if digital-only cart, jump straight to payment
   const [activeStep, setActiveStep] = useState<CheckoutStep>(() =>
@@ -104,87 +110,36 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
 
   // Step 1: Shipping Address State
   const [selectedAddressId, setSelectedAddressId] = useState<string>('addr-home');
-  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-    fullName: SAVED_ADDRESS_PRESETS[0].fullName,
-    street: SAVED_ADDRESS_PRESETS[0].street,
-    city: SAVED_ADDRESS_PRESETS[0].city,
-    state: SAVED_ADDRESS_PRESETS[0].state,
-    zipCode: SAVED_ADDRESS_PRESETS[0].zipCode,
-    country: SAVED_ADDRESS_PRESETS[0].country,
-    phone: SAVED_ADDRESS_PRESETS[0].phone,
-  });
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>(() => ({
+    ...SAVED_ADDRESS_PRESETS[0],
+    fullName: user?.name || SAVED_ADDRESS_PRESETS[0].fullName,
+  }));
   const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
-
-  // Step 2: Delivery Options per Seller
-  // Maps sellerId -> 'standard' | 'express'
-  const [selectedDeliveryOptions, setSelectedDeliveryOptions] = useState<Record<string, 'standard' | 'express'>>(() => {
-    const initial: Record<string, 'standard' | 'express'> = {};
-    for (const group of sellerGroups) {
-      initial[group.sellerId] = 'standard';
-    }
-    return initial;
-  });
 
   // Step 3: Payment Method State
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [cardDetails, setCardDetails] = useState<CardPaymentDetails>({
-    cardNumber: '4242 4242 4242 4242',
-    cardholderName: 'Jane Doe',
-    expiryMonth: '12',
-    expiryYear: '28',
-    cvv: '123',
+    cardNumber: '',
+    cardholderName: '',
+    expiryMonth: '',
+    expiryYear: '',
+    cvv: '',
   });
-  const [detectedBrand, setDetectedBrand] = useState<CardBrand>('Visa');
+  const [detectedBrand, setDetectedBrand] = useState<CardBrand>('Unknown');
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
 
   // Step 4: Submission State
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [orderError, setOrderError] = useState<string | null>(null);
 
-  // Helper to calculate total shipping fee dynamically from chosen delivery options
-  const dynamicShippingTotal = useMemo(() => {
-    let total = 0;
-    for (const group of sellerGroups) {
-      const hasPhysical = group.items.some((i) => i.type === 'physical');
-      if (!hasPhysical) continue;
+  // The quoted money, or a clear "not yet known" rather than a number invented here.
+  const subtotal = quote?.subtotal;
+  const discountTotal = quote?.discountTotal;
+  const dynamicShippingTotal = quote?.shippingTotal;
+  const grandTotal = quote?.grandTotal;
+  const expressFee = quote?.expressFee;
 
-      const option = selectedDeliveryOptions[group.sellerId] || 'standard';
-      if (option === 'express') {
-        total += 18.0;
-      } else {
-        // Standard rule: orders over $100 get free shipping, otherwise $8.50 per vendor
-        total += group.subtotal >= 100 ? 0 : 8.5;
-      }
-    }
-    return total;
-  }, [sellerGroups, selectedDeliveryOptions]);
-
-  // Derived financial totals
-  const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }, [items]);
-
-  const discountTotal = useMemo(() => {
-    if (!appliedCoupon) return 0;
-    const isEligible = !appliedCoupon.minSpend || subtotal >= appliedCoupon.minSpend;
-    if (!isEligible) return 0;
-
-    if (appliedCoupon.sellerScope && appliedCoupon.sellerScope !== 'platform') {
-      const targetGroup = sellerGroups.find((g) => g.sellerId === appliedCoupon.sellerScope);
-      if (!targetGroup) return 0;
-      return appliedCoupon.type === 'percentage'
-        ? (targetGroup.subtotal * appliedCoupon.value) / 100
-        : Math.min(appliedCoupon.value, targetGroup.subtotal);
-    }
-
-    return appliedCoupon.type === 'percentage'
-      ? (subtotal * appliedCoupon.value) / 100
-      : Math.min(appliedCoupon.value, subtotal);
-  }, [appliedCoupon, subtotal, sellerGroups]);
-
-  const grandTotal = useMemo(() => {
-    return Math.max(0, subtotal + dynamicShippingTotal - discountTotal);
-  }, [subtotal, dynamicShippingTotal, discountTotal]);
+  const price = (value: number | undefined) => (value === undefined ? '—' : `$${value.toFixed(2)}`);
 
   // Handle saved address radio selection
   const handleSelectSavedAddress = (id: string) => {
@@ -313,7 +268,7 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
 
   // Step 4: Final Order Placement with double-submit guard
   const handlePlaceOrder = async () => {
-    if (isSubmitting || isSubmittingRef.current || createOrderMutation.isPending) {
+    if (isSubmitting || isSubmittingRef.current || placeOrderMutation.isPending) {
       return;
     }
 
@@ -340,29 +295,22 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
     setIsSubmitting(true);
 
     try {
-      const payloadLast4 =
-        paymentMethod === 'card'
-          ? cardDetails.cardNumber.replace(/\D/g, '').slice(-4)
-          : undefined;
-
-      const response = await createOrderMutation.mutateAsync({
-        customerId: user?.id || 'guest',
-        customerEmail: user?.email || `${shippingAddress.fullName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-        items,
+      const response = await placeOrderMutation.mutateAsync({
         shippingAddress: isDigitalOnly ? undefined : shippingAddress,
         paymentMethod,
-        paymentBrand: paymentMethod === 'card' ? detectedBrand : undefined,
-        last4: payloadLast4,
+        deliveryOptions,
+        couponCode: appliedCoupon?.code ?? null,
+        card:
+          paymentMethod === 'card'
+            ? { brand: detectedBrand, last4: cardDetails.cardNumber.replace(/\D/g, '').slice(-4) }
+            : undefined,
       });
 
-      // Clear cart on success
-      useCartStore.getState().clearCart();
-
       if (onSuccess) {
-        onSuccess(response.orderGroup.id);
+        onSuccess(response.orderId);
       }
 
-      navigate(`/orders/${response.orderGroup.id}`);
+      navigate(`/orders/${response.orderId}`);
     } catch (err: unknown) {
       const errorMsg =
         err instanceof Error ? err.message : 'An error occurred while placing your order. Please try again.';
@@ -374,6 +322,35 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
   };
 
   const maskedCard = maskCardNumber(cardDetails.cardNumber);
+
+  /* A guest gets no quote and no order: both are priced and booked from the cart stored
+     under the signed-in customer's id, so the honest screen asks for a session. */
+  if (!isAuthenticated) {
+    return (
+      <div
+        className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-sm"
+        data-testid="checkout-signin-gate"
+      >
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-sun-orange">
+          <ShieldCheck className="h-7 w-7" />
+        </div>
+        <h3 className="font-outfit text-lg font-black text-slate-900">Sign in to complete your order</h3>
+        <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-slate-500">
+          Shipping, seller discounts and the final total are priced from the cart saved on your account,
+          and an order can only be booked for a signed-in customer. Sign in and the items you have
+          picked come with you.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Button asChild variant="orange-cta" className="rounded-full px-6">
+            <Link to="/login">Sign In</Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-full px-6">
+            <Link to="/register">Create an account</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -742,8 +719,8 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
               {/* Summary when collapsed */}
               {activeStep !== 'delivery_options' && !isDigitalOnly && completedSteps.delivery_options && (
                 <p className="mt-0.5 text-xs text-slate-500">
-                  {sellerGroups.length} package{sellerGroups.length > 1 ? 's' : ''} configured · Total Shipping: $
-                  {dynamicShippingTotal.toFixed(2)}
+                  {quoteGroups.length} package{quoteGroups.length > 1 ? 's' : ''} configured · Shipping:{' '}
+                  {price(dynamicShippingTotal)}
                 </p>
               )}
               {isDigitalOnly && (
@@ -772,147 +749,145 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
               shipping speeds for each package below:
             </p>
 
-            <div className="space-y-6">
-              {sellerGroups.map((group) => {
-                const groupHasPhysical = group.items.some((i) => i.type === 'physical');
-                const isFreeStandard = group.subtotal >= 100;
-                const currentOption = selectedDeliveryOptions[group.sellerId] || 'standard';
+            {!quote ? (
+              <div
+                className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-xs font-semibold text-slate-500"
+                data-testid="quote-pending"
+              >
+                <Loader2 className="h-4 w-4 animate-spin text-sun-orange" />
+                <span>Repricing your cart against each seller's live shipping rules…</span>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {quoteGroups.map((group) => {
+                  const currentOption = group.deliveryOption;
 
-                return (
-                  <div
-                    key={group.sellerId}
-                    className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs"
-                    data-testid={`seller-package-${group.sellerId}`}
-                  >
-                    {/* Seller Package Header */}
-                    <div className="flex flex-col justify-between gap-1 border-b border-slate-100 pb-3 sm:flex-row sm:items-center">
-                      <div className="flex items-center gap-2">
-                        <Store className="h-4 w-4 text-slate-400" />
-                        <span className="text-xs font-bold text-slate-900">
-                          Package from: {group.sellerName}
-                        </span>
-                        {group.sellerType === 'platform' ? (
-                          <Badge variant="vendora-platform" size="sm">
-                            Vendora Direct
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" size="sm">
-                            Independent Merchant
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-xs font-medium text-slate-500">
-                        Package Subtotal: ${group.subtotal.toFixed(2)}
-                      </span>
-                    </div>
-
-                    {/* Items preview in package */}
-                    <div className="py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {group.items.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-2 rounded-full border border-slate-100 bg-slate-50 px-3 py-1 text-xs text-slate-700"
-                          >
-                            <span className="font-semibold">{item.quantity}x</span>
-                            <span className="max-w-[160px] truncate">{item.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Delivery Option Radios */}
-                    {!groupHasPhysical ? (
-                      <div className="rounded-xl bg-emerald-50/70 p-3 text-xs text-emerald-800">
-                        Instant Digital Download · No shipping fee required ($0.00)
-                      </div>
-                    ) : (
-                      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {/* Standard Shipping */}
-                        <label
-                          className={`flex cursor-pointer items-start justify-between rounded-xl border p-3.5 transition-all ${
-                            currentOption === 'standard'
-                              ? 'border-sun-orange bg-sun-orange/5 ring-1 ring-sun-orange'
-                              : 'border-slate-200 bg-white hover:border-slate-300'
-                          }`}
-                          data-testid={`option-standard-${group.sellerId}`}
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <input
-                              type="radio"
-                              name={`delivery-${group.sellerId}`}
-                              value="standard"
-                              checked={currentOption === 'standard'}
-                              onChange={() =>
-                                setSelectedDeliveryOptions((prev) => ({
-                                  ...prev,
-                                  [group.sellerId]: 'standard',
-                                }))
-                              }
-                              className="mt-0.5 h-4 w-4 text-sun-orange focus:ring-sun-orange"
-                            />
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-bold text-slate-900">Standard Delivery</span>
-                                {isFreeStandard && (
-                                  <Badge variant="in-stock" size="sm">
-                                    Free ($100+ spend)
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="mt-0.5 text-[11px] text-slate-500">
-                                Estimated 3-5 business days
-                              </p>
-                            </div>
-                          </div>
+                  return (
+                    <div
+                      key={group.sellerId}
+                      className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs"
+                      data-testid={`seller-package-${group.sellerId}`}
+                    >
+                      {/* Seller Package Header */}
+                      <div className="flex flex-col justify-between gap-1 border-b border-slate-100 pb-3 sm:flex-row sm:items-center">
+                        <div className="flex items-center gap-2">
+                          <Store className="h-4 w-4 text-slate-400" />
                           <span className="text-xs font-bold text-slate-900">
-                            {isFreeStandard ? 'FREE' : '$8.50'}
+                            Package from: {group.sellerName}
                           </span>
-                        </label>
-
-                        {/* Express Shipping */}
-                        <label
-                          className={`flex cursor-pointer items-start justify-between rounded-xl border p-3.5 transition-all ${
-                            currentOption === 'express'
-                              ? 'border-sun-orange bg-sun-orange/5 ring-1 ring-sun-orange'
-                              : 'border-slate-200 bg-white hover:border-slate-300'
-                          }`}
-                          data-testid={`option-express-${group.sellerId}`}
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <input
-                              type="radio"
-                              name={`delivery-${group.sellerId}`}
-                              value="express"
-                              checked={currentOption === 'express'}
-                              onChange={() =>
-                                setSelectedDeliveryOptions((prev) => ({
-                                  ...prev,
-                                  [group.sellerId]: 'express',
-                                }))
-                              }
-                              className="mt-0.5 h-4 w-4 text-sun-orange focus:ring-sun-orange"
-                            />
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-bold text-slate-900">Express Priority</span>
-                                <Badge variant="secondary" size="sm">
-                                  Fast
-                                </Badge>
-                              </div>
-                              <p className="mt-0.5 text-[11px] text-slate-500">
-                                Estimated 1-2 business days with priority courier
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs font-bold text-slate-900">$18.00</span>
-                        </label>
+                          {group.sellerType === 'platform' ? (
+                            <Badge variant="vendora-platform" size="sm">
+                              Vendora
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" size="sm">
+                              Independent Merchant
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-slate-500">
+                          Package Subtotal: {price(group.subtotal)}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+
+                      {/* Items preview in package */}
+                      <div className="py-3">
+                        <div className="flex flex-wrap gap-2">
+                          {group.items.map((item) => (
+                            <div
+                              key={`${item.productId}-${item.variantId}`}
+                              className="flex items-center gap-2 rounded-full border border-slate-100 bg-slate-50 px-3 py-1 text-xs text-slate-700"
+                            >
+                              <span className="font-semibold">{item.quantity}x</span>
+                              <span className="max-w-[160px] truncate">{item.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Delivery Option Radios */}
+                      {!group.hasPhysical ? (
+                        <div className="rounded-xl bg-emerald-50/70 p-3 text-xs text-emerald-800">
+                          Instant Digital Download · No shipping fee required ({price(0)})
+                        </div>
+                      ) : (
+                        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {/* Standard Shipping */}
+                          <label
+                            className={`flex cursor-pointer items-start justify-between rounded-xl border p-3.5 transition-all ${
+                              currentOption === 'standard'
+                                ? 'border-sun-orange bg-sun-orange/5 ring-1 ring-sun-orange'
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                            data-testid={`option-standard-${group.sellerId}`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <input
+                                type="radio"
+                                name={`delivery-${group.sellerId}`}
+                                value="standard"
+                                checked={currentOption === 'standard'}
+                                onChange={() => chooseDeliveryOption(group.sellerId, 'standard')}
+                                className="mt-0.5 h-4 w-4 text-sun-orange focus:ring-sun-orange"
+                              />
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-slate-900">Standard Delivery</span>
+                                  {group.shippingStandard === 0 && (
+                                    <Badge variant="in-stock" size="sm">
+                                      Free with this seller
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                  Estimated 3-5 business days
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-slate-900">
+                              {group.shippingStandard === 0 ? 'FREE' : price(group.shippingStandard)}
+                            </span>
+                          </label>
+
+                          {/* Express Shipping */}
+                          <label
+                            className={`flex cursor-pointer items-start justify-between rounded-xl border p-3.5 transition-all ${
+                              currentOption === 'express'
+                                ? 'border-sun-orange bg-sun-orange/5 ring-1 ring-sun-orange'
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                            data-testid={`option-express-${group.sellerId}`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <input
+                                type="radio"
+                                name={`delivery-${group.sellerId}`}
+                                value="express"
+                                checked={currentOption === 'express'}
+                                onChange={() => chooseDeliveryOption(group.sellerId, 'express')}
+                                className="mt-0.5 h-4 w-4 text-sun-orange focus:ring-sun-orange"
+                              />
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-slate-900">Express Priority</span>
+                                  <Badge variant="secondary" size="sm">
+                                    Fast
+                                  </Badge>
+                                </div>
+                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                  Estimated 1-2 business days with priority courier (+{price(expressFee)})
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-slate-900">{price(group.shippingExpress)}</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Step 2 Actions */}
             <div className="mt-6 flex justify-between pt-2">
@@ -1292,80 +1267,75 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
             {/* Seller Split Packages Summary */}
             <div className="space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Seller Packages ({sellerGroups.length})
+                Seller Packages ({quoteGroups.length})
               </h4>
 
-              {sellerGroups.map((group) => {
-                const groupHasPhysical = group.items.some((i) => i.type === 'physical');
-                const option = selectedDeliveryOptions[group.sellerId] || 'standard';
-                const isExpress = option === 'express';
-                const shippingPrice = !groupHasPhysical
-                  ? 0
-                  : isExpress
-                    ? 18.0
-                    : group.subtotal >= 100
-                      ? 0
-                      : 8.5;
-
-                return (
-                  <div
-                    key={group.sellerId}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4"
-                  >
-                    <div className="flex flex-col justify-between gap-1 border-b border-slate-100 pb-2.5 sm:flex-row sm:items-center">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-slate-400" />
-                        <span className="text-xs font-bold text-slate-900">{group.sellerName}</span>
-                        {group.sellerType === 'platform' && (
-                          <Badge variant="vendora-platform" size="sm">
-                            Platform Fulfilled
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                        <span>
-                          {groupHasPhysical
-                            ? isExpress
-                              ? 'Express Shipping ($18.00)'
-                              : shippingPrice === 0
-                                ? 'Standard Shipping (FREE)'
-                                : 'Standard Shipping ($8.50)'
-                            : 'Digital Instant Delivery (FREE)'}
-                        </span>
-                      </div>
+              {quoteGroups.map((group) => (
+                <div
+                  key={group.sellerId}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4"
+                >
+                  <div className="flex flex-col justify-between gap-1 border-b border-slate-100 pb-2.5 sm:flex-row sm:items-center">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-slate-400" />
+                      <span className="text-xs font-bold text-slate-900">{group.sellerName}</span>
+                      {group.sellerType === 'platform' && (
+                        <Badge variant="vendora-platform" size="sm">
+                          Platform Fulfilled
+                        </Badge>
+                      )}
                     </div>
-
-                    {/* Item list */}
-                    <div className="divide-y divide-slate-100 py-2">
-                      {group.items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between py-2 text-xs">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="h-10 w-10 rounded-xl object-cover"
-                            />
-                            <div>
-                              <p className="font-semibold text-slate-900">{item.title}</p>
-                              <p className="text-[11px] text-slate-400">Qty: {item.quantity}</p>
-                            </div>
-                          </div>
-                          <span className="font-bold text-slate-900">
-                            ${(item.price * item.quantity).toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-between border-t border-slate-100 pt-2 text-xs font-medium text-slate-600">
-                      <span>Package Total (incl. shipping)</span>
-                      <span className="font-bold text-slate-900">
-                        ${(group.subtotal + shippingPrice).toFixed(2)}
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                      <span>
+                        {!group.hasPhysical
+                          ? 'Digital Instant Delivery (FREE)'
+                          : group.deliveryOption === 'express'
+                            ? `Express Shipping (${price(group.shippingFee)})`
+                            : group.shippingFee === 0
+                              ? 'Standard Shipping (FREE)'
+                              : `Standard Shipping (${price(group.shippingFee)})`}
                       </span>
                     </div>
                   </div>
-                );
-              })}
+
+                  {/* Item list */}
+                  <div className="divide-y divide-slate-100 py-2">
+                    {group.items.map((item) => (
+                      <div
+                        key={`${item.productId}-${item.variantId}`}
+                        className="flex items-center justify-between py-2 text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="h-10 w-10 rounded-xl object-cover"
+                          />
+                          <div>
+                            <p className="font-semibold text-slate-900">{item.title}</p>
+                            <p className="text-[11px] text-slate-400">Qty: {item.quantity}</p>
+                          </div>
+                        </div>
+                        <span className="font-bold text-slate-900">{price(item.price * item.quantity)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {group.discount > 0 && (
+                    <div className="flex justify-between py-1 text-xs font-medium text-emerald-600">
+                      <span>Coupon ({group.couponCode})</span>
+                      <span>-{price(group.discount)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between border-t border-slate-100 pt-2 text-xs font-medium text-slate-600">
+                    <span>Package Total (incl. shipping)</span>
+                    <span className="font-bold text-slate-900">
+                      {price(group.netSubtotal + group.shippingFee)}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Address & Payment Recaps */}
@@ -1437,29 +1407,46 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
 
             {/* Price Re-validation Summary */}
             <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-              <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-600">
-                Price Re-Validation
-              </h4>
+              <div className="mb-3 flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Price Re-Validation
+                </h4>
+                {totals.isFetching && (
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Repricing</span>
+                  </span>
+                )}
+              </div>
+
+              {totals.error && (
+                <p className="mb-3 text-[11px] font-semibold text-rose-600" data-testid="quote-error">
+                  {totals.error instanceof Error
+                    ? totals.error.message
+                    : 'Checkout could not price your cart.'}
+                </p>
+              )}
+
               <div className="space-y-2 text-xs text-slate-600">
                 <div className="flex justify-between">
                   <span>Items Subtotal</span>
-                  <span className="font-semibold text-slate-900">${subtotal.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-900">{price(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping Total</span>
                   <span className="font-semibold text-slate-900">
-                    {dynamicShippingTotal === 0 ? 'FREE' : `$${dynamicShippingTotal.toFixed(2)}`}
+                    {dynamicShippingTotal === 0 ? 'FREE' : price(dynamicShippingTotal)}
                   </span>
                 </div>
-                {discountTotal > 0 && (
+                {(discountTotal ?? 0) > 0 && (
                   <div className="flex justify-between text-emerald-600">
-                    <span>Discount ({appliedCoupon?.code})</span>
-                    <span className="font-semibold">-${discountTotal.toFixed(2)}</span>
+                    <span>Discount ({quote?.couponCode ?? appliedCoupon?.code})</span>
+                    <span className="font-semibold">-{price(discountTotal)}</span>
                   </div>
                 )}
                 <div className="border-t border-slate-200 pt-3 flex justify-between text-base font-extrabold text-slate-900">
                   <span>Order Grand Total</span>
-                  <span className="text-sun-orange">${grandTotal.toFixed(2)}</span>
+                  <span className="text-sun-orange">{price(grandTotal)}</span>
                 </div>
               </div>
             </div>
@@ -1469,12 +1456,12 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
               <Button
                 type="button"
                 variant="orange-cta"
-                disabled={isSubmitting || createOrderMutation.isPending}
+                disabled={isSubmitting || placeOrderMutation.isPending || !quote || totals.isFetching}
                 onClick={handlePlaceOrder}
                 className="w-full py-4 text-base font-bold shadow-lg"
                 data-testid="btn-place-order"
               >
-                {isSubmitting || createOrderMutation.isPending ? (
+                {isSubmitting || placeOrderMutation.isPending ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span>Placing Your Order...</span>
@@ -1482,7 +1469,7 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
                 ) : (
                   <>
                     <ShieldCheck className="h-5 w-5" />
-                    <span>Place Order · ${grandTotal.toFixed(2)}</span>
+                    <span>{quote ? `Place Order · ${price(grandTotal)}` : 'Repricing your cart…'}</span>
                   </>
                 )}
               </Button>

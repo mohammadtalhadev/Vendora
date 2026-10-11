@@ -1,23 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  fetchOrders,
+  advanceSubOrderStatus,
+  fetchDigitalDownloads,
   fetchOrderDetail,
-  createOrder,
-  updateSubOrderStatus,
+  fetchOrders,
+  issueDeliveryCode,
 } from '../api/orders';
-import type { CreateOrderPayload } from '../api/orders';
+import { useAuthStore } from '../../../store/auth-store';
 import type { SubOrderStatus } from '../../../types/domain';
 
 export const orderKeys = {
   all: ['orders'] as const,
-  lists: () => ['orders', 'list'] as const,
+  lists: (userId: string | null | undefined) => ['orders', 'list', userId ?? 'anon'] as const,
   detail: (id: string) => ['orders', 'detail', id] as const,
+  downloads: () => ['orders', 'downloads'] as const,
 };
 
+/** The signed-in customer's order history; a guest has no rows to read. */
 export function useOrders() {
+  const userId = useAuthStore((s) => s.user?.id);
+
   return useQuery({
-    queryKey: orderKeys.lists(),
+    queryKey: orderKeys.lists(userId),
     queryFn: ({ signal }) => fetchOrders(signal),
+    enabled: Boolean(userId),
   });
 }
 
@@ -29,14 +35,13 @@ export function useOrderDetail(orderId: string) {
   });
 }
 
-export function useCreateOrder() {
-  const queryClient = useQueryClient();
+export function useDigitalDownloads() {
+  const userId = useAuthStore((s) => s.user?.id);
 
-  return useMutation({
-    mutationFn: (payload: CreateOrderPayload) => createOrder(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: orderKeys.all });
-    },
+  return useQuery({
+    queryKey: orderKeys.downloads(),
+    queryFn: ({ signal }) => fetchDigitalDownloads(signal),
+    enabled: Boolean(userId),
   });
 }
 
@@ -52,10 +57,25 @@ export function useUpdateSubOrderStatus() {
       subOrderId: string;
       nextStatus: SubOrderStatus;
       note?: string;
-    }) => updateSubOrderStatus(subOrderId, nextStatus, note),
+    }) => advanceSubOrderStatus(subOrderId, nextStatus, note),
     onSuccess: (updatedSubOrder) => {
       queryClient.invalidateQueries({ queryKey: orderKeys.detail(updatedSubOrder.orderGroupId) });
-      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+    },
+  });
+}
+
+/**
+ * The handover code is hashed on the way in, so a customer who lost theirs gets a new one.
+ * Only the new code works, which is why it is read once and never cached.
+ */
+export function useIssueDeliveryCode(orderId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (subOrderId: string) => issueDeliveryCode(subOrderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(orderId) });
     },
   });
 }

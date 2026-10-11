@@ -101,6 +101,7 @@ export interface CartItem {
   variantId?: string;
   title: string;
   price: number;
+  compareAtPrice?: number;
   quantity: number;
   maxStock: number;
   image: string;
@@ -149,6 +150,7 @@ export type DigitalSubOrderStatus =
   | 'placed'
   | 'paid'
   | 'available'
+  | 'cancelled'
   | 'refunded';
 
 export type SubOrderStatus = PhysicalSubOrderStatus | DigitalSubOrderStatus;
@@ -170,6 +172,7 @@ export interface SubOrder {
   items: CartItem[];
   subtotal: number;
   shippingFee: number;
+  deliveryOption?: 'standard' | 'express';
   commissionRate: number; // Frozen at order placement (e.g., 0.10 for 10%)
   commissionAmount: number; // Frozen fee paid to platform
   netPayout: number; // Frozen net vendor earnings: subtotal - commissionAmount
@@ -180,6 +183,10 @@ export interface SubOrder {
   history: TrackingEvent[];
   returnReason?: string;
   createdAt: string;
+  carrierName?: string;
+  trackingNumber?: string;
+  shippingAddress?: ShippingAddress;
+  customerNotes?: string;
 }
 
 export interface ShippingAddress {
@@ -198,10 +205,13 @@ export interface OrderGroup {
   customerEmail: string;
   shippingAddress?: ShippingAddress;
   paymentMethod: 'card' | 'cod';
+  /** A cash-on-delivery order names no card, so neither field can be assumed. */
   paymentDetails: {
-    brand: string;
-    last4: string;
+    brand?: string;
+    last4?: string;
   };
+  /** Written by place_order: 'succeeded' for a captured card, 'pending' for cash. */
+  paymentStatus?: 'pending' | 'succeeded' | 'failed' | 'refunded';
   subOrderIds: string[];
   createdAt: string;
 }

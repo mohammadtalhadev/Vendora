@@ -32,6 +32,12 @@ const EMBED_FK: Record<string, Record<string, string>> = {
   cart_items: { products: 'product_id' },
   wishlist_items: { products: 'product_id' },
   reviews: { products: 'product_id' },
+  sub_orders: { vendor_profiles: 'seller_id' },
+};
+
+/** One-to-many embeds: `<from table>.<child table> = child.<foreign key>`. */
+const CHILD_FK: Record<string, Record<string, string>> = {
+  orders: { sub_orders: 'order_group_id' },
 };
 
 /** The unique indexes the migrations declare, so insert and upsert behave like Postgres. */
@@ -43,6 +49,9 @@ const UNIQUE_KEYS: Record<string, string[]> = {
 
 /** `alias:referenced_table(cols)` in a PostgREST select list. */
 const EMBED_RE = /^(?:([\w]+):)?([\w]+)\((.*)\)$/s;
+
+/** The delivery statuses `issue_delivery_code` accepts. */
+const OPEN_DELIVERY_STATUSES = ['placed', 'confirmed', 'packed', 'ready_for_pickup', 'shipped', 'out_for_delivery'];
 
 /** Splits a PostgREST select list on top-level commas only. */
 function splitSelect(columns: string): string[] {
@@ -106,6 +115,10 @@ export function createSupabaseDouble() {
     cart_items: [],
     wishlist_items: [],
     reviews: [],
+    promotions: [],
+    orders: [],
+    sub_orders: [],
+    deliveries: [],
   };
   const failures: Record<string, string | null> = {};
   const authState = {
@@ -123,6 +136,9 @@ export function createSupabaseDouble() {
   let syntheticId = 0;
   let rpcError: DoubleError | null = null;
   const rpcCalls: Array<{ fn: string; args: Row }> = [];
+  /** The jsonb `checkout_quote` / `place_order` would return; pricing stays in Postgres. */
+  let quoteFixture: Row | null = null;
+  let placedFixture: Row | null = null;
 
   /** Resolves a select list against a row, replaying `alias:table(cols)` embeds recursively. */
   function project(target: Row, selectList: string, fromTable: string): Row {
@@ -138,10 +154,20 @@ export function createSupabaseDouble() {
       const name = embed[1] ?? embed[2];
       const referenced = embed[2];
       const fkColumn = EMBED_FK[fromTable]?.[referenced];
-      const child = fkColumn
-        ? (tables[referenced] ?? []).find((candidate) => candidate.id === target[fkColumn]) ?? null
-        : null;
-      out[name] = child ? project(child, embed[3], referenced) : null;
+      if (fkColumn) {
+        const child = (tables[referenced] ?? []).find((candidate) => candidate.id === target[fkColumn]) ?? null;
+        out[name] = child ? project(child, embed[3], referenced) : null;
+        continue;
+      }
+      // An order embeds its packages by their foreign key, the way PostgREST does.
+      const childFk = CHILD_FK[fromTable]?.[referenced];
+      if (childFk) {
+        out[name] = (tables[referenced] ?? [])
+          .filter((candidate) => candidate[childFk] === target.id)
+          .map((candidate) => project(candidate, embed[3], referenced));
+        continue;
+      }
+      out[name] = null;
     }
     return out;
   }
@@ -377,6 +403,39 @@ export function createSupabaseDouble() {
         review.seller_reply = { author: 'Merchant Response', timeAgo: 'Just now', body: args.p_reply };
         return { data: true, error: null };
       }
+      // Pricing is Postgres' job; a test hands back the jsonb that function produced.
+      if (fn === 'checkout_quote') {
+        return quoteFixture === null
+          ? { data: null, error: { message: 'checkout_quote has no fixture - call setQuote() first' } }
+          : { data: quoteFixture, error: null };
+      }
+      if (fn === 'place_order') {
+        return placedFixture === null
+          ? { data: null, error: { message: 'place_order has no fixture - call setPlacedOrder() first' } }
+          : { data: placedFixture, error: null };
+      }
+      if (fn === 'advance_sub_order_status') {
+        const sub = tables.sub_orders.find((row) => row.id === args.p_sub_order_id);
+        if (!sub) return { data: null, error: { message: 'Sub-order not found' } };
+        sub.status = args.p_next;
+        sub.history = [
+          ...(Array.isArray(sub.history) ? sub.history : []),
+          { status: args.p_next, timestamp: '2026-10-11T00:00:00.000Z', actor: 'Customer', note: args.p_note },
+        ];
+        return { data: { status: args.p_next }, error: null };
+      }
+      if (fn === 'issue_delivery_code') {
+        const sub = tables.sub_orders.find((row) => row.id === args.p_sub_order_id);
+        if (!sub) return { data: null, error: { message: 'Sub-order not found' } };
+        if (!sub.delivery_code_hash) {
+          return { data: null, error: { message: 'This package has no handover code' } };
+        }
+        if (!OPEN_DELIVERY_STATUSES.includes(String(sub.status))) {
+          return { data: null, error: { message: 'This delivery is already closed' } };
+        }
+        sub.delivery_code_hash = 'sha256:rotated';
+        return { data: { code: '4821', subOrderId: sub.id }, error: null };
+      }
       return { data: null, error: { message: `Unknown rpc: ${fn}` } };
     }),
     auth: {
@@ -464,6 +523,26 @@ export function createSupabaseDouble() {
       tables.reviews.push(review);
       return review;
     },
+    seedPromotion(promotion: Row) {
+      tables.promotions.push(promotion);
+      return promotion;
+    },
+    seedOrder(order: Row) {
+      tables.orders.push(order);
+      return order;
+    },
+    seedSubOrder(subOrder: Row) {
+      tables.sub_orders.push(subOrder);
+      return subOrder;
+    },
+    /** The jsonb `checkout_quote` returns, so a test can pin one screen to known money. */
+    setQuote(quote: Row | null) {
+      quoteFixture = quote;
+    },
+    /** The jsonb `place_order` returns after booking. */
+    setPlacedOrder(placed: Row | null) {
+      placedFixture = placed;
+    },
     /** Makes the next RPC call fail, the way a denied SECURITY DEFINER call does. */
     failRpc(message: string | null) {
       rpcError = message ? { message } : null;
@@ -484,6 +563,8 @@ export function createSupabaseDouble() {
       authState.confirmEmail = false;
       rpcError = null;
       rpcCalls.length = 0;
+      quoteFixture = null;
+      placedFixture = null;
       listeners.clear();
       syntheticId = 0;
       double.from.mockClear();
@@ -616,6 +697,96 @@ export function productRow(overrides: Partial<Row> = {}): Row {
     status: 'approved',
     rejection_reason: null,
     created_at: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A promotions row; `active` is what RLS filters on before the client checks the dates. */
+export function promotionRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000301',
+    code: 'SAVE10',
+    title: '10% off',
+    description: 'A demo promotion.',
+    discount_type: 'percent',
+    discount_value: 10,
+    minimum_order: 50,
+    max_discount: null,
+    vendor_id: null,
+    starts_at: '2026-10-01T00:00:00.000Z',
+    ends_at: '2026-12-31T00:00:00.000Z',
+    usage_count: 0,
+    usage_limit: 100,
+    active: true,
+    created_at: '2026-10-01T00:00:00.000Z',
+    updated_at: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A booked cart line, frozen into `sub_orders.items` at checkout. */
+export function orderedItemRow(overrides: Partial<Row> = {}): Row {
+  return {
+    productId: productRow().id,
+    variantId: '',
+    title: 'Reference Headphones',
+    price: 199.99,
+    quantity: 1,
+    image: 'https://example.test/headphones.png',
+    ...overrides,
+  };
+}
+
+/** An orders row; the money lives on the packages, so this row carries who and how they paid. */
+export function orderRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000401',
+    customer_id: 'user-1',
+    customer_email: 'buyer@demo.test',
+    shipping_address: {
+      fullName: 'Alex Buyer',
+      street: '1 Elm Street',
+      city: 'Columbus',
+      state: 'OH',
+      zipCode: '43004',
+      country: 'USA',
+      phone: '614-555-0100',
+    },
+    payment_method: 'card',
+    payment_details: { brand: 'Visa', last4: '0000' },
+    payment_status: 'succeeded',
+    created_at: '2026-10-06T14:30:00.000Z',
+    ...overrides,
+  };
+}
+
+/**
+ * A sub_orders row. `delivery_code_hash` is seeded here because `issue_delivery_code` reads
+ * it, but no select list asks for it, so nothing the client maps can.
+ */
+export function subOrderRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000501',
+    order_group_id: orderRow().id,
+    seller_id: 'store-1',
+    type: 'physical',
+    items: [orderedItemRow()],
+    subtotal: 199.99,
+    shipping_fee: 8.5,
+    delivery_option: 'standard',
+    commission_rate: 0.1,
+    commission_amount: 20,
+    net_payout: 179.99,
+    status: 'placed',
+    rider_id: null,
+    license_key: null,
+    history: [{ status: 'placed', timestamp: '2026-10-06T14:30:00.000Z', actor: 'Customer', note: 'Order placed via checkout' }],
+    return_reason: null,
+    carrier_name: null,
+    tracking_number: null,
+    customer_notes: null,
+    delivery_code_hash: 'sha256:seeded',
+    created_at: '2026-10-06T14:30:00.000Z',
     ...overrides,
   };
 }

@@ -918,6 +918,7 @@ export type Database = {
           created_at: string
           customer_notes: string | null
           delivery_code_hash: string | null
+          delivery_option: string
           history: Json
           id: string
           items: Json
@@ -941,6 +942,7 @@ export type Database = {
           created_at?: string
           customer_notes?: string | null
           delivery_code_hash?: string | null
+          delivery_option?: string
           history?: Json
           id?: string
           items?: Json
@@ -964,6 +966,7 @@ export type Database = {
           created_at?: string
           customer_notes?: string | null
           delivery_code_hash?: string | null
+          delivery_option?: string
           history?: Json
           id?: string
           items?: Json
@@ -1157,11 +1160,25 @@ export type Database = {
         Args: { p_rider_id: string; p_sub_order_id: string }
         Returns: Json
       }
+      cart_lines_for: { Args: { p_uid: string }; Returns: Json }
+      checkout_pricing: {
+        Args: {
+          p_coupon_code?: string
+          p_delivery_options?: Json
+          p_uid: string
+        }
+        Returns: Json
+      }
+      checkout_quote: {
+        Args: { p_coupon_code?: string; p_delivery_options?: Json }
+        Returns: Json
+      }
       commission_rate_for: {
         Args: { category: string; seller: string }
         Returns: number
       }
       current_vendor_id: { Args: never; Returns: string }
+      express_shipping_fee: { Args: never; Returns: number }
       has_role: {
         Args: { check_role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
@@ -1170,6 +1187,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_dispute_party: { Args: { d: string }; Returns: boolean }
       is_thread_participant: { Args: { t: string }; Returns: boolean }
+      issue_delivery_code: { Args: { p_sub_order_id: string }; Returns: Json }
       moderate_product: {
         Args: { p_product_id: string; p_reason?: string; p_status: string }
         Returns: boolean
@@ -1178,9 +1196,12 @@ export type Database = {
       place_order: {
         Args: {
           p_address: Json
+          p_card_brand?: string
+          p_card_last4?: string
           p_coupon_code?: string
           p_customer_notes?: string
           p_delivery_option?: string
+          p_delivery_options?: Json
           p_payment_method: string
         }
         Returns: Json

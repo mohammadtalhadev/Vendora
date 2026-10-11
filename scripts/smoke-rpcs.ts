@@ -76,8 +76,8 @@ await q(`update profiles set roles = array['admin','customer']::user_role[] wher
 await q(`update profiles set roles = array['vendor','customer']::user_role[] where id = $1`, [VENDOR]);
 await q(`update profiles set roles = array['rider']::user_role[] where id = $1`, [RIDER]);
 await q(
-  `insert into vendor_profiles (id, user_id, store_name, slug, commission_rate_override) values
-     ($1,$2,'Tech Store','tech-store',null),($3,null,'Vendora','vendora',0.000)`,
+  `insert into vendor_profiles (id, user_id, store_name, slug, commission_rate_override, seller_type) values
+     ($1,$2,'Tech Store','tech-store',null,'vendor'),($3,null,'Vendora','vendora',0.000,'platform')`,
   [STORE, VENDOR, PLATFORM],
 );
 await q(`insert into categories (id, name, slug) values ($1,'Electronics','electronics')`, [CAT]);
@@ -153,7 +153,7 @@ await expectThrow(
 );
 const placed = (
   await q(
-    `select place_order($1::jsonb,'card','express','SAVE10','leave at door') as r`,
+    `select place_order($1::jsonb,'card','express','SAVE10','leave at door',null,'Visa','1119') as r`,
     [{ street: '1 Main St', city: 'Karachi', country: 'PK' }],
   )
 )[0].r;
@@ -246,6 +246,138 @@ await as('authenticated', VENDOR);
 await q(`select reply_to_review(id, 'Thanks for the feedback') from reviews where author_id=$1`, [CU]);
 ok('vendor reply stored', (await q(`select seller_reply->>'body' b from reviews where author_id=$1`, [CU]))[0].b === 'Thanks for the feedback');
 await expectThrow('vendor cannot reply to another store review', () => q(`select reply_to_review(id,'x') from reviews where product_id=(select id from products where slug='acme-license')`), 'does not belong');
+
+console.log('\n[checkout pricing] the quote is the bill');
+await as('postgres');
+await q(
+  `insert into promotions (vendor_id, code, title, discount_type, discount_value, minimum_order, usage_limit)
+   values ($1,'PLATFORM12','Vendora 12%','percentage',12,10,100)`,
+  [PLATFORM],
+);
+await as('authenticated', CU2);
+await q(
+  `insert into cart_items (user_id, product_id, variant_id, quantity) values
+     ($1,$2,'v-black',1),($1,$3,'',1)`,
+  [CU2, P_PHYS, P_DIG],
+);
+await expectThrow(
+  'a card order missing its last four digits is rejected',
+  () => q(`select place_order($1::jsonb,'card','standard',null,null,null,'Mastercard',null)`, [{ street: '1 Main St' }]),
+  'last four digits',
+);
+
+const quoteOpts = { [STORE]: 'express' };
+const quote = (await q(`select checkout_quote($1::jsonb, 'SAVE10') as q`, [quoteOpts]))[0].q;
+const usageBefore = (await q(`select usage_count::int c from promotions where code='SAVE10'`))[0].c;
+const quoteAgain = (await q(`select checkout_quote($1::jsonb, 'SAVE10') as q`, [quoteOpts]))[0].q;
+ok(
+  'quoting twice changes nothing: cart intact, promotion unspent',
+  JSON.stringify(quote) === JSON.stringify(quoteAgain) &&
+    (await q('select count(*)::int c from cart_items'))[0].c === 2 &&
+    (await q(`select usage_count::int c from promotions where code='SAVE10'`))[0].c === usageBefore,
+);
+ok('the express surcharge is a server number', Number(quote.expressFee) === 15, `(got ${quote.expressFee})`);
+
+const qPhys = quote.groups.find((x: any) => x.hasPhysical);
+const qDigi = quote.groups.find((x: any) => !x.hasPhysical);
+ok('the store name and kind reach the checkout screen', qPhys.sellerName === 'Tech Store' && qPhys.sellerType === 'vendor' && qDigi.sellerType === 'platform');
+ok('shipping is priced from the product, express adds the flat surcharge', Number(qPhys.shippingStandard) === 5 && Number(qPhys.shippingExpress) === 20 && Number(qPhys.shippingFee) === 20, `(got ${qPhys.shippingStandard}/${qPhys.shippingExpress}/${qPhys.shippingFee})`);
+ok('a digital package never pays an express surcharge', Number(qDigi.shippingFee) === 0 && Number(qDigi.shippingExpress) === 0);
+ok('the quoted grand total adds up', Number(quote.grandTotal) === Number(quote.subtotal) - Number(quote.discountTotal) + Number(quote.shippingTotal), `(got ${quote.grandTotal})`);
+
+const scoped = (await q(`select checkout_quote('{}'::jsonb, 'PLATFORM12') as q`))[0].q;
+ok(
+  'a vendor-scoped promotion only ever discounts that vendor',
+  Number(scoped.groups.find((x: any) => x.hasPhysical).discount) === 0 &&
+    Number(scoped.groups.find((x: any) => !x.hasPhysical).discount) === 2.4,
+);
+await expectThrow(
+  'an unknown coupon is refused at the quote, not at payment',
+  () => q(`select checkout_quote('{}'::jsonb, 'NOPE99')`),
+  'invalid or expired coupon',
+);
+
+const booked = (
+  await q(
+    `select place_order($1::jsonb,'card','standard','SAVE10','leave at door',$2::jsonb,'Mastercard','5454') as r`,
+    [{ street: '1 Main St', city: 'Karachi', country: 'PK' }, quoteOpts],
+  )
+)[0].r;
+const bPhys = booked.subOrders.find((s: any) => s.type === 'physical');
+const bDigi = booked.subOrders.find((s: any) => s.type === 'digital');
+const written = await q(
+  `select id, subtotal, shipping_fee, commission_amount, net_payout, delivery_option
+   from sub_orders where order_group_id = $1`,
+  [booked.orderId],
+);
+ok(
+  'every booked package matches its quoted money, line for line',
+  [bPhys, bDigi].every((line: any) => {
+    const row = written.find((r: any) => r.id === line.id);
+    const src = quote.groups.find((x: any) => x.sellerId === line.sellerId);
+    return (
+      !!row &&
+      Number(row.subtotal) === Number(src.netSubtotal) &&
+      Number(row.shipping_fee) === Number(src.shippingFee) &&
+      Number(row.commission_amount) === Number(src.commissionAmount) &&
+      Number(row.net_payout) === Number(src.netPayout) &&
+      row.delivery_option === src.deliveryOption
+    );
+  }),
+);
+ok('the order books the grand total the quote showed', Number(booked.grandTotal) === Number(quote.grandTotal), `(quoted ${quote.grandTotal}, booked ${booked.grandTotal})`);
+ok('the service chosen per package is stored', bPhys.deliveryOption === 'express' && bDigi.deliveryOption === 'standard');
+const cardOrder = (await q(`select payment_details, payment_status from orders where id=$1`, [booked.orderId]))[0];
+ok(
+  'the card the customer typed is what the order records, and nothing more',
+  cardOrder.payment_details.brand === 'Mastercard' && cardOrder.payment_details.last4 === '5454' && Object.keys(cardOrder.payment_details).length === 2,
+);
+ok('no order in this database carries the invented 4242 card', (await q(`select count(*)::int c from orders where payment_details->>'last4'='4242'`))[0].c === 0);
+ok('stock dropped again for the second buyer', (await q(`select stock::int s from products where id=$1`, [P_PHYS]))[0].s === 7);
+
+console.log('\n[cash on delivery]');
+await as('authenticated', CU2);
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'',1)`, [CU2, P_DIG]);
+const codOrder = (await q(`select place_order($1::jsonb,'cod') as r`, [{ street: '1 Main St' }]))[0].r;
+const codRow = (await q(`select payment_details, payment_status from orders where id=$1`, [codOrder.orderId]))[0];
+ok('a cash order is booked pending, not paid', codRow.payment_status === 'pending');
+ok('a cash order records cash, not a card', codRow.payment_details.method === 'cod');
+ok('a cash order creates no delivery job', (await q(`select count(*)::int c from deliveries d join sub_orders so on so.id = d.sub_order_id where so.order_group_id = $1`, [codOrder.orderId]))[0].c === 0);
+
+console.log('\n[handover codes] re-issue, never read back');
+await as('authenticated', CU2);
+const reissued = (await q(`select issue_delivery_code($1) as r`, [bPhys.id]))[0].r;
+const storedHash = (await q(`select delivery_code_hash h from sub_orders where id=$1`, [bPhys.id]))[0].h;
+ok('the buyer gets a fresh 4-digit handover code', /^\d{4}$/.test(reissued.code), `(got ${reissued.code})`);
+ok('the hash now matches the new code, not the one shown at checkout', storedHash === (await q(`select hash_delivery_code($1) h`, [reissued.code]))[0].h && storedHash !== (await q(`select hash_delivery_code($1) h`, [bPhys.deliveryCode]))[0].h);
+await as('authenticated', CU);
+await expectThrow(
+  'a stranger cannot issue someone else handover code',
+  () => q(`select issue_delivery_code($1)`, [bPhys.id]),
+  'can issue this code',
+);
+await as('authenticated', CU2);
+await expectThrow(
+  'a digital package has no handover code',
+  () => q(`select issue_delivery_code($1)`, [codOrder.subOrders[0].id]),
+  'no handover code',
+);
+await as('authenticated', ADMIN);
+await q(`select assign_rider($1,$2)`, [bPhys.id, RPID]);
+const bDelivery = (await q(`select id from deliveries where sub_order_id=$1`, [bPhys.id]))[0].id;
+await as('authenticated', VENDOR);
+for (const next of ['confirmed', 'packed', 'ready_for_pickup']) {
+  await q(`select advance_sub_order_status($1,$2)`, [bPhys.id, next]);
+}
+await as('authenticated', RIDER);
+for (const next of ['shipped', 'out_for_delivery']) {
+  await q(`select advance_sub_order_status($1,$2)`, [bPhys.id, next]);
+}
+await expectThrow('the code shown at checkout is spent once re-issued', () => q(`select verify_delivery($1,$2)`, [bDelivery, bPhys.deliveryCode]), 'invalid handover code');
+await q(`select verify_delivery($1,$2)`, [bDelivery, reissued.code]);
+ok('the re-issued code completes the delivery', (await q(`select status from sub_orders where id=$1`, [bPhys.id]))[0].status === 'delivered');
+await as('authenticated', CU2);
+await expectThrow('a closed delivery cannot be re-coded', () => q(`select issue_delivery_code($1)`, [bPhys.id]), 'already closed');
 
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
