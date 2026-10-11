@@ -25,6 +25,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { useAuth } from '../../../lib/auth-context';
 import { useAuthStore } from '../../../store/auth-store';
 
 export interface AdminNavProps {
@@ -142,7 +143,8 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     to: '/admin/settings',
-    label: 'Settings',
+    label: 'Platform Settings',
+    accessibleSubtitle: 'Platform & System Settings',
     icon: Settings,
   },
   {
@@ -155,35 +157,47 @@ const NAV_ITEMS: NavItem[] = [
 
 export const AdminNav: React.FC<AdminNavProps> = ({ className, onNavigate }) => {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const { signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    logout();
-    navigate('/');
+    void signOut().then(() => navigate('/'));
   };
 
   return (
-    <nav className={cn('flex flex-col h-full min-h-0', className)} aria-label="Platform Admin Navigation">
-      {/* Brand Header: VENDORA / Admin Console */}
-      <div className="flex items-center gap-2.5 px-3 py-3.5 mb-2 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-sm font-black text-white shadow-2xs">
-          V
-        </div>
-        <div className="flex flex-col leading-tight">
-          <span className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase">
-            VENDORA
+    <nav
+      className={cn('flex flex-col h-full w-full overflow-hidden', className)}
+      aria-label="Platform Admin Navigation"
+    >
+      {/* ── 1. Top Pinned Section: Homepage Logo + Hover Effect (shrink-0) ── */}
+      <div className="shrink-0 border-b border-slate-200/60 dark:border-white/10 px-4 py-3.5 bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.65))] dark:bg-slate-900/65">
+        <Link
+          to="/admin"
+          aria-label="Vendora Admin Home"
+          className="flex items-center justify-between focus:outline-none group transition-all"
+          title="Vendora Admin Console"
+        >
+          <div className="flex flex-col">
+            <span className="font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-[#FF7A1A] transition-colors">
+              Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-all duration-300 group-hover:scale-125" />
+            </span>
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-wider mt-1 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+              Admin Console
+            </span>
+          </div>
+          <span className="inline-flex items-center rounded-md bg-orange-500/10 dark:bg-orange-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#EA6C13] dark:text-[#FF7A1A] border border-orange-500/20 group-hover:border-orange-500/40 transition-colors">
+            Admin
           </span>
-          <span className="text-[10px] text-slate-400 font-medium">
-            Admin Console
-          </span>
-        </div>
+        </Link>
       </div>
 
-      {/* Navigation Links (Scrollable with hidden scrollbar) */}
-      <div className="flex-1 min-h-0 space-y-0.5 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden px-1.5 py-1">
+      {/* ── 2. Center Scrollable Section: Only navigation options scroll (flex-1 overflow-y-auto) ── */}
+      <div
+        data-lenis-prevent
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar px-3 py-2 space-y-0.5"
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
@@ -213,20 +227,20 @@ export const AdminNav: React.FC<AdminNavProps> = ({ className, onNavigate }) => 
         })}
       </div>
 
-      {/* Bottom User Card */}
-      <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/50 px-2 pb-1 shrink-0">
+      {/* ── 3. Bottom Pinned Section: User profile & image card (shrink-0 mt-auto) ── */}
+      <div className="shrink-0 mt-auto border-t border-slate-200/60 dark:border-white/10 p-2.5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xs">
         <Link
           to="/admin/profile"
           onClick={onNavigate}
-          className="flex items-center justify-between rounded-xl p-1.5 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all border border-transparent hover:border-white/60 dark:hover:border-slate-700/60"
+          className="flex items-center justify-between rounded-xl p-1.5 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all border border-transparent hover:border-slate-200/60 dark:hover:border-slate-700/60 group"
           title="View Admin Profile & Settings"
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-xs">
-              <UserIcon className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-xs group-hover:scale-105 transition-transform">
+              <UserIcon className="h-4 w-4" />
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="truncate text-[11px] font-bold text-slate-900 dark:text-slate-100 leading-tight">
+              <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
                 {user?.name ?? 'Admin User'}
               </p>
               <p className="truncate text-[10px] text-slate-400 leading-tight">
@@ -234,15 +248,15 @@ export const AdminNav: React.FC<AdminNavProps> = ({ className, onNavigate }) => 
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={handleLogout}
               aria-label="Sign out"
               title="Sign out"
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
             >
-              <LogOut className="h-3 w-3" />
+              <LogOut className="h-3.5 w-3.5" />
             </button>
             <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400" />
           </div>

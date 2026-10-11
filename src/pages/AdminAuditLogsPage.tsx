@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Download,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { supabaseAuditLogs } from '../lib/supabase-service';
 
 interface AuditLog {
   id: string;
@@ -72,10 +73,25 @@ const SEED_LOGS: AuditLog[] = [
 ];
 
 export const AdminAuditLogsPage: React.FC = () => {
-  const [logs] = useState<AuditLog[]>(SEED_LOGS);
+  const [logs, setLogs] = useState<AuditLog[]>(SEED_LOGS);
   const [filterAction, setFilterAction] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDiffLog, setActiveDiffLog] = useState<AuditLog | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    supabaseAuditLogs.getLogs().then((dbLogs) => {
+      if (isMounted && dbLogs && dbLogs.length > 0) {
+        setLogs((prev) => {
+          const ids = new Set(dbLogs.map((l: any) => l.id));
+          return [...(dbLogs as any[]), ...prev.filter((p) => !ids.has(p.id))];
+        });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredLogs = logs.filter((log) => {
     if (filterAction !== 'all' && log.action !== filterAction) return false;
@@ -120,12 +136,12 @@ export const AdminAuditLogsPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Audit Logs" subtitle="Immutable audit trail recording high-risk administrative operations, commission edits, forced refunds, and merchant suspensions." sidebar={<AdminNav />}>
       <div className="space-y-6">
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
               Audit Logs & Security Activity Stream
             </h1>
             <p className="text-xs text-slate-500 mt-1">

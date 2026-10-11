@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   UserCheck,
@@ -21,6 +21,8 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { exportToCsv } from '../lib/export-csv';
+import { useMarketplaceStore } from '../store/marketplace-store';
+import { supabaseUsers } from '../lib/supabase-service';
 
 interface UserRecord {
   id: string;
@@ -126,7 +128,62 @@ const INITIAL_USERS: UserRecord[] = [
 ];
 
 export const AdminUsersPage: React.FC = () => {
+  const storeVendors = useMarketplaceStore((state) => state.vendors);
+  const syncWithDatabase = useMarketplaceStore((state) => state.syncWithDatabase);
+
+  useEffect(() => {
+    syncWithDatabase();
+  }, [syncWithDatabase]);
+
   const [users, setUsers] = useState<UserRecord[]>(INITIAL_USERS);
+
+  useEffect(() => {
+    let isMounted = true;
+    supabaseUsers.getUsers().then((realProfiles) => {
+      if (!isMounted) return;
+      if (realProfiles && realProfiles.length > 0) {
+        setUsers((prev) => {
+          const profileIds = new Set(realProfiles.map((p) => p.id));
+          return [...(realProfiles as any[]), ...prev.filter((p) => !profileIds.has(p.id))];
+        });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (storeVendors && storeVendors.length > 0) {
+      const vendorUsers: UserRecord[] = storeVendors.map((v) => {
+        const initials = v.storeName
+          .split(' ')
+          .map((w: string) => w[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase() || 'VA';
+        return {
+          id: `usr-${v.id}`,
+          initials,
+          name: `${v.storeName} Admin`,
+          email: v.email || `${v.id}@vendora.market`,
+          role: 'Vendor Admin' as const,
+          status: v.status === 'suspended' ? 'Suspended' as const : 'Active' as const,
+          totalVolume: '$34,820.00',
+          lastActive: 'Today, 10:15',
+          joinDate: v.joinedDate || '14 Jan 2025',
+        };
+      });
+
+      const platformStaff = INITIAL_USERS.filter((u) => u.role !== 'Vendor Admin');
+      setUsers((prev) => {
+        const vendorIds = new Set(vendorUsers.map((vu) => vu.id));
+        const nonVendors = prev.filter((u) => !vendorIds.has(u.id));
+        return [...vendorUsers, ...nonVendors, ...platformStaff.filter((ps) => !nonVendors.some((nv) => nv.id === ps.id))];
+      });
+    }
+  }, [storeVendors]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('All Roles');
   const [statusFilter, setStatusFilter] = useState('All Users');
@@ -174,6 +231,14 @@ export const AdminUsersPage: React.FC = () => {
       prev.map((u) => {
         if (u.id !== id) return u;
         const newStatus: UserRecord['status'] = u.status === 'Active' ? 'Suspended' : 'Active';
+        try {
+          useMarketplaceStore.getState().updateUserStatus(id, newStatus);
+        } catch {
+          // ignore
+        }
+        supabaseUsers.updateUserStatus(id, newStatus.toLowerCase()).catch((err) => {
+          console.warn('[Supabase] Failed to update user status in DB:', err);
+        });
         return { ...u, status: newStatus };
       })
     );
@@ -182,7 +247,15 @@ export const AdminUsersPage: React.FC = () => {
   const handleBatchSuspend = () => {
     if (selectedIds.length === 0) return;
     setUsers((prev) =>
-      prev.map((u) => (selectedIds.includes(u.id) ? { ...u, status: 'Suspended' } : u))
+      prev.map((u) => {
+        if (selectedIds.includes(u.id)) {
+          try {
+            useMarketplaceStore.getState().updateUserStatus(u.id, 'Suspended');
+          } catch {}
+          return { ...u, status: 'Suspended' };
+        }
+        return u;
+      })
     );
     setSelectedIds([]);
   };
@@ -225,6 +298,17 @@ export const AdminUsersPage: React.FC = () => {
       lastActive: 'Just now',
       joinDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
     };
+    try {
+      useMarketplaceStore.getState().addUser({
+        name: newUser.name,
+        email: newUser.email,
+        initials: newUser.initials,
+        role: newUser.role,
+        status: newUser.status,
+      });
+    } catch {
+      // ignore
+    }
     setUsers([newUser, ...users]);
     setNewName('');
     setNewEmail('');
@@ -245,7 +329,7 @@ export const AdminUsersPage: React.FC = () => {
             ===================================================================== */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">
               User Management
             </h1>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -256,10 +340,10 @@ export const AdminUsersPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsAddUserModalOpen(true)}
-            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-slate-800 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
           >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Add User</span>
+            <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+            <span className="text-white">Add User</span>
           </button>
         </div>
 
@@ -277,11 +361,11 @@ export const AdminUsersPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900">
-                28,420
+                {users.length.toLocaleString()}
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                <span>↑ +12.4%</span>
-                <span className="text-[11px] font-normal text-slate-400">from last month</span>
+                <span>Live</span>
+                <span className="text-[11px] font-normal text-slate-400">across marketplace</span>
               </div>
             </div>
           </div>
@@ -296,10 +380,10 @@ export const AdminUsersPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900">
-                24,180
+                {users.filter((u) => u.status === 'Active').length.toLocaleString()}
               </div>
               <div className="mt-1 text-xs text-slate-400">
-                85.1% of total users
+                {users.length > 0 ? ((users.filter((u) => u.status === 'Active').length / users.length) * 100).toFixed(1) : '85.1'}% of total users
               </div>
             </div>
           </div>
@@ -314,10 +398,10 @@ export const AdminUsersPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900">
-                3,412
+                {users.filter((u) => u.status === 'Inactive').length.toLocaleString()}
               </div>
               <div className="mt-1 text-xs text-slate-400">
-                12.0% of total users
+                {users.length > 0 ? ((users.filter((u) => u.status === 'Inactive').length / users.length) * 100).toFixed(1) : '12.0'}% of total users
               </div>
             </div>
           </div>
@@ -332,10 +416,10 @@ export const AdminUsersPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900">
-                828
+                {users.filter((u) => u.status === 'Suspended').length.toLocaleString()}
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-medium text-rose-600">
-                <span>⚠ 2.9% of total users</span>
+                <span>⚠ {users.length > 0 ? ((users.filter((u) => u.status === 'Suspended').length / users.length) * 100).toFixed(1) : '2.9'}% of total users</span>
               </div>
             </div>
           </div>
@@ -683,13 +767,13 @@ export const AdminUsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAddUserModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
+                  className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
                 >
                   Create User
                 </button>

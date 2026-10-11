@@ -84,10 +84,10 @@ export const AdminCompliancePage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Tax Compliance" subtitle="Marketplace facilitator sales tax collection rules, automated remittance tables, and IRS 1099-K merchant earnings statements." sidebar={<AdminNav />}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
             Tax, VAT & 1099-K Regulatory Compliance
           </h1>
           <p className="text-xs text-slate-500 mt-1">

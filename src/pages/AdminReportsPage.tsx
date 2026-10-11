@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ChevronRight,
   Calendar,
   RotateCw,
   Plus,
@@ -191,20 +190,14 @@ export const AdminReportsPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Reports & Analytics" sidebar={<AdminNav />}>
       <div className="space-y-6">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span>Marketplace</span>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-          <span className="font-semibold text-slate-800">Reports</span>
-        </div>
 
         {/* Page Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">
                 Reports & Marketplace Analytics
               </h1>
               <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-700">
@@ -242,10 +235,10 @@ export const AdminReportsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsGenerateModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Plus className="h-4 w-4" />
-              Generate Custom Report
+              <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <span className="text-white">Generate Custom Report</span>
             </button>
           </div>
         </div>
@@ -501,9 +494,7 @@ export const AdminReportsPage: React.FC = () => {
                 Instant standardized exports configured for accounting compliance and vendor reviews
               </p>
             </div>
-            <span className="text-[11px] text-slate-400 font-medium">
-              Standard automated exports run nightly at 00:00 UTC
-            </span>
+
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -845,13 +836,13 @@ export const AdminReportsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsGenerateModalOpen(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                  className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
                 >
                   Generate &amp; Download
                 </button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -396,7 +396,7 @@ const INITIAL_DISPUTES: DisputeItem[] = [
     id: 'dsp-501',
     orderId: 'ord-grp-2001',
     customer: 'Sarah Jenkins',
-    vendor: 'Vendora Soundwave',
+    vendor: 'Sony Electronics',
     reason: 'Package delayed beyond guaranteed SLA window',
     amount: 189.0,
     status: 'escalated',
@@ -406,7 +406,7 @@ const INITIAL_DISPUTES: DisputeItem[] = [
     id: 'dsp-502',
     orderId: 'ord-grp-1988',
     customer: 'Alexander Pierce',
-    vendor: 'Vendora Soundwave',
+    vendor: 'Apple Official Store',
     reason: 'Item box had dent upon doorstep arrival',
     amount: 159.0,
     status: 'open',
@@ -416,18 +416,42 @@ const INITIAL_DISPUTES: DisputeItem[] = [
     id: 'dsp-503',
     orderId: 'ord-grp-1942',
     customer: 'Elena Rostova',
-    vendor: 'StudioCraft Assets',
-    reason: 'License key format mismatch in Figma import',
+    vendor: 'Ronin Official',
+    reason: 'Earbud charging pin loose on delivery',
     amount: 59.0,
     status: 'resolved',
     createdAt: '3 days ago',
-    resolutionNote: 'Merchant issued refreshed license tokens within 2h. Claim satisfied.',
+    resolutionNote: 'Merchant issued refreshed replacement units within 2h. Claim satisfied.',
     resolutionType: 'claim_denied',
   },
 ];
 
 export const AdminDisputesPage: React.FC = () => {
+  const storeDisputes = useMarketplaceStore((state) => state.disputes);
+  const syncWithDatabase = useMarketplaceStore((state) => state.syncWithDatabase);
+
+  useEffect(() => {
+    syncWithDatabase();
+  }, [syncWithDatabase]);
+
   const [disputes, setDisputes] = useState<DisputeItem[]>(INITIAL_DISPUTES);
+
+  useEffect(() => {
+    if (storeDisputes && storeDisputes.length > 0) {
+      const mapped: DisputeItem[] = storeDisputes.map((d) => ({
+        id: d.id,
+        orderId: d.subOrderId || d.orderGroupId,
+        customer: d.customerName || 'Customer',
+        vendor: d.vendorName || 'Marketplace Vendor',
+        reason: d.reason,
+        amount: d.resolutionAmount || 89.0,
+        status: (d.status === 'resolved_refund' || d.status === 'resolved_denied') ? 'resolved' : (d.status as any),
+        createdAt: d.createdAt ? (d.createdAt.includes('T') ? new Date(d.createdAt).toLocaleDateString() : d.createdAt) : 'Recent',
+        resolutionNote: d.resolutionNote,
+      }));
+      setDisputes(mapped);
+    }
+  }, [storeDisputes]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'escalated' | 'resolved'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -507,18 +531,42 @@ export const AdminDisputesPage: React.FC = () => {
       return;
     }
 
+    const dspId = `dsp-${Date.now().toString().slice(-4)}`;
+    const ordId = newOrderId.trim() || `ord-grp-${Math.floor(1000 + Math.random() * 9000)}`;
+    const parsedAmount = parseFloat(newAmount) || 50.0;
+
     const newDispute: DisputeItem = {
-      id: `dsp-${Date.now().toString().slice(-4)}`,
-      orderId: newOrderId.trim() || `ord-grp-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: dspId,
+      orderId: ordId,
       customer: newCustomer.trim(),
       vendor: newVendor.trim(),
       reason: newReason.trim(),
-      amount: parseFloat(newAmount) || 50.0,
+      amount: parsedAmount,
       status: 'open',
       createdAt: 'Just now',
     };
 
     setDisputes((prev) => [newDispute, ...prev]);
+    try {
+      useMarketplaceStore.getState().addDispute({
+        id: dspId,
+        subOrderId: ordId,
+        orderGroupId: ordId,
+        customerId: 'usr-customer-1',
+        customerName: newCustomer.trim(),
+        vendorId: 'vendor-tech-1',
+        vendorName: newVendor.trim(),
+        reason: newReason.trim(),
+        status: 'open',
+        urgency: 'standard',
+        messages: [],
+        resolutionAmount: parsedAmount,
+        createdAt: new Date().toISOString(),
+      });
+    } catch {
+      // ignore
+    }
+
     setIsNewClaimOpen(false);
     setNewCustomer('');
     setNewReason('');
@@ -604,10 +652,8 @@ export const AdminDisputesPage: React.FC = () => {
         {/* Top Header Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              <Scale className="h-3.5 w-3.5 text-slate-500" />
-              <span>Platform Arbitration Court</span>
-            </div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">Disputes &amp; Resolution</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Manage customer claims, merchant rebuttals, and refund decisions.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -619,14 +665,14 @@ export const AdminDisputesPage: React.FC = () => {
               <Download className="h-3.5 w-3.5 text-slate-500" />
               <span>Export Disputes CSV</span>
             </Button>
-            <Button
-              size="sm"
+            <button
+              type="button"
               onClick={() => setIsNewClaimOpen(true)}
-              className="gap-2 text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Log New Claim</span>
-            </Button>
+              <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <span className="text-white">Log New Claim</span>
+            </button>
           </div>
         </div>
 
@@ -877,7 +923,7 @@ export const AdminDisputesPage: React.FC = () => {
                     <Scale className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">Issue Platform Arbitration Ruling</h3>
+                    <h3 className="text-sm font-bold text-slate-900">Issue Dispute Resolution Ruling</h3>
                     <p className="text-xs text-slate-400">Case ID: {selectedDisputeForRuling.id}</p>
                   </div>
                 </div>
@@ -1016,7 +1062,7 @@ export const AdminDisputesPage: React.FC = () => {
                     <Plus className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">Log Platform Arbitration Claim</h3>
+                    <h3 className="text-sm font-bold text-slate-900">Log Dispute Claim</h3>
                     <p className="text-xs text-slate-400">Register new customer protection claim</p>
                   </div>
                 </div>
@@ -1102,13 +1148,12 @@ export const AdminDisputesPage: React.FC = () => {
                   >
                     Cancel
                   </Button>
-                  <Button
+                  <button
                     type="submit"
-                    size="sm"
-                    className="rounded-xl text-xs bg-slate-900 hover:bg-slate-800 text-white"
+                    className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
                   >
                     Register Dispute
-                  </Button>
+                  </button>
                 </div>
               </form>
             </div>
@@ -1294,7 +1339,7 @@ export const AdminDisputesPage: React.FC = () => {
                         </>
                       ) : (
                         <p className="text-[11px] text-slate-400 italic">
-                          No direct vendor rebuttal submitted. The platform arbitration SLA timer is running.
+                          No direct vendor rebuttal submitted. The merchant response SLA timer is running.
                         </p>
                       )}
                     </div>

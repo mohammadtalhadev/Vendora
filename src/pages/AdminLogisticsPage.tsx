@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Truck,
   Bike,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { supabaseLogistics } from '../lib/supabase-service';
 
 interface FleetRider {
   id: string;
@@ -78,15 +79,54 @@ const SEED_ACTIVE_DELIVERIES: ActiveDelivery[] = [
 ];
 
 export const AdminLogisticsPage: React.FC = () => {
+  const [riders, setRiders] = useState<FleetRider[]>(SEED_RIDERS);
   const [deliveries, setDeliveries] = useState<ActiveDelivery[]>(SEED_ACTIVE_DELIVERIES);
   const [reassignModalDel, setReassignModalDel] = useState<ActiveDelivery | null>(null);
-  const [selectedNewRider, setSelectedNewRider] = useState('rider-3');
+  const [selectedNewRider, setSelectedNewRider] = useState('rider-1');
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([supabaseLogistics.getRiders(), supabaseLogistics.getDeliveries()]).then(([dbRiders, dbDels]) => {
+      if (!isMounted) return;
+      if (dbRiders && dbRiders.length > 0) {
+        setRiders(dbRiders as any);
+        if (dbRiders[0]) setSelectedNewRider(dbRiders[0].id);
+      }
+      if (dbDels && dbDels.length > 0) {
+        const mapped: ActiveDelivery[] = dbDels.map((d: any) => ({
+          id: d.id,
+          subOrderId: d.sub_order_id,
+          vendorName: d.pickup_details?.seller_name || 'Vendor Hub',
+          pickupAddress: 'Local Fulfillment Center',
+          customerName: d.dropoff_details?.customer_email || 'Customer',
+          dropoffAddress: typeof d.dropoff_details?.shipping_address === 'object'
+            ? `${d.dropoff_details.shipping_address.street || ''}, ${d.dropoff_details.shipping_address.city || ''}`
+            : 'Delivery Address',
+          assignedRiderId: d.rider_id || undefined,
+          assignedRiderName: d.rider_id ? 'Assigned Rider' : undefined,
+          status: (d.status === 'in_transit' ? 'in_transit' : d.status === 'assigned' ? 'assigned' : 'exception_delayed') as any,
+          etaMinutes: 25,
+        }));
+        setDeliveries((prev) => {
+          const ids = new Set(mapped.map((m) => m.id));
+          return [...mapped, ...prev.filter((p) => !ids.has(p.id))];
+        });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleReassign = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reassignModalDel) return;
 
-    const riderObj = SEED_RIDERS.find((r) => r.id === selectedNewRider);
+    supabaseLogistics.assignRider(reassignModalDel.id, selectedNewRider).catch((err) => {
+      console.warn('[Supabase] Failed to persist rider assignment:', err);
+    });
+
+    const riderObj = riders.find((r) => r.id === selectedNewRider);
     setDeliveries((prev) =>
       prev.map((d) =>
         d.id === reassignModalDel.id
@@ -105,10 +145,10 @@ export const AdminLogisticsPage: React.FC = () => {
   const onlineCount = SEED_RIDERS.filter((r) => r.isOnline).length;
 
   return (
-    <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Fleet Logistics" sidebar={<AdminNav />}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
             Logistics & Fleet Dispatch Console
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -264,13 +304,13 @@ export const AdminLogisticsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setReassignModalDel(null)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600"
+                    className="rounded-full border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-[#FF7A1A] px-4 py-2 font-bold text-white shadow-sm hover:bg-[#EA580C]"
+                    className="rounded-full bg-sun-orange px-5 py-2 font-bold text-white shadow-sm hover:shadow-orange-glow hover:bg-sun-orange-600 cursor-pointer text-xs"
                   >
                     Confirm Re-assignment
                   </button>

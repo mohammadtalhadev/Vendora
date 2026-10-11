@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MonitorPlay,
   Clock,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { supabaseCMS, supabasePromotions } from '../lib/supabase-service';
 
 interface BannerItem {
   id: string;
@@ -86,7 +87,69 @@ export const AdminCMSPage: React.FC = () => {
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponVal, setNewCouponVal] = useState('10');
 
+  useEffect(() => {
+    let isMounted = true;
+    supabaseCMS.getContentBlocks().then((blocks) => {
+      if (isMounted && blocks && blocks.length > 0) {
+        const mapped: BannerItem[] = blocks.map((b: any) => ({
+          id: b.id,
+          headline: b.body?.headline || b.title,
+          subtitle: b.body?.subtitle || '',
+          imageUrl: b.body?.imageUrl || '/images/emox/hero_iphone.jpg',
+          ctaText: b.body?.ctaText || 'Shop Now',
+          ctaLink: b.body?.ctaLink || '/products',
+          startDate: b.created_at ? b.created_at.split('T')[0] : '2026-10-01',
+          endDate: '2026-12-31',
+          isActive: Boolean(b.published),
+        }));
+        setBanners((prev) => {
+          const ids = new Set(mapped.map((m) => m.id));
+          return [...mapped, ...prev.filter((p) => !ids.has(p.id))];
+        });
+      }
+    });
+
+    supabasePromotions.getPromotions().then((dbPromos) => {
+      if (isMounted && dbPromos && dbPromos.length > 0) {
+        const mappedCoupons: CouponCode[] = dbPromos.map((p: any) => ({
+          id: p.id,
+          code: p.code,
+          discountType: p.discount_type === 'percentage' ? 'percent' : 'fixed',
+          discountValue: Number(p.discount_value),
+          minSpend: Number(p.minimum_order || 0),
+          isActive: Boolean(p.active),
+        }));
+        setCoupons((prev) => {
+          const ids = new Set(mappedCoupons.map((m) => m.id));
+          return [...mappedCoupons, ...prev.filter((p) => !ids.has(p.id))];
+        });
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleToggleBanner = (id: string) => {
+    const target = banners.find((b) => b.id === id);
+    if (target) {
+      supabaseCMS.saveContentBlock({
+        id: target.id,
+        slug: target.id,
+        title: target.headline,
+        body: {
+          headline: target.headline,
+          subtitle: target.subtitle,
+          imageUrl: target.imageUrl,
+          ctaText: target.ctaText,
+          ctaLink: target.ctaLink,
+        },
+        published: !target.isActive,
+      }).catch((err) => {
+        console.warn('[Supabase] Failed to persist banner toggle:', err);
+      });
+    }
     setBanners((prev) =>
       prev.map((b) => (b.id === id ? { ...b, isActive: !b.isActive } : b)),
     );
@@ -108,6 +171,22 @@ export const AdminCMSPage: React.FC = () => {
       isActive: true,
     };
 
+    supabaseCMS.saveContentBlock({
+      id: newB.id,
+      slug: `hero-banner-${newB.id}`,
+      title: newB.headline,
+      body: {
+        headline: newB.headline,
+        subtitle: newB.subtitle,
+        imageUrl: newB.imageUrl,
+        ctaText: newB.ctaText,
+        ctaLink: newB.ctaLink,
+      },
+      published: true,
+    }).catch((err) => {
+      console.warn('[Supabase] Failed to persist new banner:', err);
+    });
+
     setBanners([...banners, newB]);
     setIsAddBannerOpen(false);
     setNewHeadline('');
@@ -117,6 +196,19 @@ export const AdminCMSPage: React.FC = () => {
 
   const handleSaveCampaign = (e: React.FormEvent) => {
     e.preventDefault();
+    supabaseCMS.saveContentBlock({
+      id: 'cb-campaign-flash',
+      slug: 'campaign-flash',
+      title: campaignTitle,
+      body: {
+        title: campaignTitle,
+        endDate: campaignEndDate,
+        badge: campaignBadge,
+      },
+      published: true,
+    }).catch((err) => {
+      console.warn('[Supabase] Failed to persist campaign settings:', err);
+    });
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 2500);
   };
@@ -134,16 +226,28 @@ export const AdminCMSPage: React.FC = () => {
       isActive: true,
     };
 
+    supabasePromotions.createPromotion({
+      id: newC.id,
+      code: newC.code,
+      title: `${newC.code} Admin Promo`,
+      discountType: 'percentage',
+      discountValue: newC.discountValue,
+      minimumOrder: newC.minSpend,
+      active: true,
+    }).catch((err) => {
+      console.warn('[Supabase] Failed to persist admin coupon:', err);
+    });
+
     setCoupons([...coupons, newC]);
     setNewCouponCode('');
   };
 
   return (
-    <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Platform CMS" sidebar={<AdminNav />}>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
               Platform CMS & Storefront Promotions
             </h1>
             <p className="text-xs text-slate-500 mt-1">
@@ -155,10 +259,10 @@ export const AdminCMSPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddBannerOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Plus className="h-4 w-4" />
-              Add Hero Banner
+              <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <span className="text-white">Add Hero Banner</span>
             </button>
           )}
         </div>
@@ -306,7 +410,7 @@ export const AdminCMSPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C]"
+                className="flex items-center gap-1.5 rounded-full bg-sun-orange px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:shadow-orange-glow hover:bg-sun-orange-600 transition-all cursor-pointer"
               >
                 <Save className="h-4 w-4" />
                 Update Live Campaign
@@ -339,7 +443,7 @@ export const AdminCMSPage: React.FC = () => {
                 />
                 <button
                   type="submit"
-                  className="rounded-xl bg-slate-900 text-white px-5 py-2.5 font-bold hover:bg-slate-800"
+                  className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] text-white px-5 py-2.5 font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer text-xs active:scale-95"
                 >
                   Create Code
                 </button>
@@ -452,13 +556,13 @@ export const AdminCMSPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsAddBannerOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600"
+                    className="rounded-full border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-[#FF7A1A] px-5 py-2 font-bold text-white shadow-sm hover:bg-[#EA580C]"
+                    className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-5 py-2 font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer text-xs active:scale-95"
                   >
                     Save Banner
                   </button>

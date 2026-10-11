@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ChevronRight,
   RotateCcw,
   Check,
   Store,
@@ -161,19 +160,13 @@ export const AdminSettingsPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Platform Settings" sidebar={<AdminNav />}>
       <div className="space-y-6">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span>Marketplace</span>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-          <span className="font-semibold text-slate-800">Settings</span>
-        </div>
 
         {/* Page Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">
               Platform Settings
             </h1>
             <p className="mt-1 text-xs text-slate-500 max-w-2xl">
@@ -202,10 +195,10 @@ export const AdminSettingsPage: React.FC = () => {
             <button
               type="button"
               onClick={handleSave}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Check className="h-4 w-4" />
-              {saveSuccess ? 'Saved Successfully!' : 'Save Configuration'}
+              <Check className="h-4 w-4 stroke-[2.5]" />
+              <span>{saveSuccess ? 'Saved Successfully!' : 'Save Configuration'}</span>
             </button>
           </div>
         </div>

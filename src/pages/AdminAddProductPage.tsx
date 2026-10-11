@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowLeft,
+  Upload,
   UploadCloud,
   DollarSign,
   Globe,
@@ -18,6 +19,7 @@ import {
   Shield,
   Tag,
   Building2,
+  ChevronDown,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
@@ -26,6 +28,7 @@ import { Input } from '../components/ui/input';
 import type { Product, ProductType, Variant } from '../types/domain';
 import { mockDb } from '../mocks/db';
 import { useMarketplaceStore } from '../store/marketplace-store';
+import { supabaseStorage } from '../lib/supabase-service';
 import { cn } from '../lib/utils';
 
 export const AdminAddProductPage: React.FC = () => {
@@ -44,6 +47,8 @@ export const AdminAddProductPage: React.FC = () => {
     'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
   ]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Pricing & Financials
   const [price, setPrice] = useState('199.00');
@@ -71,11 +76,23 @@ export const AdminAddProductPage: React.FC = () => {
   const [optionName, setOptionName] = useState('Color');
   const [optionValues, setOptionValues] = useState('Midnight Black, Space Silver, Alpine White');
   const [variants, setVariants] = useState<Variant[]>([]);
+  const [isOptionDropdownOpen, setIsOptionDropdownOpen] = useState(false);
+  const optionDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (optionDropdownRef.current && !optionDropdownRef.current.contains(e.target as Node)) {
+        setIsOptionDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Organization & Visibility
   const [tags, setTags] = useState<string[]>(['1P Official', 'Vendora Choice', 'Express Delivery', 'Warranty']);
   const [newTagInput, setNewTagInput] = useState('');
-  const [collection, setCollection] = useState('Vendora Direct Flagship');
+  const [collection, setCollection] = useState('Vendora Flagship');
   const [isFeaturedOnStore, setIsFeaturedOnStore] = useState(true);
 
   // SEO
@@ -107,6 +124,30 @@ export const AdminAddProductPage: React.FC = () => {
     setImages((prev) => [...prev, newImageUrl.trim()]);
     setNewImageUrl('');
     showToast('Image URL added to media gallery.');
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingImage(true);
+    try {
+      const { url, error } = await supabaseStorage.uploadProductImage(file);
+      if (error || !url) {
+        const localUrl = URL.createObjectURL(file);
+        setImages((prev) => [...prev, localUrl]);
+        showToast('Image attached locally (Storage fallback).');
+      } else {
+        setImages((prev) => [...prev, url]);
+        showToast('Image uploaded directly to Supabase Storage!');
+      }
+    } catch {
+      const localUrl = URL.createObjectURL(file);
+      setImages((prev) => [...prev, localUrl]);
+      showToast('Image attached locally.');
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleRemoveImage = (index: number) => {
@@ -179,14 +220,26 @@ export const AdminAddProductPage: React.FC = () => {
   const grossProfit = priceNum > 0 ? priceNum - costNum : 0;
   const profitMargin = priceNum > 0 ? ((grossProfit / priceNum) * 100).toFixed(1) : '0';
 
-  // Completion calculation for Health Score
-  let completionScore = 0;
-  if (title.trim()) completionScore += 20;
-  if (description.trim()) completionScore += 20;
-  if (images.length > 0) completionScore += 20;
-  if (priceNum > 0) completionScore += 20;
-  if (parseInt(stock, 10) > 0) completionScore += 10;
-  if (sku.trim()) completionScore += 10;
+  // Completion calculation for Health Score based on actual filled fields
+  const completionFields = [
+    Boolean(title.trim()),
+    Boolean(slug.trim()),
+    Boolean(category.trim()),
+    Boolean(brand.trim()),
+    Boolean(description.trim()),
+    images.length > 0,
+    priceNum > 0,
+    Boolean(sku.trim()),
+    Boolean(barcode.trim()),
+    parseInt(stock, 10) > 0,
+    productType === 'digital' ? Boolean(downloadUrl.trim()) : Boolean(weightKg.trim()),
+    tags.length > 0,
+    Boolean(collection.trim()),
+    Boolean(seoTitle.trim()),
+    Boolean(seoDescription.trim()),
+  ];
+  const filledFieldsCount = completionFields.filter(Boolean).length;
+  const completionScore = Math.round((filledFieldsCount / completionFields.length) * 100);
 
   const handleSaveProduct = (targetStatus: 'approved' | 'draft' = 'approved') => {
     setErrorMessage(null);
@@ -306,14 +359,7 @@ export const AdminAddProductPage: React.FC = () => {
               <ArrowLeft className="h-4 w-4" />
             </Link>
             <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                <span>Platform Governance</span>
-                <span>/</span>
-                <Link to="/admin/products" className="hover:text-slate-700">Products</Link>
-                <span>/</span>
-                <span className="text-[#FF7A1A]">Add Product</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-0.5">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
                 Add Product
               </h1>
             </div>
@@ -325,7 +371,7 @@ export const AdminAddProductPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => navigate('/admin/products')}
-              className="text-xs rounded-xl border-slate-200 hover:bg-slate-50"
+              className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 cursor-pointer"
             >
               Discard
             </Button>
@@ -334,19 +380,18 @@ export const AdminAddProductPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => handleSaveProduct('draft')}
-              className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700"
+              className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700 cursor-pointer"
             >
               Save as Draft
             </Button>
-            <Button
+            <button
               type="button"
-              size="sm"
               onClick={() => handleSaveProduct('approved')}
-              className="text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-white gap-2 shadow-xs"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              <span>Publish Product</span>
-            </Button>
+              <Upload className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <span className="text-white">Publish Product</span>
+            </button>
           </div>
         </div>
 
@@ -373,7 +418,6 @@ export const AdminAddProductPage: React.FC = () => {
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Basic Information</h3>
                 </div>
-                <span className="text-[11px] text-slate-400 font-medium">Core Platform Metadata</span>
               </div>
 
               <div>
@@ -417,7 +461,7 @@ export const AdminAddProductPage: React.FC = () => {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
+                    className="w-full admin-select h-10"
                   >
                     <option value="cat-electronics">Electronics &amp; Smart Tech</option>
                     <option value="cat-audio">Audio &amp; Pro Acoustics</option>
@@ -542,23 +586,24 @@ export const AdminAddProductPage: React.FC = () => {
                   </div>
                 ))}
 
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
                 <button
                   type="button"
-                  onClick={() => {
-                    const fallbackUrls = [
-                      'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
-                      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=800&q=80',
-                      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
-                    ];
-                    const chosen = fallbackUrls[Math.floor(Math.random() * fallbackUrls.length)];
-                    setImages((prev) => [...prev, chosen]);
-                    showToast('Preset catalog asset added to media gallery.');
-                  }}
-                  className="rounded-xl border border-dashed border-slate-300 p-4 aspect-square flex flex-col items-center justify-center text-center hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="rounded-xl border border-dashed border-slate-300 p-4 aspect-square flex flex-col items-center justify-center text-center hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-pointer group"
                 >
-                  <UploadCloud className="h-6 w-6 text-slate-400 mb-1" />
-                  <span className="text-[11px] font-bold text-slate-700">Quick Add Asset</span>
-                  <span className="text-[10px] text-slate-400">Sample 4K photo</span>
+                  <UploadCloud className={cn("h-6 w-6 text-slate-400 mb-1 transition-transform group-hover:scale-110", isUploadingImage && "animate-bounce text-[#FF7A1A]")} />
+                  <span className="text-[11px] font-bold text-slate-700">
+                    {isUploadingImage ? 'Uploading...' : 'Upload Asset'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">Direct to Supabase</span>
                 </button>
               </div>
             </div>
@@ -768,30 +813,64 @@ export const AdminAddProductPage: React.FC = () => {
                       <label className="block text-xs font-bold text-slate-800 mb-1">
                         Option Name
                       </label>
-                      <select
-                        value={optionName}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setOptionName(val);
-                          if (val === 'Color') setOptionValues('Midnight Black, Space Silver, Alpine White');
-                          else if (val === 'Size') setOptionValues('Small, Medium, Large, XL');
-                          else if (val === 'Storage Capacity') setOptionValues('128GB, 256GB, 512GB, 1TB');
-                          else if (val === 'Material') setOptionValues('Aluminum, Stainless Steel, Leather');
-                          else if (val === 'Style') setOptionValues('Classic, Modern, Minimalist');
-                          else if (val === 'Weight') setOptionValues('500g, 1kg, 2kg');
-                          else if (val === 'Pack Quantity') setOptionValues('1-Pack, 2-Pack, 4-Pack');
-                        }}
-                        className="w-full admin-select h-9"
-                      >
-                        <option value="Color">Color (e.g. Black, White, Silver)</option>
-                        <option value="Size">Size (e.g. S, M, L, XL)</option>
-                        <option value="Storage Capacity">Storage Capacity (e.g. 128GB, 256GB)</option>
-                        <option value="Material">Material (e.g. Aluminum, Leather)</option>
-                        <option value="Style">Style (e.g. Modern, Vintage)</option>
-                        <option value="Weight">Weight (e.g. 500g, 1kg)</option>
-                        <option value="Pack Quantity">Pack Quantity (e.g. 1-Pack, 2-Pack)</option>
-                        <option value="Custom Option">Custom Option</option>
-                      </select>
+                      <div className="relative" ref={optionDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsOptionDropdownOpen(!isOptionDropdownOpen)}
+                          className="w-full flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer h-9 text-left"
+                        >
+                          <span className="truncate">
+                            {[
+                              { label: 'Color (e.g. Black, White, Silver)', value: 'Color' },
+                              { label: 'Size (e.g. S, M, L, XL)', value: 'Size' },
+                              { label: 'Storage Capacity (e.g. 128GB, 256GB)', value: 'Storage Capacity' },
+                              { label: 'Material (e.g. Aluminum, Leather)', value: 'Material' },
+                              { label: 'Style (e.g. Modern, Vintage)', value: 'Style' },
+                              { label: 'Weight (e.g. 500g, 1kg)', value: 'Weight' },
+                              { label: 'Pack Quantity (e.g. 1-Pack, 2-Pack)', value: 'Pack Quantity' },
+                              { label: 'Custom Option', value: 'Custom Option' },
+                            ].find((o) => o.value === optionName)?.label || optionName}
+                          </span>
+                          <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 shrink-0 ml-1.5 transition-transform", isOptionDropdownOpen && "rotate-180")} />
+                        </button>
+
+                        {isOptionDropdownOpen && (
+                          <div className="absolute top-10 left-0 w-full min-w-[260px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 space-y-0.5">
+                            {[
+                              { label: 'Color (e.g. Black, White, Silver)', value: 'Color', defaultValues: 'Midnight Black, Space Silver, Alpine White' },
+                              { label: 'Size (e.g. S, M, L, XL)', value: 'Size', defaultValues: 'Small, Medium, Large, XL' },
+                              { label: 'Storage Capacity (e.g. 128GB, 256GB)', value: 'Storage Capacity', defaultValues: '128GB, 256GB, 512GB, 1TB' },
+                              { label: 'Material (e.g. Aluminum, Leather)', value: 'Material', defaultValues: 'Aluminum, Stainless Steel, Leather' },
+                              { label: 'Style (e.g. Modern, Vintage)', value: 'Style', defaultValues: 'Classic, Modern, Minimalist' },
+                              { label: 'Weight (e.g. 500g, 1kg)', value: 'Weight', defaultValues: '500g, 1kg, 2kg' },
+                              { label: 'Pack Quantity (e.g. 1-Pack, 2-Pack)', value: 'Pack Quantity', defaultValues: '1-Pack, 2-Pack, 4-Pack' },
+                              { label: 'Custom Option', value: 'Custom Option', defaultValues: '' },
+                            ].map((opt) => {
+                              const isSelected = optionName === opt.value;
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setOptionName(opt.value);
+                                    if (opt.defaultValues) setOptionValues(opt.defaultValues);
+                                    setIsOptionDropdownOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors text-left cursor-pointer",
+                                    isSelected
+                                      ? "bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A] font-bold"
+                                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
+                                  )}
+                                >
+                                  <span className="truncate">{opt.label}</span>
+                                  {isSelected && <Check className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0 ml-1.5" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="sm:col-span-6">
                       <label className="block text-xs font-bold text-slate-800 mb-1">
@@ -809,7 +888,7 @@ export const AdminAddProductPage: React.FC = () => {
                         type="button"
                         size="sm"
                         onClick={handleGenerateVariants}
-                        className="w-full rounded-xl text-xs bg-slate-900 hover:bg-slate-800 text-white"
+                        className="w-full rounded-xl text-xs bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] text-white font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 border-0"
                       >
                         Generate
                       </Button>
@@ -892,7 +971,6 @@ export const AdminAddProductPage: React.FC = () => {
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Fulfillment &amp; Delivery</h3>
                 </div>
-                <span className="text-[11px] text-slate-400 font-medium">Vendora Express Ready</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1032,12 +1110,6 @@ export const AdminAddProductPage: React.FC = () => {
                   <span className="text-slate-500 font-medium">Seller ID:</span>
                   <span className="font-mono text-[11px] text-slate-700 font-bold">platform (1P)</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-medium">Moderation:</span>
-                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 text-[11px]">
-                    <Check className="h-3 w-3" /> Auto-Approved
-                  </span>
-                </div>
               </div>
 
               <p className="text-[11px] text-slate-600 leading-relaxed">
@@ -1121,9 +1193,9 @@ export const AdminAddProductPage: React.FC = () => {
                 <select
                   value={collection}
                   onChange={(e) => setCollection(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-2 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
+                  className="w-full admin-select h-9 text-xs"
                 >
-                  <option value="Vendora Direct Flagship">Vendora Direct Flagship</option>
+                  <option value="Vendora Flagship">Vendora Flagship</option>
                   <option value="Official Best Sellers">Official Best Sellers</option>
                   <option value="Seasonal Highlights">Seasonal Highlights</option>
                   <option value="New Platform Releases">New Platform Releases</option>
@@ -1146,7 +1218,7 @@ export const AdminAddProductPage: React.FC = () => {
                     type="button"
                     size="sm"
                     onClick={handleAddTag}
-                    className="rounded-xl text-xs bg-slate-900 text-white"
+                    className="rounded-xl text-xs bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] text-white font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 border-0"
                   >
                     Add
                   </Button>

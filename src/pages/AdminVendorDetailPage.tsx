@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,73 +11,97 @@ import {
   RotateCcw,
   Save,
   CheckCircle2,
+  Package,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
-
-interface StrikeRecord {
-  id: string;
-  type: string;
-  issuedAt: string;
-  reason: string;
-  issuedBy: string;
-}
+import { useVendorDetail } from '../features/admin/hooks/useAdminQueries';
+import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 
 export const AdminVendorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
-  const [vendorStatus, setVendorStatus] = useState<'approved' | 'suspended' | 'probation'>('approved');
-  const [commissionOverride, setCommissionOverride] = useState(8.5); // Custom 8.5%
-  const [commissionSaved, setCommissionSaved] = useState(false);
+  const { data: vendor, isLoading, error, refetch } = useVendorDetail(id || '');
+  const { setVendorStatus, setVendorCommission, issueStrike } = useAdminActions();
 
-  // Strike & penalty modal
-  const [strikes, setStrikes] = useState<StrikeRecord[]>([]);
-  const [isStrikeModalOpen, setIsStrikeModalOpen] = useState(false);
-  const [violationType, setViolationType] = useState('Late Dispatch SLA (> 48h)');
-  const [violationNotes, setViolationNotes] = useState('');
+  const isPending = setVendorStatus.isLoading || setVendorCommission.isLoading || issueStrike.isLoading;
 
-  const merchantDossier = {
-    id: id || 'vendor-tech-1',
-    name: 'Marcus Vance',
-    storeName: 'Apex Audio & Gear Inc.',
-    email: 'marcus@apexaudio.com',
-    phone: '+1 (510) 555-8921',
-    businessRegNumber: 'LLC-CA-9482104',
-    taxId: 'US-EIN-88291049',
-    country: 'United States',
-    joinedDate: 'August 14, 2025',
-    activeProductsCount: 42,
-    lifetimeOrders: 1840,
-    lifetimeGmv: 248950.00,
-    defectRate: 0.38,
-    fulfillmentSlaRate: 98.4,
-    rating: 4.85,
-  };
-
-  const handleSaveCommission = (e: React.FormEvent) => {
+  const handleSaveCommission = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCommissionSaved(true);
-    setTimeout(() => setCommissionSaved(false), 2500);
+    const rate = commissionOverride === 0 ? null : commissionOverride / 100;
+    try {
+      await setVendorCommission.mutateAsync({
+        vendorId: vendor!.id,
+        rate,
+      });
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to save commission');
+    }
   };
 
-  const handleIssueStrike = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newStrike: StrikeRecord = {
-      id: `str-${Date.now()}`,
-      type: violationType,
-      issuedAt: new Date().toISOString(),
-      reason: violationNotes,
-      issuedBy: 'Admin Elena',
-    };
-    setStrikes([...strikes, newStrike]);
-    setIsStrikeModalOpen(false);
-    setViolationNotes('');
+  const handleToggleStatus = async (newStatus: 'active' | 'suspended') => {
+    try {
+      await setVendorStatus.mutateAsync({
+        vendorId: vendor!.id,
+        status: newStatus,
+        note: `Status changed by admin`,
+      });
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to toggle status');
+    }
   };
+
+  const handleIssueStrike = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const strikeForm = e.target as HTMLFormElement;
+    const formData = new FormData(strikeForm);
+    const violationType = formData.get('violationType') as string;
+    const violationNotes = formData.get('violationNotes') as string;
+
+    try {
+      await issueStrike.mutateAsync({
+        vendorId: vendor!.id,
+        reason: violationType,
+        note: violationNotes,
+      });
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to issue strike');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-sm text-slate-600 font-medium">Reading this merchant...</p>
+        </div>
+      </WorkspaceLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
+        <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+          <p className="text-sm text-rose-600 font-medium">{(error as any).message || 'Failed to load merchant'}</p>
+          <button
+            onClick={() => refetch()}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-700 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      </WorkspaceLayout>
+    );
+  }
+
+  const commissionOverride = vendor!.commissionRate !== null
+    ? vendor!.commissionRate * 100
+    : 0;
 
   return (
     <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
       <div className="space-y-6">
-        {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -89,29 +113,27 @@ export const AdminVendorDetailPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  {merchantDossier.storeName}
+                  {vendor!.storeName}
                 </h1>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${
-                    vendorStatus === 'approved'
+                    vendor!.status === 'active'
                       ? 'bg-emerald-100 text-emerald-800'
-                      : vendorStatus === 'probation'
-                      ? 'bg-amber-100 text-amber-800'
                       : 'bg-rose-100 text-rose-800'
                   }`}
                 >
-                  {vendorStatus}
+                  {vendor!.status}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Vendor ID: <span className="font-mono font-bold text-slate-700">{merchantDossier.id}</span> • Member since {merchantDossier.joinedDate}
+                Vendor ID: <span className="font-mono font-bold text-slate-700">{vendor!.id}</span> • Member since {new Date(vendor!.joinedAt).toLocaleDateString()}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
-              to={`/vendors/${merchantDossier.id}`}
+              to={`/vendors/${vendor!.id}`}
               target="_blank"
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
             >
@@ -119,11 +141,12 @@ export const AdminVendorDetailPage: React.FC = () => {
               View Public Storefront
             </Link>
 
-            {vendorStatus === 'approved' ? (
+            {vendor!.status === 'active' ? (
               <button
                 type="button"
-                onClick={() => setVendorStatus('suspended')}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
+                onClick={() => handleToggleStatus('suspended')}
+                disabled={isPending}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Ban className="h-3.5 w-3.5" />
                 Suspend Merchant
@@ -131,8 +154,9 @@ export const AdminVendorDetailPage: React.FC = () => {
             ) : (
               <button
                 type="button"
-                onClick={() => setVendorStatus('approved')}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer"
+                onClick={() => handleToggleStatus('active')}
+                disabled={isPending}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Reinstate Merchant
@@ -141,38 +165,8 @@ export const AdminVendorDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4 Performance KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Lifetime GMV</span>
-            <div className="text-xl font-black text-slate-900 mt-1">${merchantDossier.lifetimeGmv.toLocaleString()}</div>
-            <span className="text-[11px] text-emerald-600 font-bold">1,840 completed orders</span>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Order Defect Rate</span>
-            <div className="text-xl font-black text-slate-900 mt-1">{merchantDossier.defectRate}%</div>
-            <span className="text-[11px] text-emerald-600 font-bold">Target: &lt; 1.00% (Healthy)</span>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fulfillment SLA Rate</span>
-            <div className="text-xl font-black text-slate-900 mt-1">{merchantDossier.fulfillmentSlaRate}%</div>
-            <span className="text-[11px] text-emerald-600 font-bold">Shipped within 24h</span>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Warning Strikes</span>
-            <div className="text-xl font-black text-slate-900 mt-1">{strikes.length} of 3</div>
-            <span className="text-[11px] text-slate-400 font-medium">3 strikes trigger probation</span>
-          </div>
-        </div>
-
-        {/* 2-Column Dossier & Tools */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column (2 Cols): KYC Documents & Penalty System */}
           <div className="lg:col-span-2 space-y-6">
-            {/* KYC & Identity Verification */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
@@ -180,60 +174,30 @@ export const AdminVendorDetailPage: React.FC = () => {
                   <h3 className="text-sm font-bold text-slate-900">KYC & Business Registration Verification</h3>
                 </div>
                 <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5">
-                  100% Fully Verified
+                  Verified
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1">
                   <span className="text-slate-400 font-bold uppercase text-[10px]">Business Legal Entity</span>
-                  <p className="font-bold text-slate-800">{merchantDossier.storeName}</p>
+                  <p className="font-bold text-slate-800">{vendor!.storeName}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-slate-400 font-bold uppercase text-[10px]">Registered Business No.</span>
-                  <p className="font-mono font-bold text-slate-800">{merchantDossier.businessRegNumber}</p>
+                  <span className="text-slate-400 font-bold uppercase text-[10px]">Email</span>
+                  <p className="font-bold text-slate-800">{vendor!.email}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-slate-400 font-bold uppercase text-[10px]">Tax ID / Employer EIN</span>
-                  <p className="font-mono font-bold text-slate-800">{merchantDossier.taxId}</p>
+                  <span className="text-slate-400 font-bold uppercase text-[10px]">Contact Name</span>
+                  <p className="font-bold text-slate-800">{vendor!.name}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-slate-400 font-bold uppercase text-[10px]">Authorized Legal Rep</span>
-                  <p className="font-bold text-slate-800">{merchantDossier.name}</p>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
-                <span className="font-bold text-slate-700 block">Uploaded Legal Attachments:</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
-                    <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                      <FileCheck className="h-4 w-4 text-emerald-600" />
-                      Articles_Inc.pdf
-                    </span>
-                    <span className="text-[10px] text-emerald-700 font-bold">Passed</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
-                    <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                      <FileCheck className="h-4 w-4 text-emerald-600" />
-                      Bank_Proof.pdf
-                    </span>
-                    <span className="text-[10px] text-emerald-700 font-bold">Passed</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50">
-                    <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                      <FileCheck className="h-4 w-4 text-emerald-600" />
-                      Govt_ID_Rep.pdf
-                    </span>
-                    <span className="text-[10px] text-emerald-700 font-bold">Passed</span>
-                  </div>
+                  <span className="text-slate-400 font-bold uppercase text-[10px]">Account Status</span>
+                  <p className="font-bold text-slate-800">{vendor!.accountStatus}</p>
                 </div>
               </div>
             </div>
 
-            {/* Merchant Penalty & Strike System */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
@@ -243,29 +207,138 @@ export const AdminVendorDetailPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setIsStrikeModalOpen(true)}
-                  className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-1.5 text-xs font-bold hover:bg-rose-100 cursor-pointer"
+                  onClick={() => document.getElementById('strike-modal')?.classList.remove('hidden')}
+                  disabled={isPending}
+                  className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-1.5 text-xs font-bold hover:bg-rose-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   + Issue Warning Strike
                 </button>
               </div>
 
-              {strikes.length === 0 ? (
+              {vendor!.strikes.length === 0 ? (
                 <p className="text-xs text-slate-500 italic py-2">
                   No penalty strikes on record. This merchant maintains exemplary fulfillment and quality compliance.
                 </p>
               ) : (
                 <div className="space-y-2 text-xs">
-                  {strikes.map((s) => (
+                  {vendor!.strikes.map((s) => (
                     <div key={s.id} className="p-3 rounded-xl border border-rose-200 bg-rose-50/60 flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-rose-900">{s.type}</span>
-                          <span className="text-slate-400 text-[10px]">{new Date(s.issuedAt).toLocaleDateString()}</span>
+                          <span className="font-bold text-rose-900">{s.reason}</span>
+                          <span className="text-slate-400 text-[10px]">{new Date(s.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <p className="text-slate-600 mt-1">{s.reason}</p>
+                        {s.note && <p className="text-slate-600 mt-1">{s.note}</p>}
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400">By: {s.issuedBy}</span>
+                      <span className="text-[10px] font-bold text-slate-400">By: {s.issuedBy ?? 'Admin'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-[#FF7A1A]" />
+                  <h3 className="text-sm font-bold text-slate-900">Packages ({vendor!.packages.length})</h3>
+                </div>
+              </div>
+
+              {vendor!.packages.length === 0 ? (
+                <p className="text-xs text-slate-400 py-3 italic">
+                  No packages recorded for this vendor.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] font-bold uppercase text-slate-400">
+                        <th className="pb-2.5">Order Group</th>
+                        <th className="pb-2.5">Status</th>
+                        <th className="pb-2.5">Type</th>
+                        <th className="pb-2.5 text-right">Gross</th>
+                        <th className="pb-2.5 text-right">Net</th>
+                        <th className="pb-2.5">Created</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {vendor!.packages.slice(0, 10).map((pkg) => (
+                        <tr key={pkg.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-2.5 font-mono text-slate-600">{pkg.orderGroupId}</td>
+                          <td className="py-2.5">
+                            <span className="inline-block rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                              {pkg.status}
+                            </span>
+                          </td>
+                          <td className="py-2.5 font-medium text-slate-700">{pkg.type}</td>
+                          <td className="py-2.5 font-bold text-slate-900">${pkg.gross.toFixed(2)}</td>
+                          <td className="py-2.5 font-bold text-slate-900">${pkg.net.toFixed(2)}</td>
+                          <td className="py-2.5 text-slate-500">{new Date(pkg.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <FileCheck className="h-5 w-5 text-[#FF7A1A]" />
+                  <h3 className="text-sm font-bold text-slate-900">Disputes ({vendor!.disputes.length})</h3>
+                </div>
+              </div>
+
+              {vendor!.disputes.length === 0 ? (
+                <p className="text-xs text-slate-400 py-3 italic">
+                  No active or historical disputes for this vendor.
+                </p>
+              ) : (
+                <div className="space-y-2 text-xs">
+                  {vendor!.disputes.map((d) => (
+                    <div key={d.id} className="p-3 rounded-xl border border-amber-200 bg-amber-50/60">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-amber-900">{d.reason}</span>
+                        <span className="text-slate-400 text-[10px]">{new Date(d.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-3">
+                        <span className="inline-block rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          {d.status}
+                        </span>
+                        <span className="text-slate-500">Urgency: {d.urgency}</span>
+                      </div>
+                      {d.resolutionAmount !== null && (
+                        <p className="mt-1 text-slate-600">Resolution amount: ${d.resolutionAmount.toFixed(2)}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Applications ({vendor!.applications.length})</h3>
+              </div>
+
+              {vendor!.applications.length === 0 ? (
+                <p className="text-xs text-slate-400 py-3 italic">
+                  No seller applications on record.
+                </p>
+              ) : (
+                <div className="space-y-2 text-xs">
+                  {vendor!.applications.map((app) => (
+                    <div key={app.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800">{app.businessType}</span>
+                        <span className="inline-block rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                          {app.status}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-slate-600">Contact: {app.contactEmail}</p>
+                      {app.reviewNote && <p className="mt-1 text-slate-500 italic">{app.reviewNote}</p>}
                     </div>
                   ))}
                 </div>
@@ -273,114 +346,164 @@ export const AdminVendorDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Custom Commission Override */}
           <div className="space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4 text-xs">
               <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                 <Percent className="h-4 w-4 text-[#FF7A1A]" />
-                <h3 className="text-sm font-bold text-slate-900">Custom Commission Override</h3>
+                <h3 className="text-sm font-bold text-slate-900">Commission Override</h3>
               </div>
 
               <p className="text-slate-500 leading-relaxed">
-                Global platform default is <strong className="text-slate-700">10.0%</strong>. Set a preferential rate override for this merchant based on sales volume.
+                Set a custom commission rate for this vendor. Set to 0% to clear override and return to platform default.
               </p>
 
               <form onSubmit={handleSaveCommission} className="space-y-4">
                 <div>
                   <div className="flex justify-between font-bold text-slate-900 mb-1">
                     <span>Effective Rate:</span>
-                    <span className="text-[#FF7A1A] font-black text-sm">{commissionOverride.toFixed(1)}%</span>
+                    <span className="text-[#FF7A1A] font-black text-sm">
+                      {commissionOverride === 0 ? 'Platform Default' : `${commissionOverride.toFixed(1)}%`}
+                    </span>
                   </div>
                   <input
                     type="range"
-                    min="2"
+                    min="0"
                     max="20"
                     step="0.5"
                     value={commissionOverride}
                     onChange={(e) => setCommissionOverride(parseFloat(e.target.value))}
                     className="w-full accent-[#FF7A1A] cursor-pointer"
+                    disabled={isPending}
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                    <span>2% (High-volume tier)</span>
+                    <span>0% (Clear override)</span>
                     <span>10% (Default)</span>
-                    <span>20% (High-risk)</span>
+                    <span>20% (Maximum)</span>
                   </div>
                 </div>
 
-                {commissionSaved && (
-                  <div className="text-emerald-700 font-bold text-xs flex items-center gap-1 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Rate updated to {commissionOverride.toFixed(1)}%!
-                  </div>
-                )}
-
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#FF7A1A] text-white py-2.5 font-bold hover:bg-[#EA580C] shadow-xs cursor-pointer"
+                  disabled={isPending}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-full bg-sun-orange text-white py-2.5 font-bold hover:bg-sun-orange-600 shadow-sm hover:shadow-orange-glow transition-all cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save className="h-3.5 w-3.5" />
                   Save Commission Override
                 </button>
               </form>
             </div>
-          </div>
-        </div>
 
-        {/* Modal: Issue Strike */}
-        {isStrikeModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95">
-              <h3 className="text-base font-bold text-slate-900 mb-1">Issue Merchant Warning Strike</h3>
-              <p className="text-xs text-slate-500 mb-4">
-                Formal penalty strike issued against {merchantDossier.storeName}.
-              </p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Payouts ({vendor!.payouts.length})</h3>
+              </div>
 
-              <form onSubmit={handleIssueStrike} className="space-y-3 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Violation Category</label>
-                  <select
-                    value={violationType}
-                    onChange={(e) => setViolationType(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
-                  >
-                    <option value="Late Dispatch SLA (> 48h)">Late Dispatch SLA (&gt; 48h)</option>
-                    <option value="Counterfeit / Unlicensed Item Claim">Counterfeit / Unlicensed Item Claim</option>
-                    <option value="Excessive Out-of-Stock Cancellations">Excessive Out-of-Stock Cancellations</option>
-                    <option value="Abusive Customer Communication">Abusive Customer Communication</option>
-                  </select>
+              {vendor!.payouts.length === 0 ? (
+                <p className="text-xs text-slate-400 py-3 italic">
+                  No payouts recorded for this vendor.
+                </p>
+              ) : (
+                <div className="space-y-2 text-xs">
+                  {vendor!.payouts.map((p) => (
+                    <div key={p.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800">${p.amount.toFixed(2)}</span>
+                        <span className="inline-block rounded-md bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 border border-green-200">
+                          {p.status}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-slate-600">Method: {p.method}</p>
+                      <p className="text-slate-500">{new Date(p.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Documentation & Notes</label>
-                  <textarea
-                    rows={3}
-                    value={violationNotes}
-                    onChange={(e) => setViolationNotes(e.target.value)}
-                    placeholder="Include incident dates and order references..."
-                    className="w-full rounded-xl border border-slate-200 p-2.5"
-                    required
-                  />
-                </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900">Bank Accounts ({vendor!.bankAccounts.length})</h3>
+              </div>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsStrikeModalOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-rose-600 px-4 py-2 font-bold text-white shadow-md hover:bg-rose-700"
-                  >
-                    Issue Formal Strike
-                  </button>
+              {vendor!.bankAccounts.length === 0 ? (
+                <p className="text-xs text-slate-400 py-3 italic">
+                  No bank accounts registered for this vendor.
+                </p>
+              ) : (
+                <div className="space-y-2 text-xs">
+                  {vendor!.bankAccounts.map((bank) => (
+                    <div key={bank.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800">{bank.bankName}</span>
+                        {bank.isDefault && (
+                          <span className="inline-block rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-slate-600">Holder: {bank.holderName}</p>
+                      <p className="text-slate-500">Account: ••••{bank.maskedAccount}</p>
+                    </div>
+                  ))}
                 </div>
-              </form>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* Modal: Issue Strike */}
+      <div id="strike-modal" className="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+        <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95">
+          <h3 className="text-base font-bold text-slate-900 mb-1">Issue Merchant Warning Strike</h3>
+          <p className="text-xs text-slate-500 mb-4">
+            Formal penalty strike issued against {vendor!.storeName}.
+          </p>
+
+          <form onSubmit={handleIssueStrike} className="space-y-3 text-xs">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Violation Category</label>
+              <select
+                name="violationType"
+                defaultValue="Late Dispatch SLA (&gt; 48h)"
+                className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
+              >
+                <option value="Late Dispatch SLA (&gt; 48h)">Late Dispatch SLA (&gt; 48h)</option>
+                <option value="Counterfeit / Unlicensed Item Claim">Counterfeit / Unlicensed Item Claim</option>
+                <option value="Excessive Out-of-Stock Cancellations">Excessive Out-of-Stock Cancellations</option>
+                <option value="Abusive Customer Communication">Abusive Customer Communication</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Documentation & Notes</label>
+              <textarea
+                name="violationNotes"
+                rows={3}
+                placeholder="Include incident dates and order references..."
+                className="w-full rounded-xl border border-slate-200 p-2.5"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => document.getElementById('strike-modal')?.classList.add('hidden')}
+                className="rounded-full border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-full bg-rose-600 px-4 py-2 font-bold text-white shadow-md hover:bg-rose-700 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Issue Formal Strike
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </WorkspaceLayout>
   );
