@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -10,7 +10,6 @@ import {
   Ban,
   RotateCcw,
   Save,
-  CheckCircle2,
   Package,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
@@ -24,49 +23,45 @@ export const AdminVendorDetailPage: React.FC = () => {
   const { data: vendor, isLoading, error, refetch } = useVendorDetail(id || '');
   const { setVendorStatus, setVendorCommission, issueStrike } = useAdminActions();
 
-  const isPending = setVendorStatus.isLoading || setVendorCommission.isLoading || issueStrike.isLoading;
+  // A rate the console is about to send, until the write lands: the slider needs somewhere to
+  // draft a value, and `vendor.commissionRate` stays the server's answer until then.
+  const [commissionDraft, setCommissionDraft] = useState<number | null>(null);
 
-  const handleSaveCommission = async (e: React.FormEvent) => {
+  const isPending = setVendorStatus.isPending || setVendorCommission.isPending || issueStrike.isPending;
+
+  /** A refused write is shown, not thrown: the console stays on the page it was reading. */
+  const actions = [setVendorStatus, setVendorCommission, issueStrike];
+  const actionError = actions.find((mutation) => mutation.isError)?.error?.message ?? null;
+
+  const handleSaveCommission = (e: React.FormEvent) => {
     e.preventDefault();
     const rate = commissionOverride === 0 ? null : commissionOverride / 100;
-    try {
-      await setVendorCommission.mutateAsync({
-        vendorId: vendor!.id,
-        rate,
-      });
-    } catch (err: any) {
-      throw new Error(err.message || 'Failed to save commission');
-    }
+    setVendorCommission.mutate(
+      { vendorId: vendor!.id, rate },
+      { onSuccess: () => setCommissionDraft(null) },
+    );
   };
 
-  const handleToggleStatus = async (newStatus: 'active' | 'suspended') => {
-    try {
-      await setVendorStatus.mutateAsync({
-        vendorId: vendor!.id,
-        status: newStatus,
-        note: `Status changed by admin`,
-      });
-    } catch (err: any) {
-      throw new Error(err.message || 'Failed to toggle status');
-    }
+  const handleToggleStatus = (newStatus: 'active' | 'suspended') => {
+    setVendorStatus.mutate({
+      vendorId: vendor!.id,
+      status: newStatus,
+      note: `Status changed by admin`,
+    });
   };
 
-  const handleIssueStrike = async (e: React.FormEvent) => {
+  const handleIssueStrike = (e: React.FormEvent) => {
     e.preventDefault();
     const strikeForm = e.target as HTMLFormElement;
     const formData = new FormData(strikeForm);
     const violationType = formData.get('violationType') as string;
     const violationNotes = formData.get('violationNotes') as string;
 
-    try {
-      await issueStrike.mutateAsync({
-        vendorId: vendor!.id,
-        reason: violationType,
-        note: violationNotes,
-      });
-    } catch (err: any) {
-      throw new Error(err.message || 'Failed to issue strike');
-    }
+    issueStrike.mutate({
+      vendorId: vendor!.id,
+      reason: violationType,
+      note: violationNotes,
+    });
   };
 
   if (isLoading) {
@@ -95,13 +90,22 @@ export const AdminVendorDetailPage: React.FC = () => {
     );
   }
 
-  const commissionOverride = vendor!.commissionRate !== null
-    ? vendor!.commissionRate * 100
-    : 0;
+  const commissionOverride = commissionDraft ?? (vendor?.commissionRate !== null && vendor?.commissionRate !== undefined
+    ? vendor.commissionRate * 100
+    : 0);
 
   return (
     <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
       <div className="space-y-6">
+        {actionError && (
+          <div
+            role="alert"
+            data-testid="vendor-action-error"
+            className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-800"
+          >
+            {actionError}
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -371,7 +375,7 @@ export const AdminVendorDetailPage: React.FC = () => {
                     max="20"
                     step="0.5"
                     value={commissionOverride}
-                    onChange={(e) => setCommissionOverride(parseFloat(e.target.value))}
+                    onChange={(e) => setCommissionDraft(parseFloat(e.target.value))}
                     className="w-full accent-[#FF7A1A] cursor-pointer"
                     disabled={isPending}
                   />

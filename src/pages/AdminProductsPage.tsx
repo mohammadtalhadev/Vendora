@@ -41,10 +41,6 @@ export const AdminProductsPage: React.FC = () => {
   const total = queue?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize) || 1;
 
-  const availableCategories = Array.from(new Set(rows.map((r) => r.category).filter(Boolean)));
-
-  const selectedRows = useMemoRowsByIds(rows, selectedIds);
-
   const handleApprove = async (ids: string[]) => {
     if (ids.length === 0) return;
     try {
@@ -518,7 +514,7 @@ export const AdminProductsPage: React.FC = () => {
             <span className="text-slate-300">•</span>
             <button
               type="button"
-              onClick={() => handleOpenBatchRejectModal(selectedIds)}
+              onClick={() => handleOpenRejectModal(selectedIds)}
               disabled={selectedIds.length === 0 || isMutatingModerate}
               className="text-rose-600 hover:underline disabled:opacity-40"
             >
@@ -551,7 +547,7 @@ export const AdminProductsPage: React.FC = () => {
           ) : queueError ? (
             <div className="text-center py-12 text-xs text-slate-700">
               <div className="font-bold mb-2">Failed to load queue.</div>
-              <button type="button" onClick={refetchQueue} className="text-slate-900 underline">Retry</button>
+              <button type="button" onClick={() => refetchQueue()} className="text-slate-900 underline">Retry</button>
             </div>
           ) : (
             <>
@@ -648,8 +644,4 @@ export const AdminProductsPage: React.FC = () => {
       </div>
     </WorkspaceLayout>
   );
-};
-
-const useMemoRowsByIds = (rows: any[], ids: string[]) => {
-  return rows.filter((r) => ids.includes(r.id));
 };

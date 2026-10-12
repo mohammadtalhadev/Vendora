@@ -11,7 +11,7 @@ import { exportToCsv } from '../lib/export-csv';
 import { useVendorQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 
-const AdminVendorsPage: React.FC = () => {
+export const AdminVendorsPage: React.FC = () => {
   const [status, setStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState<number>(1);
@@ -21,15 +21,16 @@ const AdminVendorsPage: React.FC = () => {
   const { data: queue, refetch, isPending, isError } = useVendorQueue({ status, search, page, pageSize });
 
   const filteredVendors = queue?.rows ?? [];
+  const activeOnPage = filteredVendors.filter((vendor) => vendor.status === 'active').length;
+  const activeShare = filteredVendors.length === 0 ? 0 : activeOnPage / filteredVendors.length;
 
   const handleExportMerchants = () => {
     exportToCsv({
       filename: `vendora-merchants-${new Date().toISOString().slice(0, 10)}.csv`,
       columns: [
         { header: 'Store Name', key: 'storeName' as const },
-        { header: 'Category', key: 'tier' as const },
+        { header: 'Tier', key: 'tier' as const },
         { header: 'Subdomain', key: 'slug' as const },
-        { header: 'Email', key: 'email' as const },
         { header: 'KYC Status', key: 'kyc' as const },
         { header: 'Gross (30D)', key: 'gross' as const },
         { header: 'Commission', key: 'commission' as const },
@@ -39,7 +40,6 @@ const AdminVendorsPage: React.FC = () => {
         storeName: v.storeName,
         tier: v.tier.toUpperCase(),
         slug: v.slug,
-        email: v.email,
         kyc: v.kyc.toUpperCase(),
         gross: v.gross,
         commission: v.commission,
@@ -50,12 +50,6 @@ const AdminVendorsPage: React.FC = () => {
 
   const handleSetVendorStatus = (vendorId: string, status: 'active' | 'suspended') => {
     actions.setVendorStatus.mutate({ vendorId, status, note: 'Action via admin console' });
-  };
-
-  const handleReviewApplication = (applicationId: string, decision: 'approved' | 'rejected' | 'under_review') => {
-    // This RPC expects a valid application ID; the queue returns applicants without stores in pending
-    // For simplicity, we reuse the vendor id when no distinct app id exists
-    actions.reviewApplication.mutate({ applicationId, decision, note: 'Action via admin console' });
   };
 
   if (isPending) {
@@ -135,10 +129,20 @@ const AdminVendorsPage: React.FC = () => {
               <span className="text-slate-300">•</span>
               <span><strong className="text-slate-800">{queue.pending}</strong> pending</span>
             </div>
+            {/* The split is over the page on screen, and says so: `rows` is one page, `total` is the queue. */}
             <div className="mt-4 flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-              <div className="bg-slate-900" style={{ width: `${queue.total > 0 ? ((queue.rows.filter(v => v.status === 'active').length / queue.total) * 100).toFixed(0) : 0}%` }} />
-              <div className="bg-[#FF7A1A]" style={{ width: `${100 - (queue.total > 0 ? ((queue.rows.filter(v => v.status === 'active').length / queue.total) * 100).toFixed(0) : 0)}%` }} />
+              <div
+                className="bg-slate-900"
+                style={{ width: `${activeShare * 100}%` }}
+              />
+              <div
+                className="bg-[#FF7A1A]"
+                style={{ width: `${(1 - activeShare) * 100}%` }}
+              />
             </div>
+            <p className="mt-1 text-[11px] text-slate-400">
+              {activeOnPage} of the {queue.rows.length} stores on this page are active.
+            </p>
           </div>
 
           {/* Card 2: Pending Verification */}
