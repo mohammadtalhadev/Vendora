@@ -82,3 +82,57 @@ export async function fetchAuditQueue(
   if (error) throw rpcFailed('Failed to load the audit trail', error.message);
   return mapQueue(data);
 }
+
+/**
+ * An announcement the platform sent. The rows it wrote are other people's notices, which RLS
+ * keeps out of the sender's reads, so `broadcast_notification()`'s audit record is the only
+ * thing the console can honestly list.
+ */
+export interface BroadcastRecord {
+  id: string;
+  actorName: string;
+  audience: string;
+  type: string;
+  title: string;
+  message: string;
+  href: string | null;
+  /** Accounts the announcement reached, as the RPC counted them. */
+  recipients: number;
+  createdAt: string;
+}
+
+export interface BroadcastLog {
+  page: number;
+  pageSize: number;
+  total: number;
+  rows: BroadcastRecord[];
+}
+
+export async function fetchBroadcastLog(
+  params: { page?: number; pageSize?: number } = {},
+  signal?: AbortSignal,
+): Promise<BroadcastLog> {
+  const queue = await fetchAuditQueue(
+    { action: 'notification.broadcast', page: params.page ?? 1, pageSize: params.pageSize ?? 10 },
+    signal,
+  );
+  return {
+    page: queue.page,
+    pageSize: queue.pageSize,
+    total: queue.total,
+    rows: queue.rows.map((row) => {
+      const after = asRecord(row.after);
+      return {
+        id: row.id,
+        actorName: row.actorName,
+        audience: text(after.audience),
+        type: text(after.type),
+        title: text(after.title),
+        message: text(after.message),
+        href: after.href === null || after.href === undefined ? null : text(after.href),
+        recipients: num(after.recipients),
+        createdAt: row.createdAt,
+      };
+    }),
+  };
+}

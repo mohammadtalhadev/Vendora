@@ -5,7 +5,7 @@ vi.mock('../../../lib/supabase', async () => {
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
 });
 
-import { fetchAuditQueue } from './audit';
+import { fetchAuditQueue, fetchBroadcastLog } from './audit';
 import { auditLogRow, profileRow, supabaseDouble } from '../../../test/supabase-double';
 
 const ADMIN = 'admin-1';
@@ -100,5 +100,60 @@ describe('fetchAuditQueue', () => {
     supabaseDouble.failRpc('permission denied for function admin_audit_queue');
 
     await expect(fetchAuditQueue()).rejects.toThrow(/failed to load the audit trail/i);
+  });
+});
+
+describe('fetchBroadcastLog', () => {
+  it('asks the trail for the announcements the platform sent', async () => {
+    await fetchBroadcastLog({ page: 2, pageSize: 5 });
+
+    expect(supabaseDouble.rpcCalls.at(-1)?.args).toMatchObject({
+      p_action: 'notification.broadcast', p_page: 2, p_page_size: 5,
+    });
+  });
+
+  it('reads the audience and the reach back out of the record the RPC wrote', async () => {
+    supabaseDouble.seedAuditLog(auditLogRow({
+      id: 'bc-1',
+      action: 'notification.broadcast',
+      entity_type: 'broadcast',
+      entity_id: null,
+      after_data: {
+        audience: 'vendor', type: 'promotion', title: 'Winter sale opens Friday',
+        message: 'Submit your offers by Thursday midnight.', href: '/vendor/promotions', recipients: 42,
+      },
+    }));
+
+    const log = await fetchBroadcastLog();
+
+    expect(log.total).toBe(1);
+    expect(log.rows[0]).toMatchObject({
+      id: 'bc-1',
+      audience: 'vendor',
+      type: 'promotion',
+      title: 'Winter sale opens Friday',
+      message: 'Submit your offers by Thursday midnight.',
+      href: '/vendor/promotions',
+      recipients: 42,
+    });
+  });
+
+  it('leaves an announcement with no link as no link, not an empty path', async () => {
+    supabaseDouble.seedAuditLog(auditLogRow({
+      id: 'bc-2',
+      action: 'notification.broadcast',
+      after_data: { audience: 'all', type: 'system', title: 'Maintenance', message: '', recipients: 7 },
+    }));
+
+    const { rows } = await fetchBroadcastLog();
+
+    expect(rows[0]?.href).toBeNull();
+    expect(rows[0]?.recipients).toBe(7);
+  });
+
+  it('reports a failed read as a failed read, not as a quiet log', async () => {
+    supabaseDouble.failRpc('permission denied for function admin_audit_queue');
+
+    await expect(fetchBroadcastLog()).rejects.toThrow(/failed to load the audit trail/i);
   });
 });

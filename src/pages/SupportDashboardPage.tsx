@@ -13,6 +13,7 @@ import {
   useSupportAgents,
 } from '../features/support/hooks/useSupportQueries';
 import { useSupportActions } from '../features/support/hooks/useSupportActions';
+import { useSupportLive } from '../features/support/hooks/useLive';
 
 /** Which pool the queue read asks Postgres for. The tabs are filters, not client-side slices. */
 const POOL: Record<QueueFilterTab, { status: string; unassigned?: boolean; mine?: boolean }> = {
@@ -42,6 +43,7 @@ export const SupportDashboardPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const pool = POOL[tab];
+  useSupportLive();
   const queue = useDisputeQueue({
     status: pool.status,
     search: appliedSearch,

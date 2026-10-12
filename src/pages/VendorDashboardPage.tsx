@@ -28,6 +28,7 @@ import { exportToCsv } from '../lib/export-csv';
 import type { SubOrderStatus, Product } from '../types/domain';
 import { useVendorData } from '../features/vendor/hooks/useVendorData';
 import { useVendorDashboard } from '../features/vendor/hooks/useVendorDashboard';
+import { useVendorLive } from '../features/vendor/hooks/useLive';
 import { useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
 import { useShippingSettings } from '../features/vendor/hooks/useVendorStore';
 
@@ -69,6 +70,7 @@ export const VendorDashboardPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const dashboard = useVendorDashboard();
+  useVendorLive();
   const earnings = useVendorEarnings(RANGE_MONTHS[salesTimeRange]);
   const shipping = useShippingSettings();
   const tiles = dashboard.data;

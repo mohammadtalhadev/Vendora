@@ -2035,6 +2035,16 @@ export type Database = {
       }
       Returns: Json
     },
+    "broadcast_notification": {
+      Args: {
+        "p_role_target": string,
+        "p_type": "order_status" | "system" | "promotion" | "payout" | "dispute" | "review" | "security",
+        "p_title": string,
+        "p_message": string,
+        "p_href"?: string | null
+      }
+      Returns: number
+    },
     "cart_lines_for": {
       Args: {
         "p_uid": string
@@ -2135,6 +2145,16 @@ export type Database = {
       }
       Returns: boolean
     },
+    "notify_user": {
+      Args: {
+        "p_user_id": string,
+        "p_type": "order_status" | "system" | "promotion" | "payout" | "dispute" | "review" | "security",
+        "p_title": string,
+        "p_message": string,
+        "p_href"?: string | null
+      }
+      Returns: string
+    },
     "order_has_vendor_package": {
       Args: {
         "p_order": string
@@ -2231,6 +2251,12 @@ export type Database = {
         "p_action": string
       }
       Returns: Json
+    },
+    "store_owner_id": {
+      Args: {
+        "p_vendor_id": string
+      }
+      Returns: string
     },
     "support_dispute_queue": {
       Args: {

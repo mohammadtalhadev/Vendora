@@ -7,7 +7,7 @@ import { fetchUserQueue } from '../api/users';
 import { fetchAdminOrderDetail, fetchAdminOrderQueue } from '../api/orders';
 import { fetchCategoryTree } from '../api/categories';
 import { fetchCommissionOverview } from '../api/commission';
-import { fetchAuditQueue } from '../api/audit';
+import { fetchAuditQueue, fetchBroadcastLog } from '../api/audit';
 import { fetchReportSummary } from '../api/reports';
 import { fetchLogisticsBoard } from '../api/logistics';
 import { fetchPlatformSettings } from '../api/settings';
@@ -155,6 +155,21 @@ export function useAuditQueue(params: {
   return useQuery({
     queryKey: adminKeys.audit(userId, params),
     queryFn: ({ signal }) => fetchAuditQueue(params, signal),
+    enabled: Boolean(userId),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * The announcements this console sent, newest first. `audit_logs` is not in the realtime
+ * publication, so the list refreshes when a broadcast of this browser's succeeds rather than
+ * pretending to stream.
+ */
+export function useBroadcastLog(params: { page?: number; pageSize?: number } = {}) {
+  const userId = useAdminScope();
+  return useQuery({
+    queryKey: adminKeys.broadcasts(userId, params),
+    queryFn: ({ signal }) => fetchBroadcastLog(params, signal),
     enabled: Boolean(userId),
     placeholderData: keepPreviousData,
   });

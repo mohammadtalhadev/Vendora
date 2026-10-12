@@ -7,6 +7,7 @@ import {
   issueDeliveryCode,
 } from '../api/orders';
 import { useAuthStore } from '../../../store/auth-store';
+import { useRealtimeWatch } from '../../../hooks/useRealtime';
 import type { SubOrderStatus } from '../../../types/domain';
 
 export const orderKeys = {
@@ -16,9 +17,27 @@ export const orderKeys = {
   downloads: () => ['orders', 'downloads'] as const,
 };
 
+/**
+ * A buyer's own history is the one screen that should never need a refresh. Every status move is a
+ * row in `sub_orders`, `orders` or `deliveries`, and Supabase applies the subscriber's RLS to a
+ * change before delivering it - so an unfiltered watch still only carries the packages this
+ * account could select, and it only ever says "stale". The tracking data comes back from Postgres.
+ */
+function useOrderLive(): void {
+  const queryClient = useQueryClient();
+  const stale = () => {
+    void queryClient.invalidateQueries({ queryKey: orderKeys.all });
+  };
+
+  useRealtimeWatch({ table: 'orders', onChange: stale });
+  useRealtimeWatch({ table: 'sub_orders', onChange: stale });
+  useRealtimeWatch({ table: 'deliveries', onChange: stale });
+}
+
 /** The signed-in customer's order history; a guest has no rows to read. */
 export function useOrders() {
   const userId = useAuthStore((s) => s.user?.id);
+  useOrderLive();
 
   return useQuery({
     queryKey: orderKeys.lists(userId),

@@ -32,6 +32,9 @@ export const adminKeys = {
       : (['admin', userId ?? 'anon', 'commission', days] as const),
   audit: (userId: string | null | undefined, params: Record<string, unknown>) =>
     ['admin', userId ?? 'anon', 'audit', params] as const,
+  /** The announcements this console sent: the same audit read, narrowed and typed. */
+  broadcasts: (userId: string | null | undefined, params: Record<string, unknown>) =>
+    ['admin', userId ?? 'anon', 'broadcasts', params] as const,
   reports: (userId: string | null | undefined, params: Record<string, unknown>) =>
     ['admin', userId ?? 'anon', 'reports', params] as const,
   logistics: (userId: string | null | undefined) =>

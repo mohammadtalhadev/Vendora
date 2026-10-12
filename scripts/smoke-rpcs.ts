@@ -959,7 +959,7 @@ const notified = (await q(
 ok('support can notify a buyer', !!notified);
 await as('authenticated', CU);
 ok('the buyer reads the notice addressed to them',
-  (await q(`select count(*)::int c from notifications where title=$1`, ['Your return was approved']))[0].c === 1);
+  (await q(`select count(*)::int c from notifications where id=$1`, [notified]))[0].c === 1);
 await as('authenticated', SUPPORT);
 const found = (await q(`select support_lookup_orders('customer@demo.test', 30) r`))[0].r;
 ok('support can look up a buyer’s orders by email', Array.isArray(found) && found.length >= 1);
@@ -1039,6 +1039,200 @@ const closed = (await q(`select verify_delivery($1,'4821') r`, [drop]))[0].r;
 ok('the handover code closes the delivery', closed.status === 'delivered' &&
   (await q(`select status from sub_orders where id=$1`, [riderPkg]))[0].status === 'delivered' &&
   !!((await q(`select proof_of_delivery from deliveries where id=$1`, [drop]))[0].proof_of_delivery));
+
+console.log('\n[notifications] the database raises the notice, not the browser');
+// A notice is readable only by its recipient, so the counts below run as the table owner. They
+// also count only from this point on: earlier sections opened disputes and moved packages, and
+// those raised their own notices through the very triggers being tested here.
+const noticesSince = String((await q('select now()::text t'))[0].t);
+const titleFor = async (userId: string, title: string) => {
+  await as('postgres');
+  return (await q(
+    `select count(*)::int c from notifications where user_id=$1 and title=$2 and created_at > $3`,
+    [userId, title, noticesSince],
+  ))[0].c;
+};
+const noticeCount = async () => {
+  await as('postgres');
+  return (await q('select count(*)::int c from notifications'))[0].c;
+};
+
+await as('postgres');
+const nOrder = (await q(
+  `insert into orders (customer_id, customer_email) values ($1,'notified@demo.test') returning id`, [CU],
+))[0].id;
+const nPkg = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,50,5,'placed') returning id`, [nOrder, STORE],
+))[0].id;
+const nDelivered = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,20,2,'delivered') returning id`, [nOrder, STORE],
+))[0].id;
+
+// Opening a dispute is the store's problem the moment the buyer files it - and the buyer files it
+// through their own row policy, not an RPC. That is why the notices hang off the tables.
+await as('authenticated', CU);
+const nCase = (await q(
+  `insert into disputes (sub_order_id, order_group_id, customer_id, customer_name, vendor_id, vendor_name, reason, status)
+   values ($1,$2,$3,'Sarah Customer',$4,'Tech Store','Item arrived broken','open') returning id`,
+  [nPkg, nOrder, CU, STORE],
+))[0].id;
+ok('opening a dispute tells the store that owns it', (await titleFor(VENDOR, 'A dispute was opened on your store')) === 1);
+
+await as('authenticated', SUPPORT);
+await q(`select assign_dispute($1,$2)`, [nCase, SUPPORT2]);
+ok('handing a case over tells the agent receiving it', (await titleFor(SUPPORT2, 'A dispute was assigned to you')) === 1);
+ok('and not the agent who handed it over', (await titleFor(SUPPORT, 'A dispute was assigned to you')) === 0);
+
+await as('authenticated', SUPPORT);
+await q(`select add_dispute_message($1,'The courier label is wrong on this parcel.')`, [nCase]);
+ok('a staff reply tells the buyer', (await titleFor(CU, 'Support replied to your dispute')) === 1);
+const notesBefore = await noticeCount();
+await as('authenticated', SUPPORT);
+await q(`select add_dispute_message($1,'Internal: the warehouse picked the wrong SKU.',true)`, [nCase]);
+ok('an internal note tells nobody outside the desk', (await noticeCount()) === notesBefore);
+
+// Returns: the request is the store's, the approval is the buyer's.
+await as('authenticated', CU);
+await q(`select advance_sub_order_status($1,'return_requested','Arrived in the wrong size')`, [nDelivered]);
+ok('a return request tells the store', (await titleFor(VENDOR, 'A return was requested')) === 1);
+await as('authenticated', SUPPORT);
+await q(`select decide_return($1,'approve',null,'Send it back with the RMA code')`, [nDelivered]);
+ok('the approval tells the buyer, who has to post the parcel',
+  (await titleFor(CU, 'Your return was approved')) === 1);
+
+// The road belongs to the buyer's attention.
+await as('authenticated', ADMIN);
+const nDrop = (await q(
+  `insert into deliveries (sub_order_id, rider_id, status, handover_code_hash)
+   values ($1,$2,'assigned',public.hash_delivery_code('7392')) returning id`, [nPkg, RPID],
+))[0].id;
+await q(`select assign_rider($1,$2)`, [nPkg, RPID]);
+await as('authenticated', VENDOR);
+await q(`select advance_sub_order_status($1,'confirmed')`, [nPkg]);
+await q(`select advance_sub_order_status($1,'packed')`, [nPkg]);
+await q(`select advance_sub_order_status($1,'ready_for_pickup')`, [nPkg]);
+await as('authenticated', RIDER);
+await q(`select advance_sub_order_status($1,'shipped')`, [nPkg]);
+ok('collection tells the buyer the parcel is coming', (await titleFor(CU, 'Your package is on the way')) === 1);
+await as('authenticated', RIDER);
+await q(`select advance_sub_order_status($1,'out_for_delivery')`, [nPkg]);
+ok('and the last leg tells them to have the code ready',
+  (await titleFor(CU, 'Your package is arriving today')) === 1);
+await as('authenticated', RIDER);
+await q(`select verify_delivery($1,'7392')`, [nDrop]);
+ok('the handover tells them it arrived', (await titleFor(CU, 'Your package was delivered')) === 1);
+ok('and the notice carries the route it points at',
+  (await q(`select href from notifications where user_id=$1 and title='Your package was delivered'
+              and created_at > $2 order by created_at desc limit 1`, [CU, noticesSince]))[0].href
+    === '/orders/' + nOrder);
+
+// Standing and money land on whoever owns the store.
+await as('authenticated', ADMIN);
+await q(`select admin_issue_strike($1,'Counterfeit listing','Third takedown')`, [STORE]);
+ok('a strike tells the store it was issued', (await titleFor(VENDOR, 'A strike was issued against your store')) === 1);
+const nPayout = (await q(
+  `insert into payouts (vendor_id, amount, status, payment_reference)
+   values ($1,412.50,'completed','PAY-88') returning id`, [STORE],
+))[0].id;
+await q(`update payouts set status='processing' where id=$1`, [nPayout]);
+await q(`update payouts set status='completed' where id=$1`, [nPayout]);
+const payoutNote = String((await q(
+  `select message from notifications where user_id=$1 and type='payout' order by created_at desc limit 1`, [VENDOR],
+))[0].message);
+ok('a completed payout tells the seller the amount and the reference',
+  payoutNote.includes('412.50') && payoutNote.includes('PAY-88'));
+
+// A listing's fate is the seller's news, with the reason when it went badly.
+const nListing = (await q(
+  `insert into products (title, slug, category_id, price, seller_id, status)
+   values ('Notified Gadget','notified-gadget',$1::uuid,15,$2,'pending_review') returning id`, [CAT, STORE],
+))[0].id;
+await as('authenticated', ADMIN);
+await q(`select moderate_product($1,'rejected','Brand name is reserved')`, [nListing]);
+await as('postgres');
+const rejected = String((await q(
+  `select message from notifications where user_id=$1 and title='Your listing was not approved'
+     order by created_at desc limit 1`, [VENDOR],
+))[0].message);
+ok('a rejected listing tells the seller, and says why', rejected.includes('Brand name is reserved'));
+
+// Applications tell the applicant once per decision, not once per save.
+const nApp = (await q(
+  `insert into vendor_applications (user_id, proposed_store_name, proposed_slug, status)
+   values ($1,'Notified Store','notified-store','pending') returning id`, [CU2],
+))[0].id;
+await as('authenticated', ADMIN);
+await q(`select review_vendor_application($1,'approved','Welcome aboard')`, [nApp]);
+ok('an approved application tells the applicant', (await titleFor(CU2, 'Your store was approved')) === 1);
+await as('postgres');
+const approvedRoles = String((await q(`select roles::text r from profiles where id=$1`, [CU2]))[0].r);
+ok('and an approval really does make the account a seller', approvedRoles.includes('vendor'));
+await as('authenticated', ADMIN);
+await q(`select review_vendor_application($1,'approved','Welcome aboard')`, [nApp]);
+await as('postgres');
+ok('and approving the same application twice does not list the role twice',
+  String((await q(`select roles::text r from profiles where id=$1`, [CU2]))[0].r).split('vendor').length === 2);
+await q(`update vendor_applications set status='approved' where id=$1`, [nApp]);
+ok('and re-saving the same decision does not tell them twice',
+  (await titleFor(CU2, 'Your store was approved')) === 1);
+
+// Broadcasts fan out one row each, because `read_at` is a per-person fact.
+await as('postgres');
+const admins = (await q(`select count(*)::int c from profiles where roles @> array['admin']::user_role[]`))[0].c;
+await as('authenticated', ADMIN);
+const sent = Number((await q(
+  `select broadcast_notification('admin','system','Planned maintenance','Read-only from 02:00 UTC.',null) n`,
+))[0].n);
+ok('a broadcast writes one row per account in the audience', sent === admins && admins >= 1);
+await as('postgres');
+ok('and nobody outside it receives it',
+  (await q(`select count(*)::int c from notifications where title='Planned maintenance'
+              and not (user_id = any(array(select id from profiles where roles @> array['admin']::user_role[])))`))[0].c === 0);
+// The sender cannot read the rows it wrote - they belong to other trays - so the audit row is
+// the only surviving record of the announcement.
+const bcastLog = String((await q(
+  `select after_data::text a from audit_logs where action='notification.broadcast'
+     order by created_at desc limit 1`,
+))[0].a);
+ok('and the broadcast leaves a record naming its audience and reach',
+  bcastLog.includes('admin') && bcastLog.includes(`"recipients": ${sent}`));
+const myCopy = (await q(
+  `select id from notifications where title='Planned maintenance' and user_id=$1 limit 1`, [ADMIN],
+))[0].id;
+await as('authenticated', ADMIN);
+await q(`update notifications set read_at=now() where id=$1`, [myCopy]);
+await as('postgres');
+ok('reading one recipient’s copy leaves every other copy unread',
+  (await q(`select count(*)::int c from notifications where title='Planned maintenance' and read_at is null`))[0].c
+    === sent - 1);
+await as('authenticated', ADMIN);
+await expectThrow('a broadcast needs an audience the platform knows',
+  () => q(`select broadcast_notification('martians','system','x','y',null)`), 'unknown notification audience');
+await expectThrow('and a title',
+  () => q(`select broadcast_notification('admin','system','   ','y',null)`), 'title is required');
+await as('authenticated', CU);
+await expectThrow('a customer cannot broadcast',
+  () => q(`select broadcast_notification('admin','system','x','y',null)`), 'only staff can');
+await as('postgres');
+ok('and a broadcast that never happened leaves no record',
+  (await q(`select count(*)::int c from audit_logs where action='notification.broadcast'`))[0].c === 1);
+
+// A notice is the recipient's to dismiss, and nobody else's.
+await as('postgres');
+const myNotice = (await q(`select id from notifications where user_id=$1 order by created_at desc limit 1`, [CU]))[0].id;
+const othersNotice = (await q(`select id from notifications where user_id=$1 limit 1`, [VENDOR]))[0].id;
+await as('authenticated', CU);
+await q(`delete from notifications where id=$1`, [myNotice]);
+ok('the recipient can dismiss their own notice',
+  (await q(`select count(*)::int c from notifications where id=$1`, [myNotice]))[0].c === 0);
+// RLS filters rather than refuses a delete it does not own, so the proof is that the row is
+// still there - not an error message.
+await q(`delete from notifications where id=$1`, [othersNotice]);
+await as('postgres');
+ok('and cannot dismiss someone else’s',
+  (await q(`select count(*)::int c from notifications where id=$1`, [othersNotice]))[0].c === 1);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();

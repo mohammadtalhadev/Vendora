@@ -60,6 +60,9 @@ const OPEN_DELIVERY_STATUSES = ['placed', 'confirmed', 'packed', 'ready_for_pick
 /** `public.user_role`: `admin_set_user_roles` checks each label against this enum. */
 const USER_ROLES = ['customer', 'vendor', 'admin', 'support', 'rider'];
 
+/** The audiences `broadcast_notification()` will address; anything else it refuses. */
+const NOTIFICATION_AUDIENCES = ['all', 'customer', 'vendor', 'support', 'admin', 'rider'];
+
 /** The moderation states `admin_moderate_products` will write. */
 const MODERATION_DECISIONS = ['approved', 'rejected', 'archived', 'pending_review'];
 
@@ -279,6 +282,34 @@ export function createSupabaseDouble() {
     confirmEmail: false,
   };
   const listeners = new Set<Listener>();
+
+  /** A `postgres_changes` binding, as `useRealtimeWatch` registers one. */
+  interface RealtimeBinding {
+    table: string;
+    filter: string | null;
+    callback: (payload: Row) => void;
+  }
+
+  /** The channels the components under test have opened, so a test can raise an event on them. */
+  const realtimeChannels: Array<{ name: string; bindings: RealtimeBinding[] }> = [];
+
+  /** PostgREST's `col=eq.value` subscription filter. */
+  const matchesRealtimeFilter = (filter: string, record: Row | null): boolean => {
+    const parsed = /^(\w+)=eq\.(.+)$/s.exec(filter);
+    if (parsed === null) return true;
+    return String(record?.[parsed[1]] ?? '') === parsed[2];
+  };
+
+  /** Delivers a change to every binding that asked for that table, as the publication would. */
+  const emitRealtime = (table: string, payload: Row) => {
+    realtimeChannels.forEach((channel) => {
+      channel.bindings.forEach((binding) => {
+        if (binding.table !== table) return;
+        if (binding.filter !== null && !matchesRealtimeFilter(binding.filter, plain(payload.new))) return;
+        binding.callback(payload);
+      });
+    });
+  };
   let syntheticId = 0;
   let rpcError: DoubleError | null = null;
   const rpcCalls: Array<{ fn: string; args: Row }> = [];
@@ -369,6 +400,8 @@ export function createSupabaseDouble() {
     const builder = {
       selected: '' as string,
       wantCount: false,
+      /** `select('*', { count: 'exact', head: true })`: a count over the filters, no rows. */
+      head: false,
       filters: [] as Filter[],
       orders: [] as Order[],
       take: null as number | null,
@@ -379,9 +412,15 @@ export function createSupabaseDouble() {
       /** A rejected write, reported when the chain is awaited, as PostgREST reports it. */
       writeError: null as DoubleError | null,
       pending: null as { kind: 'update' | 'delete'; patch: Row | null } | null,
-      select(columns: string, options?: { count?: string }) {
+      select(columns: string, options?: { count?: string; head?: boolean }) {
         this.selected = columns;
         this.wantCount = options?.count !== undefined;
+        this.head = options?.head === true;
+        return this;
+      },
+      /** PostgREST's `col=is.null`, which is how an unread notice is matched. */
+      is(column: string, value: unknown) {
+        this.filters.push((row) => (row[column] ?? null) === value);
         return this;
       },
       eq(column: string, value: unknown) {
@@ -477,6 +516,10 @@ export function createSupabaseDouble() {
           if (!this.selected) return { data: null, error: null, count: null };
           const affected = this.written.map((row) => this.withEmbeds(row));
           return { data: affected, error: null, count: this.wantCount ? affected.length : null };
+        }
+        if (this.head) {
+          // A head read asks only for the count, so the rows stay unreturned, as PostgREST leaves them.
+          return { data: null, error: null, count: this.filtered().length };
         }
         return { data: this.matched(), error: null, count: this.wantCount ? this.filtered().length : null };
       },
@@ -607,7 +650,7 @@ export function createSupabaseDouble() {
   const audit = (
     action: string,
     entityType: string,
-    entityId: string,
+    entityId: string | null,
     before: Row | null = null,
     after: Row | null = null,
   ): Row => {
@@ -1873,6 +1916,49 @@ export function createSupabaseDouble() {
     }
 
     /**
+     * `broadcast_notification()`: staff address a role and every account carrying it gets its own
+     * row, because `read_at` is a per-person fact. The sender cannot read those rows back - they
+     * belong to other trays - so the audit record is what the console lists as the delivery log.
+     */
+    if (fn === 'broadcast_notification') {
+      const denied = refuseStaff('broadcast a notification');
+      if (denied) return denied;
+      const title = String(args.p_title ?? '').trim();
+      if (title === '') return { data: null, error: { message: 'Notification title is required' } };
+      const audience = String(args.p_role_target ?? '');
+      if (!NOTIFICATION_AUDIENCES.includes(audience)) {
+        return { data: null, error: { message: `Unknown notification audience ${audience || '<null>'}` } };
+      }
+      const reached = tables.profiles.filter(
+        (profile) => audience === 'all' || asList(profile.roles).includes(audience),
+      );
+      const stamp = new Date().toISOString();
+      const body = String(args.p_message ?? '').trim().slice(0, 500);
+      reached.forEach((profile) => {
+        tables.notifications.push({
+          id: `notification-${++syntheticId}`,
+          user_id: profile.id,
+          role_target: audience,
+          type: String(args.p_type ?? 'system'),
+          title: title.slice(0, 120),
+          message: body,
+          href: args.p_href ?? null,
+          read_at: null,
+          created_at: stamp,
+        });
+      });
+      audit('notification.broadcast', 'broadcast', null, null, {
+        audience,
+        type: String(args.p_type ?? 'system'),
+        title: title.slice(0, 120),
+        message: body,
+        href: args.p_href ?? null,
+        recipients: reached.length,
+      });
+      return { data: reached.length, error: null };
+    }
+
+    /**
      * `rider_delivery_board()`: only the signed-in rider's own parcels. A caller without a
      * rider profile is refused rather than shown an empty route.
      */
@@ -2362,6 +2448,44 @@ export function createSupabaseDouble() {
     listeners,
     rpcCalls,
     emit,
+    realtimeChannels,
+    emitRealtime,
+    /** `supabase.channel(name).on('postgres_changes', …).subscribe()`, the way a hook uses it. */
+    channel(name: string) {
+      const channel: {
+        name: string;
+        bindings: RealtimeBinding[];
+        on: (type: string, params: Row, callback: (payload: Row) => void) => typeof channel;
+        subscribe: () => typeof channel;
+        unsubscribe: () => Promise<void>;
+      } = {
+        name,
+        bindings: [],
+        on(type: string, params: Row, callback: (payload: Row) => void) {
+          if (type === 'postgres_changes') {
+            channel.bindings.push({
+              table: String(params?.table ?? ''),
+              filter: params?.filter === undefined || params?.filter === null ? null : String(params.filter),
+              callback,
+            });
+          }
+          return channel;
+        },
+        subscribe() {
+          return channel;
+        },
+        unsubscribe() {
+          return double.removeChannel(channel);
+        },
+      };
+      realtimeChannels.push(channel);
+      return channel;
+    },
+    removeChannel(target: unknown) {
+      const at = realtimeChannels.indexOf(target as { name: string; bindings: RealtimeBinding[] });
+      if (at >= 0) realtimeChannels.splice(at, 1);
+      return Promise.resolve();
+    },
     from: vi.fn((table: string) => query(table)),
     /** Only the RPCs the data layer calls are implemented; the rest fail loudly. */
     rpc: chainableRpc(vi.fn(async (fn: string, args: Row = {}) => {
@@ -2749,6 +2873,7 @@ export function createSupabaseDouble() {
       adminQueueAggregates = {};
       seedSingletons();
       listeners.clear();
+      realtimeChannels.length = 0;
       syntheticId = 0;
       double.from.mockClear();
       double.rpc.mockClear();

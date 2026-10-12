@@ -23,6 +23,7 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { useAdminDashboard } from '../features/admin/hooks/useAdminQueries';
+import { useAdminLive } from '../features/admin/hooks/useLive';
 import { exportToCsv } from '../lib/export-csv';
 
 const PERIOD_DAYS: Record<'30d' | '3m' | '6m' | '1y', number> = {
@@ -51,6 +52,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
 
   const days = PERIOD_DAYS[selectedPeriod];
+  useAdminLive();
   const dashboard = useAdminDashboard(days);
   const data = dashboard.data;
 

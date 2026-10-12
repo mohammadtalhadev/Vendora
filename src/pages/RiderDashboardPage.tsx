@@ -24,6 +24,7 @@ import {
   type DeliveryIssueReason,
 } from '../features/rider/components/ReportIssueModal';
 import { useRiderActions, useRiderBoard } from '../features/rider/hooks/useRider';
+import { useRiderLive } from '../features/rider/hooks/useLive';
 import type { RiderAvailability, RiderDrop } from '../features/rider/api/board';
 import { cn } from '../lib/utils';
 
@@ -349,6 +350,7 @@ const BoardError: React.FC<{ message: string; retrying: boolean; onRetry: () => 
 );
 
 export const RiderDashboardPage: React.FC = () => {
+  useRiderLive();
   const board = useRiderBoard();
   const actions = useRiderActions();
 
