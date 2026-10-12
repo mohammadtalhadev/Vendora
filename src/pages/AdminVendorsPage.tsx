@@ -16,9 +16,11 @@ export const AdminVendorsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(12);
+  // A decision without a reason is a mystery to the applicant, so each row drafts its own note.
+  const [applicationNotes, setApplicationNotes] = useState<Record<string, string>>({});
 
   const actions = useAdminActions();
-  const { data: queue, refetch, isPending, isError } = useVendorQueue({ status, search, page, pageSize });
+  const { data: queue, refetch, isPending, isError, error } = useVendorQueue({ status, search, page, pageSize });
 
   const filteredVendors = queue?.rows ?? [];
   const activeOnPage = filteredVendors.filter((vendor) => vendor.status === 'active').length;
@@ -69,9 +71,14 @@ export const AdminVendorsPage: React.FC = () => {
     return (
       <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Vendor Management" sidebar={<AdminNav />}>
         <div className="space-y-6">
-          <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          {/* The database's own reason, so the platform knows whether this is a permission
+              problem or an empty table - "no merchants" and "cannot read merchants" are not
+              the same message. */}
+          <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
             <div className="font-semibold mb-1">Failed to load vendors</div>
-            <div className="mb-3">Database query returned an error</div>
+            <div className="mb-3 text-xs">
+              {error instanceof Error ? error.message : 'The merchant queue could not be read.'}
+            </div>
             <button
               onClick={() => void refetch()}
               className="inline-flex items-center rounded bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 cursor-pointer"
@@ -149,8 +156,6 @@ export const AdminVendorsPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>PENDING VERIFICATION</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
-              </div>
             </div>
             <div className="mt-3 flex items-center gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">{queue.pending}</span>
@@ -158,58 +163,127 @@ export const AdminVendorsPage: React.FC = () => {
                 {queue.pending > 0 ? 'NEEDS REVIEW' : 'ALL CLEAR'}
               </span>
             </div>
-            <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-              <span>Avg. 18h compliance review window</span>
-            </div>
-            <div className="mt-4 flex items-center justify-between text-[11px] text-slate-500">
-              <span>SLA Met (100%)</span>
-              <span className="font-bold text-amber-700">{queue.suspended} suspended</span>
-            </div>
-            <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full bg-amber-500 rounded-full" style={{ width: queue.pending > 0 ? '40%' : '100%' }} />
-            </div>
+            {/* No invented review SLA: the only date the applications table carries is when each was filed. */}
+            <p className="mt-1 text-xs text-slate-500">
+              {queue.applicants.length > 0
+                ? `Oldest filed ${new Date(queue.applicants[0].submittedAt).toLocaleDateString()}.`
+                : 'Nothing is waiting on a decision.'}
+            </p>
+            <p className="mt-2 text-[11px] text-slate-500">{queue.suspended} suspended store{queue.suspended === 1 ? '' : 's'}.</p>
           </div>
+
+          {/* Applications with no store row yet: the list `pending` counts, ready to decide. */}
+          {queue.applicants.length > 0 && (
+            <div className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
+              <div className="border-b border-slate-100 px-5 py-3">
+                <h2 className="text-sm font-bold text-slate-900">Applications awaiting a decision</h2>
+                <p className="text-xs text-slate-500">
+                  Approving creates the store and grants the seller role; declining records the reason on the account.
+                </p>
+              </div>
+              <ul className="divide-y divide-slate-100">
+                {queue.applicants.map((applicant) => (
+                  <li key={applicant.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900">{applicant.storeName}</p>
+                      <p className="text-[11px] text-slate-500">
+                        {applicant.businessType} · {applicant.contactEmail} · filed{' '}
+                        {new Date(applicant.submittedAt).toLocaleDateString()}
+                        {applicant.hasStore ? ' · store already exists' : ''}
+                      </p>
+                      <input
+                        aria-label={`Reason for the decision on ${applicant.storeName}`}
+                        data-testid={`applicant-note-${applicant.id}`}
+                        value={applicationNotes[applicant.id] ?? ''}
+                        onChange={(e) => setApplicationNotes((current) => ({ ...current, [applicant.id]: e.target.value }))}
+                        placeholder="Note the applicant reads if declined"
+                        className="mt-2 w-full max-w-sm rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-1.5 text-xs focus:border-slate-900 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        data-testid={`applicant-approve-${applicant.id}`}
+                        disabled={actions.reviewApplication.isPending}
+                        onClick={() => {
+                          const note = (applicationNotes[applicant.id] ?? '').trim();
+                          actions.reviewApplication.mutate({
+                            applicationId: applicant.id,
+                            decision: 'approved',
+                            note: note === '' ? undefined : note,
+                          });
+                        }}
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        data-testid={`applicant-reject-${applicant.id}`}
+                        disabled={actions.reviewApplication.isPending || (applicationNotes[applicant.id] ?? '').trim() === ''}
+                        onClick={() => {
+                          actions.reviewApplication.mutate({
+                            applicationId: applicant.id,
+                            decision: 'rejected',
+                            note: (applicationNotes[applicant.id] ?? '').trim(),
+                          });
+                        }}
+                        className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Card 3: Active Vendor Health */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>MERCHANT HEALTH</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
-              </div>
             </div>
+            {/* Counted over every store by the queue read, not over the page on screen. */}
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">{queue.total > 0 ? ((queue.rows.filter(v => v.status === 'active').length / queue.total) * 100).toFixed(0) : 0}%</span>
+              <span
+                data-testid="volume-active-pct"
+                className="text-3xl font-extrabold text-slate-900"
+              >
+                {queue.volume.stores > 0 ? Math.round((queue.volume.active / queue.volume.stores) * 100) : 0}%
+              </span>
               <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                Verified
+                Trading
               </span>
             </div>
-            <div className="mt-1 text-xs text-slate-500 font-medium">
-              <strong className="text-slate-800">{queue.rows.filter(v => v.status === 'active').length}</strong> of {queue.total} fully compliant
-            </div>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
+              <strong className="text-slate-800">{queue.volume.active}</strong> of {queue.volume.stores} stores are not suspended.
+            </p>
             <div className="mt-5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full bg-slate-900 rounded-full" style={{ width: `${queue.total > 0 ? ((queue.rows.filter(v => v.status === 'active').length / queue.total) * 100).toFixed(0) : 0}%` }} />
+              <div
+                className="h-full bg-slate-900 rounded-full"
+                style={{ width: `${queue.volume.stores > 0 ? (queue.volume.active / queue.volume.stores) * 100 : 0}%` }}
+              />
             </div>
           </div>
 
-          {/* Card 4: GMV Contributed (30D) */}
+          {/* Card 4: Gross booked across the platform */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>GMV CONTRIBUTED (30D)</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-              </div>
+              <span>GROSS BOOKED (EVERY STORE)</span>
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
-              <span className="text-3xl font-extrabold text-slate-900">${queue.rows.reduce((acc, v) => acc + v.gross, 0).toLocaleString()}</span>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                Live GMV
+              <span data-testid="volume-gross" className="text-3xl font-extrabold text-slate-900">
+                ${queue.volume.gross.toLocaleString()}
               </span>
             </div>
-            <div className="mt-1 text-xs text-slate-500 font-medium">
-              Avg <strong className="text-slate-800">${queue.total > 0 ? (queue.rows.reduce((acc, v) => acc + v.gross, 0) / queue.total).toFixed(0) : 0}</strong> per brand store
-            </div>
-            <div className="mt-5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full" style={{ width: '88%' }} />
-            </div>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
+              Commission <strong className="text-slate-800">${queue.volume.commission.toLocaleString()}</strong> ·
+              paid to sellers <strong className="text-slate-800">${queue.volume.net.toLocaleString()}</strong>
+            </p>
+            <p className="mt-2 text-[11px] text-slate-400">
+              Summed in Postgres over packages that were not cancelled — not the page this screen is showing.
+            </p>
           </div>
         </div>
 

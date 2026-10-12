@@ -686,6 +686,11 @@ const adVendors = (await q(`select admin_vendor_queue('all','tech') r`))[0].r;
 ok('the merchant queue finds the store by name only', adVendors.rows.length === 1 && adVendors.rows[0].storeName === 'Tech Store');
 ok('the merchant queue settles its own money', Number(adVendors.rows[0].gross) >= 105 && Number(adVendors.rows[0].net) >= 95);
 ok('the merchant queue counts the pending application separately', Number(adVendors.pending) >= 1);
+ok('and hands back the applicant the count is made of, so the console can decide it',
+  adVendors.applicants.some((a: any) => a.storeName === 'Atlas Gadgets' && a.status === 'pending' && a.hasStore === false));
+ok('the queue header gets platform-wide money, summed over every store rather than one page',
+  Number(adVendors.volume.gross) >= 105 && Number(adVendors.volume.stores) >= 2
+  && Number(adVendors.volume.active) >= 1);
 
 const adVendor = (await q(`select admin_vendor_detail($1) d`, [aStore]))[0].d;
 ok('the merchant dossier carries the package that earned the payout', adVendor.packages.length >= 1);

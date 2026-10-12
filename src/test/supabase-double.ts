@@ -1054,6 +1054,36 @@ export function createSupabaseDouble() {
           // Applicants have no store row yet, so "pending" is the applications table.
           pending: toInt(sections.pending, countWhere(tables.vendor_applications, (row) => row.status === 'pending' || row.status === 'under_review')),
           suspended: toInt(sections.suspended, countWhere(tables.vendor_profiles, (row) => row.status === 'suspended')),
+          // Counts are joins; the money inside `volume` is a SUM and stays a fixture (db:check owns it).
+          volume: {
+            gross: 0,
+            commission: 0,
+            net: 0,
+            stores: tables.vendor_profiles.length,
+            active: countWhere(tables.vendor_profiles, (row) => row.status === 'active'),
+            ...plain(sections.volume),
+          },
+          // The applicants behind that count, oldest first: who has waited longest to be decided.
+          applicants: orderRows(
+            tables.vendor_applications
+              .filter((row) => row.status === 'pending' || row.status === 'under_review')
+              .map((row) => ({
+                id: row.id,
+                userId: row.user_id ?? null,
+                storeName: row.proposed_store_name,
+                slug: row.proposed_slug,
+                businessType: row.business_type,
+                contactEmail: row.contact_email,
+                contactPhone: row.contact_phone ?? null,
+                description: row.description ?? '',
+                status: row.status,
+                reviewNote: row.review_note ?? null,
+                submittedAt: row.created_at,
+                policyAccepted: row.policy_accepted === true,
+                hasStore: tables.vendor_profiles.some((store) => store.user_id === row.user_id),
+              })),
+            [byValue((row) => String(row.submittedAt))],
+          ),
           rows,
         },
         error: null,
@@ -1522,6 +1552,9 @@ export function createSupabaseDouble() {
         args.p_reason === null || args.p_reason === undefined
           ? 'Platform administrative refund'
           : String(args.p_reason).trim();
+      // Same rule the SQL now enforces: only a refund of the whole gross closes the package,
+      // so a partial leaves the remaining balance refundable.
+      const fully = cents(already) + cents(amount) >= cents(gross);
       const beforeStatus = String(sub.status);
       tables.refunds.push({
         id: `refund-${++syntheticId}`,
@@ -1532,21 +1565,21 @@ export function createSupabaseDouble() {
         processed_by: sessionUserId(),
         created_at: new Date().toISOString(),
       });
-      sub.status = 'refunded';
+      if (fully) sub.status = 'refunded';
       sub.history = [
         ...asList(sub.history),
         {
-          status: 'refunded',
+          status: fully ? 'refunded' : 'partial_refund',
           timestamp: new Date().toISOString(),
           actor: 'Admin',
-          note: `Refunded ${amount}: ${args.p_reason ?? 'no reason recorded'}`,
+          note: `${fully ? 'Refunded' : 'Partial refund of'} ${amount}: ${args.p_reason ?? 'no reason recorded'}`,
         },
       ];
       // Only when nothing on the order is left unrefunded does the order itself read as refunded.
       const open = tables.sub_orders.some(
         (row) => row.order_group_id === order.id && String(row.status) !== 'refunded',
       );
-      if (!open) order.payment_status = 'refunded';
+      if (fully && !open) order.payment_status = 'refunded';
       audit('order.refund', 'sub_order', String(sub.id), { status: beforeStatus, refundedSoFar: already }, {
         amount,
         reason: args.p_reason ?? null,

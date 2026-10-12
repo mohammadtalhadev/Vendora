@@ -35,6 +35,9 @@ const PERIOD_DAYS: Record<'30d' | '3m' | '6m' | '1y', number> = {
 const money = (value: number) =>
   `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+/** `round(gmv / nullif(orders, 0))` is NULL until the window has orders: say that, do not print $0.00. */
+const aov = (value: number | null) => (value === null ? 'No orders in this window' : money(value));
+
 const deltaLabel = (pct: number | null) =>
   pct === null
     ? 'no previous window to compare'
@@ -72,7 +75,7 @@ export const AdminDashboardPage: React.FC = () => {
         { metric: 'Orders', value: `${data.kpis.orders}`, window: windowNote },
         { metric: 'Packages', value: `${data.kpis.packages}`, window: windowNote },
         { metric: 'Open Packages', value: `${data.kpis.openPackages}`, window: windowNote },
-        { metric: 'Average Order Value', value: money(data.kpis.averageOrderValue), window: windowNote },
+        { metric: 'Average Order Value', value: aov(data.kpis.averageOrderValue), window: windowNote },
         { metric: 'Refund Amount', value: money(data.kpis.refundAmount), window: `${data.kpis.refundCount} refunds, ${windowNote}` },
         { metric: 'Payouts Paid', value: money(data.kpis.payoutsPaid), window: windowNote },
         { metric: 'Payouts Pending', value: money(data.kpis.payoutsPending), window: `${data.kpis.payoutsPendingCount} pending payouts, ${windowNote}` },
@@ -402,7 +405,7 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Average order value</span>
-                    <span className="font-semibold text-slate-900">{money(data.kpis.averageOrderValue)}</span>
+                    <span className="font-semibold text-slate-900">{aov(data.kpis.averageOrderValue)}</span>
                   </div>
                 </div>
               </div>
@@ -938,7 +941,7 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div className="mt-1.5 flex justify-between text-xs">
                     <span className="text-slate-500">Average order value</span>
-                    <span className="font-semibold text-slate-900">{money(data.kpis.averageOrderValue)}</span>
+                    <span className="font-semibold text-slate-900">{aov(data.kpis.averageOrderValue)}</span>
                   </div>
                   <div className="mt-1.5 flex justify-between text-xs">
                     <span className="text-slate-500">7-day revenue</span>

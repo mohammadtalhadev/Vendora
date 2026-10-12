@@ -15,7 +15,8 @@ export interface AdminDashboard {
     packages: number;
     orders: number;
     openPackages: number;
-    averageOrderValue: number;
+    /** `round(gmv / nullif(orders, 0))`: no orders in the window means no average, not a zero one. */
+    averageOrderValue: number | null;
     refundAmount: number;
     refundCount: number;
     payoutsPaid: number;
@@ -71,7 +72,10 @@ function mapDashboard(value: unknown): AdminDashboard {
       packages: count(kpis, 'packages'),
       orders: count(kpis, 'orders'),
       openPackages: count(kpis, 'openPackages'),
-      averageOrderValue: num(kpis.averageOrderValue),
+      averageOrderValue:
+        kpis.averageOrderValue === null || kpis.averageOrderValue === undefined
+          ? null
+          : num(kpis.averageOrderValue),
       refundAmount: num(kpis.refundAmount),
       refundCount: count(kpis, 'refundCount'),
       payoutsPaid: num(kpis.payoutsPaid),
@@ -94,14 +98,15 @@ function mapDashboard(value: unknown): AdminDashboard {
       suspended: count(sellers, 'suspended'),
       awaitingReview: count(sellers, 'awaitingReview'),
     },
+    // `catalog` is `to_jsonb(c)` over the SQL CTE, so its keys really are the column names.
     catalog: {
       approved: count(catalog, 'approved'),
-      pendingReview: count(catalog, 'pendingReview'),
+      pendingReview: count(catalog, 'pending_review'),
       rejected: count(catalog, 'rejected'),
       draft: count(catalog, 'draft'),
       archived: count(catalog, 'archived'),
-      outOfStock: count(catalog, 'outOfStock'),
-      lowStock: count(catalog, 'lowStock'),
+      outOfStock: count(catalog, 'out_of_stock'),
+      lowStock: count(catalog, 'low_stock'),
     },
     trust: {
       openDisputes: count(trust, 'openDisputes'),

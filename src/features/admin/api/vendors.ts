@@ -34,6 +34,36 @@ export interface AdminVendorRow {
   kyc: 'verified' | 'submitted' | 'rejected' | 'unverified';
 }
 
+/**
+ * An application with no store row yet, so it appears nowhere in `rows`. The console decides
+ * it through `review_vendor_application`, which is the only thing that mints the store.
+ */
+export interface AdminVendorApplicant {
+  id: string;
+  userId: string | null;
+  storeName: string;
+  slug: string;
+  businessType: string;
+  contactEmail: string;
+  contactPhone: string | null;
+  description: string;
+  status: string;
+  reviewNote: string | null;
+  submittedAt: string;
+  policyAccepted: boolean;
+  /** False when approving this would be the first store row for the account. */
+  hasStore: boolean;
+}
+
+/** Platform-wide figures for the queue header, summed in SQL over every store. */
+export interface AdminVendorVolume {
+  gross: number;
+  commission: number;
+  net: number;
+  stores: number;
+  active: number;
+}
+
 export interface AdminVendorQueue {
   page: number;
   pageSize: number;
@@ -41,6 +71,8 @@ export interface AdminVendorQueue {
   /** Applicants who have no store row yet, so they are not in `rows`. */
   pending: number;
   suspended: number;
+  volume: AdminVendorVolume;
+  applicants: AdminVendorApplicant[];
   rows: AdminVendorRow[];
 }
 
@@ -161,14 +193,41 @@ function mapRow(row: Record<string, unknown>): AdminVendorRow {
   };
 }
 
+function mapApplicant(row: Record<string, unknown>): AdminVendorApplicant {
+  return {
+    id: str(row.id),
+    userId: row.userId === null || row.userId === undefined ? null : str(row.userId),
+    storeName: str(row.storeName),
+    slug: str(row.slug),
+    businessType: str(row.businessType),
+    contactEmail: str(row.contactEmail),
+    contactPhone: row.contactPhone === null || row.contactPhone === undefined ? null : str(row.contactPhone),
+    description: str(row.description),
+    status: str(row.status),
+    reviewNote: row.reviewNote === null || row.reviewNote === undefined ? null : str(row.reviewNote),
+    submittedAt: str(row.submittedAt),
+    policyAccepted: row.policyAccepted === true,
+    hasStore: row.hasStore === true,
+  };
+}
+
 function mapQueue(value: unknown): AdminVendorQueue {
   const root = asRecord(value);
+  const volume = asRecord(root.volume);
   return {
     page: num(root.page),
     pageSize: num(root.pageSize),
     total: num(root.total),
     pending: num(root.pending),
     suspended: num(root.suspended),
+    volume: {
+      gross: num(volume.gross),
+      commission: num(volume.commission),
+      net: num(volume.net),
+      stores: num(volume.stores),
+      active: num(volume.active),
+    },
+    applicants: asRows(root.applicants).map(mapApplicant),
     rows: asRows(root.rows).map(mapRow),
   };
 }

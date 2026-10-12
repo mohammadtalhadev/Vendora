@@ -480,6 +480,40 @@ select jsonb_build_object(
   'pending', (select count(*) from public.vendor_applications va
               where va.status in ('pending', 'under_review')),
   'suspended', (select count(*) from public.vendor_profiles where status::text = 'suspended'),
+  -- Platform-wide money and counts for the queue's header. Without these the screen added up
+  -- the gross of one page and printed it as the platform's, and divided a page by the total.
+  'volume', jsonb_build_object(
+    'gross', coalesce((select sum(so.subtotal + so.shipping_fee) from public.sub_orders so
+                       where so.status <> 'cancelled'), 0)::numeric,
+    'commission', coalesce((select sum(so.commission_amount) from public.sub_orders so
+                            where so.status in ('delivered','refunded')), 0)::numeric,
+    'net', coalesce((select sum(so.net_payout) from public.sub_orders so
+                     where so.status in ('delivered','refunded')), 0)::numeric,
+    'stores', (select count(*)::int from public.vendor_profiles),
+    'active', (select count(*)::int from public.vendor_profiles where status::text = 'active')
+  ),
+  -- The applications the `pending` count above is made of. Without these rows the console
+  -- could say "3 waiting" and offer no way to decide any of them, because an applicant has
+  -- no store row to open yet.
+  'applicants', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', va.id,
+      'userId', va.user_id,
+      'storeName', va.proposed_store_name,
+      'slug', va.proposed_slug,
+      'businessType', va.business_type,
+      'contactEmail', va.contact_email,
+      'contactPhone', va.contact_phone,
+      'description', va.description,
+      'status', va.status::text,
+      'reviewNote', va.review_note,
+      'submittedAt', va.created_at,
+      'policyAccepted', va.policy_accepted,
+      'hasStore', exists (select 1 from public.vendor_profiles vp where vp.user_id = va.user_id)
+    ) order by va.created_at)
+    from public.vendor_applications va
+    where va.status in ('pending', 'under_review')
+  ), '[]'::jsonb),
   'rows', coalesce(jsonb_agg(jsonb_build_object(
     'id', id,
     'storeName', store_name,

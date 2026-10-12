@@ -20,8 +20,13 @@ export interface AdminDisputeRow {
   resolutionNote: string | null;
   resolutionAmount: number | null;
   agentName: string | null;
+  assignedAgentId: string | null;
   messages: number;
   packageGross: number;
+  /** What the refund ledger already returned on this package, summed in Postgres. */
+  refundedAmount: number;
+  /** `packageGross - refundedAmount`, floored at zero: the most a ruling can still move. */
+  remainingGross: number;
   packageStatus: string;
   createdAt: string;
   updatedAt: string;
@@ -31,7 +36,10 @@ export interface AdminDisputeQueue {
   page: number;
   pageSize: number;
   total: number;
-  counts: Record<'open' | 'underReview' | 'escalated' | 'resolved' | 'urgent', number>;
+  counts: Record<
+    'open' | 'underReview' | 'escalated' | 'resolved' | 'urgent' | 'unassigned' | 'mine' | 'awaitingStaff',
+    number
+  >;
   /** Sum of the packages still under dispute, so a ruling can be weighed against it. */
   exposure: number;
   rows: AdminDisputeRow[];
@@ -58,8 +66,12 @@ function mapRow(row: Record<string, unknown>): AdminDisputeRow {
       row.resolutionNote === null || row.resolutionNote === undefined ? null : text(row.resolutionNote),
     resolutionAmount: optionalNum(row.resolutionAmount),
     agentName: row.agentName === null || row.agentName === undefined ? null : text(row.agentName),
+    assignedAgentId:
+      row.assignedAgentId === null || row.assignedAgentId === undefined ? null : text(row.assignedAgentId),
     messages: num(row.messages),
     packageGross: num(row.packageGross),
+    refundedAmount: num(row.refundedAmount),
+    remainingGross: num(row.remainingGross),
     packageStatus: text(row.packageStatus),
     createdAt: text(row.createdAt),
     updatedAt: text(row.updatedAt),
@@ -79,6 +91,9 @@ function mapQueue(value: unknown): AdminDisputeQueue {
       escalated: num(counts.escalated),
       resolved: num(counts.resolved),
       urgent: num(counts.urgent),
+      unassigned: num(counts.unassigned),
+      mine: num(counts.mine),
+      awaitingStaff: num(counts.awaitingStaff),
     },
     exposure: num(root.exposure),
     rows: asRows(root.rows).map(mapRow),
