@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent, ClipboardEvent, ChangeEvent } from 'react';
-import { ShieldCheck, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -14,24 +14,28 @@ import { Button } from '../../../components/ui/button';
 export interface HandoverVerificationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  expectedCode?: string;
-  subOrderId?: string;
-  customerName?: string;
-  onVerify: (code: string) => Promise<void> | void;
+  /** Who the parcel is for — taken from the rider's board row, never invented. */
+  customerName: string;
+  /** One line of the delivery address, so the rider can confirm they are at the right door. */
+  addressLine: string;
+  /** Postgres owns the code: this modal only collects what the buyer read out. */
+  onVerify: (code: string) => Promise<void>;
+  /** The database's own refusal after a wrong or already-used code. */
+  error?: string | null;
+  /** A verification is in flight. */
+  submitting?: boolean;
 }
 
 export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps> = ({
   isOpen,
   onClose,
-  expectedCode,
-  subOrderId,
   customerName,
+  addressLine,
   onVerify,
+  error,
+  submitting = false,
 }) => {
   const [digits, setDigits] = useState<string[]>(['', '', '', '']);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
 
   const inputRefs = [
     useRef<HTMLInputElement>(null),
@@ -44,9 +48,6 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
   useEffect(() => {
     if (isOpen) {
       setDigits(['', '', '', '']);
-      setError(null);
-      setIsSubmitting(false);
-      setIsSuccess(false);
       // Autofocus first input after brief paint
       const timer = setTimeout(() => {
         inputRefs[0].current?.focus();
@@ -55,9 +56,19 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
     }
   }, [isOpen]);
 
+  // Success is not decided here: Postgres checks the code. When a submit that
+  // was in flight finishes without the caller reporting an error, the caller
+  // has already re-read the board — close the modal.
+  const wasSubmitting = useRef(false);
+  useEffect(() => {
+    if (wasSubmitting.current && !submitting && !error) {
+      onClose();
+    }
+    wasSubmitting.current = submitting;
+  }, [submitting, error, onClose]);
+
   const handleDigitChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
-    setError(null);
 
     // If multiple characters entered (e.g. autofill or paste into input)
     if (rawVal.length > 1) {
@@ -110,7 +121,6 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
     const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
     if (!pasteData) return;
 
-    setError(null);
     const next = [...digits];
     for (let i = 0; i < pasteData.length; i++) {
       next[i] = pasteData[i];
@@ -120,32 +130,12 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
     inputRefs[targetIdx].current?.focus();
   };
 
-  const enteredPin = digits.join('');
+  const enteredCode = digits.join('');
 
   const handleConfirm = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setError(null);
-
-    if (enteredPin.length < 4) {
-      setError('Please enter all 4 digits of the PIN code.');
-      return;
-    }
-
-    if (expectedCode && enteredPin !== expectedCode) {
-      setError('Invalid verification code. Please check with customer.');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      await onVerify(enteredPin);
-      setIsSuccess(true);
-      onClose();
-    } catch (err: unknown) {
-      setIsSubmitting(false);
-      const message = err instanceof Error ? err.message : 'Verification failed. Please try again.';
-      setError(message);
-    }
+    if (enteredCode.length < 4 || submitting) return;
+    await onVerify(enteredCode);
   };
 
   return (
@@ -159,34 +149,21 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
             Customer Handover Verification
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500 max-w-xs mx-auto">
-            {customerName
-              ? `Request the 4-digit verification code from ${customerName} to finalize delivery.`
-              : 'Enter the 4-digit customer delivery PIN to verify package handover.'}
+            Ask {customerName} to read out their 4-digit handover code. Only the hashed code in the
+            database can confirm it.
           </DialogDescription>
         </DialogHeader>
 
-        {subOrderId && (
-          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 text-xs">
-            <span className="text-slate-500 font-medium">Sub-Order:</span>
-            <span className="font-mono font-bold text-slate-900">{subOrderId}</span>
+        <div className="rounded-xl bg-slate-50 px-3 py-2 border border-slate-100 text-xs space-y-1">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-500 font-medium shrink-0">Customer:</span>
+            <span className="font-semibold text-slate-900 text-right truncate">{customerName}</span>
           </div>
-        )}
-
-        {/* Simulated Demo Hint */}
-        {expectedCode && (
-          <div
-            data-testid="demo-pin-hint"
-            className="rounded-xl border border-amber-200/90 bg-amber-50/80 p-3 text-xs text-amber-900 shadow-2xs"
-          >
-            <p className="font-semibold text-amber-950">Demo Simulation Hint:</p>
-            <p className="mt-0.5 text-amber-800">
-              Customer&apos;s verification code is:{' '}
-              <span className="font-mono font-black text-amber-950 tracking-widest text-sm bg-amber-100/80 px-1.5 py-0.5 rounded-md">
-                {expectedCode}
-              </span>
-            </p>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-slate-500 font-medium shrink-0">Delivering to:</span>
+            <span className="text-slate-900 text-right truncate">{addressLine}</span>
           </div>
-        )}
+        </div>
 
         <form onSubmit={handleConfirm} className="space-y-4">
           <div className="flex flex-col items-center gap-2">
@@ -205,7 +182,7 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
                   data-testid={`pin-digit-${idx}`}
                   aria-label={`Digit ${idx + 1}`}
                   value={digit}
-                  disabled={isSubmitting || isSuccess}
+                  disabled={submitting}
                   onChange={(e) => handleDigitChange(idx, e)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
                   className="h-14 w-12 sm:w-14 rounded-2xl border-2 border-slate-200 bg-white text-center font-mono text-2xl font-black text-slate-900 shadow-xs transition-all focus:border-[#FF7A1A] focus:outline-none focus:ring-4 focus:ring-[#FF7A1A]/15 disabled:bg-slate-50 disabled:text-slate-400"
@@ -214,7 +191,7 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
             </div>
           </div>
 
-          {/* Error Message */}
+          {/* Error reported by the database through the caller */}
           {error && (
             <div
               role="alert"
@@ -226,22 +203,11 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
             </div>
           )}
 
-          {/* Success Notification */}
-          {isSuccess && (
-            <div
-              data-testid="verification-success"
-              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-medium text-emerald-800 animate-in fade-in duration-150"
-            >
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-              <span>PIN verified successfully! Finalizing handover...</span>
-            </div>
-          )}
-
           <DialogFooter className="pt-2 sm:justify-between gap-2">
             <Button
               type="button"
               variant="outline"
-              disabled={isSubmitting || isSuccess}
+              disabled={submitting}
               onClick={onClose}
               className="w-full sm:w-auto rounded-full order-2 sm:order-1"
             >
@@ -250,18 +216,13 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
             <Button
               type="submit"
               variant="orange-cta"
-              disabled={isSubmitting || isSuccess || enteredPin.length < 4}
+              disabled={submitting || enteredCode.length < 4}
               className="w-full sm:w-auto rounded-full min-h-[44px] order-1 sm:order-2"
             >
-              {isSubmitting ? (
+              {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                  Verifying...
-                </>
-              ) : isSuccess ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                  Handover Confirmed
+                  Checking…
                 </>
               ) : (
                 'Confirm Handover'

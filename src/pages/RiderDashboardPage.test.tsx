@@ -1,257 +1,240 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// WorkspaceLayout's sign-out needs the auth provider; these tests never click it.
+vi.mock('../lib/auth-context', async () => {
+  const { useAuthStub } = await import('../test/auth-context-stub');
+  return { useAuth: useAuthStub };
+});
+vi.mock('../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { RiderDashboardPage } from './RiderDashboardPage';
-import { useAuthStore, DEMO_ACCOUNTS } from '../store/auth-store';
-import { mockDb } from '../mocks/db';
+import { renderWorkspace } from '../test/vendor-render';
+import { useAuthStore } from '../store/auth-store';
+import { DEMO_ACCOUNTS } from '../lib/demo-accounts';
+import {
+  deliveryRow,
+  orderRow,
+  profileRow,
+  riderRow,
+  storeRow,
+  subOrderRow,
+  supabaseDouble,
+} from '../test/supabase-double';
 
-describe('RiderDashboardPage Component', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    mockDb.resetToSeed();
-    useAuthStore.setState({
-      user: DEMO_ACCOUNTS.rider,
-      token: 'mock-rider-token',
-      isAuthenticated: true,
-    });
+const RIDER = DEMO_ACCOUNTS.rider;
+const PROFILE = '00000000-0000-4000-8000-000000001601';
+const PACKAGE = '00000000-0000-4000-8000-000000000501';
+const DROP = '00000000-0000-4000-8000-000000001701';
+const CODE = '4821';
+
+const seedDrop = (overrides: Record<string, unknown> = {}) => {
+  supabaseDouble.seedOrder(orderRow({
+    id: 'order-1',
+    customer_email: 'alex@demo.test',
+    shipping_address: {
+      fullName: 'Alex Buyer', street: '18 Harbour Road', city: 'Boston', state: 'MA', zipCode: '02110',
+    },
+  }));
+  supabaseDouble.seedSubOrder(subOrderRow({
+    id: PACKAGE, order_group_id: 'order-1', seller_id: 'store-1', subtotal: 30, shipping_fee: 4,
+    status: 'ready_for_pickup', customer_notes: 'Leave with the concierge.',
+    ...overrides,
+  }));
+  supabaseDouble.seedDelivery(deliveryRow({
+    id: DROP, sub_order_id: PACKAGE, rider_id: PROFILE, status: 'assigned', handover_code_hash: CODE,
+  }));
+};
+
+/** A parcel that has reached the door: the only place a handover code is asked for. */
+const seedAtTheDoor = () => {
+  seedDrop({ status: 'out_for_delivery' });
+  supabaseDouble.tables.deliveries[0] = deliveryRow({
+    id: DROP, sub_order_id: PACKAGE, rider_id: PROFILE, status: 'out_for_delivery', handover_code_hash: CODE,
+    picked_up_at: '2026-10-12T09:00:00.000Z',
+  });
+};
+
+beforeEach(() => {
+  supabaseDouble.reset();
+  supabaseDouble.seedProfile(profileRow({ id: RIDER.id, email: RIDER.email, roles: ['rider'] }));
+  supabaseDouble.authState.session = { access_token: 't', user: { id: RIDER.id, email: RIDER.email } };
+  useAuthStore.getState().setUser(RIDER, 'test-token');
+  supabaseDouble.seedRider(riderRow({ id: PROFILE, user_id: RIDER.id, full_name: 'Nadia Rider', status: 'available' }));
+  supabaseDouble.seedVendorProfile(storeRow({ id: 'store-1', store_name: 'Nova Tech' }));
+});
+
+const render = () => renderWorkspace(<RiderDashboardPage />, ['/rider']);
+
+const lastCall = (fn: string) => [...supabaseDouble.rpcCalls].reverse().find((entry) => entry.fn === fn);
+
+describe('RiderDashboardPage', () => {
+  it('shows the parcels this rider was assigned, with the address on the row', async () => {
+    seedDrop();
+
+    render();
+
+    await waitFor(() => expect(screen.getAllByTestId('drop-card')).toHaveLength(1));
+    const card = screen.getAllByTestId('drop-card')[0];
+    expect(within(card).getByText('Nova Tech')).toBeInTheDocument();
+    expect(within(card).getByText('18 Harbour Road')).toBeInTheDocument();
+    expect(within(card).getByText('Leave with the concierge.')).toBeInTheDocument();
+    expect(within(card).getByText('$34.00')).toBeInTheDocument();
   });
 
-  it('renders rider header, shift toggle, and stats', () => {
-    render(
-      <MemoryRouter>
-        <RiderDashboardPage />
-      </MemoryRouter>
-    );
+  it('quotes the board counts as parcels, and shows no invented pay or rating', async () => {
+    seedDrop();
 
-    // Rider Header
-    expect(screen.getByTestId('rider-header')).toBeInTheDocument();
-    expect(screen.getByText('Sam Express Rider')).toBeInTheDocument();
+    render();
+    await waitFor(() => expect(screen.getByTestId('rider-count-assigned')).toHaveTextContent('1'));
 
-    // Shift Toggle Switch
-    const shiftSwitch = screen.getByRole('switch', {
-      name: /toggle rider shift online\/offline/i,
-    });
-    expect(shiftSwitch).toBeInTheDocument();
-    expect(shiftSwitch).toHaveAttribute('aria-checked', 'true');
-    expect(shiftSwitch).toHaveTextContent('Online');
-
-    // Today's Performance Stats
-    expect(screen.getByTestId('stat-completed')).toHaveTextContent('8');
-    expect(screen.getByTestId('stat-earnings')).toHaveTextContent('$64.00');
-    expect(screen.getByTestId('stat-ontime')).toHaveTextContent('98.5%');
-    expect(screen.getByTestId('stat-active')).toHaveTextContent('3');
+    expect(screen.getByTestId('rider-count-in-flight')).toHaveTextContent('0');
+    expect(screen.getByTestId('rider-active-deliveries')).toHaveTextContent('1');
+    // The mock screen printed a $64.00 shift wage, an on-time rate and a rider tier - nothing
+    // in the schema records pay, ratings or distances, so none of it may reappear.
+    expect(screen.queryByText('$64.00')).not.toBeInTheDocument();
+    expect(screen.queryByText(/98\.5%/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/top tier/i)).not.toBeInTheDocument();
   });
 
-  it('toggles shift online/offline', () => {
-    render(
-      <MemoryRouter>
-        <RiderDashboardPage />
-      </MemoryRouter>
-    );
+  it('refuses an account with no rider profile instead of showing an empty route', async () => {
+    supabaseDouble.authState.session = { access_token: 't', user: { id: 'shopper', email: 's@demo.test' } };
+    supabaseDouble.seedProfile(profileRow({ id: 'shopper', roles: ['customer'] }));
 
-    const shiftSwitch = screen.getByRole('switch', {
-      name: /toggle rider shift online\/offline/i,
-    });
+    render();
 
-    // Flip to offline
-    fireEvent.click(shiftSwitch);
-    expect(shiftSwitch).toHaveAttribute('aria-checked', 'false');
-    expect(shiftSwitch).toHaveTextContent('Offline');
-    expect(screen.getByTestId('offline-banner')).toBeInTheDocument();
-
-    // Flip back to online via the banner button
-    const goOnlineBtn = screen.getByRole('button', { name: /go online/i });
-    fireEvent.click(goOnlineBtn);
-    expect(shiftSwitch).toHaveAttribute('aria-checked', 'true');
-    expect(shiftSwitch).toHaveTextContent('Online');
-    expect(screen.queryByTestId('offline-banner')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('board-error')).toBeInTheDocument());
+    expect(screen.getByText(/not a rider/i)).toBeInTheDocument();
+    expect(screen.queryAllByTestId('drop-card')).toHaveLength(0);
   });
 
-  it('displays active deliveries queue', () => {
-    render(
-      <MemoryRouter>
-        <RiderDashboardPage />
-      </MemoryRouter>
-    );
+  it('renders the empty board as empty, not as a demo parcel', async () => {
+    supabaseDouble.seedOrder(orderRow({ id: 'order-1', customer_email: 'alex@demo.test' }));
+    supabaseDouble.seedSubOrder(subOrderRow({ id: PACKAGE, order_group_id: 'order-1', seller_id: 'store-1' }));
+    supabaseDouble.seedDelivery(deliveryRow({ id: DROP, sub_order_id: PACKAGE, rider_id: 'other-rider' }));
 
-    // Order 1 verification
-    expect(screen.getByText('#SUB-98421-A')).toBeInTheDocument();
-    expect(screen.getAllByText(/SoundWave Direct|KeebCraft Studio/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('120 Industrial Pkwy').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Navigate to Pickup')[0]).toBeInTheDocument();
+    render();
 
-    expect(screen.getAllByText(/Sarah Jenkins|Sarah Customer/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('742 Evergreen Terrace, Apt 4B').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Call Customer')[0]).toBeInTheDocument();
-
-    // Initial Status Badge
-    expect(screen.getByText('Ready for Pickup')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('board-empty')).toBeInTheDocument());
+    expect(screen.queryAllByTestId('drop-card')).toHaveLength(0);
   });
 
-  it('advances sub-order status through pickup -> out for delivery -> handover PIN -> delivered', async () => {
-    render(
-      <MemoryRouter>
-        <RiderDashboardPage />
-      </MemoryRouter>
-    );
+  it('collects a parcel through the state machine, not through local state', async () => {
+    seedDrop();
 
-    // 1. Initial status: ready_for_pickup -> Click "Confirm Package Picked Up from Vendor"
-    const card = screen.getByTestId('delivery-card-sub-98421-A');
-    const pickupBtn = within(card).getByRole('button', {
-      name: /confirm package picked up from vendor/i,
-    });
-    expect(pickupBtn).toBeInTheDocument();
-    fireEvent.click(pickupBtn);
+    render();
+    await waitFor(() => expect(screen.getAllByTestId('drop-card')).toHaveLength(1));
 
-    // Status advances to 'shipped' (Picked Up / In Transit)
-    expect(within(card).getByText('Picked Up / In Transit')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('btn-collect'));
 
-    // 2. Click "Start Delivery Route" on this card
-    const startRouteBtn = within(card).getByRole('button', {
-      name: /start delivery route/i,
-    });
-    expect(startRouteBtn).toBeInTheDocument();
-    fireEvent.click(startRouteBtn);
-
-    // Status advances to 'out_for_delivery'
-    const handoverBtn = within(card).getByRole('button', {
-      name: /confirm customer handover/i,
-    });
-    expect(handoverBtn).toBeInTheDocument();
-
-    // 3. Click "Confirm Customer Handover" -> opens HandoverVerificationModal
-    fireEvent.click(handoverBtn);
-
-    expect(screen.getByText('Customer Handover Verification')).toBeInTheDocument();
-    const demoHint = screen.getByTestId('demo-pin-hint');
-    expect(demoHint).toHaveTextContent(/Customer's verification code is:/i);
-
-    // Extract the 4-digit code shown in the simulation hint
-    const codeMatch = demoHint.textContent?.match(/\d{4}/);
-    const pin = codeMatch ? codeMatch[0] : '4829';
-
-    // 4. Enter the 4-digit PIN
-    fireEvent.change(screen.getByTestId('pin-digit-0'), { target: { value: pin[0] } });
-    fireEvent.change(screen.getByTestId('pin-digit-1'), { target: { value: pin[1] } });
-    fireEvent.change(screen.getByTestId('pin-digit-2'), { target: { value: pin[2] } });
-    fireEvent.change(screen.getByTestId('pin-digit-3'), { target: { value: pin[3] } });
-
-    // Submit verification
-    const confirmModalBtn = screen.getByRole('button', { name: /confirm handover/i });
-    fireEvent.click(confirmModalBtn);
-
-    // 5. Verification succeeds -> modal closes & stats increment
-    await waitFor(() => {
-      expect(screen.queryByText('Customer Handover Verification')).not.toBeInTheDocument();
-      expect(screen.getByTestId('stat-completed')).toHaveTextContent('9');
-      expect(screen.getByTestId('stat-earnings')).toHaveTextContent('$72.00');
-    });
-
-    // Check completed history tab contains delivered item
-    const historyTabBtn = screen.getByRole('button', { name: /completed history/i });
-    fireEvent.click(historyTabBtn);
-
-    expect(screen.getAllByText('Delivered').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('+$8.00 payout').length).toBeGreaterThan(0);
+    await waitFor(() => expect(lastCall('advance_sub_order_status')?.args).toMatchObject({
+      p_sub_order_id: PACKAGE,
+      p_next: 'shipped',
+    }));
   });
 
-  it('handles PIN verification error on incorrect code', async () => {
-    render(
-      <MemoryRouter>
-        <RiderDashboardPage />
-      </MemoryRouter>
-    );
+  it('puts a collected parcel on the route', async () => {
+    seedDrop({ status: 'shipped' });
+    supabaseDouble.seedDelivery(deliveryRow({
+      id: DROP, sub_order_id: PACKAGE, rider_id: PROFILE, status: 'picked_up', handover_code_hash: CODE,
+      picked_up_at: '2026-10-12T09:00:00.000Z',
+    }));
 
-    // Open handover for an order in 'out_for_delivery' status
-    const handoverBtns = screen.getAllByRole('button', {
-      name: /confirm customer handover/i,
-    });
-    fireEvent.click(handoverBtns[0]);
+    render();
+    await waitFor(() => expect(screen.getByTestId('btn-on-the-way')).toBeInTheDocument());
 
-    expect(screen.getByText('Customer Handover Verification')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('btn-on-the-way'));
 
-    // Enter wrong PIN: '0000'
-    fireEvent.change(screen.getByTestId('pin-digit-0'), { target: { value: '0' } });
-    fireEvent.change(screen.getByTestId('pin-digit-1'), { target: { value: '0' } });
-    fireEvent.change(screen.getByTestId('pin-digit-2'), { target: { value: '0' } });
-    fireEvent.change(screen.getByTestId('pin-digit-3'), { target: { value: '0' } });
-
-    const confirmModalBtn = screen.getByRole('button', { name: /confirm handover/i });
-    fireEvent.click(confirmModalBtn);
-
-    // Error alert is shown
-    expect(screen.getByTestId('verification-error')).toBeInTheDocument();
-    expect(screen.getByTestId('verification-error')).toHaveTextContent(
-      /invalid verification code/i
-    );
-
-    // Stat remains 8 (not completed)
-    expect(screen.getByTestId('stat-completed')).toHaveTextContent('8');
+    await waitFor(() => expect(lastCall('advance_sub_order_status')?.args.p_next).toBe('out_for_delivery'));
   });
 
-  it('reports a delivery exception and marks status as delivery_failed', async () => {
-    render(
-      <MemoryRouter>
-        <RiderDashboardPage />
-      </MemoryRouter>
-    );
+  it('reports an issue as a delivery failure carrying the rider’s own words', async () => {
+    seedDrop();
 
-    // Click "Report Issue" on the first card
-    const reportIssueBtns = screen.getAllByRole('button', { name: /report issue/i });
-    fireEvent.click(reportIssueBtns[0]);
+    render();
+    await waitFor(() => expect(screen.getByTestId('btn-report-issue')).toBeInTheDocument());
 
-    expect(screen.getByText('Report Delivery Exception')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('btn-report-issue'));
+    fireEvent.click(screen.getByRole('radio', { name: /customer unavailable/i }));
+    fireEvent.change(screen.getByLabelText(/notes/i), { target: { value: 'Waited twenty minutes at the gate.' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit issue/i }));
 
-    // Select reason "Access Denied / Gate Code Required"
-    const radio = screen.getByLabelText(/Access Denied \/ Gate Code Required/i);
-    fireEvent.click(radio);
-
-    // Add notes
-    const textarea = screen.getByPlaceholderText(/Provide extra details/i);
-    fireEvent.change(textarea, {
-      target: { value: 'Security refused entry without resident pass.' },
-    });
-
-    // Submit issue
-    const submitBtn = screen.getByRole('button', { name: /submit issue/i });
-    fireEvent.click(submitBtn);
-
-    // Modal closes and active queue updates
-    await waitFor(() => {
-      expect(screen.queryByText('Report Delivery Exception')).not.toBeInTheDocument();
-      expect(screen.getByTestId('stat-active')).toHaveTextContent('2');
-    });
-
-    // Switch to history tab and verify failed record
-    fireEvent.click(screen.getByRole('button', { name: /completed history/i }));
-    expect(screen.getByText('Delivery Failed')).toBeInTheDocument();
+    await waitFor(() => expect(lastCall('advance_sub_order_status')?.args).toMatchObject({
+      p_next: 'delivery_failed',
+    }));
+    const note = String(lastCall('advance_sub_order_status')?.args.p_note ?? '');
+    expect(note).toMatch(/Customer Unavailable/);
+    expect(note).toMatch(/Waited twenty minutes at the gate\./);
   });
 
-  it('shows empty queue state when all deliveries are completed', async () => {
-    render(
-      <MemoryRouter>
-        <RiderDashboardPage />
-      </MemoryRouter>
-    );
+  it('never shows the handover code it is checking against', async () => {
+    seedAtTheDoor();
 
-    // Sequentially submit issue on each active delivery
-    while (screen.queryAllByRole('button', { name: /report issue/i }).length > 0) {
-      const issueBtns = screen.getAllByRole('button', { name: /report issue/i });
-      fireEvent.click(issueBtns[0]);
-      const submitBtn = screen.getByRole('button', { name: /submit issue/i });
-      fireEvent.click(submitBtn);
-      await waitFor(() => {
-        expect(screen.queryByText('Report Delivery Exception')).not.toBeInTheDocument();
-      });
-    }
+    render();
+    await waitFor(() => expect(screen.getByTestId('btn-deliver')).toBeInTheDocument());
 
-    await waitFor(() => {
-      expect(screen.getByTestId('empty-queue')).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          /All deliveries completed! Take a break or wait for new assignments/i
-        )
-      ).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByTestId('btn-deliver'));
+    const dialog = await screen.findByRole('dialog');
+
+    // The code is a sha256 hash in Postgres: a browser that knew it would print it.
+    expect(dialog).not.toHaveTextContent(CODE);
+    expect(screen.queryByTestId('demo-pin-hint')).not.toBeInTheDocument();
+  });
+
+  it('closes the parcel only when the buyer’s code matches in Postgres', async () => {
+    seedAtTheDoor();
+
+    render();
+    await waitFor(() => expect(screen.getByTestId('btn-deliver')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('btn-deliver'));
+    await screen.findByRole('dialog');
+
+    fireEvent.change(screen.getByTestId('pin-digit-0'), { target: { value: '1' } });
+    fireEvent.change(screen.getByTestId('pin-digit-1'), { target: { value: '1' } });
+    fireEvent.change(screen.getByTestId('pin-digit-2'), { target: { value: '1' } });
+    fireEvent.change(screen.getByTestId('pin-digit-3'), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirm handover/i }));
+
+    await waitFor(() => expect(screen.getByTestId('verification-error')).toHaveTextContent(/invalid handover code/i));
+    expect(supabaseDouble.tables.deliveries[0].status).toBe('out_for_delivery');
+
+    fireEvent.change(screen.getByTestId('pin-digit-0'), { target: { value: '4' } });
+    fireEvent.change(screen.getByTestId('pin-digit-1'), { target: { value: '8' } });
+    fireEvent.change(screen.getByTestId('pin-digit-2'), { target: { value: '2' } });
+    fireEvent.change(screen.getByTestId('pin-digit-3'), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirm handover/i }));
+
+    await waitFor(() => expect(lastCall('verify_delivery')?.args).toMatchObject({
+      p_delivery_id: DROP, p_code: CODE,
+    }));
+    await waitFor(() => expect(screen.getByTestId('rider-count-delivered-today')).toHaveTextContent('1'));
+    expect(supabaseDouble.tables.deliveries[0].status).toBe('delivered');
+    expect(supabaseDouble.tables.sub_orders[0].status).toBe('delivered');
+  });
+
+  it('sets the rider’s own availability on their profile row', async () => {
+    seedDrop();
+
+    render();
+    await waitFor(() => expect(screen.getByTestId('rider-header')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('rider-status-busy'));
+
+    await waitFor(() => expect(supabaseDouble.tables.rider_profiles[0].status).toBe('busy'));
+  });
+
+  it('shows the database’s refusal when a move is not allowed', async () => {
+    seedDrop();
+
+    render();
+    await waitFor(() => expect(screen.getByTestId('btn-collect')).toBeInTheDocument());
+
+    supabaseDouble.failRpc('Role rider is not authorized for transition shipped -> out_for_delivery');
+    fireEvent.click(screen.getByTestId('btn-collect'));
+
+    await waitFor(() => expect(screen.getByTestId('move-error')).toHaveTextContent(/not authorized/i));
   });
 });

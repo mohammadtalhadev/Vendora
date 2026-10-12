@@ -148,6 +148,25 @@ begin
 end;
 $$;
 
+-- The support desk triages the same dispute rows the platform console shows, so the shared
+-- reads are guarded with this. Governance writes stay behind `admin_require_admin`.
+create or replace function public.require_staff(p_operation text default 'this action')
+returns void
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated' using errcode = '28000';
+  end if;
+  if not (public.is_admin() or public.has_role('support')) then
+    raise exception 'Only staff can %', p_operation using errcode = '42501';
+  end if;
+end;
+$$;
+
 -- Audit rows are written by the RPCs that make the change they describe: a
 -- client that could insert freely would be able to invent a history.
 create or replace function public.admin_audit(
@@ -886,7 +905,11 @@ create or replace function public.admin_dispute_queue(
   p_status text default 'all',
   p_search text default '',
   p_page integer default 1,
-  p_page_size integer default 12
+  p_page_size integer default 12,
+  -- The desk works three pools out of this one queue: everything, the cases with no agent on
+  -- them yet, and one agent's own load. Filtering those here keeps a page of 12 a page of 12.
+  p_unassigned boolean default false,
+  p_assigned_to uuid default null
 )
 returns jsonb
 language sql
@@ -895,8 +918,9 @@ security definer
 set search_path = public
 as $$
   -- Guarded first: this body reads across store boundaries as the function
-  -- owner, so RLS cannot be the only check.
-  select public.admin_require_admin('read the dispute queue');
+  -- owner, so RLS cannot be the only check. Staff rather than admin-only: the
+  -- support desk works this same queue, and one read means one set of rules.
+  select public.require_staff('read the dispute queue');
 with
   rollups as (
     select
@@ -904,12 +928,18 @@ with
       coalesce((select so.subtotal + so.shipping_fee from public.sub_orders so
                 where so.id = d.sub_order_id), 0)::numeric as package_gross,
       coalesce((select so.status::text from public.sub_orders so where so.id = d.sub_order_id), 'n/a') as package_status,
+      -- What has already come back to the buyer on this package: the desk cannot offer a
+      -- refund the ledger has already paid, and "gross" alone would let it try.
+      coalesce((select sum(r.amount) from public.refunds r where r.sub_order_id = d.sub_order_id), 0)::numeric as refunded_amount,
       (select pr.name from public.profiles pr where pr.id = d.assigned_agent_id) as agent_name,
       (select count(*) from public.dispute_messages m where m.dispute_id = d.id)::int as message_count
     from public.disputes d
     where (p_status = 'all'
            or (p_status = 'awaiting_staff' and d.status in ('open', 'under_review', 'escalated'))
+           or (p_status = 'resolved' and d.status::text like 'resolved%')
            or d.status::text = p_status)
+      and (p_assigned_to is null or d.assigned_agent_id = p_assigned_to)
+      and (p_unassigned is not true or d.assigned_agent_id is null)
       and (btrim(coalesce(p_search, '')) = ''
            or d.reason ilike '%' || p_search || '%'
            or d.customer_name ilike '%' || p_search || '%'
@@ -931,8 +961,15 @@ select jsonb_build_object(
     'underReview', (select count(*) from public.disputes where status = 'under_review'),
     'escalated', (select count(*) from public.disputes where status = 'escalated'),
     'resolved', (select count(*) from public.disputes where status::text like 'resolved%'),
+    -- The whole desk's open pool, counted in one place so no screen adds three figures.
+    'awaitingStaff', (select count(*) from public.disputes where status in ('open','under_review','escalated')),
     'urgent', (select count(*) from public.disputes where urgency = 'urgent'
-               and status in ('open', 'under_review', 'escalated'))
+               and status in ('open', 'under_review', 'escalated')),
+    -- The pools the desks filter by, counted over every case rather than over one page.
+    'unassigned', (select count(*) from public.disputes
+                   where assigned_agent_id is null and status in ('open', 'under_review', 'escalated')),
+    'mine', (select count(*) from public.disputes
+             where assigned_agent_id = auth.uid() and status in ('open', 'under_review', 'escalated'))
   ),
   'exposure', coalesce((select sum(g.package_gross) from (select * from rollups) g
                        where g.status in ('open', 'under_review', 'escalated')), 0)::numeric,
@@ -943,7 +980,10 @@ select jsonb_build_object(
     'evidencePhotos', coalesce(to_jsonb(evidence_photos), '[]'::jsonb),
     'resolutionNote', resolution_note, 'resolutionAmount', resolution_amount,
     'agentName', agent_name, 'messages', message_count,
+    'assignedAgentId', assigned_agent_id,
     'packageGross', package_gross, 'packageStatus', package_status,
+    'refundedAmount', refunded_amount,
+    'remainingGross', greatest(package_gross - refunded_amount, 0)::numeric,
     'createdAt', created_at, 'updatedAt', updated_at
   ) order by case when urgency::text = 'urgent' then 0 else 1 end, created_at), '[]'::jsonb)
 ) from paged;
@@ -1751,21 +1791,27 @@ begin
   values (p_sub_order_id, v_pkg.order_group_id, p_amount, coalesce(btrim(p_reason), 'Platform administrative refund'), auth.uid());
 
   update public.sub_orders
-     set status = 'refunded'::public.sub_order_status,
+     set status = case when v_already + p_amount >= v_pkg.gross
+                       then 'refunded'::public.sub_order_status else status end,
          history = history || jsonb_build_array(jsonb_build_object(
-           'status', 'refunded', 'timestamp', now(), 'actor', 'Admin',
-           'note', format('Refunded %s: %s', p_amount, coalesce(p_reason, 'no reason recorded'))
+           'status', case when v_already + p_amount >= v_pkg.gross then 'refunded' else 'partial_refund' end,
+           'timestamp', now(), 'actor', 'Admin',
+           'note', format('%s %s: %s',
+             case when v_already + p_amount >= v_pkg.gross then 'Refunded' else 'Partial refund of' end,
+             p_amount, coalesce(p_reason, 'no reason recorded'))
          ))
    where id = p_sub_order_id;
 
   -- Only when nothing on the order is left unrefunded does the order itself read
   -- as refunded; a partial refund is still a live sale.
-  update public.orders set payment_status = 'refunded'::public.payment_status
-   where id = v_pkg.order_group_id
-     and not exists (
-       select 1 from public.sub_orders so2
-       where so2.order_group_id = v_pkg.order_group_id and so2.status <> 'refunded'
-     );
+  if v_already + p_amount >= v_pkg.gross then
+    update public.orders set payment_status = 'refunded'::public.payment_status
+     where id = v_pkg.order_group_id
+       and not exists (
+         select 1 from public.sub_orders so2
+         where so2.order_group_id = v_pkg.order_group_id and so2.status <> 'refunded'
+       );
+  end if;
 
   perform public.admin_audit('order.refund', 'sub_order', p_sub_order_id::text,
     jsonb_build_object('status', v_pkg.status, 'refundedSoFar', v_already),
@@ -2057,7 +2103,7 @@ grant execute on function
   public.admin_order_queue(text, text, text, integer, integer),
   public.admin_order_detail(uuid),
   public.admin_user_queue(text, text, text, integer, integer),
-  public.admin_dispute_queue(text, text, integer, integer),
+  public.admin_dispute_queue(text, text, integer, integer, boolean, uuid),
   public.admin_audit_queue(text, text, integer, integer),
   public.admin_report_summary(integer, text),
   public.admin_category_tree(),
@@ -2090,7 +2136,7 @@ revoke execute on function
   public.admin_order_queue(text, text, text, integer, integer),
   public.admin_order_detail(uuid),
   public.admin_user_queue(text, text, text, integer, integer),
-  public.admin_dispute_queue(text, text, integer, integer),
+  public.admin_dispute_queue(text, text, integer, integer, boolean, uuid),
   public.admin_audit_queue(text, text, integer, integer),
   public.admin_report_summary(integer, text),
   public.admin_category_tree(),

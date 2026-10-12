@@ -233,80 +233,72 @@ describe('Workspace Navigation & Layout Shell', () => {
   });
 
   describe('RiderHeader', () => {
-    it('renders online/offline shift toggle and handles shift state change', () => {
-      const handleToggleShift = vi.fn();
+    it('shows the availability the profile row carries and writes the choice back', () => {
+      const handleStatusChange = vi.fn();
       render(
         <RiderHeader
-          isOnline={true}
-          onToggleShift={handleToggleShift}
-          vehicleType="motorcycle"
+          riderName="Sam Rider"
+          vehicleType="E-Bike Cargo"
+          status="available"
+          onStatusChange={handleStatusChange}
           activeDeliveries={3}
-        />
+        />,
       );
 
-      const toggle = screen.getByRole('switch');
-      expect(toggle).toBeInTheDocument();
-      expect(toggle).toHaveAttribute('aria-checked', 'true');
-      expect(screen.getByText('Online')).toBeInTheDocument();
+      expect(screen.getByText('Sam Rider')).toBeInTheDocument();
+      expect(screen.getByTestId('rider-vehicle-type')).toHaveTextContent('E-Bike Cargo');
+      expect(screen.getByTestId('rider-active-deliveries')).toHaveTextContent('3');
+      expect(screen.getByTestId('rider-status-available')).toHaveAttribute('aria-pressed', 'true');
 
-      fireEvent.click(toggle);
-      expect(handleToggleShift).toHaveBeenCalledWith(false);
+      fireEvent.click(screen.getByTestId('rider-status-busy'));
+      expect(handleStatusChange).toHaveBeenCalledWith('busy');
     });
 
-    it('renders vehicle indicator and active deliveries count', () => {
+    it('locks the availability control while the write is in flight', () => {
       render(
         <RiderHeader
-          isOnline={false}
-          vehicleType="bicycle"
-          vehicleLabel="E-Bike Cargo"
-          activeDeliveries={2}
           riderName="Sam Rider"
-        />
+          vehicleType="Motorcycle"
+          status="offline"
+          onStatusChange={() => {}}
+          activeDeliveries={0}
+          pending
+        />,
       );
 
-      // Verify Rider name
-      expect(screen.getByText('Sam Rider')).toBeInTheDocument();
-
-      // Verify Vehicle Indicator
-      const vehicleIndicator = screen.getByTestId('vehicle-indicator');
-      expect(vehicleIndicator).toHaveTextContent('E-Bike Cargo');
-      expect(vehicleIndicator.className).toContain('glass-pill');
-
-      // Verify Active Deliveries Counter
-      const deliveriesCounter = screen.getByTestId('active-deliveries-counter');
-      expect(deliveriesCounter).toBeInTheDocument();
-      expect(screen.getByTestId('delivery-count')).toHaveTextContent('2');
-      expect(deliveriesCounter).toHaveTextContent(/2 Active Deliveries/i);
+      expect(screen.getByTestId('rider-status-offline')).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByTestId('rider-status-select')).toHaveAttribute('aria-label', 'Rider availability');
+      screen.getAllByTestId(/rider-status-(available|busy|offline)/).forEach((button) => {
+        expect(button).toBeDisabled();
+      });
+      expect(screen.getByTestId('rider-status-pending')).toHaveTextContent(/updating/i);
+      // No shift pay, rating or GPS read is invented here: the header only states parcels.
+      expect(screen.queryByTestId('vehicle-indicator')).not.toBeInTheDocument();
+      expect(screen.queryByRole('switch')).not.toBeInTheDocument();
     });
   });
 
   describe('SupportHeader', () => {
-    it('renders queue count indicators for Unassigned, Mine, and Escalated', () => {
+    const searchProps = { searchQuery: '', onSearchChange: () => {} };
+
+    it('shows the counts the queue read returned, without adding them up locally', () => {
       render(
         <SupportHeader
           unassignedCount={14}
           mineCount={5}
           escalatedCount={2}
+          openCount={21}
           agentName="Jordan Support"
-        />
+          activeQueue="all"
+          {...searchProps}
+        />,
       );
 
       expect(screen.getByText('Jordan Support')).toBeInTheDocument();
-
-      // Unassigned queue
-      const unassignedTab = screen.getByTestId('queue-unassigned');
-      expect(unassignedTab).toHaveTextContent('Unassigned');
       expect(screen.getByTestId('count-unassigned')).toHaveTextContent('14');
-
-      // Mine queue
-      const mineTab = screen.getByTestId('queue-mine');
-      expect(mineTab).toHaveTextContent('Mine');
       expect(screen.getByTestId('count-mine')).toHaveTextContent('5');
-
-      // Escalated queue
-      const escalatedTab = screen.getByTestId('queue-escalated');
-      expect(escalatedTab).toHaveTextContent('Escalated');
       expect(screen.getByTestId('count-escalated')).toHaveTextContent('2');
+      expect(screen.getByTestId('count-all')).toHaveTextContent('21');
     });
 
     it('handles queue selection when a queue indicator is clicked', () => {
@@ -316,14 +308,54 @@ describe('Workspace Navigation & Layout Shell', () => {
           unassignedCount={7}
           mineCount={3}
           escalatedCount={1}
+          openCount={11}
           activeQueue="mine"
           onSelectQueue={handleSelectQueue}
-        />
+          {...searchProps}
+        />,
       );
 
-      const escalatedTab = screen.getByTestId('queue-escalated');
-      fireEvent.click(escalatedTab);
+      fireEvent.click(screen.getByTestId('queue-escalated'));
       expect(handleSelectQueue).toHaveBeenCalledWith('escalated');
+    });
+
+    it('commits the search only when the desk submits it', () => {
+      const handleSearch = vi.fn();
+      render(
+        <SupportHeader
+          unassignedCount={0}
+          mineCount={0}
+          escalatedCount={0}
+          openCount={0}
+          activeQueue="all"
+          searchQuery=""
+          onSearchChange={handleSearch}
+        />,
+      );
+
+      fireEvent.change(screen.getByTestId('support-search-input'), { target: { value: 'never arrived' } });
+      expect(handleSearch).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByTestId('support-search-submit'));
+      expect(handleSearch).toHaveBeenCalledWith('never arrived');
+    });
+
+    it('reads as stale rather than as zero when the queue could not be loaded', () => {
+      render(
+        <SupportHeader
+          unassignedCount={14}
+          mineCount={5}
+          escalatedCount={2}
+          openCount={21}
+          activeQueue="all"
+          searchQuery=""
+          onSearchChange={() => {}}
+          error="Could not load the dispute queue: permission denied"
+        />,
+      );
+
+      expect(screen.getByRole('alert')).toHaveTextContent(/permission denied/i);
+      expect(screen.getByTestId('count-unassigned')).toHaveTextContent('—');
     });
   });
 });

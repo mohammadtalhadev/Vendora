@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Dispute } from '../../../types/domain';
+import type { SupportDisputeRow } from '../api/disputes';
 import { cn } from '../../../lib/utils';
 import {
   Inbox,
@@ -9,93 +9,57 @@ import {
   ListFilter,
   Store,
   ExternalLink,
+  MessageSquare,
+  Truck,
+  Headphones,
 } from 'lucide-react';
 
 export type QueueFilterTab = 'all' | 'unassigned' | 'mine' | 'escalated' | 'resolved';
 
 export interface DisputeQueueListProps {
-  disputes: Dispute[];
-  selectedDisputeId?: string;
-  onSelectDispute: (dispute: Dispute) => void;
-  activeFilter?: QueueFilterTab;
-  onFilterChange?: (filter: QueueFilterTab) => void;
-  currentAgentId?: string;
-  searchQuery?: string;
+  /** One page of the queue, already filtered, searched and paged in Postgres. */
+  disputes: SupportDisputeRow[];
+  /** Tab badges, counted over every case by the server, not over this page. */
+  counts: Record<QueueFilterTab, number>;
+  activeFilter: QueueFilterTab;
+  onFilterChange: (tab: QueueFilterTab) => void;
+  selectedId: string | null;
+  onSelect: (disputeId: string) => void;
+  loading?: boolean;
+  /** A failed read is shown as an error, never as an empty list. */
+  error?: string | null;
   className?: string;
 }
 
+const money = (amount: number) => `$${amount.toFixed(2)}`;
+
+const humanize = (value: string) => value.replace(/_/g, ' ');
+
 export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
   disputes,
-  selectedDisputeId,
-  onSelectDispute,
-  activeFilter = 'all',
+  counts,
+  activeFilter,
   onFilterChange,
-  currentAgentId = 'usr-support-1',
-  searchQuery = '',
+  selectedId,
+  onSelect,
+  loading = false,
+  error = null,
   className,
 }) => {
-  // Counts calculation
-  const unassignedCount = disputes.filter(
-    (d) => !d.assignedAgentId && d.status !== 'resolved_refund' && d.status !== 'resolved_denied'
-  ).length;
-  const mineCount = disputes.filter(
-    (d) => d.assignedAgentId === currentAgentId && d.status !== 'resolved_refund' && d.status !== 'resolved_denied'
-  ).length;
-  const escalatedCount = disputes.filter((d) => d.status === 'escalated').length;
-  const resolvedCount = disputes.filter(
-    (d) => d.status === 'resolved_refund' || d.status === 'resolved_denied'
-  ).length;
-
-  const filterTabs: Array<{ id: QueueFilterTab; label: string; count: number; icon: React.ComponentType<{ className?: string }> }> = [
-    { id: 'all', label: 'All', count: disputes.length, icon: ListFilter },
-    { id: 'unassigned', label: 'Unassigned', count: unassignedCount, icon: Inbox },
-    { id: 'mine', label: 'Mine', count: mineCount, icon: UserCheck },
-    { id: 'escalated', label: 'Escalated', count: escalatedCount, icon: AlertTriangle },
-    { id: 'resolved', label: 'Resolved', count: resolvedCount, icon: CheckCircle2 },
+  const filterTabs: Array<{
+    id: QueueFilterTab;
+    label: string;
+    count: number;
+    icon: React.ComponentType<{ className?: string }>;
+  }> = [
+    { id: 'all', label: 'All', count: counts.all, icon: ListFilter },
+    { id: 'unassigned', label: 'Unassigned', count: counts.unassigned, icon: Inbox },
+    { id: 'mine', label: 'Mine', count: counts.mine, icon: UserCheck },
+    { id: 'escalated', label: 'Escalated', count: counts.escalated, icon: AlertTriangle },
+    { id: 'resolved', label: 'Resolved', count: counts.resolved, icon: CheckCircle2 },
   ];
 
-  // Filter list
-  const filteredDisputes = disputes.filter((d) => {
-    // 1. Queue filter tab
-    if (activeFilter === 'unassigned') {
-      const isUnassigned = !d.assignedAgentId && d.status !== 'resolved_refund' && d.status !== 'resolved_denied';
-      if (!isUnassigned) return false;
-    } else if (activeFilter === 'mine') {
-      const isMine = d.assignedAgentId === currentAgentId;
-      if (!isMine) return false;
-    } else if (activeFilter === 'escalated') {
-      if (d.status !== 'escalated') return false;
-    } else if (activeFilter === 'resolved') {
-      if (d.status !== 'resolved_refund' && d.status !== 'resolved_denied') return false;
-    }
-
-    // 2. Search query filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const matchId = d.id.toLowerCase().includes(q);
-      const matchCustomer = (d.customerName || d.customerId).toLowerCase().includes(q);
-      const matchVendor = (d.vendorName || d.vendorId).toLowerCase().includes(q);
-      const matchReason = d.reason.toLowerCase().includes(q);
-      const matchSubOrder = d.subOrderId.toLowerCase().includes(q);
-      if (!matchId && !matchCustomer && !matchVendor && !matchReason && !matchSubOrder) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  const getReasonTag = (reason: string) => {
-    if (reason.includes('-')) {
-      return reason.split('-')[0].trim();
-    }
-    if (reason.includes(':')) {
-      return reason.split(':')[0].trim();
-    }
-    return reason.length > 24 ? `${reason.slice(0, 24)}...` : reason;
-  };
-
-  const getStatusBadge = (status: Dispute['status']) => {
+  const getStatusBadge = (status: SupportDisputeRow['status']) => {
     switch (status) {
       case 'open':
         return (
@@ -136,7 +100,7 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
     }
   };
 
-  const isUrgent = (dispute: Dispute) => {
+  const isUrgent = (dispute: SupportDisputeRow) => {
     return dispute.urgency === 'urgent' || dispute.status === 'escalated';
   };
 
@@ -152,7 +116,9 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
             Dispute Triage Queue
           </h2>
           <span className="text-[11px] font-medium text-slate-400">
-            {filteredDisputes.length} ticket{filteredDisputes.length === 1 ? '' : 's'}
+            {loading
+              ? 'Loading…'
+              : `Showing ${disputes.length} of ${counts[activeFilter]} case${counts[activeFilter] === 1 ? '' : 's'}`}
           </span>
         </div>
 
@@ -171,7 +137,7 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
                 role="tab"
                 aria-selected={isTabActive}
                 data-testid={`filter-tab-${tab.id}`}
-                onClick={() => onFilterChange?.(tab.id)}
+                onClick={() => onFilterChange(tab.id)}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer',
                   isTabActive
@@ -197,34 +163,58 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
 
       {/* Disputes Item List */}
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100 p-2 space-y-1">
-        {filteredDisputes.length === 0 ? (
+        {error ? (
+          <div data-testid="dispute-queue-error" className="py-12 px-4 text-center">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-500 mb-3">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <p className="text-xs font-semibold text-rose-700">Could not load the queue</p>
+            <p className="text-[11px] text-slate-500 mt-0.5 break-words">{error}</p>
+          </div>
+        ) : loading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={`queue-skeleton-${index}`}
+              data-testid="dispute-item-skeleton"
+              aria-hidden="true"
+              className="p-3 rounded-xl border border-transparent animate-pulse"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="h-3 w-20 rounded bg-slate-100" />
+                <div className="h-3.5 w-16 rounded-full bg-slate-100" />
+              </div>
+              <div className="mt-2.5 h-2.5 w-2/3 rounded bg-slate-100" />
+              <div className="mt-2 h-2.5 w-1/3 rounded bg-slate-100" />
+            </div>
+          ))
+        ) : disputes.length === 0 ? (
           <div className="py-12 px-4 text-center">
             <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-3">
               <Inbox className="h-5 w-5" />
             </div>
             <p className="text-xs font-semibold text-slate-700">No disputes found</p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {searchQuery ? 'Try clearing your search query.' : 'There are no active tickets in this queue.'}
+              There are no active tickets in this queue.
             </p>
           </div>
         ) : (
-          filteredDisputes.map((dispute) => {
-            const isSelected = dispute.id === selectedDisputeId;
+          disputes.map((dispute) => {
+            const isSelected = dispute.id === selectedId;
             const urgent = isUrgent(dispute);
-            const customerName = dispute.customerName || `Customer #${dispute.customerId.slice(-4)}`;
-            const vendorName = dispute.vendorName || `Store #${dispute.vendorId.slice(-4)}`;
-            const reasonTag = getReasonTag(dispute.reason);
+            const customerName = dispute.customerName || 'Customer';
+            const vendorName = dispute.vendorName || 'Store';
 
             return (
               <div
                 key={dispute.id}
                 role="button"
                 tabIndex={0}
+                aria-pressed={isSelected}
                 data-testid={`dispute-item-${dispute.id}`}
-                onClick={() => onSelectDispute(dispute)}
+                onClick={() => onSelect(dispute.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
-                    onSelectDispute(dispute);
+                    onSelect(dispute.id);
                   }
                 }}
                 className={cn(
@@ -234,20 +224,20 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
                     : 'bg-white border-transparent hover:border-slate-200/90 hover:bg-slate-50/80'
                 )}
               >
-                {/* Top Row: Ticket ID, SLA Urgency Indicator, Status Badge */}
+                {/* Top Row: Ticket ID, Urgency Indicator, Status Badge */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    {/* Urgency indicator: coral dot for urgent, amber dot for standard */}
+                    {/* Urgency as reported by the queue row: coral dot for urgent, amber for standard */}
                     {urgent ? (
                       <span
-                        data-testid="sla-urgent"
-                        title="Urgent SLA (<2h remaining)"
+                        data-testid="urgency-urgent"
+                        title="Urgent priority"
                         className="h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 animate-pulse shrink-0"
                       />
                     ) : (
                       <span
-                        data-testid="sla-standard"
-                        title="Standard SLA (24h)"
+                        data-testid="urgency-standard"
+                        title="Standard priority"
                         className="h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-amber-100 shrink-0"
                       />
                     )}
@@ -258,20 +248,12 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
                   <div>{getStatusBadge(dispute.status)}</div>
                 </div>
 
-                {/* Customer and Vendor Info */}
+                {/* Buyer and Store Info */}
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    {dispute.customerAvatar ? (
-                      <img
-                        src={dispute.customerAvatar}
-                        alt={customerName}
-                        className="h-6 w-6 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
-                      />
-                    ) : (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 shrink-0">
-                        {customerName.charAt(0)}
-                      </div>
-                    )}
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 shrink-0">
+                      {customerName.charAt(0)}
+                    </div>
                     <span className="text-xs font-semibold text-slate-800 truncate">
                       {customerName}
                     </span>
@@ -283,16 +265,49 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
                   </div>
                 </div>
 
-                {/* Bottom Row: Reason Tag Pill & Sub-order Reference Link */}
-                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100/80">
-                  <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 border border-amber-200/50">
-                    {reasonTag}
+                {/* Case Facts: package status, thread size, ownership, money still owed */}
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                  <span className="inline-flex items-center gap-1" title="Package status">
+                    <Truck className="h-3 w-3 text-slate-400" />
+                    <span className="capitalize">{humanize(dispute.packageStatus)}</span>
                   </span>
 
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-mono text-slate-400 group-hover:text-slate-600">
-                    <span>#{dispute.subOrderId}</span>
-                    <ExternalLink className="h-2.5 w-2.5" />
+                  <span className="inline-flex items-center gap-1" title="Messages in this case">
+                    <MessageSquare className="h-3 w-3 text-slate-400" />
+                    <span>{dispute.messages}</span>
                   </span>
+
+                  <span
+                    className="inline-flex items-center gap-1"
+                    title={dispute.agentName ? 'Assigned agent' : 'No agent has this case'}
+                  >
+                    <Headphones className="h-3 w-3 text-slate-400" />
+                    <span className={cn('truncate max-w-[110px]', !dispute.agentName && 'italic text-slate-400')}>
+                      {dispute.agentName ?? 'Unassigned'}
+                    </span>
+                  </span>
+
+                  <span className="ml-auto inline-flex items-center gap-1 font-mono font-bold text-slate-900">
+                    {money(dispute.remainingGross)}
+                    <span className="font-sans font-medium text-slate-500">still owed</span>
+                  </span>
+                </div>
+
+                {/* Bottom Row: Reason Tag Pill & Sub-order Reference Link */}
+                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100/80">
+                  <span
+                    title={dispute.reason}
+                    className="inline-block max-w-[190px] truncate rounded-md bg-amber-50 px-2 py-0.5 align-middle text-[10px] font-medium text-amber-800 border border-amber-200/50"
+                  >
+                    {dispute.reason}
+                  </span>
+
+                  {dispute.subOrderId && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-mono text-slate-400 group-hover:text-slate-600">
+                      <span>#{dispute.subOrderId}</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </span>
+                  )}
                 </div>
               </div>
             );

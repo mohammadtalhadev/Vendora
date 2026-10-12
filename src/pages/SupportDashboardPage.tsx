@@ -1,230 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import type { Dispute, SubOrder } from '../types/domain';
-import { mockDb } from '../mocks/db';
-import { SEED_DISPUTES, SEED_SUB_ORDERS } from '../mocks/seed/operations';
+import React, { useState } from 'react';
+import { MessageSquareOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../store/auth-store';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { SupportHeader, type SupportQueueType } from '../features/support/components/SupportHeader';
 import { DisputeQueueList, type QueueFilterTab } from '../features/support/components/DisputeQueueList';
 import { DisputeConversationThread } from '../features/support/components/DisputeConversationThread';
 import { DisputeContextBar } from '../features/support/components/DisputeContextBar';
-import { MessageSquareOff } from 'lucide-react';
+import {
+  useCannedResponses,
+  useDisputeQueue,
+  useDisputeThread,
+  useSupportAgents,
+} from '../features/support/hooks/useSupportQueries';
+import { useSupportActions } from '../features/support/hooks/useSupportActions';
+
+/** Which pool the queue read asks Postgres for. The tabs are filters, not client-side slices. */
+const POOL: Record<QueueFilterTab, { status: string; unassigned?: boolean; mine?: boolean }> = {
+  all: { status: 'all' },
+  unassigned: { status: 'awaiting_staff', unassigned: true },
+  mine: { status: 'awaiting_staff', mine: true },
+  escalated: { status: 'escalated' },
+  resolved: { status: 'resolved' },
+};
+
+const EmptyPane: React.FC<{ title: string; body: string }> = ({ title, body }) => (
+  <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-8 text-center">
+    <MessageSquareOff className="mb-2 h-10 w-10 text-slate-300" />
+    <h3 className="text-sm font-bold text-slate-700">{title}</h3>
+    <p className="mt-1 max-w-xs text-xs text-slate-400">{body}</p>
+  </div>
+);
 
 export const SupportDashboardPage: React.FC = () => {
-  const { user } = useAuthStore();
-  const currentAgentId = user?.id || 'usr-support-1';
-  const currentAgentName = user?.name || 'Jordan Support Lead';
+  const user = useAuthStore((s) => s.user);
 
-  // 1. Disputes state initialized from mockDb / localStorage / seed
-  const [disputes, setDisputes] = useState<Dispute[]>(() => {
-    if (mockDb.disputes && mockDb.disputes.length > 0) {
-      return [...mockDb.disputes];
-    }
-    return [...SEED_DISPUTES];
+  const [tab, setTab] = useState<QueueFilterTab>('all');
+  const [searchInput, setSearchInput] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(12);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const pool = POOL[tab];
+  const queue = useDisputeQueue({
+    status: pool.status,
+    search: appliedSearch,
+    page,
+    pageSize,
+    unassigned: pool.unassigned ?? false,
+    assignedTo: pool.mine ? (user?.id ?? null) : null,
   });
+  const rows = queue.data?.rows ?? [];
+  const counts = queue.data?.counts;
 
-  // 2. Sub-orders state
-  const [subOrders, setSubOrders] = useState<SubOrder[]>(() => {
-    if (mockDb.subOrders && mockDb.subOrders.length > 0) {
-      return [...mockDb.subOrders];
-    }
-    return [...SEED_SUB_ORDERS];
-  });
+  // The selection follows the page: a case that is not in this pool is not "open" on the desk.
+  const active = rows.find((row) => row.id === selectedId) ?? rows[0] ?? null;
+  const activeId = active?.id ?? null;
 
-  // 3. Queue selection & Search state
-  const [activeQueue, setActiveQueue] = useState<QueueFilterTab>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const thread = useDisputeThread(activeId);
+  const directory = useSupportAgents();
+  const templates = useCannedResponses();
+  const actions = useSupportActions();
 
-  // 4. Active Dispute selection
-  const [selectedDisputeId, setSelectedDisputeId] = useState<string>(() => {
-    return disputes[0]?.id || 'DSP-401';
-  });
+  const writes = [
+    actions.assignDispute,
+    actions.escalateDispute,
+    actions.postMessage,
+    actions.refundPackage,
+    actions.resolveDispute,
+  ];
+  const failed = writes.find((mutation) => mutation.isError);
+  const writeError = failed?.error instanceof Error ? failed.error.message : null;
+  const writing = writes.some((mutation) => mutation.isPending);
 
-  // Keep mockDb and state in sync on initial mount if mockDb was empty
-  useEffect(() => {
-    if (mockDb.disputes.length === 0) {
-      mockDb.disputes = [...disputes];
-    }
-    if (mockDb.subOrders.length === 0) {
-      mockDb.subOrders = [...subOrders];
-    }
-  }, [disputes, subOrders]);
-
-  // Derive counts for SupportHeader
-  const unassignedCount = disputes.filter(
-    (d) => !d.assignedAgentId && d.status !== 'resolved_refund' && d.status !== 'resolved_denied'
-  ).length;
-  const mineCount = disputes.filter(
-    (d) => d.assignedAgentId === currentAgentId && d.status !== 'resolved_refund' && d.status !== 'resolved_denied'
-  ).length;
-  const escalatedCount = disputes.filter((d) => d.status === 'escalated').length;
-
-  // Currently selected dispute object
-  const activeDispute = disputes.find((d) => d.id === selectedDisputeId) || disputes[0] || null;
-
-  // Associated sub-order object
-  const activeSubOrder = activeDispute
-    ? subOrders.find((so) => so.id === activeDispute.subOrderId) || null
-    : null;
-
-  // Handle header queue indicator change
-  const handleSelectHeaderQueue = (q: SupportQueueType) => {
-    setActiveQueue(q as QueueFilterTab);
+  const changeTab = (next: QueueFilterTab) => {
+    setTab(next);
+    setPage(1);
+    setSelectedId(null);
   };
 
-  // Helper to persist disputes to mockDb and localStorage
-  const persistDisputes = (updatedList: Dispute[]) => {
-    setDisputes(updatedList);
-    mockDb.disputes = updatedList;
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('vd:v1:disputes', JSON.stringify(updatedList));
-      } catch (err) {
-        console.error('Failed to persist disputes to localStorage:', err);
-      }
-    }
+  const search = (next: string) => {
+    setAppliedSearch(next);
+    setSearchInput(next);
+    setPage(1);
+    setSelectedId(null);
   };
 
-  // Helper to persist sub-orders
-  const persistSubOrders = (updatedList: SubOrder[]) => {
-    setSubOrders(updatedList);
-    mockDb.subOrders = updatedList;
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('vd:v1:suborders', JSON.stringify(updatedList));
-      } catch (err) {
-        console.error('Failed to persist suborders to localStorage:', err);
-      }
-    }
-  };
-
-  // Send message or post internal note
-  const handleSendMessage = (content: string, isInternalNote: boolean) => {
-    if (!activeDispute) return;
-
-    try {
-      mockDb.addDisputeMessage(activeDispute.id, {
-        senderRole: 'support',
-        senderName: currentAgentName,
-        content,
-        isInternalNote,
-      });
-
-      const updatedDisputes = mockDb.disputes.map((d) => (d.id === activeDispute.id ? { ...d } : d));
-      persistDisputes(updatedDisputes);
-    } catch {
-      // Fallback in-memory update
-      const newMsg = {
-        id: `msg-${Date.now()}`,
-        senderRole: 'support' as const,
-        senderName: currentAgentName,
-        content,
-        isInternalNote,
-        timestamp: new Date().toISOString(),
-      };
-      const updatedList = disputes.map((d) =>
-        d.id === activeDispute.id ? { ...d, messages: [...d.messages, newMsg] } : d
-      );
-      persistDisputes(updatedList);
-    }
-  };
-
-  // Resolution 1: Full Refund
-  const handleResolveFullRefund = (disputeId: string, subOrderId: string, amount: number) => {
-    try {
-      mockDb.updateDisputeStatus(
-        disputeId,
-        'resolved_refund',
-        `Full escrow refund authorized for $${amount.toFixed(2)}. Sub-order marked as refunded.`,
-        amount
-      );
-      persistDisputes([...mockDb.disputes]);
-      persistSubOrders([...mockDb.subOrders]);
-    } catch {
-      // Fallback update
-      const updatedDisputes = disputes.map((d) =>
-        d.id === disputeId
-          ? {
-              ...d,
-              status: 'resolved_refund' as const,
-              resolutionNote: `Full escrow refund authorized for $${amount.toFixed(2)}.`,
-              resolutionAmount: amount,
-            }
-          : d
-      );
-      const updatedSubOrders = subOrders.map((so) =>
-        so.id === subOrderId ? { ...so, status: 'refunded' as const } : so
-      );
-      persistDisputes(updatedDisputes);
-      persistSubOrders(updatedSubOrders);
-    }
-  };
-
-  // Resolution 2: Partial Refund / Store Credit
-  const handleResolvePartialRefund = (
-    disputeId: string,
-    _subOrderId: string,
-    amount: number,
-    note?: string
-  ) => {
-    const finalNote = note || `Partial refund issued: $${amount.toFixed(2)}`;
-    try {
-      mockDb.updateDisputeStatus(disputeId, 'resolved_refund', finalNote, amount);
-      persistDisputes([...mockDb.disputes]);
-    } catch {
-      const updatedDisputes = disputes.map((d) =>
-        d.id === disputeId
-          ? {
-              ...d,
-              status: 'resolved_refund' as const,
-              resolutionNote: finalNote,
-              resolutionAmount: amount,
-            }
-          : d
-      );
-      persistDisputes(updatedDisputes);
-    }
-  };
-
-  // Resolution 3: Deny Dispute
-  const handleDenyDispute = (disputeId: string, note?: string) => {
-    const finalNote = note || 'Dispute claim denied following policy review.';
-    try {
-      mockDb.updateDisputeStatus(disputeId, 'resolved_denied', finalNote);
-      persistDisputes([...mockDb.disputes]);
-    } catch {
-      const updatedDisputes = disputes.map((d) =>
-        d.id === disputeId
-          ? {
-              ...d,
-              status: 'resolved_denied' as const,
-              resolutionNote: finalNote,
-            }
-          : d
-      );
-      persistDisputes(updatedDisputes);
-    }
-  };
-
-  // Resolution 4: Escalate to Admin
-  const handleEscalateToAdmin = (disputeId: string, note?: string) => {
-    const finalNote = note || 'Escalated to platform admin for binding arbitration.';
-    try {
-      mockDb.updateDisputeStatus(disputeId, 'escalated', finalNote);
-      persistDisputes([...mockDb.disputes]);
-    } catch {
-      const updatedDisputes = disputes.map((d) =>
-        d.id === disputeId
-          ? {
-              ...d,
-              status: 'escalated' as const,
-              resolutionNote: finalNote,
-            }
-          : d
-      );
-      persistDisputes(updatedDisputes);
-    }
-  };
+  const readError = queue.isError && queue.error instanceof Error ? queue.error.message : 'The queue could not be read.';
 
   return (
     <WorkspaceLayout
@@ -232,73 +94,123 @@ export const SupportDashboardPage: React.FC = () => {
       title="Support & Dispute Resolution"
       subtitle="Escrow mediation, dispute triage, and customer protection desk"
     >
-      <div className="flex flex-col gap-4 max-w-[1600px] mx-auto pb-8">
-        {/* Support Header with Triage Queues and Search */}
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 pb-8">
         <SupportHeader
-          unassignedCount={unassignedCount}
-          mineCount={mineCount}
-          escalatedCount={escalatedCount}
-          activeQueue={activeQueue === 'resolved' ? 'all' : (activeQueue as SupportQueueType)}
-          onSelectQueue={handleSelectHeaderQueue}
-          agentName={currentAgentName}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          unassignedCount={counts?.unassigned ?? 0}
+          mineCount={counts?.mine ?? 0}
+          escalatedCount={counts?.escalated ?? 0}
+          openCount={counts?.awaitingStaff ?? 0}
+          activeQueue={tab === 'resolved' ? 'all' : (tab as SupportQueueType)}
+          onSelectQueue={(next) => changeTab(next)}
+          agentName={user?.name}
+          searchQuery={searchInput}
+          onSearchChange={search}
+          error={queue.isError ? readError : null}
+          loading={queue.isPlaceholderData || queue.isFetching}
         />
 
-        {/* 3-Pane Responsive Triage Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[680px] h-[calc(100vh-220px)]">
-          {/* Pane 1: Left Queue List (3 cols) */}
-          <section className="lg:col-span-4 xl:col-span-3 h-full overflow-hidden">
+        <div className="grid min-h-[680px] grid-cols-1 gap-4 lg:h-[calc(100vh-220px)] lg:grid-cols-12">
+          <section className="h-full overflow-hidden lg:col-span-4 xl:col-span-3">
             <DisputeQueueList
-              disputes={disputes}
-              selectedDisputeId={selectedDisputeId}
-              onSelectDispute={(dispute) => setSelectedDisputeId(dispute.id)}
-              activeFilter={activeQueue}
-              onFilterChange={setActiveQueue}
-              currentAgentId={currentAgentId}
-              searchQuery={searchQuery}
+              disputes={rows}
+              counts={{
+                all: queue.data?.total ?? 0,
+                unassigned: counts?.unassigned ?? 0,
+                mine: counts?.mine ?? 0,
+                escalated: counts?.escalated ?? 0,
+                resolved: counts?.resolved ?? 0,
+              }}
+              activeFilter={tab}
+              onFilterChange={changeTab}
+              selectedId={activeId}
+              onSelect={setSelectedId}
+              loading={queue.isLoading}
+              error={queue.isError ? readError : null}
               className="h-full"
             />
-          </section>
 
-          {/* Pane 2: Center Conversation Thread (5-6 cols) */}
-          <section className="lg:col-span-4 xl:col-span-5 h-full overflow-hidden">
-            {activeDispute ? (
-              <DisputeConversationThread
-                dispute={activeDispute}
-                onSendMessage={handleSendMessage}
-                currentAgentName={currentAgentName}
-                currentAgentRole="support"
-                className="h-full"
-              />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-8 text-center">
-                <MessageSquareOff className="h-10 w-10 text-slate-300 mb-2" />
-                <h3 className="text-sm font-bold text-slate-700">No dispute selected</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                  Choose a dispute ticket from the triage queue on the left to inspect conversation timeline.
-                </p>
+            {queue.data && queue.data.total > pageSize && (
+              <div className="mt-2 flex items-center justify-between rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs text-slate-600">
+                <span>
+                  Page {queue.data.page} of {Math.ceil(queue.data.total / pageSize)} · {queue.data.total} cases
+                </span>
+                <span className="flex gap-1">
+                  <button
+                    type="button"
+                    data-testid="queue-prev"
+                    disabled={queue.data.page <= 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    className="cursor-pointer rounded-lg border border-slate-200 p-1 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="queue-next"
+                    disabled={queue.data.page * pageSize >= queue.data.total}
+                    onClick={() => setPage((current) => current + 1)}
+                    className="cursor-pointer rounded-lg border border-slate-200 p-1 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </span>
               </div>
             )}
           </section>
 
-          {/* Pane 3: Right Context & Actions Sidebar (4 cols) */}
-          <section className="lg:col-span-4 xl:col-span-4 h-full overflow-hidden">
-            {activeDispute ? (
-              <DisputeContextBar
-                dispute={activeDispute}
-                subOrder={activeSubOrder}
-                onResolveFullRefund={handleResolveFullRefund}
-                onResolvePartialRefund={handleResolvePartialRefund}
-                onDenyDispute={handleDenyDispute}
-                onEscalateToAdmin={handleEscalateToAdmin}
+          <section className="h-full overflow-hidden lg:col-span-4 xl:col-span-5">
+            {active ? (
+              <DisputeConversationThread
+                dispute={active}
+                messages={thread.data ?? []}
+                templates={templates.data ?? []}
+                loading={thread.isLoading}
+                pending={actions.postMessage.isPending}
+                error={
+                  thread.isError && thread.error instanceof Error
+                    ? thread.error.message
+                    : writeError && actions.postMessage.isError
+                      ? writeError
+                      : null
+                }
+                onSend={(content, internalNote) => {
+                  actions.postMessage.mutate({ disputeId: active.id, content, internalNote });
+                }}
                 className="h-full"
               />
             ) : (
-              <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-8 text-center">
-                <p className="text-xs text-slate-400">
-                  Select a dispute to view order breakdown and resolution controls.
-                </p>
+              <EmptyPane
+                title="No case selected"
+                body={
+                  queue.isError
+                    ? 'The queue could not be read, so there is nothing to open.'
+                    : 'Pick a case from the triage queue to read its conversation.'
+                }
+              />
+            )}
+          </section>
+
+          <section className="h-full overflow-hidden lg:col-span-4 xl:col-span-4">
+            {active ? (
+              <DisputeContextBar
+                dispute={active}
+                agents={directory.data ?? []}
+                pending={writing}
+                error={writeError}
+                onRefund={(amount, note) => {
+                  if (!active.subOrderId) return;
+                  actions.refundPackage.mutate({ subOrderId: active.subOrderId, amount, reason: note });
+                }}
+                onResolve={(outcome, note, amount) => {
+                  actions.resolveDispute.mutate({ disputeId: active.id, outcome, note, amount });
+                }}
+                onEscalate={(note) => actions.escalateDispute.mutate({ disputeId: active.id, note })}
+                onAssign={(agentId) => actions.assignDispute.mutate({ disputeId: active.id, agentId })}
+                className="h-full"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-8 text-center text-xs text-slate-400">
+                Open a case to see its money and record a ruling.
               </div>
             )}
           </section>

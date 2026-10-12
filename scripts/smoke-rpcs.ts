@@ -635,6 +635,406 @@ await expectThrow(
 await as('anon');
 ok('an anonymous visitor sees the published answer only', (await q('select count(*)::int c from product_qa'))[0].c === 1);
 
+console.log('\n[admin] the console reads, decides and records through RPCs');
+await as('postgres');
+const aStore = (await q(`select id from vendor_profiles where slug='tech-store'`))[0].id;
+const aOrder = (await q(
+  `insert into orders (customer_id, customer_email) values ($1::uuid,'customer@demo.test') returning id`,
+  [CU],
+))[0].id;
+const aPkg = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, commission_amount, net_payout, status)
+   values ($1,$2,100,5,10,95,'delivered') returning id`,
+  [aOrder, aStore],
+))[0].id;
+const aDispute = (await q(
+  `insert into disputes (sub_order_id, order_group_id, customer_id, customer_name, vendor_id, vendor_name, reason, status, urgency)
+   values ($1,$2,$3,'Sarah Customer',$4,'Tech Store','Package never arrived','open','urgent') returning id`,
+  [aPkg, aOrder, CU, aStore],
+))[0].id;
+const aDraft = (await q(
+  `insert into products (title, slug, category_id, price, seller_id, status)
+   values ('Queued Listing','queued-listing',$1::uuid,42,$2::uuid,'pending_review') returning id`,
+  [CAT, aStore],
+))[0].id;
+const adApplicant = (await q(
+  `insert into auth.users (id, email, raw_user_meta_data) values (gen_random_uuid(),'applicant@demo.test','{}') returning id`,
+))[0].id;
+await q(
+  `insert into vendor_applications (user_id, proposed_store_name, proposed_slug, status)
+   values ($1::uuid,'Atlas Gadgets','atlas-gadgets','pending')`, [adApplicant],
+);
+await q(`update profiles set vendor_status='pending' where id=$1`, [adApplicant]);
+
+await as('authenticated', CU);
+await expectThrow('a customer cannot read the platform overview', () => q('select admin_dashboard(30)'), 'only the platform team');
+await expectThrow('a customer cannot list merchants', () => q('select admin_vendor_queue()'), 'only the platform team');
+await expectThrow('a customer cannot refund a package', () => q(`select admin_refund_sub_order($1,5,'x')`, [aPkg]), 'only the platform team');
+
+await as('authenticated', VENDOR);
+await expectThrow('a seller cannot suspend their own store', () => q(`select admin_set_vendor_status($1,'suspended','')`, [aStore]), 'only the platform team');
+await expectThrow('a seller cannot set their own commission', () => q(`select admin_set_vendor_commission($1,0.01)`, [aStore]), 'only the platform team');
+await expectThrow('a seller cannot read the moderation queue', () => q('select admin_moderation_queue()'), 'only the platform team');
+
+await as('authenticated', ADMIN);
+const adDash = (await q('select admin_dashboard(30) d'))[0].d;
+ok('the overview counts the delivered package from the rows', Number(adDash.kpis.packages) >= 1 && Number(adDash.kpis.gmvBooked) >= 105);
+ok('the overview reports the urgent dispute it can see', Number(adDash.trust.escalatedDisputes + adDash.trust.openDisputes) >= 1);
+ok('the overview counts the pending application', Number(adDash.sellers.awaitingReview) >= 1);
+
+const adVendors = (await q(`select admin_vendor_queue('all','tech') r`))[0].r;
+ok('the merchant queue finds the store by name only', adVendors.rows.length === 1 && adVendors.rows[0].storeName === 'Tech Store');
+ok('the merchant queue settles its own money', Number(adVendors.rows[0].gross) >= 105 && Number(adVendors.rows[0].net) >= 95);
+ok('the merchant queue counts the pending application separately', Number(adVendors.pending) >= 1);
+
+const adVendor = (await q(`select admin_vendor_detail($1) d`, [aStore]))[0].d;
+ok('the merchant dossier carries the package that earned the payout', adVendor.packages.length >= 1);
+ok('and the dispute filed against the store', adVendor.disputes.length === 1);
+
+await q(`select admin_set_vendor_status($1,'suspended','Counterfeit goods')`, [aStore]);
+ok('suspending flips the store row', (await q(`select status from vendor_profiles where id=$1`, [aStore]))[0].status === 'suspended');
+ok('suspending flips the owning account too', (await q(`select vendor_status from profiles where id=$1`, [VENDOR]))[0].vendor_status === 'suspended');
+ok('the suspension is written once to the audit trail',
+  (await q(`select count(*)::int c from audit_logs where action='vendor.suspended' and entity_id=$1`, [aStore]))[0].c === 1);
+await q(`select admin_set_vendor_status($1,'active')`, [aStore]);
+
+const adStrike = (await q(`select admin_issue_strike($1,'Counterfeit goods','Second occurrence') s`, [aStore]))[0].s;
+ok('a strike is recorded and counted', Number(adStrike.strikes) === 1);
+await expectThrow('a strike needs a reason', () => q(`select admin_issue_strike($1,'   ')`, [aStore]), 'needs a reason');
+await as('authenticated', VENDOR);
+ok('the accused store can read its own strikes', (await q('select count(*)::int c from vendor_strikes'))[0].c === 1);
+await as('authenticated', CU);
+ok('a customer cannot read another store’s strikes', (await q('select count(*)::int c from vendor_strikes'))[0].c === 0);
+
+await as('authenticated', ADMIN);
+await q(`select admin_set_global_commission(0.08)`);
+ok('the global rate lands where pricing reads it',
+  Number((await q('select global_default_rate from commission_config where id'))[0].global_default_rate) === 0.08);
+await expectThrow('a rate above 50% is refused', () => q(`select admin_set_global_commission(0.9)`), 'between 0');
+await q(`select admin_set_vendor_commission($1,0.05)`, [aStore]);
+ok('a vendor override is stored on the row',
+  Number((await q(`select commission_rate_override from vendor_profiles where id=$1`, [aStore]))[0].commission_rate_override) === 0.05);
+ok('and mirrored in the commission config map',
+  Object.keys((await q('select vendor_overrides as o from commission_config where id'))[0].o).includes(aStore));
+await q(`select admin_set_category_commission($1,0.12)`, [CAT]);
+ok('a category override is recorded',
+  Number((await q(`select commission_rate_override from categories where id=$1`, [CAT]))[0].commission_rate_override) === 0.12);
+
+const adBatch = (await q(`select admin_moderate_products(array[$1]::uuid[],'approved') r`, [aDraft]))[0].r;
+ok('moderation decides the row and attributes the decision',
+  Number(adBatch.decided) === 1 && (await q(`select moderated_by::text m from products where id=$1`, [aDraft]))[0].m === ADMIN);
+ok('deciding the same thing again changes nothing',
+  Number((await q(`select admin_moderate_products(array[$1]::uuid[],'approved') r`, [aDraft]))[0].r.decided) === 0);
+await expectThrow('a rejection needs a reason the seller can read',
+  () => q(`select admin_moderate_products(array[$1]::uuid[],'rejected',null)`, [aDraft]), 'needs a reason');
+await expectThrow('a customer cannot be given moderation work',
+  () => q(`select admin_assign_moderator($1,$2)`, [aDraft, CU]), 'not staff');
+await q(`select admin_assign_moderator($1,$2)`, [aDraft, ADMIN]);
+ok('a listing can be assigned to a staff account',
+  (await q(`select assigned_moderator_id::text m from products where id=$1`, [aDraft]))[0].m === ADMIN);
+
+const adOneP = (await q(
+  `select admin_create_product_1p(jsonb_build_object('title','Vendora Studio Cable','price',19.5,'status','approved','categoryId',$1::text)) r`, [CAT],
+))[0].r;
+ok('a first-party listing belongs to the platform store', adOneP.sellerId === PLATFORM);
+ok('and is audited as created',
+  (await q(`select count(*)::int c from audit_logs where action='product.create_1p' and entity_id=$1`, [adOneP.id]))[0].c === 1);
+await expectThrow('a listing cannot be invented without a price',
+  () => q(`select admin_create_product_1p('{\"title\":\"No Price\"}'::jsonb)`), 'price above zero');
+
+await q(`select admin_set_user_status($1,'suspended','Chargeback pattern')`, [CU2]);
+ok('an account can be suspended with the reason kept',
+  (await q(`select account_status from profiles where id=$1`, [CU2]))[0].account_status === 'suspended'
+  && (await q(`select account_status_reason from profiles where id=$1`, [CU2]))[0].account_status_reason === 'Chargeback pattern');
+await expectThrow('an admin cannot suspend their own account',
+  () => q(`select admin_set_user_status($1,'banned','')`, [ADMIN]), 'your own account');
+await q(`select admin_set_user_roles($1,array['customer','support'])`, [CU2]);
+ok('roles are replaced from the console',
+  (await q(`select roles::text from profiles where id=$1`, [CU2]))[0].roles.includes('support'));
+await expectThrow('an admin cannot rewrite their own roles',
+  () => q(`select admin_set_user_roles($1,array['customer'])`, [ADMIN]), 'your own roles');
+await expectThrow('an unknown role is refused rather than stored',
+  () => q(`select admin_set_user_roles($1,array['wizard'])`, [CU2]), 'unknown role');
+
+const adRefund = (await q(`select admin_refund_sub_order($1,105,'Damaged in transit') r`, [aPkg]))[0].r;
+ok('a refund records the amount and the reason', Number(adRefund.amount) === 105 && adRefund.reason === 'Damaged in transit');
+ok('the package reads refunded and says why in its history',
+  (await q(`select status from sub_orders where id=$1`, [aPkg]))[0].status === 'refunded'
+  && JSON.stringify((await q(`select history from sub_orders where id=$1`, [aPkg]))[0].history).includes('Damaged in transit'));
+ok('the order is only marked refunded once nothing is unrefunded',
+  (await q(`select payment_status from orders where id=$1`, [aOrder]))[0].payment_status === 'refunded');
+await expectThrow('a package is not refunded twice',
+  () => q(`select admin_refund_sub_order($1,10,'again')`, [aPkg]), 'already been refunded');
+// `sub_orders` has no INSERT policy for anyone: the platform creates a package
+// only through checkout, so the smoke test seeds this one as the table owner.
+await as('postgres');
+const aPkg2 = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,40,5,'delivered') returning id`, [aOrder, aStore],
+))[0].id;
+await as('authenticated', ADMIN);
+await expectThrow('more than the buyer was charged cannot be refunded',
+  () => q(`select admin_refund_sub_order($1,9999,'greed')`, [aPkg2]), 'more than the buyer was charged');
+await as('authenticated', CU);
+ok('the buyer can read the refund on their own order', (await q(`select count(*)::int c from refunds where order_group_id=$1`, [aOrder]))[0].c === 1);
+// CU2 was given the support role by the role test above, so it now reads the refund ledger the
+// way staff do. An account that is only a customer must still read nothing.
+const OUTSIDER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+await as('postgres');
+await q(`insert into auth.users (id, email, raw_user_meta_data) values ($1,'outsider@demo.test','{}')`, [OUTSIDER]);
+await as('authenticated', CU2);
+ok('a support agent reads the refund ledger', (await q('select count(*)::int c from refunds'))[0].c === 1);
+await as('authenticated', OUTSIDER);
+ok('another account reads no refunds at all', (await q('select count(*)::int c from refunds'))[0].c === 0);
+
+await as('authenticated', ADMIN);
+await q(`select admin_escalate_dispute($1,'Needs a second pair of eyes')`, [aDispute]);
+ok('escalation assigns the case to the actor',
+  (await q(`select assigned_agent_id::text a from disputes where id=$1`, [aDispute]))[0].a === ADMIN);
+ok('the escalation note lands on the case as an internal note',
+  (await q(`select is_internal_note from dispute_messages where dispute_id=$1 order by created_at desc limit 1`, [aDispute]))[0].is_internal_note === true);
+await q(`select resolve_dispute($1,'resolved_refund','Refunded in full',105)`, [aDispute]);
+ok('resolving records the ruling and the amount',
+  (await q(`select status from disputes where id=$1`, [aDispute]))[0].status === 'resolved_refund'
+  && Number((await q(`select resolution_amount from disputes where id=$1`, [aDispute]))[0].resolution_amount) === 105);
+
+const adUsers = (await q(`select admin_user_queue('all','all','') r`))[0].r;
+ok('the account queue totals and role counts come from rows', Number(adUsers.total) >= 6 && Number(adUsers.counts.admins) >= 1);
+ok('the account queue shows the suspension it just made', adUsers.rows.some((r: any) => r.accountStatus === 'suspended'));
+const adAudit = (await q(`select admin_audit_queue('all','vendor') r`))[0].r;
+ok('the audit queue finds the suspension with its state diff',
+  adAudit.rows.some((r: any) => r.action === 'vendor.suspended' && r.before?.status === 'active'));
+const adReport = (await q(`select admin_report_summary(30,'day') r`))[0].r;
+ok('the report totals include the freight the buyer paid', Number(adReport.totals.gross) >= 105 && Number(adReport.totals.freight) >= 5);
+ok('the report buckets money by the period the rows fall in', Array.isArray(adReport.series) && adReport.series.length >= 1);
+const adTree = (await q(`select admin_category_tree() r`))[0].r;
+ok('the category adTree counts the listings under each root', adTree.roots.some((r: any) => Number(r.products) >= 2));
+const adCommission = (await q(`select admin_commission_overview(30) r`))[0].r;
+ok('the commission ledger reports the rate the platform chose', Number(adCommission.globalDefaultRate) === 0.08);
+ok('and lists the changes it recorded', Number(adCommission.changes.length) >= 3);
+const adLogi = (await q(`select admin_logistics_board() r`))[0].r;
+ok('the dispatch board lists the fleet and the delivered count',
+  Number(adLogi.fleet.length) === 1 && Number(adLogi.counts.delivered) >= 1);
+
+const adCat = (await q(`select admin_create_category('Audio','audio-6') r`))[0].r;
+await expectThrow('a category cannot be its own parent',
+  () => q(`select admin_update_category($1::uuid, null, null, $1::uuid)`, [adCat.id]), 'its own parent');
+await q(`select admin_assign_product_category($1,$2)`, [aDraft, adCat.id]);
+ok('a listing can be moved between categories',
+  (await q(`select category_id from products where id=$1`, [aDraft]))[0].category_id === adCat.id);
+await expectThrow('a category still holding listings cannot be deleted',
+  () => q(`select admin_delete_category($1)`, [CAT]), 'still has');
+await q(`select admin_assign_product_category($1,$2)`, [aDraft, CAT]);
+await q(`select admin_delete_category($1)`, [adCat.id]);
+ok('an empty category can be deleted', (await q('select count(*)::int c from categories where slug=$1', ['audio-6']))[0].c === 0);
+
+await q(`select admin_save_platform_settings('{\"payoutSchedule\":\"Weekly on Friday\",\"minPayoutFloor\":75}'::jsonb)`);
+ok('platform settings persist where the console can read them back',
+  (await q('select payout_schedule from platform_settings where id'))[0].payout_schedule === 'Weekly on Friday');
+ok('and the change is audited with its before state',
+  JSON.stringify((await q(`select before_data from audit_logs where action='settings.update' order by created_at desc limit 1`))[0].before_data).includes('Bi-weekly'));
+await as('authenticated', CU);
+await expectThrow('a customer cannot change platform settings',
+  () => q(`select admin_save_platform_settings('{}'::jsonb)`), 'only the platform team');
+await as('anon');
+ok('the storefront can read the settlement cadence it quotes',
+  (await q('select payout_schedule from platform_settings'))[0].payout_schedule === 'Weekly on Friday');
+ok('anon reads no merchant strikes', (await q('select count(*)::int c from vendor_strikes'))[0].c === 0);
+
+console.log('\n[support] staff triage writes through RPCs, not localStorage');
+const SUPPORT = 'b1b1b1b1-b1b1-4b1b-8b1b-b1b1b1b1b1b1';
+const SUPPORT2 = 'c2c2c2c2-c2c2-4c2c-8c2c-c2c2c2c2c2c2';
+await as('postgres');
+await q(
+  `insert into auth.users (id, email, raw_user_meta_data) values
+     ($1,'support@demo.test','{}'),($2,'support2@demo.test','{}')
+   on conflict (id) do nothing`,
+  [SUPPORT, SUPPORT2],
+);
+await q(`update profiles set roles = array['support']::user_role[] where id = any($1::uuid[])`, [
+  [SUPPORT, SUPPORT2],
+]);
+const sOrder = (await q(
+  `insert into orders (customer_id, customer_email) values ($1,'customer@demo.test') returning id`, [CU],
+))[0].id;
+const sPkg = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,80,10,'delivered') returning id`, [sOrder, STORE],
+))[0].id;
+const sCase = (await q(
+  `insert into disputes (sub_order_id, order_group_id, customer_id, customer_name, vendor_id, vendor_name, reason, status)
+   values ($1,$2,$3,'Sarah Customer',$4,'Tech Store','Wrong item delivered','open') returning id`,
+  [sPkg, sOrder, CU, STORE],
+))[0].id;
+
+await as('authenticated', CU);
+await expectThrow('a customer cannot open the dispute queue',
+  () => q('select support_dispute_queue()'), 'only staff can');
+await as('authenticated', SUPPORT);
+const sQueue = (await q(`select support_dispute_queue('all','',1,50) r`))[0].r;
+ok('support reads the queue the platform console reads',
+  sQueue.rows.some((r: any) => r.id === sCase) && sQueue.counts.open >= 1);
+const directory = (await q('select support_staff_directory() r'))[0].r;
+ok('the agent directory lists support accounts and marks the caller',
+  directory.agents.length >= 2 &&
+  directory.agents.filter((a: any) => a.isMe).length === 1 &&
+  directory.agents.every((a: any) => !!a.name && !!a.email) &&
+  !directory.agents.some((a: any) => a.id === VENDOR));
+const assigned = (await q(`select assign_dispute($1,$2) r`, [sCase, SUPPORT2]))[0].r;
+ok('support can hand a case to another agent', assigned.assignedAgentId === SUPPORT2);
+ok('and the load the directory quotes moves with the case',
+  (await q('select support_staff_directory() r'))[0].r.agents
+    .find((a: any) => a.id === SUPPORT2).openCases === 1);
+const s2Pool = (await q(`select support_dispute_queue('all','',1,50,false,$1) r`, [SUPPORT2]))[0].r;
+ok('the queue filters to one agent’s pool in SQL',
+  s2Pool.rows.length >= 1 && s2Pool.rows.every((r: any) => r.agentName));
+const openPool = (await q(`select support_dispute_queue('all','',1,50,true,null) r`))[0].r;
+ok('and to the pool with nobody on it',
+  openPool.rows.every((r: any) => r.agentName === null) && openPool.counts.unassigned >= 0);
+const closedPool = (await q(`select support_dispute_queue('resolved','',1,50,false,null) r`))[0].r;
+ok('and to the cases already closed',
+  closedPool.rows.length >= 1 && closedPool.rows.every((r: any) => String(r.status).startsWith('resolved')));
+await expectThrow('support cannot hand a case to themselves',
+  () => q(`select assign_dispute($1,$2)`, [sCase, SUPPORT]), 'yourself');
+await expectThrow('a case cannot be handed to a non-staff account',
+  () => q(`select assign_dispute($1,$2)`, [sCase, VENDOR]), 'support access');
+const msgId = (await q(
+  `select add_dispute_message($1,'Please send a photo of the label you received.') r`, [sCase],
+))[0].r;
+ok('support can reply on the case as staff',
+  (await q(`select sender_role from dispute_messages where id=$1`, [msgId]))[0].sender_role === 'support');
+await as('authenticated', CU);
+ok('the buyer reads the staff reply on their own case',
+  (await q(`select count(*)::int c from dispute_messages where dispute_id=$1`, [sCase]))[0].c === 1);
+await expectThrow('the buyer cannot post as staff',
+  () => q(`select add_dispute_message($1,'forged')`, [sCase]), 'only staff can post');
+await as('authenticated', SUPPORT);
+const noteId = (await q(
+  `select add_dispute_message($1,$2,true) r`, [sCase, 'Seller shipping label mismatch - flagged for audit'],
+))[0].r;
+ok('an internal note is stored as a note',
+  (await q(`select is_internal_note from dispute_messages where id=$1`, [noteId]))[0].is_internal_note === true);
+const esc = (await q(`select escalate_to_support($1,'Needs senior review') r`, [sCase]))[0].r;
+const escRow = (await q(`select status, urgency, assigned_agent_id::text a from disputes where id=$1`, [sCase]))[0];
+ok('escalation raises urgency and takes ownership',
+  esc.status === 'escalated' && escRow.urgency === 'urgent' && escRow.a === SUPPORT);
+ok('the escalation reason is kept on the case as a note',
+  (await q(`select content from dispute_messages where dispute_id=$1 and is_internal_note order by created_at desc limit 1`, [sCase]))[0].content === 'Needs senior review');
+await q(`select resolve_dispute($1,'resolved_denied','No evidence supplied')`, [sCase]);
+await expectThrow('a resolved case cannot be escalated',
+  () => q(`select escalate_to_support($1,'too late')`, [sCase]), 'resolved disputes cannot be escalated');
+
+// Packages are booked by checkout, never by a signed-in role, so this row is seeded as the owner.
+await as('postgres');
+const sPkg2 = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,80,10,'delivered') returning id`, [sOrder, STORE],
+))[0].id;
+await as('authenticated', SUPPORT);
+const part = (await q(`select support_refund_sub_order($1,45,'Partial goodwill refund','Support') r`, [sPkg2]))[0].r;
+ok('support can refund part of what the buyer paid', Number(part.amount) === 45 && Number(part.remainingGross) === 45);
+ok('the refund is recorded as its own row with the reason',
+  (await q(`select amount::text a, reason from refunds where sub_order_id=$1`, [sPkg2]))[0].reason === 'Partial goodwill refund');
+await expectThrow('support cannot refund more than the buyer was charged',
+  () => q(`select support_refund_sub_order($1,999,'greed','Support')`, [sPkg2]), 'more than the buyer was charged');
+await expectThrow('a refund needs an amount above zero',
+  () => q(`select support_refund_sub_order($1,0,'nothing','Support')`, [sPkg2]), 'above zero');
+const rest = (await q(`select support_refund_sub_order($1,45,'Balance refunded','Support') r`, [sPkg2]))[0].r;
+ok('the second refund closes the remaining gross and the package',
+  Number(rest.remainingGross) === 0 &&
+  (await q(`select status from sub_orders where id=$1`, [sPkg2]))[0].status === 'refunded');
+await expectThrow('a closed package cannot be refunded again',
+  () => q(`select support_refund_sub_order($1,5,'again','Support')`, [sPkg2]), 'already been fully refunded');
+ok('every staff refund is audited',
+  (await q(`select count(*)::int c from audit_logs where action='order.refund' and entity_id=$1`, [sPkg2]))[0].c === 2);
+
+const notified = (await q(
+  `select send_support_notification($1,'Your return was approved','Reply in this thread to add evidence.') r`, [CU],
+))[0].r;
+ok('support can notify a buyer', !!notified);
+await as('authenticated', CU);
+ok('the buyer reads the notice addressed to them',
+  (await q(`select count(*)::int c from notifications where title=$1`, ['Your return was approved']))[0].c === 1);
+await as('authenticated', SUPPORT);
+const found = (await q(`select support_lookup_orders('customer@demo.test', 30) r`))[0].r;
+ok('support can look up a buyer’s orders by email', Array.isArray(found) && found.length >= 1);
+
+const tmpl = (await q(
+  `insert into canned_responses (agent_id, subject, body, category)
+   values ($1,'Late delivery apology','We are sorry...','delivery') returning id`, [SUPPORT],
+))[0].id;
+ok('an agent can save their own template', !!tmpl);
+await as('authenticated', SUPPORT2);
+ok('another agent can read the shared template',
+  (await q(`select count(*)::int c from canned_responses where subject='Late delivery apology'`))[0].c === 1);
+await q(`update canned_responses set subject='hijacked' where id=$1`, [tmpl]);
+ok('but cannot overwrite it',
+  (await q(`select subject from canned_responses where id=$1`, [tmpl]))[0].subject === 'Late delivery apology');
+await q(`delete from canned_responses where id=$1`, [tmpl]);
+ok('and cannot delete it',
+  (await q(`select count(*)::int c from canned_responses where id=$1`, [tmpl]))[0].c === 1);
+await as('authenticated', VENDOR);
+ok('a seller reads no staff template at all',
+  (await q('select count(*)::int c from canned_responses'))[0].c === 0);
+await expectThrow('and cannot add one',
+  () => q(`insert into canned_responses (agent_id, subject) values ($1,'forged')`, [VENDOR]), 'row-level security');
+
+console.log('\n[rider] the rider works their own parcels, and the handover code is the only way to close one');
+await as('postgres');
+const riderOrder = (await q(
+  `insert into orders (customer_id, customer_email, shipping_address)
+   values ($1,'nia.buyer@demo.test',
+     '{"fullName":"Nia Buyer","street":"18 Harbour Road","city":"Boston","state":"MA","zipCode":"02110"}'::jsonb)
+   returning id`, [CU],
+))[0].id;
+const riderPkg = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,30,4,'ready_for_pickup') returning id`, [riderOrder, STORE],
+))[0].id;
+const drop = (await q(
+  `insert into deliveries (sub_order_id, rider_id, status, handover_code_hash)
+   values ($1,$2,'assigned',public.hash_delivery_code('4821')) returning id`, [riderPkg, RPID],
+))[0].id;
+const strayPkg = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,20,3,'ready_for_pickup') returning id`, [riderOrder, STORE],
+))[0].id;
+await as('authenticated', ADMIN);
+await q(`select assign_rider($1,$2)`, [riderPkg, RPID]);
+
+await as('authenticated', RIDER);
+const board = (await q('select rider_delivery_board() r'))[0].r;
+ok('the board lists only this rider’s open parcels',
+  board.rider?.id === RPID && board.deliveries.length >= 1 &&
+  board.deliveries.every((d: any) => d.status !== 'delivered'));
+ok('the rider sees the drop-off address and that a code is needed',
+  board.deliveries.some((d: any) => d.needsHandoverCode === true && d.address?.street === '18 Harbour Road'));
+ok('and the load counts come from the rows', board.counts.assigned >= 1);
+await as('authenticated', CU);
+await expectThrow('a customer cannot read a rider board',
+  () => q('select rider_delivery_board()'), 'not a rider');
+await as('authenticated', RIDER);
+await expectThrow('a rider cannot move a parcel nobody assigned to them',
+  () => q(`select advance_sub_order_status($1,'shipped')`, [strayPkg]), 'not authorized');
+ok('the rider collects the parcel, and the delivery row follows',
+  (await q(`select advance_sub_order_status($1,'shipped') r`, [riderPkg]))[0].r.status === 'shipped' &&
+  (await q(`select status from deliveries where id=$1`, [drop]))[0].status === 'picked_up' &&
+  !!((await q(`select picked_up_at from deliveries where id=$1`, [drop]))[0].picked_up_at));
+ok('and takes it out for delivery',
+  (await q(`select advance_sub_order_status($1,'out_for_delivery') r`, [riderPkg]))[0].r.status === 'out_for_delivery');
+ok('the seller sees the rider progress in the package history',
+  JSON.stringify((await q(`select history from sub_orders where id=$1`, [riderPkg]))[0].history).includes('"actor":"Rider"'));
+await expectThrow('but cannot close the package without the buyer’s code',
+  () => q(`select advance_sub_order_status($1,'delivered')`, [riderPkg]), 'not authorized');
+await expectThrow('and cannot mark their own delivery row delivered',
+  () => q(`update deliveries set status='delivered' where id=$1`, [drop]), 'row-level security');
+await expectThrow('a wrong code does not deliver the parcel',
+  () => q(`select verify_delivery($1,'1111')`, [drop]), 'invalid handover code');
+const closed = (await q(`select verify_delivery($1,'4821') r`, [drop]))[0].r;
+ok('the handover code closes the delivery', closed.status === 'delivered' &&
+  (await q(`select status from sub_orders where id=$1`, [riderPkg]))[0].status === 'delivered' &&
+  !!((await q(`select proof_of_delivery from deliveries where id=$1`, [drop]))[0].proof_of_delivery));
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;
