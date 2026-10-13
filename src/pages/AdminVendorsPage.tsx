@@ -10,6 +10,16 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { useVendorQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
+import type { AdminVendorRow } from '../features/admin/api/vendors';
+import { Input } from '../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { useCurrency } from '../store/currency-store';
 
 export const AdminVendorsPage: React.FC = () => {
@@ -92,6 +102,148 @@ export const AdminVendorsPage: React.FC = () => {
       </WorkspaceLayout>
     );
   }
+
+  const vendorColumns: DataTableColumn<AdminVendorRow>[] = [
+    {
+      key: 'vendor',
+      header: 'Vendor / Store',
+      className: 'py-3.5',
+      headerClassName: 'py-3.5 text-[11px]',
+      cell: (vendor) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs uppercase shadow-2xs">
+            {vendor.storeName.substring(0, 2)}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/admin/vendors/${vendor.id}`}
+                className="font-bold text-slate-900 truncate hover:text-sun-orange hover:underline transition-colors"
+              >
+                {vendor.storeName}
+              </Link>
+              <span
+                className={`rounded px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${
+                  vendor.status === 'suspended'
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {vendor.tier}
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-400 font-normal truncate">
+              {vendor.slug}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'owner',
+      header: 'Owner / Contact',
+      className: 'py-3.5',
+      headerClassName: 'py-3.5 text-[11px]',
+      cell: (vendor) => (
+        <div>
+          <div className="font-semibold text-slate-900">{vendor.storeName}</div>
+          <div className="text-[11px] text-slate-500 truncate">{vendor.slug}@vendora.shop</div>
+        </div>
+      ),
+    },
+    {
+      // The KYC cell is a composite — a dotted pill plus the row's quick
+      // Suspend/Approve action beside it — not a passive status badge, so
+      // the pill markup stays local rather than going through StatusBadge.
+      key: 'kyc',
+      header: 'KYC Status',
+      className: 'py-3.5',
+      headerClassName: 'py-3.5 text-[11px]',
+      cell: (vendor) =>
+        vendor.kyc === 'verified' ? (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Verified
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSetVendorStatus(vendor.id, 'suspended')}
+              className="text-[10px] text-slate-400 hover:text-rose-600 underline font-semibold cursor-pointer"
+            >
+              Suspend
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+              {vendor.kyc.charAt(0).toUpperCase() + vendor.kyc.slice(1)}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSetVendorStatus(vendor.id, 'active')}
+              className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-slate-800 cursor-pointer"
+            >
+              Approve
+            </button>
+          </div>
+        ),
+    },
+    {
+      key: 'tier',
+      header: 'Performance Tier',
+      className: 'py-3.5',
+      headerClassName: 'py-3.5 text-[11px]',
+      cell: (vendor) => (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+          {vendor.tier}
+        </span>
+      ),
+    },
+    {
+      key: 'revenue',
+      header: 'Revenue (30D GMV)',
+      align: 'right',
+      className: 'py-3.5',
+      headerClassName: 'py-3.5 text-[11px]',
+      cell: (vendor) => (
+        <>
+          <div className="font-bold text-slate-900">{formatPrice(vendor.gross)}</div>
+          <div className="text-[11px] text-slate-400">
+            Commission: {formatPrice(vendor.commission)}
+          </div>
+          <div className="text-[11px] font-semibold text-emerald-600">
+            Net: {formatPrice(vendor.net)}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'center',
+      className: 'py-3.5',
+      headerClassName: 'py-3.5 text-[11px]',
+      cell: (vendor) =>
+        vendor.status === 'active' ? (
+          <button
+            type="button"
+            onClick={() => handleSetVendorStatus(vendor.id, 'suspended')}
+            className="rounded bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-rose-700 cursor-pointer"
+          >
+            Suspend
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => handleSetVendorStatus(vendor.id, 'active')}
+            className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-emerald-700 cursor-pointer"
+          >
+            Reinstate
+          </button>
+        ),
+    },
+  ];
 
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Vendor Management" sidebar={<AdminNav />}>
@@ -363,18 +515,18 @@ export const AdminVendorsPage: React.FC = () => {
 
         {/* Filter Controls Row */}
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200/90 bg-white p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-          <div className="relative flex-1">
+          <div className="flex-1">
             <label htmlFor="vendor-search" className="sr-only">
               Search merchants
             </label>
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
+            <Input
               id="vendor-search"
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search vendors by store name, owner, email..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-12 text-xs text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+              leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
+              className="h-9 rounded-lg bg-slate-50/80 text-xs text-slate-900 focus:bg-white"
             />
           </div>
 
@@ -382,174 +534,57 @@ export const AdminVendorsPage: React.FC = () => {
             <label htmlFor="vendor-status-select" className="sr-only">
               Filter by status
             </label>
-            <select
-              id="vendor-status-select"
+            <Select
               value={status}
-              onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-              className="admin-select text-xs font-medium text-slate-700"
+              onValueChange={(value) => { setStatus(value); setPage(1); }}
             >
-              <option value="all">Status: All</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="suspended">Suspended</option>
-            </select>
+              <SelectTrigger
+                id="vendor-status-select"
+                aria-label="Filter by status"
+                className="h-9 w-auto text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Status: All</SelectItem>
+                <SelectItem value="active" className="text-xs">Active</SelectItem>
+                <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                <SelectItem value="suspended" className="text-xs">Suspended</SelectItem>
+              </SelectContent>
+            </Select>
 
             <label htmlFor="vendor-page-size" className="sr-only">
               Rows per page
             </label>
-            <select
-              id="vendor-page-size"
+            <Select
               value={pageSize.toString()}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-              className="admin-select text-xs font-medium text-slate-700"
+              onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}
             >
-              <option value="6">6 per page</option>
-              <option value="12">12 per page</option>
-              <option value="24">24 per page</option>
-            </select>
+              <SelectTrigger
+                id="vendor-page-size"
+                aria-label="Rows per page"
+                className="h-9 w-auto text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6" className="text-xs">6 per page</SelectItem>
+                <SelectItem value="12" className="text-xs">12 per page</SelectItem>
+                <SelectItem value="24" className="text-xs">24 per page</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         {/* Vendors Data Table */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-          <div className="overflow-x-auto">
-            <table
-              className="w-full text-left text-xs"
-              aria-label="Vendor and merchant directory"
-            >
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th scope="col" className="px-4 py-3.5">VENDOR / STORE</th>
-                  <th scope="col" className="px-4 py-3.5">OWNER / CONTACT</th>
-                  <th scope="col" className="px-4 py-3.5">KYC STATUS</th>
-                  <th scope="col" className="px-4 py-3.5">PERFORMANCE TIER</th>
-                  <th scope="col" className="px-4 py-3.5 text-right">REVENUE (30D GMV)</th>
-                  <th scope="col" className="px-4 py-3.5 text-center">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredVendors.map((vendor) => {
-                  return (
-                    <tr
-                      key={vendor.id}
-                      className="transition-colors hover:bg-slate-50/70"
-                    >
-                      {/* Vendor / Store */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs uppercase shadow-2xs">
-                            {vendor.storeName.substring(0, 2)}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Link
-                                to={`/admin/vendors/${vendor.id}`}
-                                className="font-bold text-slate-900 truncate hover:text-sun-orange hover:underline transition-colors"
-                              >
-                                {vendor.storeName}
-                              </Link>
-                              <span
-                                className={`rounded px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${
-                                  vendor.status === 'suspended'
-                                    ? 'bg-rose-100 text-rose-700'
-                                    : 'bg-slate-100 text-slate-600'
-                                }`}
-                              >
-                                {vendor.tier}
-                              </span>
-                            </div>
-                            <div className="text-[11px] text-slate-400 font-normal truncate">
-                              {vendor.slug}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Owner / Contact */}
-                      <td className="px-4 py-3.5">
-                        <div>
-                          <div className="font-semibold text-slate-900">{vendor.storeName}</div>
-                          <div className="text-[11px] text-slate-500 truncate">{vendor.slug}@vendora.shop</div>
-                        </div>
-                      </td>
-
-                      {/* KYC Status */}
-                      <td className="px-4 py-3.5">
-                        {vendor.kyc === 'verified' && (
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                              Verified
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleSetVendorStatus(vendor.id, 'suspended')}
-                              className="text-[10px] text-slate-400 hover:text-rose-600 underline font-semibold cursor-pointer"
-                            >
-                              Suspend
-                            </button>
-                          </div>
-                        )}
-                        {vendor.kyc !== 'verified' && (
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                              {vendor.kyc.charAt(0).toUpperCase() + vendor.kyc.slice(1)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleSetVendorStatus(vendor.id, 'active')}
-                              className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-slate-800 cursor-pointer"
-                            >
-                              Approve
-                            </button>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Performance Tier */}
-                      <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-                          {vendor.tier}
-                        </span>
-                      </td>
-
-                      {/* Revenue (30D GMV) */}
-                      <td className="px-4 py-3.5 text-right">
-                        <div className="font-bold text-slate-900">{formatPrice(vendor.gross)}</div>
-                        <div className="text-[11px] text-slate-400">
-                          Commission: {formatPrice(vendor.commission)}
-                        </div>
-                        <div className="text-[11px] font-semibold text-emerald-600">
-                          Net: {formatPrice(vendor.net)}
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3.5 text-center">
-                        {vendor.status === 'active' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleSetVendorStatus(vendor.id, 'suspended')}
-                            className="rounded bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-rose-700 cursor-pointer"
-                          >
-                            Suspend
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleSetVendorStatus(vendor.id, 'active')}
-                            className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-emerald-700 cursor-pointer"
-                          >
-                            Reinstate
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={vendorColumns}
+            rows={filteredVendors}
+            getRowKey={(vendor) => vendor.id}
+            ariaLabel="Vendor and merchant directory"
+            emptyState={<div className="hidden" aria-hidden="true" />}
+          />
 
           {/* Table Footer / Pagination */}
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500">

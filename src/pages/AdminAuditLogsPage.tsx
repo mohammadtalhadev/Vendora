@@ -5,6 +5,8 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { useAuditQueue } from '../features/admin/hooks/useAdminQueries';
 import type { AuditRow } from '../features/admin/api/audit';
+import { Input } from '../components/ui/input';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 
 /**
  * The trail is read-only and immutable: `admin_audit_queue` pages the rows, facets the
@@ -79,7 +81,83 @@ export const AdminAuditLogsPage: React.FC = () => {
   }
 
   const rows = queue.rows;
-  const totalPages = Math.ceil(queue.total / pageSize) || 1;
+
+  const auditColumns: DataTableColumn<AuditRow>[] = [
+    {
+      key: 'timestamp',
+      header: 'Timestamp',
+      className: 'p-4 font-mono text-slate-500 text-[11px] whitespace-nowrap',
+      headerClassName: 'p-4 text-[11px]',
+      cell: (log) => formatStamp(log.createdAt),
+    },
+    {
+      key: 'actor',
+      header: 'Staff Actor',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px]',
+      cell: (log) => (
+        <>
+          <span className="font-bold text-slate-900 block">{log.actorName || '—'}</span>
+          <span className="text-[10px] text-slate-400">{log.actorRole}</span>
+        </>
+      ),
+    },
+    {
+      // The action chip is NOT a status: its tone is substring-matched over
+      // free-form action strings (suspend/ban/refund/…), which the shared
+      // exact-token StatusBadge map cannot express, so it stays local.
+      key: 'action',
+      header: 'Action Type',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px]',
+      cell: (log) => (
+        <span className={`rounded-full font-bold px-2 py-0.5 text-[10px] ${actionTone(log.action)}`}>
+          {log.action}
+        </span>
+      ),
+    },
+    {
+      key: 'entity',
+      header: 'Entity',
+      className: 'p-4 font-medium text-slate-800',
+      headerClassName: 'p-4 text-[11px]',
+      cell: (log) =>
+        log.entityType ? (
+          <>
+            <span className="block">{log.entityType}</span>
+            <span className="text-[11px] font-normal text-slate-400 font-mono break-all">
+              {log.entityId ?? ''}
+            </span>
+          </>
+        ) : (
+          <span className="text-slate-400">—</span>
+        ),
+    },
+    {
+      key: 'ip',
+      header: 'IP / Session',
+      className: 'p-4 font-mono text-[11px] text-slate-400',
+      headerClassName: 'p-4 text-[11px]',
+      cell: (log) => log.ipAddress ?? '—',
+    },
+    {
+      key: 'diff',
+      header: 'State Diff',
+      align: 'right',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px]',
+      cell: (log) => (
+        <button
+          type="button"
+          onClick={() => setActiveDiffLog(log)}
+          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+        >
+          <FileCode className="h-3 w-3 text-slate-500" />
+          View Diff
+        </button>
+      ),
+    },
+  ];
 
   const handleExportPage = () => {
     exportToCsv({
@@ -178,9 +256,8 @@ export const AdminAuditLogsPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
+          <div className="w-full sm:w-72">
+            <Input
               type="text"
               aria-label="Search the audit trail"
               value={search}
@@ -189,132 +266,34 @@ export const AdminAuditLogsPage: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search by actor, action, or entity..."
-              className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-sun-orange focus:ring-1 focus:ring-sun-orange/20"
+              leftIcon={<Search className="h-3.5 w-3.5" aria-hidden="true" />}
+              className="h-9 rounded-lg bg-slate-50/80 text-xs text-slate-800 focus:bg-white"
             />
           </div>
         </div>
 
-        {/* Table of Audit Logs */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500 text-[11px]">
-                <th className="p-4">Timestamp</th>
-                <th className="p-4">Staff Actor</th>
-                <th className="p-4">Action Type</th>
-                <th className="p-4">Entity</th>
-                <th className="p-4">IP / Session</th>
-                <th className="p-4 text-right">State Diff</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-xs text-slate-500">
-                    No audit entries match these filters.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="p-4 font-mono text-slate-500 text-[11px] whitespace-nowrap">
-                      {formatStamp(log.createdAt)}
-                    </td>
-                    <td className="p-4">
-                      <span className="font-bold text-slate-900 block">{log.actorName || '—'}</span>
-                      <span className="text-[10px] text-slate-400">{log.actorRole}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`rounded-full font-bold px-2 py-0.5 text-[10px] ${actionTone(log.action)}`}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="p-4 font-medium text-slate-800">
-                      {log.entityType ? (
-                        <>
-                          <span className="block">{log.entityType}</span>
-                          <span className="text-[11px] font-normal text-slate-400 font-mono break-all">
-                            {log.entityId ?? ''}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="p-4 font-mono text-[11px] text-slate-400">{log.ipAddress ?? '—'}</td>
-                    <td className="p-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setActiveDiffLog(log)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
-                      >
-                        <FileCode className="h-3 w-3 text-slate-500" />
-                        View Diff
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          {/* Pagination Footer — driven by the queue's server-side page + total */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 p-4 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <label htmlFor="audit-page-size">Rows per page:</label>
-              <select
-                id="audit-page-size"
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="rounded border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-700 cursor-pointer"
-              >
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-              <span className="ml-2">
-                Showing {rows.length === 0 ? 0 : (page - 1) * pageSize + 1}-
-                {Math.min(page * pageSize, queue.total)} of {queue.total.toLocaleString()} entries
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1 self-end sm:self-auto" role="navigation" aria-label="Pagination">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                Previous
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPage(p)}
-                  aria-current={p === page ? 'page' : undefined}
-                  className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
-                    page === p
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+        {/* Table of Audit Logs — pagination is the shared TablePagination
+            (via DataTable), driven by the queue's server-side page + total. */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+          <DataTable
+            columns={auditColumns}
+            rows={rows}
+            getRowKey={(log) => log.id}
+            emptyState={
+              <div className="p-8 text-center text-xs text-slate-500">
+                No audit entries match these filters.
+              </div>
+            }
+            pagination={{
+              page,
+              pageSize,
+              totalItems: queue.total,
+              onPageChange: setPage,
+              onPageSizeChange: setPageSize,
+              pageSizeOptions: [25, 50, 100],
+              noun: 'entries',
+            }}
+          />
         </div>
 
         {/* Modal: Before / After Diff */}

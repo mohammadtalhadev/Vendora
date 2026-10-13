@@ -43,6 +43,8 @@ export const STATUS_LABELS: Record<string, string> = {
   active: 'Active',
   suspended: 'Suspended',
   banned: 'Banned',
+  // Delivery board (AdminLogisticsPage prettyStatus)
+  in_transit: 'In Transit',
 };
 
 const TONE_EMERALD = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
@@ -69,6 +71,9 @@ export const STATUS_TONES: Record<string, string> = {
   pending_review: TONE_AMBER,
   draft: TONE_AMBER,
   archived: TONE_NEUTRAL,
+  // AdminLogisticsPage renders transit states in the sun-orange -100 tint
+  // with no border; the entry is kept borderless to match it exactly.
+  in_transit: 'bg-orange-100 text-sun-orange',
 };
 
 /** Tone for any status without an explicit entry (AdminOrdersPage default). */

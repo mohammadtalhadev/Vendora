@@ -11,7 +11,9 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { useAdminScope } from '../features/admin/hooks/admin-keys';
 import { useAuditQueue } from '../features/admin/hooks/useAdminQueries';
-import { fetchComplianceEvidence } from '../features/admin/api/compliance';
+import { fetchComplianceEvidence, type ComplianceStrike } from '../features/admin/api/compliance';
+import type { AuditRow } from '../features/admin/api/audit';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { formatPrice } from '../store/currency-store';
 
 /**
@@ -54,6 +56,75 @@ export const AdminCompliancePage: React.FC = () => {
   const auditRows = audit.data?.rows ?? [];
   const auditTotal = audit.data?.total ?? 0;
   const auditPages = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
+
+  const strikeColumns: DataTableColumn<ComplianceStrike>[] = [
+    {
+      key: 'store',
+      header: 'Store',
+      className: 'p-3 font-bold text-slate-900',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (s) => s.storeName,
+    },
+    {
+      key: 'reason',
+      header: 'Reason',
+      className: 'p-3 text-slate-700',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (s) => s.reason,
+    },
+    {
+      key: 'note',
+      header: 'Note',
+      className: 'p-3 text-slate-500',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (s) => s.note || '—',
+    },
+    {
+      key: 'issued',
+      header: 'Issued',
+      align: 'right',
+      className: 'p-3 text-slate-500',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (s) => new Date(s.createdAt).toLocaleDateString(),
+    },
+  ];
+
+  const trailColumns: DataTableColumn<AuditRow>[] = [
+    {
+      key: 'action',
+      header: 'Action',
+      className: 'p-3 font-mono font-bold text-slate-800',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => row.action,
+    },
+    {
+      key: 'actor',
+      header: 'Actor',
+      className: 'p-3 text-slate-700',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => (
+        <>
+          {row.actorName} <span className="text-slate-400">({row.actorRole})</span>
+        </>
+      ),
+    },
+    {
+      key: 'entity',
+      header: 'Entity',
+      className: 'p-3 text-slate-500',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) =>
+        row.entityType ? `${row.entityType}${row.entityId ? ` · ${row.entityId}` : ''}` : '—',
+    },
+    {
+      key: 'when',
+      header: 'When',
+      align: 'right',
+      className: 'p-3 text-slate-500',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => new Date(row.createdAt).toLocaleString(),
+    },
+  ];
 
   return (
     <WorkspaceLayout
@@ -162,28 +233,11 @@ export const AdminCompliancePage: React.FC = () => {
                   {data.recentStrikes.length === 0 ? (
                     <p className="px-5 py-8 text-center text-xs text-slate-500">No strikes have been issued.</p>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                          <tr>
-                            <th className="p-3">Store</th>
-                            <th className="p-3">Reason</th>
-                            <th className="p-3">Note</th>
-                            <th className="p-3 text-right">Issued</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {data.recentStrikes.map((s) => (
-                            <tr key={s.id} className="hover:bg-slate-50/50">
-                              <td className="p-3 font-bold text-slate-900">{s.storeName}</td>
-                              <td className="p-3 text-slate-700">{s.reason}</td>
-                              <td className="p-3 text-slate-500">{s.note || '—'}</td>
-                              <td className="p-3 text-right text-slate-500">{new Date(s.createdAt).toLocaleDateString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <DataTable
+                      columns={strikeColumns}
+                      rows={data.recentStrikes}
+                      getRowKey={(s) => s.id}
+                    />
                   )}
                 </section>
               </>
@@ -218,32 +272,7 @@ export const AdminCompliancePage: React.FC = () => {
               <p className="px-5 py-8 text-center text-xs text-slate-500">No staff actions recorded yet.</p>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                      <tr>
-                        <th className="p-3">Action</th>
-                        <th className="p-3">Actor</th>
-                        <th className="p-3">Entity</th>
-                        <th className="p-3 text-right">When</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {auditRows.map((row) => (
-                        <tr key={row.id} className="hover:bg-slate-50/50">
-                          <td className="p-3 font-mono font-bold text-slate-800">{row.action}</td>
-                          <td className="p-3 text-slate-700">
-                            {row.actorName} <span className="text-slate-400">({row.actorRole})</span>
-                          </td>
-                          <td className="p-3 text-slate-500">
-                            {row.entityType ? `${row.entityType}${row.entityId ? ` · ${row.entityId}` : ''}` : '—'}
-                          </td>
-                          <td className="p-3 text-right text-slate-500">{new Date(row.createdAt).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable columns={trailColumns} rows={auditRows} getRowKey={(row) => row.id} />
 
                 <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
                   <span>

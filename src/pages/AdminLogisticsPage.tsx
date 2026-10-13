@@ -5,6 +5,8 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { formatPrice } from '../store/currency-store';
 import { useLogisticsBoard } from '../features/admin/hooks/useAdminQueries';
 import type { LogisticsQueueRow } from '../features/admin/api/logistics';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { StatusBadge } from '../components/ui/status-badge';
 
 const STATUS_TONE: Record<string, string> = {
   delivered: 'bg-emerald-100 text-emerald-700',
@@ -26,6 +28,51 @@ const formatDate = (value: string | null): string => {
   if (!value) return '—';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+};
+
+/**
+ * Tone overrides for the dispatch queue's status cell. The board renders its
+ * statuses in -100 tints with no border, while the shared map's treatments
+ * for delivered/shipped were harvested from the orders console — so the
+ * dissenting tokens are overridden at this call site (the Batch 7 pattern),
+ * with the label kept as this page's Title-Case rendering. `in_transit`
+ * needs no override: the shared map now carries this page's own treatment.
+ * Any other token falls back to this page's slate fallback, not the map's.
+ */
+const QUEUE_TONE_OVERRIDES: Record<string, string> = {
+  delivered: 'bg-emerald-100 text-emerald-700 border-transparent',
+  shipped: 'bg-orange-100 text-sun-orange border-transparent',
+  available: 'bg-emerald-100 text-emerald-700 border-transparent',
+  busy: 'bg-blue-100 text-blue-700 border-transparent',
+  offline: 'bg-slate-200 text-slate-600 border-transparent',
+};
+
+const queueStatusCell = (row: LogisticsQueueRow): React.ReactNode => {
+  const token = row.status.toLowerCase();
+  if (token === 'failed') {
+    // The failed pill carries a warning glyph inside the pill itself;
+    // StatusBadge has no adornment slot, so this one status keeps its
+    // legacy pill verbatim rather than dropping the glyph.
+    return (
+      <span
+        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusClass(row.status)}`}
+      >
+        <AlertTriangle className="h-3 w-3" />
+        {prettyStatus(row.status)}
+      </span>
+    );
+  }
+  return (
+    <StatusBadge
+      status={token}
+      label={prettyStatus(row.status)}
+      className={
+        token === 'in_transit'
+          ? undefined
+          : QUEUE_TONE_OVERRIDES[token] ?? 'bg-slate-100 text-slate-600 border-transparent'
+      }
+    />
+  );
 };
 
 const destinationOf = (row: LogisticsQueueRow): string => {
@@ -70,6 +117,75 @@ export const AdminLogisticsPage: React.FC = () => {
 
   const riderName = new Map(board.fleet.map((rider) => [rider.id, rider.name] as const));
   const { counts } = board;
+
+  const queueColumns: DataTableColumn<LogisticsQueueRow>[] = [
+    {
+      key: 'package',
+      header: 'Package',
+      className: 'p-3',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => (
+        <>
+          <span className="font-mono font-bold text-slate-900">{row.id}</span>
+          <span className="text-slate-400 text-[11px] block">{prettyStatus(row.type)}</span>
+        </>
+      ),
+    },
+    {
+      key: 'origin',
+      header: 'Vendor Origin',
+      className: 'p-3',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => (
+        <>
+          <span className="font-bold text-slate-800 block">{row.storeName}</span>
+          {(row.carrierName || row.trackingNumber) && (
+            <span className="text-slate-400 text-[11px] truncate block max-w-xs">
+              {row.carrierName ?? ''}
+              {row.carrierName && row.trackingNumber ? ' · ' : ''}
+              {row.trackingNumber ?? ''}
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'destination',
+      header: 'Destination',
+      className: 'p-3 text-slate-600',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => destinationOf(row),
+    },
+    {
+      key: 'courier',
+      header: 'Assigned Courier',
+      className: 'p-3 font-medium text-slate-800',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => (row.riderId ? riderName.get(row.riderId) ?? 'Unknown rider' : 'Unassigned'),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      className: 'p-3',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: queueStatusCell,
+    },
+    {
+      key: 'delivered',
+      header: 'Delivered',
+      className: 'p-3 text-slate-600',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => formatDate(row.delivery?.deliveredAt ?? null),
+    },
+    {
+      key: 'gross',
+      header: 'Gross',
+      align: 'right',
+      className: 'p-3 font-bold text-slate-900',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      cell: (row) => formatPrice(row.gross),
+    },
+  ];
 
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Fleet Logistics" sidebar={<AdminNav />}>
@@ -160,52 +276,8 @@ export const AdminLogisticsPage: React.FC = () => {
           {board.queue.length === 0 ? (
             <p className="text-slate-400 py-8 text-center">No packages are moving right now.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                  <tr>
-                    <th className="p-3">Package</th>
-                    <th className="p-3">Vendor Origin</th>
-                    <th className="p-3">Destination</th>
-                    <th className="p-3">Assigned Courier</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Delivered</th>
-                    <th className="p-3 text-right">Gross</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {board.queue.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50/50">
-                      <td className="p-3">
-                        <span className="font-mono font-bold text-slate-900">{row.id}</span>
-                        <span className="text-slate-400 text-[11px] block">{prettyStatus(row.type)}</span>
-                      </td>
-                      <td className="p-3">
-                        <span className="font-bold text-slate-800 block">{row.storeName}</span>
-                        {(row.carrierName || row.trackingNumber) && (
-                          <span className="text-slate-400 text-[11px] truncate block max-w-xs">
-                            {row.carrierName ?? ''}
-                            {row.carrierName && row.trackingNumber ? ' · ' : ''}
-                            {row.trackingNumber ?? ''}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-slate-600">{destinationOf(row)}</td>
-                      <td className="p-3 font-medium text-slate-800">
-                        {row.riderId ? riderName.get(row.riderId) ?? 'Unknown rider' : 'Unassigned'}
-                      </td>
-                      <td className="p-3">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusClass(row.status)}`}>
-                          {row.status.toLowerCase() === 'failed' && <AlertTriangle className="h-3 w-3" />}
-                          {prettyStatus(row.status)}
-                        </span>
-                      </td>
-                      <td className="p-3 text-slate-600">{formatDate(row.delivery?.deliveredAt ?? null)}</td>
-                      <td className="p-3 text-right font-bold text-slate-900">{formatPrice(row.gross)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="overflow-hidden rounded-xl border border-slate-200">
+              <DataTable columns={queueColumns} rows={board.queue} getRowKey={(row) => row.id} />
             </div>
           )}
         </div>

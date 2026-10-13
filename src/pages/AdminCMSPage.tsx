@@ -25,6 +25,7 @@ import {
   setCouponActive,
   type AdminCoupon,
 } from '../features/admin/api/promotions';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { formatPrice } from '../store/currency-store';
 
 /**
@@ -153,6 +154,91 @@ export const AdminCMSPage: React.FC = () => {
 
   const bannerList = banners.data ?? [];
   const couponList = coupons.data ?? [];
+
+  const couponColumns: DataTableColumn<AdminCoupon>[] = [
+    {
+      key: 'code',
+      header: 'Coupon Code',
+      className: 'p-4 font-mono font-bold text-slate-900',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (c) => c.code,
+    },
+    {
+      key: 'discount',
+      header: 'Discount',
+      className: 'p-4 font-bold text-sun-orange',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (c) => discountLabel(c),
+    },
+    {
+      key: 'minimum',
+      header: 'Min. Spend',
+      className: 'p-4 text-slate-600',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (c) => formatPrice(c.minimumOrder),
+    },
+    {
+      key: 'claimed',
+      header: 'Claimed',
+      className: 'p-4 text-slate-600',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (c) => `${c.usageCount} / ${c.usageLimit}`,
+    },
+    {
+      // The status cell is a toggle control (aria-pressed), not a passive
+      // badge: clicking it is how a coupon is enabled/disabled from this list.
+      key: 'status',
+      header: 'Status',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (c) => (
+        <button
+          type="button"
+          onClick={() => toggleCouponMutation.mutate(c)}
+          aria-pressed={c.active}
+          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold cursor-pointer ${
+            c.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+          }`}
+        >
+          {c.active ? 'Active' : 'Disabled'}
+        </button>
+      ),
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      align: 'right',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (c) =>
+        pendingDeleteCouponId === c.id ? (
+          <span className="inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPendingDeleteCouponId(null)}
+              className="rounded-lg border border-slate-200 px-2 py-1 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteCouponMutation.mutate(c.id)}
+              className="rounded-lg bg-rose-600 px-2 py-1 font-bold text-white hover:bg-rose-700 cursor-pointer"
+            >
+              Confirm delete
+            </button>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPendingDeleteCouponId(c.id)}
+            className="text-rose-600 font-bold hover:underline cursor-pointer"
+          >
+            Delete
+          </button>
+        ),
+    },
+  ];
 
   const CMS_TABS: Array<'banners' | 'coupons'> = ['banners', 'coupons'];
 
@@ -417,72 +503,13 @@ export const AdminCMSPage: React.FC = () => {
                 No sitewide coupons yet.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs text-xs">
-                <table
-                  className="w-full text-left border-collapse"
-                  aria-label="Sitewide coupons"
-                >
-                  <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                    <tr>
-                      <th scope="col" className="p-4">Coupon Code</th>
-                      <th scope="col" className="p-4">Discount</th>
-                      <th scope="col" className="p-4">Min. Spend</th>
-                      <th scope="col" className="p-4">Claimed</th>
-                      <th scope="col" className="p-4">Status</th>
-                      <th scope="col" className="p-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {couponList.map((c) => (
-                      <tr key={c.id}>
-                        <td className="p-4 font-mono font-bold text-slate-900">{c.code}</td>
-                        <td className="p-4 font-bold text-sun-orange">{discountLabel(c)}</td>
-                        <td className="p-4 text-slate-600">{formatPrice(c.minimumOrder)}</td>
-                        <td className="p-4 text-slate-600">{c.usageCount} / {c.usageLimit}</td>
-                        <td className="p-4">
-                          <button
-                            type="button"
-                            onClick={() => toggleCouponMutation.mutate(c)}
-                            aria-pressed={c.active}
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold cursor-pointer ${
-                              c.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {c.active ? 'Active' : 'Disabled'}
-                          </button>
-                        </td>
-                        <td className="p-4 text-right">
-                          {pendingDeleteCouponId === c.id ? (
-                            <span className="inline-flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setPendingDeleteCouponId(null)}
-                                className="rounded-lg border border-slate-200 px-2 py-1 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteCouponMutation.mutate(c.id)}
-                                className="rounded-lg bg-rose-600 px-2 py-1 font-bold text-white hover:bg-rose-700 cursor-pointer"
-                              >
-                                Confirm delete
-                              </button>
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setPendingDeleteCouponId(c.id)}
-                              className="text-rose-600 font-bold hover:underline cursor-pointer"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                <DataTable
+                  columns={couponColumns}
+                  rows={couponList}
+                  getRowKey={(c) => c.id}
+                  ariaLabel="Sitewide coupons"
+                />
               </div>
             )}
           </div>

@@ -4,7 +4,8 @@ import { ShieldCheck, Store, Tag } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { useAdminScope } from '../features/admin/hooks/admin-keys';
-import { fetchBrandDirectory } from '../features/admin/api/brands';
+import { fetchBrandDirectory, type AdminBrandRow } from '../features/admin/api/brands';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { formatPrice } from '../store/currency-store';
 
 /**
@@ -30,6 +31,48 @@ export const AdminBrandsPage: React.FC = () => {
   });
 
   const rows = brands.data ?? [];
+
+  const brandColumns: DataTableColumn<AdminBrandRow>[] = [
+    {
+      key: 'brand',
+      header: 'Brand',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (b) => <span className="font-black text-slate-900">{b.brand}</span>,
+    },
+    {
+      key: 'listings',
+      header: 'Approved Listings',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (b) => (
+        <span className="inline-flex items-center gap-1.5 text-slate-700">
+          <Tag className="h-3.5 w-3.5 text-slate-400" />
+          {b.listings}
+        </span>
+      ),
+    },
+    {
+      key: 'sellers',
+      header: 'Sellers',
+      className: 'p-4',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (b) => (
+        <span className="inline-flex items-center gap-1.5 text-slate-700">
+          <Store className="h-3.5 w-3.5 text-slate-400" />
+          {b.sellers}
+        </span>
+      ),
+    },
+    {
+      key: 'lowest',
+      header: 'Lowest Listing',
+      align: 'right',
+      className: 'p-4 font-bold text-slate-900',
+      headerClassName: 'p-4 text-[11px] tracking-normal',
+      cell: (b) => formatPrice(b.lowestPrice),
+    },
+  ];
 
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Brand Directory" sidebar={<AdminNav />}>
@@ -62,39 +105,8 @@ export const AdminBrandsPage: React.FC = () => {
             No approved listing carries a brand value yet.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs text-xs">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                <tr>
-                  <th className="p-4">Brand</th>
-                  <th className="p-4">Approved Listings</th>
-                  <th className="p-4">Sellers</th>
-                  <th className="p-4 text-right">Lowest Listing</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.map((b) => (
-                  <tr key={b.brand} className="hover:bg-slate-50/50">
-                    <td className="p-4">
-                      <span className="font-black text-slate-900">{b.brand}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 text-slate-700">
-                        <Tag className="h-3.5 w-3.5 text-slate-400" />
-                        {b.listings}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 text-slate-700">
-                        <Store className="h-3.5 w-3.5 text-slate-400" />
-                        {b.sellers}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right font-bold text-slate-900">{formatPrice(b.lowestPrice)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+            <DataTable columns={brandColumns} rows={rows} getRowKey={(b) => b.brand} />
           </div>
         )}
       </div>
