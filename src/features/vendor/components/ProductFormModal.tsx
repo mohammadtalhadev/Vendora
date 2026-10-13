@@ -338,6 +338,9 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://images.unsplash.com/photo-..."
               />
+              <p className="mt-1.5 text-[11px] text-slate-400">
+                Tip: a clean white-background front photo looks best on product cards.
+              </p>
             </div>
 
             <div>

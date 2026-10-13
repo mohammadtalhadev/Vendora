@@ -81,28 +81,6 @@ export const BecomeSellerPage: React.FC = () => {
             Enable and grow Vendora partners with verified Pakistani merchants — featuring regulated escrow payout schedules, fair selling charters, and market-leading commission structures.
           </p>
 
-          {/* 4 Stat Badges Strip - one aligned, equal-height row */}
-          <div className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 items-stretch">
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
-              <div className="font-outfit text-2xl sm:text-3xl font-black text-sun-orange">0%</div>
-              <p className="text-[11px] text-slate-500 font-semibold mt-1">Risk-Free Onboarding</p>
-            </div>
-
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
-              <div className="font-outfit text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">Monday</div>
-              <p className="text-[11px] text-slate-500 font-semibold mt-1">Global Swift Liquidation</p>
-            </div>
-
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
-              <div className="font-outfit text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">SBP Tier-1</div>
-              <p className="text-[11px] text-slate-500 font-semibold mt-1">Escrow Security Control</p>
-            </div>
-
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
-              <div className="font-outfit text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">{formatPrice(0)}</div>
-              <p className="text-[11px] text-slate-500 font-semibold mt-1">Platform Maintenance Fee</p>
-            </div>
-          </div>
         </div>
 
         {/* ========================================================================= */}

@@ -200,7 +200,7 @@ export const InspirationMosaic: React.FC = () => {
                       </div>
                       <Link
                         to={hs.productUrl}
-                        className="mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl bg-slate-900 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sun-orange"
+                        className="mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl bg-sun-orange py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sun-orange-600"
                       >
                         <span>Shop This Item</span>
                         <ArrowUpRight className="h-3 w-3" />

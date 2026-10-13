@@ -104,7 +104,7 @@ export const SellerSpotlight: React.FC<SellerSpotlightProps> = ({ vendors }) => 
 
         <Link
           to="/become-a-seller"
-          className="relative z-10 inline-flex shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-sun-orange to-[#FF9040] hover:from-sun-orange-600 hover:to-sun-orange px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-105 active:scale-95"
+          className="relative z-10 inline-flex shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-sun-orange to-sun-orange-600 hover:from-sun-orange-600 hover:to-sun-orange-700 px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-105 active:scale-95"
         >
           <Rocket className="h-4 w-4" />
           <span>Start selling today</span>

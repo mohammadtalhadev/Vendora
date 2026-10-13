@@ -21,6 +21,7 @@ import {
   Loader2,
   ChevronDown,
   Store,
+  Star,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
@@ -142,7 +143,7 @@ export const VendorAddProductPage: React.FC = () => {
       const [chosen] = copy.splice(index, 1);
       return [chosen, ...copy];
     });
-    showToast('Primary cover image updated.');
+    showToast('Thumbnail image updated.');
   };
 
   const uploadFiles = async (files: FileList | null) => {
@@ -600,18 +601,21 @@ export const VendorAddProductPage: React.FC = () => {
                       className="h-full w-full object-cover"
                     />
 
-                    {/* Cover badge */}
+                    {/* Thumbnail badge / set-as-thumbnail action */}
                     {idx === 0 ? (
-                      <span className="absolute top-2 left-2 rounded-md bg-slate-900 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                        Cover
+                      <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-md bg-slate-900 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                        <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+                        Thumbnail
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => handleSetCover(idx)}
-                        className="absolute top-2 left-2 rounded-md bg-white/90 px-1.5 py-0.5 text-[9px] font-bold text-slate-700 shadow-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                        className="absolute top-2 left-2 rounded-md bg-white/90 p-1 text-slate-600 shadow-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white hover:text-amber-500"
+                        title="Set as thumbnail"
+                        aria-label={`Set image ${idx + 1} as thumbnail`}
                       >
-                        Set as Cover
+                        <Star className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     )}
 
@@ -627,6 +631,10 @@ export const VendorAddProductPage: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              <p className="text-[11px] text-slate-400">
+                Tip: a clean white-background front photo looks best on product cards.
+              </p>
             </div>
 
             {/* 3. Pricing & Margins Card */}

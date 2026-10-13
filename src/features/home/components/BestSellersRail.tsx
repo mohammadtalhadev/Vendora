@@ -88,7 +88,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
                 onClick={() => setSelectedCategory(tab.id)}
                 className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 ${
                   isActive
-                    ? 'bg-slate-900 text-white shadow-sm shadow-slate-900/20'
+                    ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25 border border-sun-orange'
                     : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/80'
                 }`}
               >
@@ -184,7 +184,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
                 <button
                   type="button"
                   onClick={() => onAddToCart && onAddToCart(item)}
-                  className="cursor-pointer mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-orange-50 py-2 text-xs font-bold text-sun-orange transition-all hover:bg-sun-orange hover:text-white active:scale-95"
+                  className="cursor-pointer mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-sun-orange py-2 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all hover:bg-sun-orange-600 active:scale-95"
                 >
                   <ShoppingBag className="h-3.5 w-3.5" />
                   Add to Cart

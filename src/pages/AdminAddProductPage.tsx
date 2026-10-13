@@ -19,6 +19,7 @@ import {
   Tag,
   Building2,
   ChevronDown,
+  Star,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
@@ -157,7 +158,7 @@ export const AdminAddProductPage: React.FC = () => {
       const [chosen] = copy.splice(index, 1);
       return [chosen, ...copy];
     });
-    showToast('Primary cover image updated.');
+    showToast('Thumbnail image updated.');
   };
 
   const handleAddTag = (e: React.KeyboardEvent | React.MouseEvent) => {
@@ -552,8 +553,9 @@ export const AdminAddProductPage: React.FC = () => {
                     />
 
                     {idx === 0 && (
-                      <span className="absolute top-2 left-2 rounded-md bg-slate-900/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs backdrop-blur-xs">
-                        Primary Cover
+                      <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-md bg-slate-900/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs backdrop-blur-xs">
+                        <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+                        Thumbnail
                       </span>
                     )}
 
@@ -562,10 +564,11 @@ export const AdminAddProductPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleSetCover(idx)}
-                          className="rounded-lg bg-white/90 p-1.5 text-slate-800 hover:bg-white text-[10px] font-bold"
-                          title="Set as cover image"
+                          className="rounded-lg bg-white/90 p-1.5 text-slate-800 hover:bg-white hover:text-amber-500"
+                          title="Set as thumbnail"
+                          aria-label={`Set image ${idx + 1} as thumbnail`}
                         >
-                          Make Cover
+                          <Star className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                       )}
                       <button
@@ -601,6 +604,10 @@ export const AdminAddProductPage: React.FC = () => {
                   <span className="text-[10px] text-slate-400">Direct to Supabase</span>
                 </button>
               </div>
+
+              <p className="text-[11px] text-slate-400">
+                Tip: a clean white-background front photo looks best on product cards.
+              </p>
             </div>
 
             {/* 3. Pricing, Margins & Financials Card */}

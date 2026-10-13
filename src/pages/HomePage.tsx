@@ -430,7 +430,7 @@ export const HomePage: React.FC = () => {
                 aria-label={`Go to hero slide ${idx + 1}`}
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
                   heroSlideIndex === idx
-                    ? 'h-2 w-7 bg-slate-900'
+                    ? 'h-2 w-7 bg-sun-orange'
                     : 'h-2 w-2 bg-slate-300 hover:bg-slate-400'
                 }`}
               />
@@ -532,7 +532,7 @@ export const HomePage: React.FC = () => {
                       onClick={() => setSelectedSaleCategory(cat.id)}
                       className={`cursor-pointer rounded-full px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                         isSelected
-                          ? 'border border-sun-orange bg-orange-50 text-sun-orange shadow-2xs font-bold'
+                          ? 'border border-sun-orange bg-sun-orange text-white shadow-md shadow-orange-500/25 font-bold'
                           : 'border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
@@ -591,7 +591,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=electronics"
-                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-white px-6 py-2.5 text-xs font-bold text-slate-900 shadow-sm transition-colors hover:bg-slate-900 hover:text-white sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 px-6 py-2.5 text-xs font-bold text-slate-900 shadow-sm transition-colors hover:bg-slate-900 hover:text-white sm:text-sm"
                   >
                     Shop Electronics
                   </Link>

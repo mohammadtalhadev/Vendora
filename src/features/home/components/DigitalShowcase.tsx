@@ -92,7 +92,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
             </Link>
             <Link
               to="/products?category=digital-products"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4.5 py-2.5 text-xs font-bold text-white shadow-md shadow-slate-900/15 transition-all hover:bg-sun-orange hover:shadow-orange-500/20 active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-sun-orange px-4.5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all hover:bg-sun-orange-600 active:scale-95"
             >
               <span>Explore All Digital</span>
               <ChevronRight className="h-4 w-4" />
@@ -205,7 +205,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
                   <button
                     type="button"
                     onClick={() => handleBuy(product)}
-                    className="cursor-pointer mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:bg-sun-orange hover:shadow-md hover:shadow-orange-500/20 active:scale-95"
+                    className="cursor-pointer mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-sun-orange py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all duration-200 hover:bg-sun-orange-600 active:scale-95"
                   >
                     <DownloadCloud className="h-3.5 w-3.5" />
                     <span>Instant Access</span>
