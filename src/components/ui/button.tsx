@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 export type ButtonVariant =
   | 'default'
   | 'orange-cta'
+  | 'gradient'
   | 'glass-pill'
   | 'outline'
   | 'ghost'
@@ -25,6 +26,13 @@ const variantStyles: Record<ButtonVariant, string> = {
     'bg-sun-orange text-white hover:bg-sun-orange-600 shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
   'orange-cta':
     'bg-sun-orange text-white hover:bg-sun-orange-600 shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
+  // The admin/vendor primary CTA that was copy-pasted as a raw class string
+  // (~10 sites): orange gradient, white text, warm shadow, gradient deepens
+  // on hover. Canonised here with token colours — the pasted string ended
+  // at #EA580C (Tailwind orange-600); the token end-stop sun-orange-600
+  // (#EA6C13) is one shade step warmer/lighter.
+  gradient:
+    'bg-gradient-to-r from-sun-orange to-sun-orange-600 text-white font-semibold shadow-lg shadow-orange-500/25 hover:from-sun-orange-600 hover:to-sun-orange-700 hover:shadow-orange-500/35 active:scale-[0.98]',
   ink:
     'bg-ink dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-ink/90 dark:hover:bg-white active:scale-[0.98] shadow-sm',
   'glass-pill':

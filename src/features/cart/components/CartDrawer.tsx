@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { X, Minus, Plus, Trash2, Tag, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCartStore, useCartCalculations } from '../../../store/cart-store';
+import { useSmoothScroll } from '../../../components/SmoothScrollProvider';
 import { useCurrency } from '../../../store/currency-store';
 import { fetchCouponByCode } from '../api/promotions';
 
@@ -21,18 +22,33 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
 
+  const { lenis, pauseScroll, resumeScroll } = useSmoothScroll();
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKey);
+    // Lock page scroll while the drawer is open. Stopping Lenis is the
+    // primary mechanism: a hard `overflow: hidden` on <body> fights Lenis's
+    // internal scroll state (and any Radix scroll lock mounted alongside),
+    // while stop()/start() pause and resume the exact instance that owns
+    // scrolling. The body-overflow lock remains only as the fallback for
+    // when no Lenis instance exists (reduced-motion users, tests).
+    if (lenis) {
+      pauseScroll();
+      return () => {
+        document.removeEventListener('keydown', handleKey);
+        resumeScroll();
+      };
+    }
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', handleKey);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, lenis, pauseScroll, resumeScroll]);
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -41,6 +41,18 @@ describe('Button primitive', () => {
     expect(screen.getByRole('button', { name: /Ghost/i }).className).toContain('hover:bg-slate-100');
   });
 
+  it('renders gradient variant with the canonised admin/vendor CTA treatment', () => {
+    render(<Button variant="gradient">Create</Button>);
+    const button = screen.getByRole('button', { name: /Create/i });
+    expect(button.className).toContain('bg-gradient-to-r');
+    expect(button.className).toContain('from-sun-orange');
+    expect(button.className).toContain('to-sun-orange-600');
+    expect(button.className).toContain('hover:to-sun-orange-700');
+    expect(button.className).toContain('text-white');
+    expect(button.className).toContain('rounded-full');
+    expect(buttonVariants({ variant: 'gradient' })).toContain('rounded-full');
+  });
+
   it('renders correctly with asChild slot', () => {
     render(
       <Button asChild variant="orange-cta">

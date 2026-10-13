@@ -5,7 +5,11 @@
  */
 
 /* Admin panel theme variables */
-:root {
+/* Batch 11: panel variables are scoped to the shell element instead of
+   :root. Loaded panel CSS is never unloaded, so global declarations
+   resolved by navigation history and leaked this panel's theme (e.g.
+   admin's indigo --primary) into the storefront and other panels. */
+.admin-shell {
   --panel-bg: #F8FAFC;
   --panel-surface: #FFFFFF;
   --panel-surface-hover: #F1F5F9;
@@ -27,7 +31,7 @@
 }
 
 /* Dark mode for Admin */
-html.dark {
+html.dark .admin-shell {
   --panel-bg: #0B1120;
   --panel-surface: #111827;
   --panel-surface-hover: #1F2937;
@@ -46,7 +50,7 @@ html.dark {
 }
 
 /* Catmin/Shadcn design system color overrides for Admin */
-:root {
+.admin-shell {
   --primary: 239 84% 67%; /* Indigo */
   --primary-foreground: 0 0% 98%;
   --secondary: 240 4.8% 95.9%;
@@ -63,7 +67,7 @@ html.dark {
   --sidebar-ring: 239 84% 67%;
 }
 
-html.dark {
+html.dark .admin-shell {
   --primary: 239 84% 67%;
   --primary-foreground: 222.2 84% 4.9%;
   --sidebar-background: 222.2 84% 4.9%;

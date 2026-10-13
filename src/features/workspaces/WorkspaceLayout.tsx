@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { ScrollManager } from '../../components/ScrollManager';
 import {
   Store,
   ArrowLeft,
@@ -613,7 +614,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   ];
 
   return (
-    <div className={cn("workspace-shell h-screen max-h-screen overflow-hidden bg-[var(--panel-bg,#F8FAFC)] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-row font-sans transition-colors duration-200 relative isolate", panelShellClass)}>
+    <div className={cn("workspace-shell h-screen max-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-none dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-row font-sans transition-colors duration-200 relative isolate", panelShellClass)}>
+      <ScrollManager />
       {/* Ambient soft glow mesh for Frosted Glass depth */}
       <div className="workspace-mesh-bg" aria-hidden="true">
         <div className="absolute -top-32 -left-32 h-[550px] w-[550px] rounded-full bg-gradient-to-br from-orange-400/15 via-amber-300/10 to-transparent blur-3xl dark:from-orange-500/15 dark:via-orange-950/20" />
@@ -1348,7 +1350,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         {/* Main Content Area (Independent isolated scrolling, page only) */}
         <main
           data-lenis-prevent
-          className="flex-1 h-full min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 relative z-10"
+          data-scroll-reset
+          className="flex-1 h-full min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 relative z-10 dark:[&_h1]:text-slate-50 dark:[&_h2]:text-slate-50"
         >
           {/* Breadcrumbs for deeper pages */}
           {crumbs.length > 1 && (
@@ -1371,7 +1374,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {!children && (title || subtitle) && (
             <div className="mb-6">
               {title && (
-                <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">
                   {title}
                 </h1>
               )}

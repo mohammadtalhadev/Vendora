@@ -5,7 +5,11 @@
  */
 
 /* Vendor panel theme variables */
-:root {
+/* Batch 11: panel variables are scoped to the shell element instead of
+   :root. Loaded panel CSS is never unloaded, so global declarations
+   resolved by navigation history and leaked this panel's theme (e.g.
+   admin's indigo --primary) into the storefront and other panels. */
+.vendor-shell {
   --panel-bg: #F8FAFC;
   --panel-surface: #FFFFFF;
   --panel-surface-hover: #F1F5F9;
@@ -27,7 +31,7 @@
 }
 
 /* Dark mode for Vendor */
-html.dark {
+html.dark .vendor-shell {
   --panel-bg: #0B1120;
   --panel-surface: #111827;
   --panel-surface-hover: #1F2937;
