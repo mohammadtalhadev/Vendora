@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { Button } from '../components/ui/button';
 import { exportToCsv } from '../lib/export-csv';
 import { formatPrice } from '../store/currency-store';
 import { useCommissionOverview } from '../features/admin/hooks/useAdminQueries';
@@ -212,13 +213,14 @@ export const AdminCommissionPage: React.FC = () => {
                   />
                   <span className="text-xs font-bold text-slate-500">%</span>
                 </div>
-                <button
+                <Button
                   type="submit"
+                  variant="ink"
+                  size="sm"
                   disabled={actions.setGlobalCommission.isPending || !globalRateInput}
-                  className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer disabled:opacity-50"
                 >
                   {actions.setGlobalCommission.isPending ? 'Saving…' : 'Save Rate'}
-                </button>
+                </Button>
               </form>
             </div>
 
@@ -273,8 +275,10 @@ export const AdminCommissionPage: React.FC = () => {
                               placeholder="Default"
                               className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-slate-900"
                             />
-                            <button
+                            <Button
                               type="button"
+                              variant="ink"
+                              size="sm"
                               disabled={categoryRateMutation.isPending}
                               onClick={() => {
                                 const raw = categoryInputs[cat.id];
@@ -289,10 +293,10 @@ export const AdminCommissionPage: React.FC = () => {
                                 }
                                 categoryRateMutation.mutate({ categoryId: cat.id, rate: parsed / 100 });
                               }}
-                              className="rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-slate-800 cursor-pointer disabled:opacity-50"
+                              className="h-auto px-2.5 py-1.5 text-[11px]"
                             >
                               Save
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>

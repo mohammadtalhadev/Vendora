@@ -121,7 +121,7 @@ export const Footer: React.FC = () => {
           <div>
             <h5 className="font-outfit text-sm font-bold tracking-tight text-slate-900 dark:text-white">Make Money with Us</h5>
             <ul className="mt-4 space-y-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
-              <li><Link to="/sell" className="hover:text-sun-orange transition-colors">Sell on Vendora</Link></li>
+              <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Sell on Vendora</Link></li>
               <li><Link to="/affiliates" className="hover:text-sun-orange transition-colors">Become an Affiliate</Link></li>
               <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Open Brand Store</Link></li>
               <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Vendor Guidelines &amp; Fees</Link></li>

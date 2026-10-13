@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Search, Download, FileCode, ShieldAlert } from 'lucide-react';
+import { Search, Download, FileCode, ShieldAlert, X } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { useAuditQueue } from '../features/admin/hooks/useAdminQueries';
 import type { AuditRow } from '../features/admin/api/audit';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 
@@ -205,15 +206,16 @@ export const AdminAuditLogsPage: React.FC = () => {
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={handleExportPage}
             disabled={rows.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
           >
             <Download className="h-4 w-4 text-slate-500" />
             Export Audit Log (CSV)
-          </button>
+          </Button>
         </div>
 
         {/* Filter & Search Bar — the action facets come from the trail the queue read */}
@@ -316,7 +318,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                   aria-label="Close diff"
                   className="rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200"
                 >
-                  ✕
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
 
@@ -341,13 +343,14 @@ export const AdminAuditLogsPage: React.FC = () => {
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex justify-end">
-                <button
+                <Button
                   type="button"
+                  variant="ink"
+                  size="sm"
                   onClick={() => setActiveDiffLog(null)}
-                  className="rounded-xl bg-slate-900 px-4 py-2 font-bold text-white hover:bg-slate-800"
                 >
                   Close Diff
-                </button>
+                </Button>
               </div>
             </div>
           </div>

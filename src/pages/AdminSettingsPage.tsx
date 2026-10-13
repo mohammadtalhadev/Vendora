@@ -28,6 +28,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
 
 export const AdminSettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
@@ -256,14 +257,15 @@ export const AdminSettingsPage: React.FC = () => {
               <RotateCcw className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
               Discard Changes
             </button>
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={handleSave}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Check className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
               <span aria-live="polite">{saveSuccess ? 'Saved Successfully!' : 'Save Configuration'}</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1286,13 +1288,14 @@ export const AdminSettingsPage: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button
+                <Button
                   type="button"
+                  variant="ink"
+                  size="sm"
                   onClick={() => setIsGatewayModalOpen(false)}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
                 >
                   Save Gateway
-                </button>
+                </Button>
               </div>
             </div>
           </DialogContent>
@@ -1323,13 +1326,14 @@ export const AdminSettingsPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end pt-3">
-              <button
+              <Button
                 type="button"
+                variant="ink"
+                size="sm"
                 onClick={() => setIsAuditModalOpen(false)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

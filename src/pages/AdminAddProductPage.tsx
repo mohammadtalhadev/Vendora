@@ -366,14 +366,15 @@ export const AdminAddProductPage: React.FC = () => {
             >
               Save as Draft
             </Button>
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={() => handleSaveProduct('approved')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Upload className="h-3.5 w-3.5 text-white stroke-[2.5]" />
               <span className="text-white">Publish Product</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -883,9 +884,10 @@ export const AdminAddProductPage: React.FC = () => {
                     <div className="sm:col-span-2">
                       <Button
                         type="button"
+                        variant="default"
                         size="sm"
                         onClick={handleGenerateVariants}
-                        className="w-full rounded-xl text-xs bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] text-white font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 border-0"
+                        className="w-full"
                       >
                         Generate
                       </Button>
@@ -1227,9 +1229,9 @@ export const AdminAddProductPage: React.FC = () => {
                   />
                   <Button
                     type="button"
+                    variant="default"
                     size="sm"
                     onClick={handleAddTag}
-                    className="rounded-xl text-xs bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] text-white font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 border-0"
                   >
                     Add
                   </Button>

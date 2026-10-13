@@ -17,6 +17,14 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { useVendorDetail } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import { useCurrency } from '../store/currency-store';
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog';
 
 export const AdminVendorDetailPage: React.FC = () => {
   const { formatPrice } = useCurrency();
@@ -28,6 +36,7 @@ export const AdminVendorDetailPage: React.FC = () => {
   // A rate the console is about to send, until the write lands: the slider needs somewhere to
   // draft a value, and `vendor.commissionRate` stays the server's answer until then.
   const [commissionDraft, setCommissionDraft] = useState<number | null>(null);
+  const [isStrikeModalOpen, setIsStrikeModalOpen] = useState(false);
 
   const isPending = setVendorStatus.isPending || setVendorCommission.isPending || issueStrike.isPending;
 
@@ -83,12 +92,14 @@ export const AdminVendorDetailPage: React.FC = () => {
           <p className="text-sm text-rose-600 font-medium">
             {error instanceof Error ? error.message : 'Failed to load merchant'}
           </p>
-          <button
+          <Button
+            type="button"
+            variant="ink"
+            size="sm"
             onClick={() => refetch()}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-700 cursor-pointer"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </WorkspaceLayout>
     );
@@ -217,7 +228,7 @@ export const AdminVendorDetailPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => document.getElementById('strike-modal')?.classList.remove('hidden')}
+                  onClick={() => setIsStrikeModalOpen(true)}
                   disabled={isPending}
                   className="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-1.5 text-xs font-bold hover:bg-rose-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -394,14 +405,16 @@ export const AdminVendorDetailPage: React.FC = () => {
                   </div>
                 </div>
 
-                <button
+                <Button
                   type="submit"
+                  variant="default"
+                  size="sm"
                   disabled={isPending}
-                  className="w-full flex items-center justify-center gap-1.5 rounded-full bg-sun-orange text-white py-2.5 font-bold hover:bg-sun-orange-600 shadow-sm hover:shadow-orange-glow transition-all cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full"
                 >
                   <Save className="h-3.5 w-3.5" />
                   Save Commission Override
-                </button>
+                </Button>
               </form>
             </div>
 
@@ -465,12 +478,14 @@ export const AdminVendorDetailPage: React.FC = () => {
       </div>
 
       {/* Modal: Issue Strike */}
-      <div id="strike-modal" className="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-        <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95">
-          <h3 className="text-base font-bold text-slate-900 mb-1">Issue Merchant Warning Strike</h3>
-          <p className="text-xs text-slate-500 mb-4">
-            Formal penalty strike issued against {vendor!.storeName}.
-          </p>
+      <Dialog open={isStrikeModalOpen} onOpenChange={setIsStrikeModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900">Issue Merchant Warning Strike</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Formal penalty strike issued against {vendor!.storeName}.
+            </DialogDescription>
+          </DialogHeader>
 
           <form onSubmit={handleIssueStrike} className="space-y-3 text-xs">
             <div>
@@ -478,10 +493,10 @@ export const AdminVendorDetailPage: React.FC = () => {
               <select
                 id="violationType"
                 name="violationType"
-                defaultValue="Late Dispatch SLA (&gt; 48h)"
+                defaultValue="Late Dispatch SLA (> 48h)"
                 className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
               >
-                <option value="Late Dispatch SLA (&gt; 48h)">Late Dispatch SLA (&gt; 48h)</option>
+                <option value="Late Dispatch SLA (> 48h)">Late Dispatch SLA (&gt; 48h)</option>
                 <option value="Counterfeit / Unlicensed Item Claim">Counterfeit / Unlicensed Item Claim</option>
                 <option value="Excessive Out-of-Stock Cancellations">Excessive Out-of-Stock Cancellations</option>
                 <option value="Abusive Customer Communication">Abusive Customer Communication</option>
@@ -501,24 +516,26 @@ export const AdminVendorDetailPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <button
+              <Button
                 type="button"
-                onClick={() => document.getElementById('strike-modal')?.classList.add('hidden')}
-                className="rounded-full border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-xs"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsStrikeModalOpen(false)}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="destructive"
+                size="sm"
                 disabled={isPending}
-                className="rounded-full bg-rose-600 px-4 py-2 font-bold text-white shadow-md hover:bg-rose-700 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Issue Formal Strike
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </WorkspaceLayout>
   );
 };

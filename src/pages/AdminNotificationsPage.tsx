@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { Button } from '../components/ui/button';
 import { useBroadcastLog } from '../features/admin/hooks/useAdminQueries';
 import { useNotificationActions } from '../features/notifications/hooks/useNotifications';
 import type { NotificationKind } from '../features/notifications/api/notifications';
@@ -215,13 +216,14 @@ export const AdminNotificationsPage = () => {
             </div>
 
             <div className="flex items-center gap-3 sm:col-span-2">
-              <button
+              <Button
                 type="submit"
+                variant="default"
+                size="sm"
                 disabled={broadcast.isPending}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all hover:from-sun-orange-600 hover:to-[#e88020] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 {broadcast.isPending ? 'Sending…' : 'Send announcement'}
-              </button>
+              </Button>
               <p className="text-[11px] text-slate-400">
                 Sent as the signed-in account. There is no preview and no undo.
               </p>

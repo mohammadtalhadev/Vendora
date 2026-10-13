@@ -30,6 +30,7 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { exportToCsv } from '../lib/export-csv';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import {
   Select,
@@ -329,14 +330,15 @@ export const AdminReportsPage: React.FC = () => {
             >
               <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={() => setIsGenerateModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" aria-hidden="true" />
               <span className="text-white">Generate Custom Report</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -883,12 +885,13 @@ export const AdminReportsPage: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button
+                <Button
                   type="submit"
-                  className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                  variant="default"
+                  size="sm"
                 >
                   Generate &amp; Download
-                </button>
+                </Button>
               </div>
             </form>
           </DialogContent>

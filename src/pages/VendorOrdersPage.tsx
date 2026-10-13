@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
+import { Button } from '../components/ui/button';
 import { useVendorData } from '../features/vendor/hooks/useVendorData';
 import type { SubOrderStatus } from '../types/domain';
 
@@ -248,13 +249,15 @@ export const VendorOrdersPage: React.FC = () => {
               <Download className="h-4 w-4 text-slate-500" />
               Export CSV
             </button>
-            <button
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
               onClick={handleBulkFulfill}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Package className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
               Bulk Fulfill ({orders.filter((o) => o.status === 'placed').length})
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -647,31 +650,34 @@ export const VendorOrdersPage: React.FC = () => {
                       {/* ACTION (Sequential advancement state machine) */}
                       <td className="px-4 py-3.5 text-right">
                         {order.status === 'placed' && (
-                          <button
+                          <Button
                             type="button"
+                            variant="default"
+                            size="sm"
                             onClick={() => handleAdvanceStatus(order.id, 'placed')}
-                            className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer transition-all active:scale-95"
                           >
                             Confirm Order
-                          </button>
+                          </Button>
                         )}
                         {order.status === 'confirmed' && (
-                          <button
+                          <Button
                             type="button"
+                            variant="secondary"
+                            size="sm"
                             onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
-                            className="rounded-full bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white hover:bg-sun-orange-600 shadow-2xs cursor-pointer transition-colors"
                           >
                             Mark Packed
-                          </button>
+                          </Button>
                         )}
                         {order.status === 'packed' && (
-                          <button
+                          <Button
                             type="button"
+                            variant="ink"
+                            size="sm"
                             onClick={() => handleAdvanceStatus(order.id, 'packed')}
-                            className="rounded-full bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs cursor-pointer transition-colors"
                           >
                             Ready for Rider Pickup
-                          </button>
+                          </Button>
                         )}
                         {order.status === 'ready_for_pickup' && (
                           <span className="text-[11px] font-semibold text-slate-500">

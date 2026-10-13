@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Button } from '../components/ui/button';
 import { StatusBadge } from '../components/ui/status-badge';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { useVendorPackages } from '../features/vendor/hooks/useVendorPackages';
@@ -421,15 +422,16 @@ export const VendorInventoryPage: React.FC = () => {
               )}
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={handleBulkSave}
               disabled={isSaving}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60 disabled:cursor-wait"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
               {isSaving ? 'Saving…' : 'Save All Changes'}
-            </button>
+            </Button>
           </div>
         </div>
 

@@ -11,6 +11,7 @@ import { exportToCsv } from '../lib/export-csv';
 import { useVendorQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type { AdminVendorRow } from '../features/admin/api/vendors';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import {
   Select,
@@ -179,13 +180,15 @@ export const AdminVendorsPage: React.FC = () => {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
               {vendor.kyc.charAt(0).toUpperCase() + vendor.kyc.slice(1)}
             </span>
-            <button
+            <Button
               type="button"
+              variant="ink"
+              size="sm"
               onClick={() => handleSetVendorStatus(vendor.id, 'active')}
-              className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-slate-800 cursor-pointer"
+              className="h-auto rounded px-2 py-0.5 text-[10px] font-bold"
             >
               Approve
-            </button>
+            </Button>
           </div>
         ),
     },

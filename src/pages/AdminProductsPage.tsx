@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Layers,
   Hourglass,
   CheckCircle2,
   ShieldAlert,
+  TriangleAlert,
   Clock,
   Download,
   Search,
@@ -13,9 +14,11 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
-import { useModerationQueue } from '../features/admin/hooks/useAdminQueries';
+import { useModerationQueue, useUserQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type { ModerationRow } from '../features/admin/api/moderation';
+import type { AdminUserRow } from '../features/admin/api/users';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { StatusBadge } from '../components/ui/status-badge';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
@@ -34,6 +37,35 @@ export const AdminProductsPage: React.FC = () => {
     page: currentPage,
     pageSize,
   });
+
+  // The assign-moderator select lists real staff only: profiles carrying the admin or
+  // support role, read through the same user queue the Users console uses. The RPC
+  // behind Confirm needs a real profile id, so invented people cannot be offered here.
+  const { data: adminStaffQueue, isLoading: adminStaffLoading, error: adminStaffError } = useUserQueue({ role: 'admin', pageSize: 100 });
+  const { data: supportStaffQueue, isLoading: supportStaffLoading, error: supportStaffError } = useUserQueue({ role: 'support', pageSize: 100 });
+
+  const staffOptions = useMemo(() => {
+    const byId = new Map<string, AdminUserRow>();
+    [...(adminStaffQueue?.rows ?? []), ...(supportStaffQueue?.rows ?? [])].forEach((user) => {
+      byId.set(user.id, user);
+    });
+    return [...byId.values()]
+      .map((user) => {
+        const staffRoles = user.roles.filter((role) => role === 'admin' || role === 'support');
+        const roleLabel = staffRoles
+          .map((role) => role.charAt(0).toUpperCase() + role.slice(1))
+          .join(', ');
+        return {
+          id: user.id,
+          label: `${user.name || user.email}${roleLabel ? ` (${roleLabel})` : ''}`,
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [adminStaffQueue, supportStaffQueue]);
+
+  const staffLoading = adminStaffLoading || supportStaffLoading;
+  const staffFailed = Boolean(adminStaffError) || Boolean(supportStaffError);
+  const staffUnavailable = staffLoading || staffFailed || staffOptions.length === 0;
 
   const { moderateProducts: mutateModerate, assignModerator: mutateAssignModerator } = useAdminActions();
 
@@ -219,8 +251,9 @@ export const AdminProductsPage: React.FC = () => {
           <div className="mt-3">
             <div className="text-2xl font-bold tracking-tight text-slate-900">{rejectedCount}</div>
             <div className="mt-1 flex items-center gap-2 text-xs">
-              <span className="rounded bg-rose-50 px-1.5 py-0.2 text-[10px] font-bold text-rose-700 border border-rose-200">
-                ⚠ {rejectedCount} rejected
+              <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.2 text-[10px] font-bold text-rose-700 border border-rose-200">
+                <TriangleAlert className="h-3 w-3" aria-hidden="true" />
+                {rejectedCount} rejected
               </span>
               <span className="text-slate-400">Catalog protection</span>
             </div>
@@ -486,29 +519,29 @@ export const AdminProductsPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-            <Link
-              to="/admin/add-product"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
-            >
-              Add Product
-            </Link>
+            <Button asChild variant="default" size="sm">
+              <Link to="/admin/add-product">
+                Add Product
+              </Link>
+            </Button>
 
             <button type="button" onClick={handleExportQueue} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer">
               <Download className="h-3.5 w-3.5 text-slate-400" />
               Export Queue
             </button>
 
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={() => {
                 if (counts.pendingReview === 0) {
                   showToast('No pending items in queue.');
                 }
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               Review Queue ({counts.pendingReview} Pending)
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -665,12 +698,23 @@ export const AdminProductsPage: React.FC = () => {
           <div className="space-y-4 pt-2 text-xs">
             <div>
               <label htmlFor="assign-moderator" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Select Moderator Specialist</label>
-              <select id="assign-moderator" value={selectedModerator} onChange={(e) => setSelectedModerator(e.target.value)} className="w-full admin-select h-10">
-                <option value="">Choose moderator...</option>
-                <option value="usr_sarah_jenkins">Sarah Jenkins (Senior Compliance Lead)</option>
-                <option value="usr_alex_rivera">Alex Rivera (Catalog & Trademark Specialist)</option>
-                <option value="usr_david_chen">David Chen (Safety & Hardware Compliance)</option>
-                <option value="usr_elena_rostova">Elena Rostova (IP & Anti-Counterfeit Lead)</option>
+              <select id="assign-moderator" value={selectedModerator} onChange={(e) => setSelectedModerator(e.target.value)} disabled={staffUnavailable} className="w-full admin-select h-10">
+                {staffLoading ? (
+                  <option value="">Loading staff…</option>
+                ) : staffFailed ? (
+                  <option value="">Staff list unavailable</option>
+                ) : staffOptions.length === 0 ? (
+                  <option value="">No staff available</option>
+                ) : (
+                  <>
+                    <option value="">Choose moderator...</option>
+                    {staffOptions.map((staff) => (
+                      <option key={staff.id} value={staff.id}>
+                        {staff.label}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
             </div>
             <div>
@@ -679,7 +723,7 @@ export const AdminProductsPage: React.FC = () => {
             </div>
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button type="button" onClick={() => setIsAssignModalOpen(false)} className="px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleConfirmAssign} disabled={!selectedModerator} className="px-4 py-2 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">Confirm Assignment</button>
+              <Button type="button" variant="default" size="sm" onClick={handleConfirmAssign} disabled={!selectedModerator}>Confirm Assignment</Button>
             </div>
           </div>
         </ModalWrapper>

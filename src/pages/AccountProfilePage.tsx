@@ -427,7 +427,7 @@ export const AccountProfilePage: React.FC = () => {
   const [addressCity, setAddressCity] = useState('');
   const [addressState, setAddressState] = useState('');
   const [addressZipCode, setAddressZipCode] = useState('');
-  const [addressCountry, setAddressCountry] = useState('United States');
+  const [addressCountry, setAddressCountry] = useState('Pakistan');
   const [addressIsDefault, setAddressIsDefault] = useState(false);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [addressBanner, setAddressBanner] = useState<string | null>(null);
@@ -455,7 +455,7 @@ export const AccountProfilePage: React.FC = () => {
     setAddressCity('');
     setAddressState('');
     setAddressZipCode('');
-    setAddressCountry('United States');
+    setAddressCountry('Pakistan');
     setAddressIsDefault(savedAddresses.length === 0);
     setAddressError(null);
     setIsAddressModalOpen(true);
@@ -505,7 +505,7 @@ export const AccountProfilePage: React.FC = () => {
       city: addressCity.trim(),
       state: addressState.trim(),
       zipCode: addressZipCode.trim(),
-      country: addressCountry.trim() || 'United States',
+      country: addressCountry.trim() || 'Pakistan',
       isDefault: addressIsDefault,
     };
 
@@ -1603,7 +1603,7 @@ export const AccountProfilePage: React.FC = () => {
                                   setAddressCity(entry.city || '');
                                   setAddressState(entry.state || '');
                                   setAddressZipCode(entry.zipCode || '');
-                                  setAddressCountry(entry.country || 'United States');
+                                  setAddressCountry(entry.country || 'Pakistan');
                                 }}
                                 className="text-[10px] font-bold text-sun-orange hover:underline cursor-pointer"
                               >

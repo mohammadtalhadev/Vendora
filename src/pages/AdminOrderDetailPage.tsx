@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
 
 const TERMINAL_STATUSES = new Set(['delivered', 'cancelled', 'refunded', 'returned', 'available']);
 
@@ -454,13 +455,14 @@ export const AdminOrderDetailPage: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end pt-3 border-t border-slate-100">
-                  <button
+                  <Button
                     type="button"
+                    variant="ink"
+                    size="sm"
                     onClick={() => setIsInvoiceModalOpen(false)}
-                    className="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
                   >
                     Close Invoice
-                  </button>
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>

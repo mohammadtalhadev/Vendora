@@ -3,6 +3,8 @@ import {
   Download,
   Search,
   CheckCircle2,
+  Check,
+  Star,
   AlertTriangle,
   ThumbsUp,
   ShieldCheck,
@@ -276,8 +278,14 @@ export const VendorReviewsPage: React.FC = () => {
                 </span>
                 <span className="text-sm font-semibold text-slate-400">/ 5.0</span>
               </div>
-              <div className="mt-1 flex items-center text-amber-400 text-sm">
-                {'★'.repeat(Math.round(stats.average)) || '—'}
+              <div className="mt-1 flex items-center gap-0.5 text-amber-400 text-sm">
+                {Math.round(stats.average) > 0 ? (
+                  Array.from({ length: Math.round(stats.average) }, (_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+                  ))
+                ) : (
+                  '—'
+                )}
               </div>
             </div>
             <div className="mt-4 pt-2 text-xs text-slate-500 flex items-center gap-1 border-t border-slate-100">
@@ -303,7 +311,10 @@ export const VendorReviewsPage: React.FC = () => {
                   const pct = stats.total === 0 ? 0 : Math.round((count / stats.total) * 100);
                   return (
                     <div key={star} className="flex items-center gap-2">
-                      <span className="w-4 font-bold text-slate-600">{star}★</span>
+                      <span className="flex w-5 items-center gap-0.5 font-bold text-slate-600">
+                        {star}
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden="true" />
+                      </span>
                       <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${star >= 4 ? 'bg-slate-900' : 'bg-amber-500'}`}
@@ -531,8 +542,9 @@ export const VendorReviewsPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 text-sm">{rev.author}</span>
                         {rev.isVerified && (
-                          <span className="rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                            ✓ Verified Purchase
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                            <Check className="h-3 w-3" aria-hidden="true" />
+                            Verified Purchase
                           </span>
                         )}
                         {rev.needsAction && (
@@ -549,9 +561,14 @@ export const VendorReviewsPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <div className="flex items-center text-amber-400 text-xs">
-                      {'★'.repeat(rev.rating)}
-                      {'☆'.repeat(5 - rev.rating)}
+                    <div className="flex items-center gap-0.5 text-amber-400 text-xs">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3.5 w-3.5 ${i < Math.floor(rev.rating) ? 'fill-amber-400 text-amber-400' : 'text-amber-400'}`}
+                          aria-hidden="true"
+                        />
+                      ))}
                     </div>
                     <span className="text-xs font-bold text-slate-900">{rev.rating.toFixed(1)}</span>
                     <span className="text-xs text-slate-400">• {rev.timeAgo}</span>
@@ -597,8 +614,9 @@ export const VendorReviewsPage: React.FC = () => {
 
                   <div className="flex items-center gap-3">
                     {rev.merchantReply ? (
-                      <span className="text-emerald-700 font-bold text-[11px]">
-                        ✓ Publicly Replied
+                      <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-[11px]">
+                        <Check className="h-3 w-3" aria-hidden="true" />
+                        Publicly Replied
                       </span>
                     ) : rev.needsAction ? (
                       <span className="text-amber-800 font-bold text-[11px]">

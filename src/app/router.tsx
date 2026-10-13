@@ -94,9 +94,6 @@ const ContactPage = lazy(() =>
 const TrackOrderPage = lazy(() =>
   import('../pages/TrackOrderPage').then((m) => ({ default: m.TrackOrderPage })),
 );
-const SellOnVendoraPage = lazy(() =>
-  import('../pages/SellOnVendoraPage').then((m) => ({ default: m.SellOnVendoraPage })),
-);
 const BrandsPage = lazy(() =>
   import('../pages/BrandsPage').then((m) => ({ default: m.BrandsPage })),
 );
@@ -347,15 +344,15 @@ export const router = createBrowserRouter([
       },
       {
         path: 'sell',
-        element: lazyWrap(<SellOnVendoraPage />),
+        element: <Navigate to="/become-a-seller" replace />,
       },
       {
         path: 'sell-on-vendora',
-        element: lazyWrap(<SellOnVendoraPage />),
+        element: <Navigate to="/become-a-seller" replace />,
       },
       {
         path: 'merchants',
-        element: lazyWrap(<SellOnVendoraPage />),
+        element: <Navigate to="/become-a-seller" replace />,
       },
       {
         path: 'account/profile',

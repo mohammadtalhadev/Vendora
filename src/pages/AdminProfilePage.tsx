@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { Button } from '../components/ui/button';
 import { useAuthStore } from '../store/auth-store';
 import {
   Dialog,
@@ -221,14 +222,15 @@ export const AdminProfilePage: React.FC = () => {
             >
               Discard Changes
             </button>
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={handleSaveProfile}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 active:scale-95 transition-all cursor-pointer"
             >
               <Check className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden="true" />
               <span>Save Profile Changes</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -852,13 +854,12 @@ export const AdminProfilePage: React.FC = () => {
                       Immutable operational trail recorded under administrator key ADM-0048-COMP.
                     </p>
                   </div>
-                  <Link
-                    to="/admin/audit-logs"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-2xs self-start sm:self-auto"
-                  >
-                    <span>Full Audit Center</span>
-                    <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Link>
+                  <Button asChild variant="ink" size="sm" className="self-start sm:self-auto">
+                    <Link to="/admin/audit-logs">
+                      <span>Full Audit Center</span>
+                      <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  </Button>
                 </div>
 
                 <div className="space-y-2.5 text-xs">
@@ -1134,16 +1135,17 @@ export const AdminProfilePage: React.FC = () => {
               >
                 Close
               </button>
-              <button
+              <Button
                 type="button"
+                variant="ink"
+                size="sm"
                 onClick={() => {
                   setIsKeyModalOpen(false);
                   showToast('New hardware token registration initiated');
                 }}
-                className="rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
               >
                 + Register New Token
-              </button>
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -1183,18 +1185,19 @@ export const AdminProfilePage: React.FC = () => {
               >
                 Done
               </button>
-              <button
+              <Button
                 type="button"
+                variant="ink"
+                size="sm"
                 onClick={() => {
                   navigator.clipboard?.writeText(
                     '9B24-A7BC\n4C12-9F01\n719A-B33D\n32DA-89FC\n11A9-C54E\n88FB-019C\n62AC-99DE\n4401-B12A'
                   );
                   showToast('Recovery codes copied to clipboard');
                 }}
-                className="rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer"
               >
                 Copy All Active Codes
-              </button>
+              </Button>
             </div>
           </div>
         </DialogContent>

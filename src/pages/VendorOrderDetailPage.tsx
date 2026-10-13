@@ -11,8 +11,10 @@ import {
   MapPin,
   Barcode,
   Save,
+  X,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { Button } from '../components/ui/button';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { useVendorData } from '../features/vendor/hooks/useVendorData';
 import {
@@ -277,34 +279,37 @@ export const VendorOrderDetailPage: React.FC = () => {
             )}
 
             {subOrder.type === 'physical' && subOrder.status === 'placed' && (
-              <button
+              <Button
                 type="button"
+                variant="default"
+                size="sm"
                 onClick={() => handleAdvanceStatus('confirmed')}
-                className="rounded-xl bg-sun-orange px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
               >
                 Confirm Order
-              </button>
+              </Button>
             )}
 
             {subOrder.type === 'physical' && subOrder.status === 'confirmed' && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => handleAdvanceStatus('packed')}
-                className="rounded-xl bg-sun-orange px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#EA580C] transition-all cursor-pointer"
               >
                 Mark Packed
-              </button>
+              </Button>
             )}
 
             {subOrder.type === 'physical' && subOrder.status === 'packed' && (
-              <button
+              <Button
                 type="button"
+                variant="ink"
+                size="sm"
                 onClick={() => handleAdvanceStatus('ready_for_pickup')}
-                className="rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-700 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Truck className="h-4 w-4" aria-hidden="true" />
                 Ready for Rider Pickup
-              </button>
+              </Button>
             )}
 
             {subOrder.status === 'ready_for_pickup' && (
@@ -556,9 +561,10 @@ export const VendorOrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsPackingSlipOpen(false)}
+                  aria-label="Close packing slip"
                   className="rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200"
                 >
-                  ✕
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
 

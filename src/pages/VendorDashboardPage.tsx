@@ -9,6 +9,7 @@ import {
   Download,
   TrendingUp,
   CheckCircle2,
+  Check,
   ChevronDown,
   Plus,
   Boxes,
@@ -28,6 +29,7 @@ import { exportToCsv } from '../lib/export-csv';
 import type { SubOrderStatus, Product } from '../types/domain';
 import { useVendorData, type VendorPackage } from '../features/vendor/hooks/useVendorData';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Button } from '../components/ui/button';
 import { StatusBadge } from '../components/ui/status-badge';
 import { useVendorDashboard } from '../features/vendor/hooks/useVendorDashboard';
 import { useVendorLive } from '../features/vendor/hooks/useLive';
@@ -532,35 +534,39 @@ export const VendorDashboardPage: React.FC = () => {
       cell: (order) => (
         <>
           {order.status === 'placed' && (
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={() => handleAdvanceStatus(order.id, 'placed')}
-              className="rounded-full bg-slate-900 dark:bg-slate-100 px-3 py-1 text-xs font-bold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white shadow-2xs cursor-pointer transition-colors"
             >
               Confirm Order
-            </button>
+            </Button>
           )}
           {order.status === 'confirmed' && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
-              className="rounded-full bg-sun-orange px-3 py-1 text-xs font-bold text-white hover:bg-sun-orange-600 shadow-2xs cursor-pointer transition-colors"
             >
               Mark Packed
-            </button>
+            </Button>
           )}
           {order.status === 'packed' && (
-            <button
+            <Button
               type="button"
+              variant="ink"
+              size="sm"
               onClick={() => handleAdvanceStatus(order.id, 'packed')}
-              className="rounded-full bg-purple-600 px-3 py-1 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs cursor-pointer transition-colors"
             >
               Ready for Pickup
-            </button>
+            </Button>
           )}
           {order.status === 'ready_for_pickup' && (
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-              Staged ✓
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              Staged
+              <Check className="h-3 w-3" aria-hidden="true" />
             </span>
           )}
           {!isSellerActionStage(order.status) && (
@@ -674,14 +680,15 @@ export const VendorDashboardPage: React.FC = () => {
             </button>
 
             {/* Primary Add New Product Button */}
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={() => setIsProductModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Plus className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden="true" />
               <span>Add Product</span>
-            </button>
+            </Button>
           </div>
         </div>
 

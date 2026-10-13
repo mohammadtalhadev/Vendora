@@ -7,6 +7,7 @@ import { exportToCsv } from '../lib/export-csv';
 import { formatPrice } from '../store/currency-store';
 import { useAdminOrderQueue } from '../features/admin/hooks/useAdminQueries';
 import type { AdminOrderRow } from '../features/admin/api/orders';
+import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { StatusBadge } from '../components/ui/status-badge';
@@ -229,15 +230,17 @@ export const AdminOrdersPage: React.FC = () => {
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={handleExportPage}
             disabled={rows.length === 0}
-            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            className="self-start sm:self-auto"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Export Orders</span>
-          </button>
+          </Button>
         </div>
 
         {/* =====================================================================

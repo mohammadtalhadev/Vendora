@@ -39,6 +39,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
 import { useCategoryTree } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type { AdminCategoryRoot, AdminCategoryChild } from '../features/admin/api/categories';
@@ -365,14 +366,15 @@ export const AdminCategoriesPage: React.FC = () => {
               <span>{isFetching ? 'Refreshing…' : 'Refresh'}</span>
             </button>
 
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={openCreate}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
               <span className="text-white">New Category</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -885,13 +887,14 @@ export const AdminCategoriesPage: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <button
+                <Button
                   type="submit"
+                  variant="default"
+                  size="sm"
                   disabled={actions.createCategory.isPending || actions.updateCategory.isPending}
-                  className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
                 >
                   {modal?.mode === 'edit' ? 'Save Changes' : 'Create Category'}
-                </button>
+                </Button>
               </div>
             </form>
           </DialogContent>
@@ -940,13 +943,14 @@ export const AdminCategoriesPage: React.FC = () => {
                 >
                   Use default
                 </button>
-                <button
+                <Button
                   type="submit"
+                  variant="ink"
+                  size="sm"
                   disabled={actions.setCategoryCommission.isPending}
-                  className="rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800 cursor-pointer disabled:opacity-60"
                 >
                   Save Rate
-                </button>
+                </Button>
               </div>
             </form>
           </DialogContent>

@@ -18,6 +18,7 @@ import {
   Camera,
   MessageSquare,
   CheckCircle2,
+  X,
   RotateCcw,
   DollarSign,
   Users,
@@ -802,7 +803,7 @@ export const BecomeSellerPage: React.FC = () => {
               title="Close"
               className="absolute top-4 right-4 h-8 w-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold"
             >
-              ✕
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
             <div className="mb-6">
               <h3

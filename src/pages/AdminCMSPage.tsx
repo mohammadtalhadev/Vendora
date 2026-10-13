@@ -26,6 +26,7 @@ import {
   type AdminCoupon,
 } from '../features/admin/api/promotions';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Button } from '../components/ui/button';
 import { formatPrice } from '../store/currency-store';
 
 /**
@@ -284,14 +285,15 @@ export const AdminCMSPage: React.FC = () => {
           </div>
 
           {activeTab === 'banners' && (
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={() => setIsAddBannerOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
               <span className="text-white">Add Hero Banner</span>
-            </button>
+            </Button>
           )}
         </div>
 
@@ -481,13 +483,14 @@ export const AdminCMSPage: React.FC = () => {
                     required
                   />
                 </div>
-                <button
+                <Button
                   type="submit"
+                  variant="default"
+                  size="sm"
                   disabled={createCouponMutation.isPending}
-                  className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] text-white px-5 py-2.5 font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer text-xs active:scale-95 disabled:opacity-50"
                 >
                   {createCouponMutation.isPending ? 'Creating…' : 'Create Code'}
-                </button>
+                </Button>
               </form>
               {createCouponMutation.isError && (
                 <p role="alert" className="mt-2 text-rose-700 font-bold">
@@ -596,13 +599,14 @@ export const AdminCMSPage: React.FC = () => {
                   >
                     Cancel
                   </button>
-                  <button
+                  <Button
                     type="submit"
+                    variant="default"
+                    size="sm"
                     disabled={createBannerMutation.isPending}
-                    className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-5 py-2 font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer text-xs active:scale-95 disabled:opacity-50"
                   >
                     {createBannerMutation.isPending ? 'Saving…' : 'Save Banner'}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
