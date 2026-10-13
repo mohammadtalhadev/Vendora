@@ -6,6 +6,7 @@ vi.mock('../../../lib/supabase', async () => {
 });
 
 import { fetchCouponByCode, fetchLiveCoupons } from './promotions';
+import { formatPrice } from '../../../store/currency-store';
 import { promotionRow, supabaseDouble } from '../../../test/supabase-double';
 
 beforeEach(() => {
@@ -53,7 +54,7 @@ describe('fetchCouponByCode', () => {
 
   it('rejects a basket below the minimum with the amount still to spend', async () => {
     supabaseDouble.seedPromotion(promotionRow({ code: 'SAVE10', minimum_order: 150 }));
-    await expect(fetchCouponByCode('SAVE10', 120)).rejects.toThrow(/Spend at least \$150\.00/);
+    await expect(fetchCouponByCode('SAVE10', 120)).rejects.toThrow(`Spend at least ${formatPrice(150)}`);
   });
 
   it('surfaces a read failure rather than pretending the code is dead', async () => {

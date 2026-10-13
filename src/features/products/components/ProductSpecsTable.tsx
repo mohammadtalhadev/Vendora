@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import type { Product } from '../../../types/domain';
+import { formatPrice } from '../../../store/currency-store';
 
 /** Builds a Ronin-style two-column spec table from real product data. */
 function buildSpecRows(product: Product): Array<[string, string]> {
@@ -34,7 +35,7 @@ function buildSpecRows(product: Product): Array<[string, string]> {
       'SHIPPING',
       product.shippingSettings?.freeShipping
         ? 'Free shipping included'
-        : `Standard fee $${(product.shippingSettings?.standardFee ?? 0).toFixed(2)}`,
+        : `Standard fee ${formatPrice(product.shippingSettings?.standardFee ?? 0)}`,
     ]);
     rows.push(['VARIANTS', `${product.variants.length} option(s) available`]);
   }

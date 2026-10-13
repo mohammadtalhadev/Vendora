@@ -1,51 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useProducts } from '../../catalog/hooks/useProducts';
+import { useCurrency } from '../../../store/currency-store';
 
-export interface AlsoViewedItem {
-  id: string;
-  brand: string;
-  title: string;
-  price: string;
-  image: string;
-  link: string;
+interface CustomersAlsoViewedGridProps {
+  /** The product being viewed, excluded from its own rail. */
+  excludeId?: string;
 }
 
-const DEFAULT_ALSO_VIEWED: AlsoViewedItem[] = [
-  {
-    id: 'viewed-s24',
-    brand: 'Samsung Official',
-    title: 'Galaxy S24 Ultra 5G',
-    price: 'AED 4,199',
-    image: '/images/bevesi/hero_samsung_s24.jpg',
-    link: '/products',
-  },
-  {
-    id: 'viewed-watch',
-    brand: 'Apple Official',
-    title: 'Apple Watch Ultra 2',
-    price: 'AED 3,199',
-    image: '/images/emox/hero_apple_watch.jpg',
-    link: '/products',
-  },
-  {
-    id: 'viewed-airpods',
-    brand: 'Apple Official',
-    title: 'AirPods Pro (2nd Gen)',
-    price: 'AED 849',
-    image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=600&q=80',
-    link: '/products',
-  },
-  {
-    id: 'viewed-adapter',
-    brand: 'Apple Official',
-    title: '20W USB-C Power Adapter',
-    price: 'AED 79',
-    image: 'https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?auto=format&fit=crop&w=600&q=80',
-    link: '/products',
-  },
-];
+/**
+ * "Customers also viewed" rail. This used to render four invented products
+ * with hard-coded AED price strings (QA M-3); it now shows real catalogue
+ * products priced through the currency formatter, and renders nothing when
+ * the catalogue has nothing to show.
+ */
+export const CustomersAlsoViewedGrid: React.FC<CustomersAlsoViewedGridProps> = ({ excludeId }) => {
+  const { formatPrice } = useCurrency();
+  const { data } = useProducts({ sort: 'featured', page: 1, limit: 5 });
 
-export const CustomersAlsoViewedGrid: React.FC = () => {
+  const items = (data?.items ?? []).filter((product) => product.id !== excludeId).slice(0, 4);
+  if (items.length === 0) return null;
+
   return (
     <section className="mt-14 space-y-6">
       {/* Header */}
@@ -60,7 +35,7 @@ export const CustomersAlsoViewedGrid: React.FC = () => {
 
       {/* 4 Cards Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {DEFAULT_ALSO_VIEWED.map((item) => (
+        {items.map((item) => (
           <div
             key={item.id}
             className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
@@ -69,7 +44,7 @@ export const CustomersAlsoViewedGrid: React.FC = () => {
               {/* Product Image Frame */}
               <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-50 p-2 flex items-center justify-center">
                 <img
-                  src={item.image}
+                  src={item.images[0] ?? ''}
                   alt={item.title}
                   className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
@@ -85,14 +60,14 @@ export const CustomersAlsoViewedGrid: React.FC = () => {
                   {item.title}
                 </h4>
                 <p className="text-sm font-black text-slate-900 pt-0.5">
-                  {item.price}
+                  {formatPrice(item.price)}
                 </p>
               </div>
             </div>
 
             {/* View Deal Button */}
             <Link
-              to={item.link}
+              to={`/products/${item.id}`}
               className="mt-3.5 block w-full rounded-xl border border-slate-200 bg-white py-2 text-center text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:border-slate-300 hover:bg-slate-50"
             >
               View Deal

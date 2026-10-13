@@ -101,7 +101,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                       {c.code} <span className={isSelected ? 'text-amber-300' : 'text-slate-500'}>({c.symbol})</span>
                     </div>
                     <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
-                      1$ = {rate < 1 ? rate.toFixed(3) : rate.toFixed(rate > 100 ? 0 : 2)}
+                      1 PKR = {rate < 1 ? rate.toFixed(4) : rate.toFixed(rate > 100 ? 0 : 2)}
                     </div>
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                         </span>
                       </div>
                       <div className="text-[10px] text-slate-400 font-mono">
-                        1 USD = {rate < 1 ? rate.toFixed(4) : rate.toFixed(rate > 100 ? 1 : 2)} {c.code}
+                        1 PKR = {rate < 1 ? rate.toFixed(4) : rate.toFixed(rate > 100 ? 1 : 2)} {c.code}
                       </div>
                     </div>
                   </div>

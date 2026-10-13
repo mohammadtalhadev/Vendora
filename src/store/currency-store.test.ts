@@ -8,6 +8,12 @@ import {
   FALLBACK_RATES,
 } from './currency-store';
 
+/**
+ * PKR is the canonical base (QA C-3/M-3): amounts handed to the formatter ARE
+ * rupees, rates are units per 1 PKR, and conversion runs FROM PKR into the
+ * display currency only. These tests pin that direction — the previous suite
+ * asserted the USD-base model that inflated rupee prices ~277×.
+ */
 describe('currencyStore', () => {
   beforeEach(() => {
     useCurrencyStore.setState({
@@ -18,11 +24,12 @@ describe('currencyStore', () => {
     });
   });
 
-  it('ships the storefront in rupees', () => {
+  it('ships the storefront in rupees, with PKR as the rate base', () => {
     expect(DEFAULT_CURRENCY).toBe('PKR');
-    expect(FALLBACK_RATES.USD).toBe(1.0);
-    expect(FALLBACK_RATES.PKR).toBeGreaterThan(200);
-    expect(formatCurrencyValue(249, DEFAULT_CURRENCY, FALLBACK_RATES)).toBe('₨ 69,023');
+    expect(FALLBACK_RATES.PKR).toBe(1);
+    expect(FALLBACK_RATES.USD).toBeLessThan(0.01);
+    // A rupee amount renders as itself in the default display currency.
+    expect(formatCurrencyValue(69023, DEFAULT_CURRENCY, FALLBACK_RATES)).toBe('₨ 69,023');
   });
 
   it('updates currency on setCurrency', () => {
@@ -33,37 +40,38 @@ describe('currencyStore', () => {
     expect(useCurrencyStore.getState().currency).toBe('EUR');
   });
 
-  it('formats USD correctly with 2 decimal places', () => {
+  it('converts FROM PKR when formatting USD', () => {
     useCurrencyStore.getState().setCurrency('USD');
-    expect(formatPrice(100)).toBe('$100.00');
-    expect(formatPrice(1199)).toBe('$1,199.00');
+    // ₨27,720 at the fallback cross-rate (277.20 PKR per USD) is exactly $100.
+    expect(formatPrice(27720)).toBe('$100.00');
+    expect(formatPrice(277200)).toBe('$1,000.00');
   });
 
   it('formats EUR correctly with Euro symbol', () => {
     useCurrencyStore.getState().setCurrency('EUR');
-    const formatted = formatPrice(100);
+    const formatted = formatPrice(27720);
     expect(formatted.startsWith('€')).toBe(true);
+    expect(formatted).toContain('89.26');
   });
 
   it('formats GBP correctly with Pound symbol', () => {
     useCurrencyStore.getState().setCurrency('GBP');
-    const formatted = formatPrice(100);
+    const formatted = formatPrice(27720);
     expect(formatted.startsWith('£')).toBe(true);
+    expect(formatted).toContain('75.56');
   });
 
-  it('formats PKR correctly with ₨ symbol and whole rounded value', () => {
+  it('formats PKR as the amount itself, whole rupees', () => {
     useCurrencyStore.getState().setCurrency('PKR');
     const formatted = formatPrice(100);
-    expect(formatted.startsWith('₨ ')).toBe(true);
-    // 100 * 277.20 = 27,720
-    expect(formatted).toContain('27,720');
+    expect(formatted).toBe('₨ 100');
   });
 
   it('formats AED correctly with AED prefix', () => {
     useCurrencyStore.getState().setCurrency('AED');
-    const formatted = formatPrice(100);
+    const formatted = formatPrice(27720);
     expect(formatted.startsWith('AED ')).toBe(true);
-    // 100 * 3.6725 = 367.25
+    // 27,720 PKR × (3.6725 / 277.20) = 367.25 AED at the fallback cross-rate.
     expect(formatted).toContain('367.25');
   });
 
@@ -73,21 +81,23 @@ describe('currencyStore', () => {
     expect(formatPrice(NaN)).toBe('—');
   });
 
-  it('converts numeric prices accurately with convertPrice', () => {
+  it('converts numeric prices FROM PKR with convertPrice', () => {
     useCurrencyStore.getState().setCurrency('USD');
-    expect(useCurrencyStore.getState().convertPrice(50)).toBe(50);
+    expect(useCurrencyStore.getState().convertPrice(27720)).toBeCloseTo(100, 6);
 
-    const pkrPrice = useCurrencyStore.getState().convertPrice(10, 'PKR');
-    expect(pkrPrice).toBeCloseTo(10 * FALLBACK_RATES.PKR, 1);
+    // PKR is the base: converting into PKR is the identity.
+    expect(useCurrencyStore.getState().convertPrice(10, 'PKR')).toBe(10);
+    expect(convertCurrencyValue(82522, 'PKR', FALLBACK_RATES)).toBe(82522);
   });
 
-  it('fetches real-time rates successfully and updates rates', async () => {
+  it('fetches PKR-based rates and adopts them', async () => {
+    // open.er-api.com/v6/latest/PKR returns units of each currency per 1 PKR.
     const mockRates = {
-      USD: 1,
-      EUR: 0.95,
-      GBP: 0.80,
-      PKR: 280.0,
-      AED: 3.67,
+      PKR: 1,
+      USD: 0.003571,
+      EUR: 0.003289,
+      GBP: 0.002813,
+      AED: 0.013111,
     };
 
     const fetchMock = vi.fn().mockResolvedValue({
@@ -98,9 +108,11 @@ describe('currencyStore', () => {
 
     await useCurrencyStore.getState().fetchRates(true);
 
+    expect(fetchMock).toHaveBeenCalledWith('https://open.er-api.com/v6/latest/PKR');
     const state = useCurrencyStore.getState();
-    expect(state.rates.EUR).toBe(0.95);
-    expect(state.rates.PKR).toBe(280.0);
+    expect(state.rates.USD).toBe(0.003571);
+    expect(state.rates.EUR).toBe(0.003289);
+    expect(state.rates.PKR).toBe(1);
     expect(state.lastUpdated).not.toBeNull();
 
     vi.unstubAllGlobals();

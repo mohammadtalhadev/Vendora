@@ -14,6 +14,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { RiderDashboardPage } from './RiderDashboardPage';
 import { renderWorkspace } from '../test/vendor-render';
 import { useAuthStore } from '../store/auth-store';
+import { formatPrice } from '../store/currency-store';
 import { DEMO_ACCOUNTS } from '../lib/demo-accounts';
 import {
   deliveryRow,
@@ -82,7 +83,7 @@ describe('RiderDashboardPage', () => {
     expect(within(card).getByText('Nova Tech')).toBeInTheDocument();
     expect(within(card).getByText('18 Harbour Road')).toBeInTheDocument();
     expect(within(card).getByText('Leave with the concierge.')).toBeInTheDocument();
-    expect(within(card).getByText('$34.00')).toBeInTheDocument();
+    expect(within(card).getByText(formatPrice(34))).toBeInTheDocument();
   });
 
   it('quotes the board counts as parcels, and shows no invented pay or rating', async () => {

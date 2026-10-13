@@ -98,15 +98,27 @@ export const SUPPORTED_CURRENCIES: Record<CurrencyCode, CurrencyConfig> = {
   },
 };
 
+/**
+ * Rates are units of each currency per 1 PKR. PKR is the canonical base: prices
+ * stored in the database ARE rupees, and conversion happens only here, at
+ * display time, FROM PKR into the selected currency. (This store previously
+ * treated every amount as USD and multiplied by a per-USD rate, which inflated
+ * rupee amounts ~277× wherever the display currency was PKR — QA C-3/M-3.)
+ * The cross-rates below preserve the previous USD relationships (USD 1,
+ * EUR 0.8926, GBP 0.7556, PKR 277.20, AED 3.6725, INR 84.05, CAD 1.38,
+ * SAR 3.75 per dollar), re-based onto PKR.
+ */
+const PKR_PER_USD = 277.2;
+
 export const FALLBACK_RATES: Record<CurrencyCode, number> = {
-  USD: 1.0,
-  EUR: 0.8926,
-  GBP: 0.7556,
-  PKR: 277.20,
-  AED: 3.6725,
-  INR: 84.05,
-  CAD: 1.38,
-  SAR: 3.75,
+  PKR: 1,
+  USD: 1 / PKR_PER_USD,
+  EUR: 0.8926 / PKR_PER_USD,
+  GBP: 0.7556 / PKR_PER_USD,
+  AED: 3.6725 / PKR_PER_USD,
+  INR: 84.05 / PKR_PER_USD,
+  CAD: 1.38 / PKR_PER_USD,
+  SAR: 3.75 / PKR_PER_USD,
 };
 
 export interface FormatPriceOptions {
@@ -116,17 +128,17 @@ export interface FormatPriceOptions {
 }
 
 export function formatCurrencyValue(
-  amountInUSD: number | undefined | null,
+  amountInPKR: number | undefined | null,
   currency: CurrencyCode = 'USD',
   rates: Record<CurrencyCode, number> = FALLBACK_RATES,
   options?: FormatPriceOptions,
 ): string {
-  if (amountInUSD === undefined || amountInUSD === null || Number.isNaN(amountInUSD)) {
+  if (amountInPKR === undefined || amountInPKR === null || Number.isNaN(amountInPKR)) {
     return '—';
   }
 
   const rate = rates[currency] || FALLBACK_RATES[currency] || 1.0;
-  const converted = amountInUSD * rate;
+  const converted = amountInPKR * rate;
   const config = SUPPORTED_CURRENCIES[currency] || SUPPORTED_CURRENCIES.USD;
   const decimals = options?.decimals !== undefined ? options.decimals : config.decimals;
 
@@ -152,15 +164,15 @@ export function formatCurrencyValue(
 }
 
 export function convertCurrencyValue(
-  amountInUSD: number | undefined | null,
+  amountInPKR: number | undefined | null,
   currency: CurrencyCode = 'USD',
   rates: Record<CurrencyCode, number> = FALLBACK_RATES,
 ): number {
-  if (amountInUSD === undefined || amountInUSD === null || Number.isNaN(amountInUSD)) {
+  if (amountInPKR === undefined || amountInPKR === null || Number.isNaN(amountInPKR)) {
     return 0;
   }
   const rate = rates[currency] || FALLBACK_RATES[currency] || 1.0;
-  return amountInUSD * rate;
+  return amountInPKR * rate;
 }
 
 interface CurrencyState {
@@ -170,8 +182,8 @@ interface CurrencyState {
   lastUpdated: string | null;
   setCurrency: (currency: CurrencyCode) => void;
   fetchRates: (force?: boolean) => Promise<void>;
-  formatPrice: (amountInUSD: number | undefined | null, options?: FormatPriceOptions | CurrencyCode) => string;
-  convertPrice: (amountInUSD: number | undefined | null, targetCurrency?: CurrencyCode) => number;
+  formatPrice: (amountInPKR: number | undefined | null, options?: FormatPriceOptions | CurrencyCode) => string;
+  convertPrice: (amountInPKR: number | undefined | null, targetCurrency?: CurrencyCode) => number;
 }
 
 // 1 hour cache duration
@@ -206,15 +218,16 @@ export const useCurrencyStore = create<CurrencyState>()(
         set({ isLoading: true });
 
         try {
-          // Open exchange rates API with USD base
-          const res = await fetch('https://open.er-api.com/v6/latest/USD');
+          // Open exchange rates API with PKR base, matching the canonical model:
+          // each returned rate is units of that currency per 1 PKR.
+          const res = await fetch('https://open.er-api.com/v6/latest/PKR');
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
 
           if (data && data.rates) {
             const nextRates = { ...FALLBACK_RATES };
             for (const code of Object.keys(FALLBACK_RATES) as CurrencyCode[]) {
-              if (typeof data.rates[code] === 'number') {
+              if (typeof data.rates[code] === 'number' && data.rates[code] > 0) {
                 nextRates[code] = data.rates[code];
               }
             }
@@ -237,7 +250,7 @@ export const useCurrencyStore = create<CurrencyState>()(
         });
       },
 
-      formatPrice: (amountInUSD, options) => {
+      formatPrice: (amountInPKR, options) => {
         const state = get();
         let currencyCode = state.currency;
         let opt: FormatPriceOptions | undefined;
@@ -251,17 +264,30 @@ export const useCurrencyStore = create<CurrencyState>()(
           }
         }
 
-        return formatCurrencyValue(amountInUSD, currencyCode, state.rates, opt);
+        return formatCurrencyValue(amountInPKR, currencyCode, state.rates, opt);
       },
 
-      convertPrice: (amountInUSD, targetCurrency) => {
+      convertPrice: (amountInPKR, targetCurrency) => {
         const state = get();
         const code = targetCurrency || state.currency;
-        return convertCurrencyValue(amountInUSD, code, state.rates);
+        return convertCurrencyValue(amountInPKR, code, state.rates);
       },
     }),
     {
       name: 'vd:v1:currency',
+      // Version 1 is the PKR-canonical model. Persisted v0 state holds USD-based
+      // rates, which would silently resurrect the old conversion direction for
+      // returning visitors, so migration keeps only the currency choice and
+      // re-seeds the rates.
+      version: 1,
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<CurrencyState>;
+        return {
+          currency: state.currency ?? DEFAULT_CURRENCY,
+          rates: FALLBACK_RATES,
+          lastUpdated: null,
+        } as CurrencyState;
+      },
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         currency: state.currency,
@@ -298,9 +324,11 @@ export function useCurrency() {
   };
 }
 
-// Standalone formatPrice function for non-React or helper contexts
+// Standalone formatPrice function for non-React or helper contexts.
+// The amount is always PKR (the canonical stored currency); conversion into
+// the selected display currency happens inside formatCurrencyValue.
 export function formatPrice(
-  amountInUSD: number | undefined | null,
+  amountInPKR: number | undefined | null,
   options?: FormatPriceOptions | CurrencyCode,
 ): string {
   const store = useCurrencyStore.getState();
@@ -316,5 +344,5 @@ export function formatPrice(
     }
   }
 
-  return formatCurrencyValue(amountInUSD, currencyCode, store.rates, opt);
+  return formatCurrencyValue(amountInPKR, currencyCode, store.rates, opt);
 }

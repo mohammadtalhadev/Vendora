@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -105,6 +105,11 @@ export const Navbar: React.FC = () => {
   // Expandable mobile search overlay
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  // Stable identities: CartDrawer's scroll-lock/Escape effect keys off onClose,
+  // so a fresh inline closure on every Navbar render kept tearing that effect
+  // down and re-registering it while the drawer was open.
+  const openCart = useCallback(() => setIsCartOpen(true), []);
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
   const [mobileSearchTerm, setMobileSearchTerm] = useState('');
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
@@ -739,7 +744,7 @@ export const Navbar: React.FC = () => {
             {/* Cart with Orange Count Badge */}
             <button
               type="button"
-              onClick={() => setIsCartOpen(true)}
+              onClick={openCart}
               className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-800 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all shrink-0 group"
               title="Shopping Cart"
               aria-label="Open shopping cart"
@@ -861,7 +866,7 @@ export const Navbar: React.FC = () => {
         )}
       </div>
 
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <CartDrawer isOpen={isCartOpen} onClose={closeCart} />
     </header>
   );
 };

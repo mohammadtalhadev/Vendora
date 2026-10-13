@@ -33,7 +33,8 @@ import type { Product } from '../types/domain';
 /** One page of the seller's shelf; "Load more" widens this limit and refetches. */
 const PAGE_SIZE = 12;
 /** The slider tops out here (USD, the stored base). At the ceiling the filter lifts entirely. */
-const PRICE_CEILING_USD = 500;
+/** Max-price slider ceiling in canonical PKR; at the ceiling the filter is unbounded. */
+const PRICE_CEILING = 1_000_000;
 
 const SORT_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'featured', label: 'Newest arrivals' },
@@ -57,7 +58,7 @@ export const VendorStorefrontPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sort, setSort] = useState('featured');
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [priceMax, setPriceMax] = useState(PRICE_CEILING_USD);
+  const [priceMax, setPriceMax] = useState(PRICE_CEILING);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
 
@@ -74,7 +75,7 @@ export const VendorStorefrontPage: React.FC = () => {
       sellerId: store?.id ?? '',
       q: searchTerm || undefined,
       sort,
-      maxPrice: priceMax < PRICE_CEILING_USD ? priceMax : undefined,
+      maxPrice: priceMax < PRICE_CEILING ? priceMax : undefined,
       page: 1,
       limit,
     },
@@ -108,7 +109,7 @@ export const VendorStorefrontPage: React.FC = () => {
     setActiveCategory(null);
     setSort('featured');
     setInStockOnly(false);
-    setPriceMax(PRICE_CEILING_USD);
+    setPriceMax(PRICE_CEILING);
     setLimit(PAGE_SIZE);
   };
 
@@ -454,18 +455,18 @@ export const VendorStorefrontPage: React.FC = () => {
                     <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white mb-2">
                       <span id="store-price-range-label">Max price</span>
                       <span className="text-[10px] text-slate-400">
-                        {priceMax >= PRICE_CEILING_USD ? 'No limit' : formatPrice(priceMax)}
+                        {priceMax >= PRICE_CEILING ? 'No limit' : formatPrice(priceMax)}
                       </span>
                     </div>
                     <input
                       type="range"
                       min="0"
-                      max={PRICE_CEILING_USD}
-                      step="10"
+                      max={PRICE_CEILING}
+                      step="1000"
                       value={priceMax}
                       onChange={(e) => setPriceMax(Number(e.target.value))}
                       aria-labelledby="store-price-range-label"
-                      aria-valuetext={priceMax >= PRICE_CEILING_USD ? 'No limit' : formatPrice(priceMax)}
+                      aria-valuetext={priceMax >= PRICE_CEILING ? 'No limit' : formatPrice(priceMax)}
                       className="w-full accent-[#FF7A1A] cursor-pointer"
                     />
                   </div>

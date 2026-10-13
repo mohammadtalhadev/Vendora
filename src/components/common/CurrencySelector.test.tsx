@@ -41,7 +41,7 @@ describe('CurrencySelector Component', () => {
     const button = screen.getByRole('button', { name: /select currency/i });
     fireEvent.click(button);
 
-    const pkrBtn = screen.getByRole('button', { name: /PKR/i });
+    const pkrBtn = screen.getByRole('button', { name: /Pakistani Rupee/i });
     fireEvent.click(pkrBtn);
 
     expect(useCurrencyStore.getState().currency).toBe('PKR');
@@ -51,7 +51,7 @@ describe('CurrencySelector Component', () => {
     render(<CurrencySelector variant="mobile" />);
 
     expect(screen.getByText(/Market Currency/i)).toBeInTheDocument();
-    const pkrMobileBtn = screen.getByRole('button', { name: /PKR/i });
+    const pkrMobileBtn = screen.getByRole('button', { name: /PKR \(₨\)/ });
     expect(pkrMobileBtn).toBeInTheDocument();
 
     fireEvent.click(pkrMobileBtn);

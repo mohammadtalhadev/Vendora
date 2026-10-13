@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Tag } from 'lucide-react';
+import { useCurrency } from '../../../store/currency-store';
 
 interface SendOfferModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
   );
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const { formatPrice, config: currencyConfig } = useCurrency();
 
   if (!isOpen) return null;
 
@@ -67,7 +69,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
             <div className="mt-4 rounded-2xl bg-slate-50 p-3.5 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500">Current Listing Price</span>
-                <p className="text-sm font-bold text-slate-700">${currentPrice.toFixed(2)}</p>
+                <p className="text-sm font-bold text-slate-700">{formatPrice(currentPrice)}</p>
               </div>
               <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-[#FF7A1A] ring-1 ring-orange-200/70">
                 Seller: {sellerName}
@@ -77,7 +79,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
               <div>
                 <label htmlFor="offer-amount-input" className="block text-xs font-bold text-slate-700 mb-1">
-                  Your Offer Amount ($)
+                  Your Offer Amount ({currencyConfig.symbol})
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">

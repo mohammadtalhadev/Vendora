@@ -23,7 +23,8 @@ import { buildPageWindow } from '../hooks/usePagination';
 import type { Product } from '../types/domain';
 
 const PAGE_SIZE = 12;
-const PRICE_CEILING = 500;
+/** Slider ceiling in canonical PKR (matches the largest bound the URL schema accepts). */
+const PRICE_CEILING = 1_000_000;
 
 // The URL is the single source of truth for the result set; there is no local mock fallback.
 export const ProductsPage: React.FC = () => {
@@ -88,6 +89,25 @@ export const ProductsPage: React.FC = () => {
   };
 
   const handleResetFilters = () => updateParams({ min: null, max: null }, { resetPage: true });
+
+  // The price inputs are a local draft. The URL stays the source of truth for
+  // the result set, but writing every keystroke to the URL re-rendered the page
+  // mid-typing and ate characters (QA C-3: "100000" became "10000"). Typing
+  // edits the draft only; the draft commits to the URL on blur / Apply. The
+  // values are canonical PKR and reach the query exactly as typed — they are
+  // never FX-converted.
+  const [minInput, setMinInput] = useState(minParam);
+  const [maxInput, setMaxInput] = useState(maxParam);
+  useEffect(() => setMinInput(minParam), [minParam]);
+  useEffect(() => setMaxInput(maxParam), [maxParam]);
+
+  const commitPriceInputs = (min: string = minInput, max: string = maxInput) => {
+    const clean = (value: string): string | null => {
+      const trimmed = value.trim();
+      return trimmed !== '' && Number.isFinite(Number(trimmed)) && Number(trimmed) >= 0 ? trimmed : null;
+    };
+    updateParams({ min: clean(min), max: clean(max) }, { resetPage: true });
+  };
 
   // 3. Real server-side query (PostgREST + exact count). The api layer throws on error,
   //    so we render loading / error / empty / data — never a mock fallback.
@@ -256,8 +276,9 @@ export const ProductsPage: React.FC = () => {
                     type="number"
                     inputMode="decimal"
                     min="0"
-                    value={minParam}
-                    onChange={(e) => updateParams({ min: e.target.value }, { resetPage: true, replace: true })}
+                    value={minInput}
+                    onChange={(e) => setMinInput(e.target.value)}
+                    onBlur={() => commitPriceInputs()}
                     aria-label="Minimum price"
                     className="w-full bg-transparent font-bold focus:outline-none"
                     placeholder="No min"
@@ -276,8 +297,9 @@ export const ProductsPage: React.FC = () => {
                     type="number"
                     inputMode="decimal"
                     min="0"
-                    value={maxParam}
-                    onChange={(e) => updateParams({ max: e.target.value }, { resetPage: true, replace: true })}
+                    value={maxInput}
+                    onChange={(e) => setMaxInput(e.target.value)}
+                    onBlur={() => commitPriceInputs()}
                     aria-label="Maximum price"
                     className="w-full bg-transparent font-bold focus:outline-none"
                     placeholder="No max"
@@ -289,9 +311,12 @@ export const ProductsPage: React.FC = () => {
                 type="range"
                 min="0"
                 max={PRICE_CEILING}
-                step="5"
-                value={maxParam === '' ? PRICE_CEILING : Math.min(toFinite(maxParam) ?? PRICE_CEILING, PRICE_CEILING)}
-                onChange={(e) => updateParams({ max: e.target.value }, { resetPage: true, replace: true })}
+                step="1000"
+                value={maxInput === '' ? PRICE_CEILING : Math.min(toFinite(maxInput) ?? PRICE_CEILING, PRICE_CEILING)}
+                onChange={(e) => {
+                  setMaxInput(e.target.value);
+                  commitPriceInputs(minInput, e.target.value);
+                }}
                 aria-label="Maximum price slider"
                 className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#FF7A1A]"
               />
@@ -299,6 +324,13 @@ export const ProductsPage: React.FC = () => {
                 <span>{formatPrice(0)}</span>
                 <span>{formatPrice(PRICE_CEILING)}+</span>
               </div>
+              <button
+                type="button"
+                onClick={() => commitPriceInputs()}
+                className="w-full rounded-xl bg-slate-900 dark:bg-white py-2 text-[11px] font-bold text-white dark:text-slate-900 transition-colors hover:bg-slate-700 dark:hover:bg-slate-200 cursor-pointer"
+              >
+                Apply Price Filter
+              </button>
             </div>
           </aside>
 
@@ -624,8 +656,9 @@ export const ProductsPage: React.FC = () => {
                         type="number"
                         inputMode="decimal"
                         min="0"
-                        value={minParam}
-                        onChange={(e) => updateParams({ min: e.target.value }, { resetPage: true, replace: true })}
+                        value={minInput}
+                        onChange={(e) => setMinInput(e.target.value)}
+                        onBlur={() => commitPriceInputs()}
                         className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-1.5 font-bold focus:outline-none focus:border-[#FF7A1A]"
                         placeholder="No min"
                       />
@@ -639,8 +672,9 @@ export const ProductsPage: React.FC = () => {
                         type="number"
                         inputMode="decimal"
                         min="0"
-                        value={maxParam}
-                        onChange={(e) => updateParams({ max: e.target.value }, { resetPage: true, replace: true })}
+                        value={maxInput}
+                        onChange={(e) => setMaxInput(e.target.value)}
+                        onBlur={() => commitPriceInputs()}
                         className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-1.5 font-bold focus:outline-none focus:border-[#FF7A1A]"
                         placeholder="No max"
                       />
@@ -652,7 +686,10 @@ export const ProductsPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setIsMobileFilterOpen(false)}
+                onClick={() => {
+                  commitPriceInputs();
+                  setIsMobileFilterOpen(false);
+                }}
                 className="mt-auto w-full py-3 rounded-full bg-[#FF7A1A] text-white font-bold text-xs shadow-md"
               >
                 Apply Filters

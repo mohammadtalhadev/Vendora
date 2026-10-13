@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { WishlistPage } from './WishlistPage';
 import { useWishlistStore } from '../store/wishlist-store';
 import { useCartStore } from '../store/cart-store';
+import { formatPrice } from '../store/currency-store';
 import type { Product } from '../types/domain';
 
 const mockProduct: Product = {
@@ -59,7 +60,7 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
 
     expect(screen.getByText('Saved Wishlist')).toBeInTheDocument();
     expect(screen.getByText('Vendora Pulse Pro ANC Headphones')).toBeInTheDocument();
-    expect(screen.getByText('$249.99')).toBeInTheDocument();
+    expect(screen.getByText(formatPrice(mockProduct.price))).toBeInTheDocument();
     expect(screen.getByText('Vendora')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Move to Cart/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Remove/i })).toBeInTheDocument();

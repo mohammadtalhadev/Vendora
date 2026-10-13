@@ -845,7 +845,7 @@ export const ProductDetailPage: React.FC = () => {
             {/* ========================================================= */}
             {/* CUSTOMERS ALSO VIEWED                                     */}
             {/* ========================================================= */}
-            <CustomersAlsoViewedGrid />
+            <CustomersAlsoViewedGrid excludeId={product.id} />
 
             {/* ========================================================= */}
             {/* INTERACTIVE MODALS                                        */}

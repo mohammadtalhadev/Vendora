@@ -13,6 +13,7 @@ vi.mock('../lib/supabase', async () => {
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { VendorShippingSettingsPage } from './VendorShippingSettingsPage';
 import { renderWorkspace, signInVendor } from '../test/vendor-render';
+import { formatPrice } from '../store/currency-store';
 import { shippingRow, supabaseDouble } from '../test/supabase-double';
 
 beforeEach(() => {
@@ -38,7 +39,7 @@ describe('VendorShippingSettingsPage', () => {
     expect(screen.getByLabelText('Express surcharge')).toHaveValue(19);
     expect(screen.getByLabelText('Facility name')).toHaveValue('North Dock');
     expect(screen.getByRole('radio', { name: 'Dispatched within 24 hours' })).toBeChecked();
-    expect(screen.getByText('$7.25')).toBeInTheDocument();
+    expect(screen.getByText(formatPrice(7.25))).toBeInTheDocument();
   });
 
   it('shows an unsaved store blanks rather than sample rates', async () => {
@@ -70,7 +71,7 @@ describe('VendorShippingSettingsPage', () => {
       sla_window: 'custom',
     });
     // The panel restates the stored row, not what was typed.
-    expect(screen.getByText('$9.50')).toBeInTheDocument();
+    expect(screen.getByText(formatPrice(9.5))).toBeInTheDocument();
   });
 
   it('reverts to the saved row instead of a marketplace default', async () => {

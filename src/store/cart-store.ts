@@ -67,39 +67,85 @@ interface CartState {
 }
 
 export const useCartStore = create<CartState>((set, get) => {
+  /**
+   * Concurrency guards (QA C-2). Two mechanisms keep a server read from ever
+   * clobbering a newer local mutation:
+   *
+   * - `revision` is bumped by every local change to `items`. A hydrate captures
+   *   it before fetching; if it moved while the read was in flight — or a write
+   *   is still flushing — the snapshot predates the mutation's server write, so
+   *   it is discarded and a follow-up read is scheduled instead. (Before this,
+   *   the late read replaced `items` and the localStorage cache wholesale:
+   *   add → item shows → the in-flight read landed → the item vanished and the
+   *   cart reverted to the older server state. Rapid adds and even a cart
+   *   clear were lost the same way.)
+   * - Writes (line saves/deletes, the guest merge) are serialised through
+   *   `writeQueue` in issue order. Reads never join that queue, so a mutation
+   *   never waits on a slow read; the revision guard above is what keeps the
+   *   two lanes from stepping on each other.
+   */
+  let revision = 0;
+  let writeQueue: Promise<void> = Promise.resolve();
+  let pendingWrites = 0;
+  let followUpReadScheduled = false;
+
+  const enqueueWrite = (task: () => Promise<void>): Promise<void> => {
+    pendingWrites += 1;
+    const run = writeQueue.then(task, task);
+    writeQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run.then(
+      () => {
+        pendingWrites -= 1;
+      },
+      () => {
+        pendingWrites -= 1;
+      },
+    );
+  };
+
   /** Where the current cart is persisted locally, and whether the server holds it. */
   const storageKey = () => {
     const { activeUserId } = get();
     return activeUserId ? getUserStorageKey(activeUserId) : GUEST_STORAGE_KEY;
   };
 
+  /** Applies a local change to the cart: caches it, publishes it, marks it newer than any in-flight read. */
   const commit = (items: CartItem[]) => {
+    revision += 1;
     writeStorage(storageKey(), items);
     set({ items });
   };
 
-  /**
-   * Runs a server write for the active customer. A rejected write means the local cart
-   * and the server disagree, so the cart is re-read from the server instead of keeping
-   * a state checkout would later refuse.
-   */
-  const sync = async (userId: string | null, write: () => Promise<unknown>) => {
-    if (!userId) return;
-    try {
-      await write();
-      set({ error: null });
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'Your cart could not be saved.' });
-      await hydrate(userId);
-    }
+  /** Re-reads the server cart once the writes that made a snapshot stale have flushed. */
+  const scheduleFollowUpRead = (userId: string) => {
+    if (followUpReadScheduled) return;
+    followUpReadScheduled = true;
+    void writeQueue.then(() => {
+      followUpReadScheduled = false;
+      void runHydrate(userId);
+    });
   };
 
-  const hydrate = async (userId: string) => {
+  /**
+   * Reads the server cart into the store. A read whose snapshot turns out to be
+   * older than the local state (a mutation committed, or a write is still
+   * flushing) is dropped; a follow-up read converges the store once the writes
+   * have landed.
+   */
+  const runHydrate = async (userId: string): Promise<void> => {
     if (get().activeUserId !== userId) return;
+    const startRevision = revision;
     try {
       const serverItems = await fetchCart();
       // Signed out or switched accounts while the read was in flight: drop the result.
       if (get().activeUserId !== userId) return;
+      if (revision !== startRevision || pendingWrites > 0) {
+        scheduleFollowUpRead(userId);
+        return;
+      }
       writeStorage(getUserStorageKey(userId), serverItems);
       set({ items: serverItems, hydrating: false, error: null });
     } catch (err) {
@@ -110,6 +156,27 @@ export const useCartStore = create<CartState>((set, get) => {
       });
     }
   };
+
+  /**
+   * Runs a server write for the active customer, inside the write queue. A
+   * rejected write means the local cart and the server disagree, so the cart is
+   * re-read from the server instead of keeping a state checkout would later
+   * refuse.
+   */
+  const runWrite = async (userId: string, write: () => Promise<unknown>): Promise<void> => {
+    if (get().activeUserId !== userId) return;
+    try {
+      await write();
+      if (get().activeUserId === userId) set({ error: null });
+    } catch (err) {
+      if (get().activeUserId !== userId) return;
+      set({ error: err instanceof Error ? err.message : 'Your cart could not be saved.' });
+      await runHydrate(userId);
+    }
+  };
+
+  const sync = (userId: string | null, write: () => Promise<unknown>): Promise<void> =>
+    userId ? enqueueWrite(() => runWrite(userId, write)) : Promise.resolve();
 
   const findLine = (items: CartItem[], itemId: string) => items.find((item) => item.id === itemId);
 
@@ -127,13 +194,13 @@ export const useCartStore = create<CartState>((set, get) => {
       }
       // Show the cached cart immediately, then let the server correct it.
       set({ activeUserId: userId, hydrating: true, error: null, items: readStorage(getUserStorageKey(userId)) });
-      await hydrate(userId);
+      await runHydrate(userId);
     },
 
     refresh: async () => {
       const { activeUserId } = get();
       if (!activeUserId) return;
-      await hydrate(activeUserId);
+      await runHydrate(activeUserId);
     },
 
     addItem: async (newItem, quantity = 1) => {
@@ -192,6 +259,7 @@ export const useCartStore = create<CartState>((set, get) => {
 
     clearCart: async () => {
       const { activeUserId } = get();
+      revision += 1;
       writeStorage(storageKey(), []);
       set({ items: [], appliedCoupon: null });
       if (activeUserId) {
@@ -204,43 +272,59 @@ export const useCartStore = create<CartState>((set, get) => {
     removeCoupon: () => set({ appliedCoupon: null }),
 
     mergeGuestCartIntoUser: async (userId) => {
-      const guestItems = readStorage(GUEST_STORAGE_KEY);
-      set({ activeUserId: userId, hydrating: guestItems.length === 0, error: null });
+      // The whole read-merge-push runs as one write-queue operation: sign-in
+      // starts an initialize hydrate at the same time, and interleaving the two
+      // used to let whichever read landed last silently replace the other.
+      await enqueueWrite(async () => {
+        const guestItems = readStorage(GUEST_STORAGE_KEY);
+        set({ activeUserId: userId, hydrating: guestItems.length === 0, error: null });
 
-      if (guestItems.length === 0) {
-        await hydrate(userId);
-        return;
-      }
-
-      const serverItems = await fetchCart().catch((err) => {
-        set({ error: err instanceof Error ? err.message : 'Your cart could not be loaded.' });
-        return null;
-      });
-      if (!serverItems) {
-        writeStorage(getUserStorageKey(userId), guestItems);
-        set({ items: guestItems, hydrating: false });
-        return;
-      }
-
-      const merged = [...serverItems];
-      for (const guestItem of guestItems) {
-        const index = merged.findIndex((item) => item.id === guestItem.id);
-        if (index === -1) {
-          merged.push(guestItem);
-          continue;
+        if (guestItems.length === 0) {
+          await runHydrate(userId);
+          return;
         }
-        const existing = merged[index];
-        merged[index] = {
-          ...existing,
-          quantity: clampQuantity(existing.quantity + guestItem.quantity, existing.maxStock),
-        };
-      }
 
-      writeStorage(getUserStorageKey(userId), merged);
-      writeStorage(GUEST_STORAGE_KEY, []);
-      set({ items: merged, hydrating: false });
+        const startRevision = revision;
+        const serverItems = await fetchCart().catch((err) => {
+          set({ error: err instanceof Error ? err.message : 'Your cart could not be loaded.' });
+          return null;
+        });
+        if (!serverItems) {
+          commit(guestItems);
+          set({ hydrating: false });
+          return;
+        }
+        if (get().activeUserId !== userId) return;
 
-      await sync(userId, () => pushMergedCart(merged));
+        const merged = [...serverItems];
+        for (const guestItem of guestItems) {
+          const index = merged.findIndex((item) => item.id === guestItem.id);
+          if (index === -1) {
+            merged.push(guestItem);
+            continue;
+          }
+          const existing = merged[index];
+          merged[index] = {
+            ...existing,
+            quantity: clampQuantity(existing.quantity + guestItem.quantity, existing.maxStock),
+          };
+        }
+
+        writeStorage(getUserStorageKey(userId), merged);
+        writeStorage(GUEST_STORAGE_KEY, []);
+        if (revision === startRevision) {
+          revision += 1;
+          set({ items: merged, hydrating: false });
+        } else {
+          // The customer changed the cart while the merge was reading; their
+          // newer local state stays on screen and a follow-up read converges it
+          // with the merged server cart once the queued writes have flushed.
+          set({ hydrating: false });
+          scheduleFollowUpRead(userId);
+        }
+
+        await runWrite(userId, () => pushMergedCart(merged));
+      });
     },
   };
 });

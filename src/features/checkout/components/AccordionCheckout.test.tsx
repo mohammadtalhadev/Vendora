@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import type { CartItem } from '../../../types/domain';
 import { useCartStore } from '../../../store/cart-store';
+import { formatPrice } from '../../../store/currency-store';
 import { useAuthStore } from '../../../store/auth-store';
 import { DEMO_ACCOUNTS } from '../../../lib/demo-accounts';
 import { AccordionCheckout } from './AccordionCheckout';
@@ -264,7 +265,7 @@ describe('AccordionCheckout Component', () => {
   });
 
   describe('Step 2: Delivery Option per Seller', () => {
-    it('displays separate packages per seller with free standard shipping for over $100 and $8.50 otherwise', async () => {
+    it('displays separate packages per seller with free standard shipping over the threshold and a standard fee otherwise', async () => {
       await renderCheckout();
       await toDeliveryOptions();
 
@@ -274,7 +275,7 @@ describe('AccordionCheckout Component', () => {
 
       const vendorPackage = screen.getByTestId(`seller-package-${VENDOR}`);
       expect(vendorPackage).toHaveTextContent(/SoundWave Audio/i);
-      expect(vendorPackage).toHaveTextContent(/\$8\.50/i);
+      expect(vendorPackage).toHaveTextContent(formatPrice(8.5));
     });
 
     it('prices the cart through the server instead of estimating on the client', async () => {
@@ -293,7 +294,7 @@ describe('AccordionCheckout Component', () => {
 
       // A new choice re-prices from scratch, so the checked state must come back on the quote.
       await waitFor(() =>
-        expect(screen.getByTestId(`seller-package-${VENDOR}`)).toHaveTextContent(/\$23\.50/i),
+        expect(screen.getByTestId(`seller-package-${VENDOR}`)).toHaveTextContent(formatPrice(23.5)),
       );
       expect(vi.mocked(checkoutApi.quoteCheckout).mock.calls.at(-1)?.[0]).toEqual({ [VENDOR]: 'express' });
       expect(screen.getByTestId(`option-express-${VENDOR}`).querySelector('input')!.checked).toBe(true);
@@ -374,7 +375,7 @@ describe('AccordionCheckout Component', () => {
       // Express on the vendor package only, so the booking must carry that split.
       fireEvent.click(screen.getByTestId(`option-express-${VENDOR}`).querySelector('input')!);
       await waitFor(() =>
-        expect(screen.getByTestId(`seller-package-${VENDOR}`)).toHaveTextContent(/\$23\.50/i),
+        expect(screen.getByTestId(`seller-package-${VENDOR}`)).toHaveTextContent(formatPrice(23.5)),
       );
 
       fireEvent.click(screen.getByTestId('btn-continue-payment'));
@@ -507,9 +508,9 @@ describe('AccordionCheckout Component', () => {
       expect(screen.getByText('Order Summary')).toBeInTheDocument();
       expect(screen.getByText('2 Items')).toBeInTheDocument();
 
-      // $150 + $35 + $8.50 shipping - only once checkout_quote has answered.
+      // 150 + 35 + 8.50 shipping - only once checkout_quote has answered.
       await waitFor(() => expect(screen.getByText('Total Payable')).toBeInTheDocument());
-      expect(screen.getByText('$193.50', { selector: 'span' })).toBeInTheDocument();
+      expect(screen.getByText(formatPrice(193.5), { selector: 'span' })).toBeInTheDocument();
 
       // The CTA is the real one and it books through `place_order`, not a timer.
       const placeOrderButton = screen.getByRole('button', { name: /Place Order/i });
