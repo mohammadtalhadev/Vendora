@@ -33,6 +33,8 @@ export const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
   succeeded: 'Succeeded',
   failed: 'Failed',
+  // Payout states (VendorPayoutsPage history)
+  completed: 'Completed',
   // Listing moderation (AdminProductsPage)
   pending_review: 'Pending Review',
   approved: 'Approved',
@@ -57,6 +59,7 @@ const TONE_NEUTRAL = 'bg-slate-100 text-slate-700 border border-slate-200';
 export const STATUS_TONES: Record<string, string> = {
   delivered: TONE_EMERALD,
   approved: TONE_EMERALD,
+  completed: TONE_EMERALD,
   cancelled: TONE_ROSE,
   refunded: TONE_ROSE,
   returned: TONE_ROSE,

@@ -16,6 +16,8 @@ import {
   Square,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { StatusBadge } from '../components/ui/status-badge';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { useVendorPackages } from '../features/vendor/hooks/useVendorPackages';
 import { useSetProductStock, useVendorProducts } from '../features/vendor/hooks/useVendorProducts';
@@ -203,6 +205,77 @@ export const VendorInventoryPage: React.FC = () => {
   const totalValuation = rows.reduce((acc, i) => acc + i.stock * i.price, 0);
   const approvedCount = rows.filter((i) => i.listingStatus === 'approved').length;
   const keysIssued = digitalPackages.filter((k) => Boolean(k.licenseKey)).length;
+
+  /**
+   * License-keys columns for DataTable. (The physical stock table stays
+   * hand-rolled: its rows ARE the editor - stepper inputs and per-row Update
+   * buttons live inside the cells.) Every package status here wears the same
+   * slate pill, so the status cell passes that treatment as an override
+   * rather than taking the shared map's per-status tones, and passes the
+   * label verbatim as the page renders the spaced token under `capitalize`.
+   */
+  const licenseColumns: DataTableColumn<(typeof digitalPackages)[number]>[] = [
+    {
+      key: 'product',
+      header: 'Product',
+      headerClassName: 'p-4 text-[11px]',
+      className: 'p-4 font-bold text-slate-900',
+      cell: (k) => k.title,
+    },
+    {
+      key: 'buyer',
+      header: 'Buyer',
+      headerClassName: 'p-4 text-[11px]',
+      className: 'p-4 text-slate-600',
+      cell: (k) => k.buyerEmail,
+    },
+    {
+      key: 'licenseKey',
+      header: 'License key',
+      headerClassName: 'p-4 text-[11px]',
+      className: 'p-4 font-mono text-slate-800',
+      cell: (k) =>
+        k.licenseKey ?? <span className="text-slate-400 font-sans">Not issued yet</span>,
+    },
+    {
+      key: 'status',
+      header: 'Package status',
+      headerClassName: 'p-4 text-[11px]',
+      className: 'p-4',
+      cell: (k) => (
+        <StatusBadge
+          status={k.status}
+          label={k.status.replace(/_/g, ' ')}
+          className="capitalize bg-slate-100 text-slate-600 border-transparent"
+        />
+      ),
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      align: 'right',
+      headerClassName: 'p-4 text-[11px]',
+      className: 'p-4',
+      cell: (k) =>
+        k.licenseKey ? (
+          <button
+            type="button"
+            title="Copy key"
+            onClick={() => handleCopyKey(k.licenseKey as string)}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+          >
+            {copiedKey === k.licenseKey ? (
+              <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+            ) : (
+              <Copy className="h-3 w-3" aria-hidden="true" />
+            )}
+            {copiedKey === k.licenseKey ? 'Copied' : 'Copy'}
+          </button>
+        ) : (
+          <span className="text-[11px] text-slate-400">—</span>
+        ),
+    },
+  ];
 
   const kpiItems = [
     {
@@ -714,73 +787,30 @@ export const VendorInventoryPage: React.FC = () => {
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
-              <table className="w-full text-left border-collapse text-xs" aria-label="License keys issued on your digital packages">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500 text-[11px]">
-                    <th scope="col" className="p-4">Product</th>
-                    <th scope="col" className="p-4">Buyer</th>
-                    <th scope="col" className="p-4">License key</th>
-                    <th scope="col" className="p-4">Package status</th>
-                    <th scope="col" className="p-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {isLoading && (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-500">
+              <DataTable
+                ariaLabel="License keys issued on your digital packages"
+                columns={licenseColumns}
+                rows={isLoading ? [] : digitalPackages}
+                getRowKey={(k) => k.id}
+                emptyState={
+                  <div className="p-8 text-center text-slate-500">
+                    {isLoading ? (
+                      <>
                         <Key className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" aria-hidden="true" />
                         <p className="font-semibold text-slate-700">Reading your digital sales…</p>
-                      </td>
-                    </tr>
-                  )}
-                  {!isLoading && digitalPackages.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-500">
+                      </>
+                    ) : (
+                      <>
                         <Key className="h-8 w-8 mx-auto text-slate-300 mb-2" aria-hidden="true" />
                         <p className="font-semibold text-slate-700">No digital packages yet</p>
                         <p className="text-xs text-slate-400 mt-0.5">
                           A key appears here once a buyer pays for one of your digital listings.
                         </p>
-                      </td>
-                    </tr>
-                  )}
-                  {digitalPackages.map((k) => (
-                    <tr key={k.id} className="hover:bg-slate-50/50">
-                      <td className="p-4 font-bold text-slate-900">{k.title}</td>
-                      <td className="p-4 text-slate-600">{k.buyerEmail}</td>
-                      <td className="p-4 font-mono text-slate-800">
-                        {k.licenseKey ?? (
-                          <span className="text-slate-400 font-sans">Not issued yet</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <span className="rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[10px] font-bold capitalize">
-                          {k.status.replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        {k.licenseKey ? (
-                          <button
-                            type="button"
-                            title="Copy key"
-                            onClick={() => handleCopyKey(k.licenseKey as string)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                          >
-                            {copiedKey === k.licenseKey ? (
-                              <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
-                            ) : (
-                              <Copy className="h-3 w-3" aria-hidden="true" />
-                            )}
-                            {copiedKey === k.licenseKey ? 'Copied' : 'Copy'}
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </>
+                    )}
+                  </div>
+                }
+              />
             </div>
           </div>
         )}

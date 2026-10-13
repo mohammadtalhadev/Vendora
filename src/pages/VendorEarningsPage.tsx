@@ -9,6 +9,15 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Input } from '../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import {
   Dialog,
@@ -117,6 +126,107 @@ export const VendorEarningsPage: React.FC = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
+
+  /**
+   * Settlement-ledger columns for DataTable. Two cells deliberately do NOT
+   * go through StatusBadge: the TYPE chip is not a status (the AdminAuditLogs
+   * precedent), and the settlement state is dot-and-text rather than a pill,
+   * which StatusBadge cannot render without inventing a pill around it.
+   */
+  const ledgerColumns: DataTableColumn<(typeof ledger)[number]>[] = [
+    {
+      key: 'settled',
+      header: 'SETTLED',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 text-slate-600 font-medium',
+      cell: (r) =>
+        new Date(r.settledAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+    },
+    {
+      key: 'package',
+      header: 'PACKAGE',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-mono text-slate-900 font-bold text-[11px]',
+      cell: (r) => (
+        <Link to={`/vendor/orders/${r.id}`} className="hover:underline">
+          #{r.id.slice(0, 8)}
+        </Link>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'TYPE',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (r) => (
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 capitalize">
+          {r.type}
+        </span>
+      ),
+    },
+    {
+      key: 'goods',
+      header: 'GOODS',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-semibold text-slate-900',
+      cell: (r) => money(r.subtotal),
+    },
+    {
+      key: 'freight',
+      header: 'FREIGHT',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 text-slate-500',
+      cell: (r) => money(r.shipping),
+    },
+    {
+      key: 'gross',
+      header: 'GROSS',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-semibold text-slate-900',
+      cell: (r) => money(r.gross),
+    },
+    {
+      key: 'commission',
+      header: 'COMMISSION',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-semibold text-rose-600',
+      cell: (r) => (r.fees === 0 ? '$0.00' : `-${money(r.fees)}`),
+    },
+    {
+      key: 'net',
+      header: 'NET',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-bold',
+      cell: (r) => (
+        <span className={r.net >= 0 ? 'text-emerald-700' : 'text-rose-600'}>
+          {r.net >= 0 ? `+${money(r.net)}` : `-${money(Math.abs(r.net))}`}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'STATUS',
+      align: 'right',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (r) =>
+        isSettled(r.status) ? (
+          <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold text-[11px]">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            Settled
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold text-[11px]">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            {r.status.replace(/_/g, ' ')}
+          </span>
+        ),
+    },
+  ];
 
   const statementRows = () =>
     statementMonth === 'window'
@@ -522,9 +632,8 @@ export const VendorEarningsPage: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                <input
+              <div className="w-full sm:w-72">
+                <Input
                   type="text"
                   placeholder="Filter by package id..."
                   value={searchQuery}
@@ -532,7 +641,8 @@ export const VendorEarningsPage: React.FC = () => {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
+                  leftIcon={<Search className="h-3.5 w-3.5" aria-hidden="true" />}
+                  className="h-9 rounded-lg text-xs text-slate-700 focus:bg-white"
                 />
               </div>
 
@@ -553,15 +663,19 @@ export const VendorEarningsPage: React.FC = () => {
                   ))}
                 </div>
 
-                <select
+                <Select
                   value={settlementFilter}
-                  onChange={(e) => setSettlementFilter(e.target.value as 'all' | 'settled' | 'open')}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
+                  onValueChange={(value) => setSettlementFilter(value as 'all' | 'settled' | 'open')}
                 >
-                  <option value="all">Any settlement state</option>
-                  <option value="settled">Settled</option>
-                  <option value="open">Awaiting settlement</option>
-                </select>
+                  <SelectTrigger aria-label="Filter by settlement state" className="h-9 w-auto text-xs font-semibold text-slate-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">Any settlement state</SelectItem>
+                    <SelectItem value="settled" className="text-xs">Settled</SelectItem>
+                    <SelectItem value="open" className="text-xs">Awaiting settlement</SelectItem>
+                  </SelectContent>
+                </Select>
 
                 <button
                   onClick={() => {
@@ -598,91 +712,31 @@ export const VendorEarningsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">SETTLED</th>
-                  <th className="px-4 py-3">PACKAGE</th>
-                  <th className="px-4 py-3">TYPE</th>
-                  <th className="px-4 py-3">GOODS</th>
-                  <th className="px-4 py-3">FREIGHT</th>
-                  <th className="px-4 py-3">GROSS</th>
-                  <th className="px-4 py-3">COMMISSION</th>
-                  <th className="px-4 py-3">NET</th>
-                  <th className="px-4 py-3 text-right">STATUS</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {isLoading && (
-                  <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
-                      <p className="font-semibold text-slate-700">Reading your settlement ledger…</p>
-                    </td>
-                  </tr>
+          <DataTable
+            columns={ledgerColumns}
+            rows={isLoading ? [] : pagedLedger}
+            getRowKey={(r) => r.id}
+            emptyState={
+              <div className="px-4 py-10 text-center text-slate-500">
+                {isLoading ? (
+                  <p className="font-semibold text-slate-700">Reading your settlement ledger…</p>
+                ) : (
+                  <>
+                    <p className="font-semibold text-slate-700">
+                      {ledger.length === 0
+                        ? 'No packages have booked earnings yet'
+                        : 'Nothing matches these filters'}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {ledger.length === 0
+                        ? 'Every non-cancelled package lands here with its commission.'
+                        : 'Clear the search or filters to see the rest.'}
+                    </p>
+                  </>
                 )}
-                {!isLoading && pagedLedger.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
-                      <p className="font-semibold text-slate-700">
-                        {ledger.length === 0
-                          ? 'No packages have booked earnings yet'
-                          : 'Nothing matches these filters'}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {ledger.length === 0
-                          ? 'Every non-cancelled package lands here with its commission.'
-                          : 'Clear the search or filters to see the rest.'}
-                      </p>
-                    </td>
-                  </tr>
-                )}
-                {pagedLedger.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-4 py-3.5 text-slate-600 font-medium">
-                      {new Date(r.settledAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-4 py-3.5 font-mono text-slate-900 font-bold text-[11px]">
-                      <Link to={`/vendor/orders/${r.id}`} className="hover:underline">
-                        #{r.id.slice(0, 8)}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 capitalize">
-                        {r.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5 font-semibold text-slate-900">{money(r.subtotal)}</td>
-                    <td className="px-4 py-3.5 text-slate-500">{money(r.shipping)}</td>
-                    <td className="px-4 py-3.5 font-semibold text-slate-900">{money(r.gross)}</td>
-                    <td className="px-4 py-3.5 font-semibold text-rose-600">
-                      {r.fees === 0 ? '$0.00' : `-${money(r.fees)}`}
-                    </td>
-                    <td className={`px-4 py-3.5 font-bold ${r.net >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-                      {r.net >= 0 ? `+${money(r.net)}` : `-${money(Math.abs(r.net))}`}
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      {isSettled(r.status) ? (
-                        <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold text-[11px]">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                          Settled
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold text-[11px]">
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          {r.status.replace(/_/g, ' ')}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            }
+          />
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500 gap-3">
             <span>

@@ -26,7 +26,9 @@ import { VendorNav } from '../features/vendor/components/VendorNav';
 import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
 import { exportToCsv } from '../lib/export-csv';
 import type { SubOrderStatus, Product } from '../types/domain';
-import { useVendorData } from '../features/vendor/hooks/useVendorData';
+import { useVendorData, type VendorPackage } from '../features/vendor/hooks/useVendorData';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { StatusBadge } from '../components/ui/status-badge';
 import { useVendorDashboard } from '../features/vendor/hooks/useVendorDashboard';
 import { useVendorLive } from '../features/vendor/hooks/useLive';
 import { useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
@@ -425,6 +427,152 @@ export const VendorDashboardPage: React.FC = () => {
     });
     showToast('Operational summary exported to CSV.');
   };
+
+  /**
+   * Recent-packages queue columns for DataTable. The status pill goes through
+   * StatusBadge, but this page's pills carry dark-mode treatments and two
+   * displays the shared map does not hold (amber for `placed`, "Ready" for
+   * `ready_for_pickup`), so each status passes its page classes as overrides -
+   * the AdminLogisticsPage QUEUE_TONE_OVERRIDES pattern. A status outside the
+   * seller-action stages keeps this page's slate pill (label passed verbatim,
+   * as the page renders the spaced token under `capitalize`), never the map's
+   * per-status tone.
+   */
+  const recentOrderColumns: DataTableColumn<VendorPackage>[] = [
+    {
+      key: 'id',
+      header: 'Sub-Order ID',
+      headerClassName: 'text-[11px]',
+      className: 'font-mono font-bold text-slate-900 dark:text-white text-[11px]',
+      cell: (order) => <>#{order.id}</>,
+    },
+    {
+      key: 'customer',
+      header: 'Customer',
+      headerClassName: 'text-[11px]',
+      className: 'font-medium text-slate-700 dark:text-slate-300',
+      cell: (order) => order.buyerEmail || 'No buyer contact on this order',
+    },
+    {
+      key: 'product',
+      header: 'Product',
+      headerClassName: 'text-[11px]',
+      cell: (order) => (
+        <>
+          <span className="font-medium text-slate-900 dark:text-slate-100 truncate block max-w-xs">
+            {order.items[0]?.title || 'Package contents unavailable'}
+          </span>
+          {order.items.length > 1 && (
+            <span className="text-[10px] text-slate-400">
+              +{order.items.length - 1} more line
+              {order.items.length > 2 ? 's' : ''}
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Amount',
+      headerClassName: 'text-[11px]',
+      className: 'font-bold text-slate-900 dark:text-white',
+      cell: (order) => formatPrice(order.gross),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      headerClassName: 'text-[11px]',
+      cell: (order) => {
+        switch (order.status) {
+          case 'placed':
+            return (
+              <StatusBadge
+                status="placed"
+                className="px-2 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60"
+              />
+            );
+          case 'confirmed':
+            return (
+              <StatusBadge
+                status="confirmed"
+                className="px-2 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60"
+              />
+            );
+          case 'packed':
+            return (
+              <StatusBadge
+                status="packed"
+                className="px-2 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60"
+              />
+            );
+          case 'ready_for_pickup':
+            return (
+              <StatusBadge
+                status="ready_for_pickup"
+                label="Ready"
+                className="px-2 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60"
+              />
+            );
+          default:
+            return (
+              <StatusBadge
+                status={order.status}
+                label={order.status.replace(/_/g, ' ')}
+                className="px-2 capitalize bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+              />
+            );
+        }
+      },
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      align: 'right',
+      headerClassName: 'text-[11px]',
+      cell: (order) => (
+        <>
+          {order.status === 'placed' && (
+            <button
+              type="button"
+              onClick={() => handleAdvanceStatus(order.id, 'placed')}
+              className="rounded-full bg-slate-900 dark:bg-slate-100 px-3 py-1 text-xs font-bold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white shadow-2xs cursor-pointer transition-colors"
+            >
+              Confirm Order
+            </button>
+          )}
+          {order.status === 'confirmed' && (
+            <button
+              type="button"
+              onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
+              className="rounded-full bg-sun-orange px-3 py-1 text-xs font-bold text-white hover:bg-sun-orange-600 shadow-2xs cursor-pointer transition-colors"
+            >
+              Mark Packed
+            </button>
+          )}
+          {order.status === 'packed' && (
+            <button
+              type="button"
+              onClick={() => handleAdvanceStatus(order.id, 'packed')}
+              className="rounded-full bg-purple-600 px-3 py-1 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs cursor-pointer transition-colors"
+            >
+              Ready for Pickup
+            </button>
+          )}
+          {order.status === 'ready_for_pickup' && (
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              Staged ✓
+            </span>
+          )}
+          {!isSellerActionStage(order.status) && (
+            <span className="text-[11px] font-semibold text-slate-400">
+              No seller action at this stage
+            </span>
+          )}
+        </>
+      ),
+    },
+  ];
+
 
   return (
     <WorkspaceLayout
@@ -1301,124 +1449,22 @@ export const VendorDashboardPage: React.FC = () => {
 
               {/* Sub-Orders Table */}
               <div className="mt-4 overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    <tr>
-                      <th className="px-4 py-3">Sub-Order ID</th>
-                      <th className="px-4 py-3">Customer</th>
-                      <th className="px-4 py-3">Product</th>
-                      <th className="px-4 py-3">Amount</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {orders.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                          <ShoppingBag className="h-6 w-6 mx-auto mb-2 opacity-40" />
-                          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                            {error ? 'This queue is unknown - the read failed' : 'No customer sub-orders yet'}
-                          </p>
-                          {!error && (
-                            <p className="text-[11px] text-slate-400">Incoming buyer orders for {storeName} will appear here in real-time.</p>
-                          )}
-                        </td>
-                      </tr>
-                    ) : (
-                      orders.slice(0, RECENT_ROWS).map((order) => (
-                        <tr key={order.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white text-[11px]">
-                            #{order.id}
-                          </td>
-                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">
-                            {order.buyerEmail || 'No buyer contact on this order'}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="font-medium text-slate-900 dark:text-slate-100 truncate block max-w-xs">
-                              {order.items[0]?.title || 'Package contents unavailable'}
-                            </span>
-                            {order.items.length > 1 && (
-                              <span className="text-[10px] text-slate-400">
-                                +{order.items.length - 1} more line
-                                {order.items.length > 2 ? 's' : ''}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                            {formatPrice(order.gross)}
-                          </td>
-                          <td className="px-4 py-3">
-                            {order.status === 'placed' && (
-                              <span className="rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                                Placed
-                              </span>
-                            )}
-                            {order.status === 'confirmed' && (
-                              <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                                Confirmed
-                              </span>
-                            )}
-                            {order.status === 'packed' && (
-                              <span className="rounded-full bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
-                                Packed
-                              </span>
-                            )}
-                            {order.status === 'ready_for_pickup' && (
-                              <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                                Ready
-                              </span>
-                            )}
-                            {!isSellerActionStage(order.status) && (
-                              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 capitalize">
-                                {order.status.replace(/_/g, ' ')}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {order.status === 'placed' && (
-                              <button
-                                type="button"
-                                onClick={() => handleAdvanceStatus(order.id, 'placed')}
-                                className="rounded-full bg-slate-900 dark:bg-slate-100 px-3 py-1 text-xs font-bold text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white shadow-2xs cursor-pointer transition-colors"
-                              >
-                                Confirm Order
-                              </button>
-                            )}
-                            {order.status === 'confirmed' && (
-                              <button
-                                type="button"
-                                onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
-                                className="rounded-full bg-sun-orange px-3 py-1 text-xs font-bold text-white hover:bg-sun-orange-600 shadow-2xs cursor-pointer transition-colors"
-                              >
-                                Mark Packed
-                              </button>
-                            )}
-                            {order.status === 'packed' && (
-                              <button
-                                type="button"
-                                onClick={() => handleAdvanceStatus(order.id, 'packed')}
-                                className="rounded-full bg-purple-600 px-3 py-1 text-xs font-bold text-white hover:bg-purple-700 shadow-2xs cursor-pointer transition-colors"
-                              >
-                                Ready for Pickup
-                              </button>
-                            )}
-                            {order.status === 'ready_for_pickup' && (
-                              <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                Staged ✓
-                              </span>
-                            )}
-                            {!isSellerActionStage(order.status) && (
-                              <span className="text-[11px] font-semibold text-slate-400">
-                                No seller action at this stage
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <DataTable
+                  columns={recentOrderColumns}
+                  rows={orders.slice(0, RECENT_ROWS)}
+                  getRowKey={(order) => order.id}
+                  emptyState={
+                    <div className="px-4 py-8 text-center text-slate-400">
+                      <ShoppingBag className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {error ? 'This queue is unknown - the read failed' : 'No customer sub-orders yet'}
+                      </p>
+                      {!error && (
+                        <p className="text-[11px] text-slate-400">Incoming buyer orders for {storeName} will appear here in real-time.</p>
+                      )}
+                    </div>
+                  }
+                />
               </div>
             </div>
 

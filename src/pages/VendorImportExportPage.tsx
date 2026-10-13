@@ -10,6 +10,7 @@ import {
   Info,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { exportToCsv } from '../lib/export-csv';
 import { useCategories } from '../features/catalog/hooks/useProducts';
@@ -213,6 +214,92 @@ export const VendorImportExportPage: React.FC = () => {
   const blockedRows = importRows.filter((row) => row.problems.length > 0);
   const visibleRows =
     statusFilter === 'ready' ? readyRows : statusFilter === 'blocked' ? blockedRows : importRows;
+
+  /**
+   * Import-preview columns for DataTable. The Result cell is a validation
+   * verdict, not a record status: the ready pill carries an icon and the
+   * blocked state is an itemised problem list, neither of which StatusBadge
+   * can render, so the cell markup stays as it was.
+   */
+  const previewColumns: DataTableColumn<(typeof visibleRows)[number]>[] = [
+    {
+      key: 'line',
+      header: 'Line',
+      align: 'center',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      className: 'p-3 text-center font-mono text-slate-400',
+      cell: (row) => row.line,
+    },
+    {
+      key: 'title',
+      header: 'Title',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      className: 'p-3 font-bold text-slate-900',
+      cell: (row) => (
+        <>
+          <div>{row.title || <span className="text-slate-400 italic">blank</span>}</div>
+          {row.notes.map((note) => (
+            <span key={note} className="text-[11px] font-normal text-amber-700 block mt-0.5">
+              {note}
+            </span>
+          ))}
+        </>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      className: 'p-3 text-slate-600',
+      cell: (row) =>
+        row.categoryId ? row.category : row.category ? `${row.category} (unmatched)` : '—',
+    },
+    {
+      key: 'price',
+      header: 'Price',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      className: 'p-3 font-bold text-slate-900',
+      cell: (row) => (row.price === null ? '—' : `$${row.price.toFixed(2)}`),
+    },
+    {
+      key: 'stock',
+      header: 'Stock',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      className: 'p-3 font-semibold text-slate-800',
+      cell: (row) => row.stock,
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      className: 'p-3 text-slate-600',
+      cell: (row) => row.type,
+    },
+    {
+      key: 'result',
+      header: 'Result',
+      headerClassName: 'p-3 text-[11px] tracking-normal',
+      className: 'p-3',
+      cell: (row) =>
+        row.problems.length === 0 ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-[10px] font-bold">
+            <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+            Ready
+          </span>
+        ) : (
+          <span className="inline-flex items-start gap-1 text-[10px] font-bold text-amber-800">
+            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" aria-hidden="true" />
+            <span>
+              {row.problems.map((problem) => (
+                <span key={problem} className="block">
+                  {problem}
+                </span>
+              ))}
+            </span>
+          </span>
+        ),
+    },
+  ];
 
   const handleFile = async (file: File | null) => {
     setReport(null);
@@ -524,63 +611,13 @@ export const VendorImportExportPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto rounded-xl border border-slate-200">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase">
-                        <tr>
-                          <th className="p-3 text-center">Line</th>
-                          <th className="p-3">Title</th>
-                          <th className="p-3">Category</th>
-                          <th className="p-3">Price</th>
-                          <th className="p-3">Stock</th>
-                          <th className="p-3">Type</th>
-                          <th className="p-3">Result</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {visibleRows.map((row) => (
-                          <tr key={row.line} className="hover:bg-slate-50/50 align-top">
-                            <td className="p-3 text-center font-mono text-slate-400">{row.line}</td>
-                            <td className="p-3 font-bold text-slate-900">
-                              <div>{row.title || <span className="text-slate-400 italic">blank</span>}</div>
-                              {row.notes.map((note) => (
-                                <span key={note} className="text-[11px] font-normal text-amber-700 block mt-0.5">
-                                  {note}
-                                </span>
-                              ))}
-                            </td>
-                            <td className="p-3 text-slate-600">
-                              {row.categoryId ? row.category : row.category ? `${row.category} (unmatched)` : '—'}
-                            </td>
-                            <td className="p-3 font-bold text-slate-900">
-                              {row.price === null ? '—' : `$${row.price.toFixed(2)}`}
-                            </td>
-                            <td className="p-3 font-semibold text-slate-800">{row.stock}</td>
-                            <td className="p-3 text-slate-600">{row.type}</td>
-                            <td className="p-3">
-                              {row.problems.length === 0 ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-[10px] font-bold">
-                                  <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-                                  Ready
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-start gap-1 text-[10px] font-bold text-amber-800">
-                                  <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" aria-hidden="true" />
-                                  <span>
-                                    {row.problems.map((problem) => (
-                                      <span key={problem} className="block">
-                                        {problem}
-                                      </span>
-                                    ))}
-                                  </span>
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <DataTable
+                    columns={previewColumns}
+                    rows={visibleRows}
+                    getRowKey={(row) => row.line}
+                    rowClassName="align-top"
+                    emptyState={<></>}
+                  />
                 </div>
               </>
             )}

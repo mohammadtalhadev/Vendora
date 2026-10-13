@@ -14,6 +14,15 @@ import {
   Star,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { StatusBadge } from '../components/ui/status-badge';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import {
   Dialog,
@@ -111,6 +120,96 @@ export const VendorPayoutsPage: React.FC = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
+
+  /**
+   * Payout-history columns for DataTable. The processing pill carries a
+   * status dot inside the pill, which StatusBadge cannot render, so it keeps
+   * its local markup (the AdminReportsPage pattern); completed and failed
+   * are plain pills and go through StatusBadge.
+   */
+  const payoutColumns: DataTableColumn<(typeof payouts)[number]>[] = [
+    {
+      key: 'requested',
+      header: 'REQUESTED',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 text-slate-600 font-medium',
+      cell: (row) =>
+        new Date(row.createdAt).toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+    },
+    {
+      key: 'reference',
+      header: 'REFERENCE',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-mono font-bold text-slate-900 text-[11px]',
+      cell: (row) => (
+        <button
+          onClick={() => row.reference && handleCopyRef(row.reference)}
+          className="inline-flex items-center gap-1 hover:text-slate-700"
+          title="Copy reference"
+        >
+          <span>{row.reference ?? row.id.slice(0, 8)}</span>
+          {copiedRef === (row.reference ?? row.id) ? (
+            <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+          ) : (
+            <Copy className="h-3 w-3 text-slate-400" aria-hidden="true" />
+          )}
+        </button>
+      ),
+    },
+    {
+      key: 'rail',
+      header: 'RAIL',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-medium text-slate-700',
+      cell: (row) => row.method,
+    },
+    {
+      key: 'amount',
+      header: 'AMOUNT',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-bold text-slate-900',
+      cell: (row) => money(row.amount),
+    },
+    {
+      key: 'fee',
+      header: 'FEE',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-semibold text-rose-600',
+      cell: (row) => (row.fee === 0 ? '$0.00' : `-${money(row.fee)}`),
+    },
+    {
+      key: 'deposit',
+      header: 'DEPOSIT',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5 font-semibold text-slate-900',
+      cell: (row) => money(row.deposit),
+    },
+    {
+      key: 'status',
+      header: 'STATUS',
+      align: 'right',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (row) => (
+        <>
+          {row.status === 'processing' && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" aria-hidden="true" />
+              Processing
+            </span>
+          )}
+          {row.status === 'completed' && <StatusBadge status="completed" className="text-[11px]" />}
+          {row.status === 'failed' && <StatusBadge status="failed" className="text-[11px]" />}
+        </>
+      ),
+    },
+  ];
 
   const requestedAmount = Math.max(0, Number.parseFloat(payoutAmount || '0') || 0);
   const feePreview = payoutMethod === 'instant' ? Math.round(requestedAmount * INSTANT_FEE_RATE * 100) / 100 : 0;
@@ -493,32 +592,38 @@ export const VendorPayoutsPage: React.FC = () => {
                   <label htmlFor="payout-period-filter" className="sr-only">
                     Filter payouts by period
                   </label>
-                  <select
-                    id="payout-period-filter"
+                  <Select
                     value={timeFilter}
-                    onChange={(e) => { setTimeFilter(e.target.value as 'all' | '30d' | '90d' | 'ytd'); setCurrentPage(1); }}
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
+                    onValueChange={(value) => { setTimeFilter(value as 'all' | '30d' | '90d' | 'ytd'); setCurrentPage(1); }}
                   >
-                    <option value="all">All Time</option>
-                    <option value="30d">Last 30 Days</option>
-                    <option value="90d">Last 90 Days</option>
-                    <option value="ytd">Year to Date</option>
-                  </select>
+                    <SelectTrigger id="payout-period-filter" aria-label="Filter payouts by period" className="h-8 w-auto rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-xs">All Time</SelectItem>
+                      <SelectItem value="30d" className="text-xs">Last 30 Days</SelectItem>
+                      <SelectItem value="90d" className="text-xs">Last 90 Days</SelectItem>
+                      <SelectItem value="ytd" className="text-xs">Year to Date</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   <label htmlFor="payout-status-filter" className="sr-only">
                     Filter payouts by status
                   </label>
-                  <select
-                    id="payout-status-filter"
+                  <Select
                     value={statusFilter}
-                    onChange={(e) => { setStatusFilter(e.target.value as 'all' | 'processing' | 'completed' | 'failed'); setCurrentPage(1); }}
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
+                    onValueChange={(value) => { setStatusFilter(value as 'all' | 'processing' | 'completed' | 'failed'); setCurrentPage(1); }}
                   >
-                    <option value="all">Status: All</option>
-                    <option value="processing">Processing</option>
-                    <option value="completed">Completed</option>
-                    <option value="failed">Failed</option>
-                  </select>
+                    <SelectTrigger id="payout-status-filter" aria-label="Filter payouts by status" className="h-8 w-auto rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-xs">Status: All</SelectItem>
+                      <SelectItem value="processing" className="text-xs">Processing</SelectItem>
+                      <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                      <SelectItem value="failed" className="text-xs">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   <button
                     onClick={handleExportCsv}
@@ -531,95 +636,30 @@ export const VendorPayoutsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs" aria-label="Payout history">
-                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th scope="col" className="px-4 py-3">REQUESTED</th>
-                      <th scope="col" className="px-4 py-3">REFERENCE</th>
-                      <th scope="col" className="px-4 py-3">RAIL</th>
-                      <th scope="col" className="px-4 py-3">AMOUNT</th>
-                      <th scope="col" className="px-4 py-3">FEE</th>
-                      <th scope="col" className="px-4 py-3">DEPOSIT</th>
-                      <th scope="col" className="px-4 py-3 text-right">STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {isLoading && (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
-                          <p role="status" aria-live="polite" className="font-semibold text-slate-700">Reading your payouts…</p>
-                        </td>
-                      </tr>
+              <DataTable
+                ariaLabel="Payout history"
+                columns={payoutColumns}
+                rows={isLoading ? [] : pagedPayouts}
+                getRowKey={(row) => row.id}
+                emptyState={
+                  <div className="px-4 py-10 text-center text-slate-500">
+                    {isLoading ? (
+                      <p role="status" aria-live="polite" className="font-semibold text-slate-700">Reading your payouts…</p>
+                    ) : (
+                      <>
+                        <p className="font-semibold text-slate-700">
+                          {payouts.length === 0 ? 'No payouts requested yet' : 'Nothing matches these filters'}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {payouts.length === 0
+                            ? 'Request one when your available balance is above zero.'
+                            : 'Widen the period or status filter to see the rest.'}
+                        </p>
+                      </>
                     )}
-                    {!isLoading && pagedPayouts.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
-                          <p className="font-semibold text-slate-700">
-                            {payouts.length === 0 ? 'No payouts requested yet' : 'Nothing matches these filters'}
-                          </p>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {payouts.length === 0
-                              ? 'Request one when your available balance is above zero.'
-                              : 'Widen the period or status filter to see the rest.'}
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                    {pagedPayouts.map((row) => (
-                      <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-4 py-3.5 text-slate-600 font-medium">
-                          {new Date(row.createdAt).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td className="px-4 py-3.5 font-mono font-bold text-slate-900 text-[11px]">
-                          <button
-                            onClick={() => row.reference && handleCopyRef(row.reference)}
-                            className="inline-flex items-center gap-1 hover:text-slate-700"
-                            title="Copy reference"
-                          >
-                            <span>{row.reference ?? row.id.slice(0, 8)}</span>
-                            {copiedRef === (row.reference ?? row.id) ? (
-                              <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
-                            ) : (
-                              <Copy className="h-3 w-3 text-slate-400" aria-hidden="true" />
-                            )}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3.5 font-medium text-slate-700">{row.method}</td>
-                        <td className="px-4 py-3.5 font-bold text-slate-900">{money(row.amount)}</td>
-                        <td className="px-4 py-3.5 font-semibold text-rose-600">
-                          {row.fee === 0 ? '$0.00' : `-${money(row.fee)}`}
-                        </td>
-                        <td className="px-4 py-3.5 font-semibold text-slate-900">{money(row.deposit)}</td>
-                        <td className="px-4 py-3.5 text-right">
-                          {row.status === 'processing' && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
-                              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" aria-hidden="true" />
-                              Processing
-                            </span>
-                          )}
-                          {row.status === 'completed' && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
-                              Completed
-                            </span>
-                          )}
-                          {row.status === 'failed' && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
-                              Failed
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  </div>
+                }
+              />
 
               <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
                 <span>

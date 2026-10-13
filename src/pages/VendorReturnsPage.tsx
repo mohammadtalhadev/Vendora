@@ -13,6 +13,8 @@ import {
   X,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Input } from '../components/ui/input';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { exportToCsv } from '../lib/export-csv';
 import {
@@ -152,6 +154,172 @@ export const VendorReturnsPage: React.FC = () => {
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
   const paged = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  /**
+   * Return-queue columns for DataTable. The page has no status pill column:
+   * a package's decision state drives the ACTION cell (Approve / Decline /
+   * Close & restock, or the recorded state as text via STATUS_LABEL), so the
+   * cell content is carried over unchanged.
+   */
+  const returnColumns: DataTableColumn<(typeof rows)[number]>[] = [
+    {
+      key: 'package',
+      header: 'PACKAGE & RMA',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (pkg) => (
+        <>
+          <div className="font-bold text-slate-900">{pkg.rmaCode ?? 'No RMA yet'}</div>
+          <a
+            href={`/vendor/orders/${pkg.id}`}
+            className="text-[11px] font-semibold text-blue-600 hover:underline"
+          >
+            {pkg.id.slice(0, 8)}
+          </a>
+          <div className="text-[10px] text-slate-400">
+            {pkg.type === 'digital' ? 'Digital package' : 'Physical package'}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'buyer',
+      header: 'BUYER',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (pkg) => (
+        <>
+          <div className="font-semibold text-slate-800">
+            {pkg.buyerEmail || 'No buyer contact on this order'}
+          </div>
+          {pkg.buyerAddress?.city && (
+            <div className="text-[11px] text-slate-400">{pkg.buyerAddress.city}</div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'contents',
+      header: 'WHAT COMES BACK',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (pkg) => (
+        <div className="flex items-start gap-2.5">
+          {pkg.items[0]?.image ? (
+            <img
+              src={pkg.items[0].image}
+              alt={pkg.items[0].title}
+              className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 object-cover"
+            />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
+              <Boxes className="h-4 w-4" aria-hidden="true" />
+            </div>
+          )}
+          <div>
+            <div className="font-semibold text-slate-800">
+              {pkg.items[0]?.title || 'Package contents unavailable'}
+            </div>
+            {pkg.items.length > 1 && (
+              <div className="text-[10px] text-slate-400">
+                +{pkg.items.length - 1} more line(s)
+              </div>
+            )}
+            <div className="text-[10px] text-slate-400">
+              Goods {money(pkg.subtotal)} · freight {money(pkg.shippingFee)}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'requested',
+      header: 'REQUESTED / REASON',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (pkg) => (
+        <>
+          <div className="text-slate-700">{dateLabel(requestedAtOf(pkg))}</div>
+          <div className="mt-0.5 max-w-xs text-[11px] text-slate-500">{reasonOf(pkg)}</div>
+          {pkg.returnRejectReason && (
+            <div className="mt-1 text-[11px] font-semibold text-rose-600">
+              Declined: {pkg.returnRejectReason}
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'refund',
+      header: 'REFUND',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (pkg) => (
+        <>
+          <div className="font-bold text-slate-900">
+            {pkg.refundAmount === undefined ? '—' : money(pkg.refundAmount)}
+          </div>
+          {pkg.refundAmount === undefined && (
+            <div className="text-[10px] text-slate-400">
+              Defaults to {money(pkg.subtotal)}
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'action',
+      header: 'ACTION',
+      align: 'right',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (pkg) => (
+        <>
+          {pkg.status === 'return_requested' && (
+            <div className="flex items-center justify-end gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setDecisionError(null);
+                  setRefundInput('');
+                  setApproveTarget(pkg);
+                }}
+                className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-slate-800"
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDecisionError(null);
+                  setDeclineReason('');
+                  setDeclineTarget(pkg);
+                }}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600"
+              >
+                Decline
+              </button>
+            </div>
+          )}
+          {pkg.status === 'return_approved' && (
+            <button
+              type="button"
+              onClick={() => handleCloseAndRestock(pkg)}
+              disabled={close.isPending}
+              className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+            >
+              Close &amp; restock
+            </button>
+          )}
+          {pkg.status !== 'return_requested' && pkg.status !== 'return_approved' && (
+            <span className="text-[11px] font-semibold text-slate-500">
+              {STATUS_LABEL[pkg.status] ?? pkg.status}
+            </span>
+          )}
+        </>
+      ),
+    },
+  ];
 
   const handleApprove = async () => {
     if (!approveTarget) return;
@@ -384,12 +552,11 @@ export const VendorReturnsPage: React.FC = () => {
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1">
+          <div className="flex-1">
             <label htmlFor="returns-search" className="sr-only">
               Search package id, RMA, buyer email or item title
             </label>
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input
+            <Input
               id="returns-search"
               type="text"
               value={searchQuery}
@@ -398,7 +565,8 @@ export const VendorReturnsPage: React.FC = () => {
                 setCurrentPage(1);
               }}
               placeholder="Search package id, RMA, buyer email or item title"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
+              leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
+              className="h-9 rounded-lg bg-slate-50/60 text-xs text-slate-800 focus:bg-white"
             />
           </div>
           <button
@@ -461,144 +629,13 @@ export const VendorReturnsPage: React.FC = () => {
                   your reason on the package history.
                 </p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs" aria-label="Return queue">
-                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th scope="col" className="px-4 py-3.5">PACKAGE &amp; RMA</th>
-                      <th scope="col" className="px-4 py-3.5">BUYER</th>
-                      <th scope="col" className="px-4 py-3.5">WHAT COMES BACK</th>
-                      <th scope="col" className="px-4 py-3.5">REQUESTED / REASON</th>
-                      <th scope="col" className="px-4 py-3.5">REFUND</th>
-                      <th scope="col" className="px-4 py-3.5 text-right">ACTION</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {paged.map((pkg) => {
-                      const refund = pkg.refundAmount;
-                      return (
-                        <tr key={pkg.id} className="transition-colors hover:bg-slate-50/70">
-                          <td className="px-4 py-3.5">
-                            <div className="font-bold text-slate-900">{pkg.rmaCode ?? 'No RMA yet'}</div>
-                            <a
-                              href={`/vendor/orders/${pkg.id}`}
-                              className="text-[11px] font-semibold text-blue-600 hover:underline"
-                            >
-                              {pkg.id.slice(0, 8)}
-                            </a>
-                            <div className="text-[10px] text-slate-400">
-                              {pkg.type === 'digital' ? 'Digital package' : 'Physical package'}
-                            </div>
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="font-semibold text-slate-800">
-                              {pkg.buyerEmail || 'No buyer contact on this order'}
-                            </div>
-                            {pkg.buyerAddress?.city && (
-                              <div className="text-[11px] text-slate-400">{pkg.buyerAddress.city}</div>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-start gap-2.5">
-                              {pkg.items[0]?.image ? (
-                                <img
-                                  src={pkg.items[0].image}
-                                  alt={pkg.items[0].title}
-                                  className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
-                                  <Boxes className="h-4 w-4" aria-hidden="true" />
-                                </div>
-                              )}
-                              <div>
-                                <div className="font-semibold text-slate-800">
-                                  {pkg.items[0]?.title || 'Package contents unavailable'}
-                                </div>
-                                {pkg.items.length > 1 && (
-                                  <div className="text-[10px] text-slate-400">
-                                    +{pkg.items.length - 1} more line(s)
-                                  </div>
-                                )}
-                                <div className="text-[10px] text-slate-400">
-                                  Goods {money(pkg.subtotal)} · freight {money(pkg.shippingFee)}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="text-slate-700">{dateLabel(requestedAtOf(pkg))}</div>
-                            <div className="mt-0.5 max-w-xs text-[11px] text-slate-500">{reasonOf(pkg)}</div>
-                            {pkg.returnRejectReason && (
-                              <div className="mt-1 text-[11px] font-semibold text-rose-600">
-                                Declined: {pkg.returnRejectReason}
-                              </div>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="font-bold text-slate-900">
-                              {refund === undefined ? '—' : money(refund)}
-                            </div>
-                            {refund === undefined && (
-                              <div className="text-[10px] text-slate-400">
-                                Defaults to {money(pkg.subtotal)}
-                              </div>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3.5 text-right">
-                            {pkg.status === 'return_requested' && (
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setDecisionError(null);
-                                    setRefundInput('');
-                                    setApproveTarget(pkg);
-                                  }}
-                                  className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-slate-800"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setDecisionError(null);
-                                    setDeclineReason('');
-                                    setDeclineTarget(pkg);
-                                  }}
-                                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600"
-                                >
-                                  Decline
-                                </button>
-                              </div>
-                            )}
-                            {pkg.status === 'return_approved' && (
-                              <button
-                                type="button"
-                                onClick={() => handleCloseAndRestock(pkg)}
-                                disabled={close.isPending}
-                                className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
-                              >
-                                Close &amp; restock
-                              </button>
-                            )}
-                            {pkg.status !== 'return_requested' && pkg.status !== 'return_approved' && (
-                              <span className="text-[11px] font-semibold text-slate-500">
-                                {STATUS_LABEL[pkg.status] ?? pkg.status}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                ariaLabel="Return queue"
+                columns={returnColumns}
+                rows={paged}
+                getRowKey={(pkg) => pkg.id}
+                emptyState={<></>}
+              />
 
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
                 <span>

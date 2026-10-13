@@ -14,6 +14,8 @@ import {
   Play,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Input } from '../components/ui/input';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import {
   Dialog,
@@ -132,6 +134,190 @@ export const VendorPromotionsPage: React.FC = () => {
     const q = searchQuery.toLowerCase();
     return p.code.toLowerCase().includes(q) || p.title.toLowerCase().includes(q);
   });
+
+
+  /**
+   * Campaign columns for DataTable. The status pill carries a `bg-current`
+   * status dot inside the pill, which StatusBadge cannot render, so it keeps
+   * its local markup and the STATUS_STYLE / STATUS_TEXT maps (the
+   * AdminReportsPage pattern; the same pill is reused by the most-redeemed
+   * list below).
+   */
+  const campaignColumns: DataTableColumn<(typeof rows)[number]>[] = [
+    {
+      key: 'code',
+      header: 'CODE & CAMPAIGN',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (promo) => (
+        <>
+          <div className="font-bold text-slate-900">
+            {promo.title || 'Untitled campaign'}
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
+              {promo.code}
+            </span>
+            <button
+              type="button"
+              onClick={() => void handleCopyCode(promo.code)}
+              className="rounded text-slate-400 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900"
+              aria-label={
+                copiedCode === promo.code
+                  ? `${promo.code} copied to the clipboard`
+                  : `Copy ${promo.code} to the clipboard`
+              }
+              title="Copy code"
+            >
+              {copiedCode === promo.code ? (
+                <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+              ) : (
+                <Copy className="h-3 w-3" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+          {promo.description && (
+            <div className="mt-1 max-w-xs text-[11px] text-slate-400">
+              {promo.description}
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'discount',
+      header: 'DISCOUNT',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (promo) => (
+        <>
+          <div className="font-bold text-slate-900">{discountLabel(promo)}</div>
+          {promo.maxDiscount !== undefined && (
+            <div className="text-[11px] text-slate-500">
+              Capped at {money(promo.maxDiscount)}
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'minimum',
+      header: 'MINIMUM / CAP',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (promo) => (
+        <>
+          <div className="text-slate-700">
+            {promo.minimumOrder > 0
+              ? `Spend ${money(promo.minimumOrder)}`
+              : 'No minimum'}
+          </div>
+          <div className="text-[11px] text-slate-500">
+            Cap {promo.usageLimit.toLocaleString()} claim(s)
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'window',
+      header: 'WINDOW',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (promo) => (
+        <>
+          <div className="font-semibold text-slate-900">
+            {promo.startsAt || promo.endsAt ? 'Scheduled window' : 'Always open'}
+          </div>
+          <div className="text-[11px] text-slate-500">
+            {promo.startsAt ? dateLabel(promo.startsAt) : 'from creation'}
+            {' → '}
+            {promo.endsAt ? dateLabel(promo.endsAt) : 'no end'}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'redemptions',
+      header: 'REDEMPTIONS',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (promo) => {
+        const pct = promo.usageLimit
+          ? Math.min(100, Math.round((promo.usageCount / promo.usageLimit) * 100))
+          : 0;
+        return (
+          <>
+            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-slate-700">
+              <span>
+                {promo.usageCount} / {promo.usageLimit.toLocaleString()}
+              </span>
+              <span className="text-slate-400">{pct}%</span>
+            </div>
+            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-slate-900"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'STATUS',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (promo) => {
+        const status = statusOf(promo, now);
+        return (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[status]}`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+            {STATUS_TEXT[status]}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'ACTIONS',
+      align: 'right',
+      headerClassName: 'text-[11px]',
+      className: 'py-3.5',
+      cell: (promo) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            type="button"
+            onClick={() => void handleToggle(promo)}
+            disabled={setActive.isPending}
+            aria-label={`${promo.active ? 'Switch off' : 'Switch on'} ${promo.code}`}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {promo.active ? (
+              <>
+                <Pause className="h-3 w-3" aria-hidden="true" /> Switch off
+              </>
+            ) : (
+              <>
+                <Play className="h-3 w-3" aria-hidden="true" /> Switch on
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => askDelete(promo)}
+            disabled={remove.isPending}
+            aria-label={`Delete ${promo.code}`}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
+          >
+            <Trash2 className="h-3 w-3" aria-hidden="true" /> Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   const redemptions = rows.reduce((sum, p) => sum + p.usageCount, 0);
   const caps = rows.reduce((sum, p) => sum + p.usageLimit, 0);
@@ -466,18 +652,18 @@ export const VendorPromotionsPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="relative w-full">
+          <div className="w-full">
             <label htmlFor="promo-search" className="sr-only">
               Filter campaigns by code or title
             </label>
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input
+            <Input
               id="promo-search"
               type="text"
               placeholder="Filter by code or campaign title"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+              leftIcon={<Search className="h-3.5 w-3.5" aria-hidden="true" />}
+              className="h-9 rounded-lg text-xs text-slate-700 focus:bg-white"
             />
           </div>
         </div>
@@ -515,151 +701,13 @@ export const VendorPromotionsPage: React.FC = () => {
                 <p className="text-xs text-slate-500">{filtered.length} shown of {rows.length}</p>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs" aria-label="Coupon campaigns on this store">
-                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th scope="col" className="px-4 py-3">CODE &amp; CAMPAIGN</th>
-                      <th scope="col" className="px-4 py-3">DISCOUNT</th>
-                      <th scope="col" className="px-4 py-3">MINIMUM / CAP</th>
-                      <th scope="col" className="px-4 py-3">WINDOW</th>
-                      <th scope="col" className="px-4 py-3">REDEMPTIONS</th>
-                      <th scope="col" className="px-4 py-3">STATUS</th>
-                      <th scope="col" className="px-4 py-3 text-right">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filtered.map((promo) => {
-                      const status = statusOf(promo, now);
-                      const pct = promo.usageLimit
-                        ? Math.min(100, Math.round((promo.usageCount / promo.usageLimit) * 100))
-                        : 0;
-                      return (
-                        <tr key={promo.id} className="transition-colors hover:bg-slate-50/70">
-                          <td className="px-4 py-3.5">
-                            <div className="font-bold text-slate-900">
-                              {promo.title || 'Untitled campaign'}
-                            </div>
-                            <div className="mt-1 flex items-center gap-1.5">
-                              <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
-                                {promo.code}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => void handleCopyCode(promo.code)}
-                                className="rounded text-slate-400 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900"
-                                aria-label={
-                                  copiedCode === promo.code
-                                    ? `${promo.code} copied to the clipboard`
-                                    : `Copy ${promo.code} to the clipboard`
-                                }
-                                title="Copy code"
-                              >
-                                {copiedCode === promo.code ? (
-                                  <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
-                                ) : (
-                                  <Copy className="h-3 w-3" aria-hidden="true" />
-                                )}
-                              </button>
-                            </div>
-                            {promo.description && (
-                              <div className="mt-1 max-w-xs text-[11px] text-slate-400">
-                                {promo.description}
-                              </div>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="font-bold text-slate-900">{discountLabel(promo)}</div>
-                            {promo.maxDiscount !== undefined && (
-                              <div className="text-[11px] text-slate-500">
-                                Capped at {money(promo.maxDiscount)}
-                              </div>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="text-slate-700">
-                              {promo.minimumOrder > 0
-                                ? `Spend ${money(promo.minimumOrder)}`
-                                : 'No minimum'}
-                            </div>
-                            <div className="text-[11px] text-slate-500">
-                              Cap {promo.usageLimit.toLocaleString()} claim(s)
-                            </div>
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="font-semibold text-slate-900">
-                              {promo.startsAt || promo.endsAt ? 'Scheduled window' : 'Always open'}
-                            </div>
-                            <div className="text-[11px] text-slate-500">
-                              {promo.startsAt ? dateLabel(promo.startsAt) : 'from creation'}
-                              {' → '}
-                              {promo.endsAt ? dateLabel(promo.endsAt) : 'no end'}
-                            </div>
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-slate-700">
-                              <span>
-                                {promo.usageCount} / {promo.usageLimit.toLocaleString()}
-                              </span>
-                              <span className="text-slate-400">{pct}%</span>
-                            </div>
-                            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
-                              <div
-                                className="h-full rounded-full bg-slate-900"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </td>
-
-                          <td className="px-4 py-3.5">
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[status]}`}
-                            >
-                              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
-                              {STATUS_TEXT[status]}
-                            </span>
-                          </td>
-
-                          <td className="px-4 py-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => void handleToggle(promo)}
-                                disabled={setActive.isPending}
-                                aria-label={`${promo.active ? 'Switch off' : 'Switch on'} ${promo.code}`}
-                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                              >
-                                {promo.active ? (
-                                  <>
-                                    <Pause className="h-3 w-3" aria-hidden="true" /> Switch off
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="h-3 w-3" aria-hidden="true" /> Switch on
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => askDelete(promo)}
-                                disabled={remove.isPending}
-                                aria-label={`Delete ${promo.code}`}
-                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
-                              >
-                                <Trash2 className="h-3 w-3" aria-hidden="true" /> Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                ariaLabel="Coupon campaigns on this store"
+                columns={campaignColumns}
+                rows={filtered}
+                getRowKey={(promo) => promo.id}
+                emptyState={<></>}
+              />
 
               <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
                 No order stores which code was typed. Checkout freezes the discounted subtotal onto the
