@@ -13,7 +13,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
  * `20261011001200_vendora_notification_fanout.sql`). A change to anything outside the list
  * simply never arrives, which is the difference between a live screen and a quietly stale one.
  */
-const WATCHED_TABLES = [
+export const WATCHED_TABLES = [
   'orders',
   'sub_orders',
   'deliveries',

@@ -62,9 +62,9 @@ const SUPPORT_TOPICS: TopicCategory[] = [
     title: 'Orders & Tracking',
     icon: Truck,
     iconBg: 'bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40',
-    iconColor: 'text-[#FF7A1A]',
+    iconColor: 'text-sun-orange',
     badgeBg: 'bg-orange-50/70 dark:bg-orange-950/30',
-    badgeColor: 'text-[#FF7A1A]',
+    badgeColor: 'text-sun-orange',
     description:
       'Real-time courier telemetry, live carrier lookup, dispatch checkpoints, and 4-digit delivery OTP management.',
     articleCount: 24,
@@ -332,7 +332,7 @@ export const FAQPage: React.FC = () => {
             2. Breadcrumbs Strip
            ========================================================================= */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">
+          <Link to="/" className="hover:text-sun-orange transition-colors">
             Home
           </Link>
           <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" aria-hidden="true" />
@@ -345,8 +345,8 @@ export const FAQPage: React.FC = () => {
             3. Hero Section: How Can We Help You Today?
            ========================================================================= */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-[#FF7A1A] shadow-2xs">
-            <span className="h-2 w-2 rounded-full bg-[#FF7A1A] animate-pulse" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-sun-orange shadow-2xs">
+            <span className="h-2 w-2 rounded-full bg-sun-orange animate-pulse" />
             <span>24/7 VENDORA CONCIERGE &amp; HELP HUB</span>
           </div>
 
@@ -394,7 +394,7 @@ export const FAQPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#EA580C] px-7 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 hover:from-[#EA580C] hover:to-[#C2410C] transition-all cursor-pointer hover:shadow-orange-500/35 active:scale-[0.98] shrink-0"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sun-orange to-[#EA580C] px-7 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 hover:from-[#EA580C] hover:to-sun-orange-700 transition-all cursor-pointer hover:shadow-orange-500/35 active:scale-[0.98] shrink-0"
                 >
                   <span>Search</span>
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -404,7 +404,7 @@ export const FAQPage: React.FC = () => {
               {/* Popular Search Pills Bar */}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-3 px-2 border-t border-slate-100 dark:border-white/5 text-xs">
                 <span className="font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-[#FF7A1A]" />
+                  <Sparkles className="h-3 w-3 text-sun-orange" />
                   Popular:
                 </span>
                 {POPULAR_SEARCH_TAGS.map((tag) => (
@@ -415,7 +415,7 @@ export const FAQPage: React.FC = () => {
                       setSearchQuery(tag);
                       showToast(`Searching for: ${tag}`);
                     }}
-                    className="rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] dark:hover:bg-orange-950/60 dark:hover:text-[#FF7A1A] border border-slate-200/80 dark:border-white/10 px-3 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+                    className="rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 hover:text-sun-orange dark:hover:bg-orange-950/60 dark:hover:text-sun-orange border border-slate-200/80 dark:border-white/10 px-3 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
                   >
                     {tag}
                   </button>
@@ -431,7 +431,7 @@ export const FAQPage: React.FC = () => {
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 pb-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
                 KNOWLEDGE BASE CATEGORIES
               </span>
               <h2 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
@@ -476,7 +476,7 @@ export const FAQPage: React.FC = () => {
 
                     {/* Title & Description */}
                     <div className="space-y-1.5">
-                      <h3 className="font-outfit text-lg font-black text-slate-900 dark:text-white group-hover:text-[#FF7A1A] transition-colors">
+                      <h3 className="font-outfit text-lg font-black text-slate-900 dark:text-white group-hover:text-sun-orange transition-colors">
                         {topic.title}
                       </h3>
                       <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -486,7 +486,7 @@ export const FAQPage: React.FC = () => {
                   </div>
 
                   {/* Section label — no invented article count the page cannot back */}
-                  <div className="relative z-10 pt-5 mt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-xs font-bold text-[#FF7A1A]">
+                  <div className="relative z-10 pt-5 mt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-xs font-bold text-sun-orange">
                     <span>Guides &amp; answers</span>
                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                   </div>
@@ -501,7 +501,7 @@ export const FAQPage: React.FC = () => {
            ========================================================================= */}
         <section className="space-y-6 pt-4">
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] block">
+            <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
               ANSWERS &amp; POLICIES
             </span>
             <h2 className="font-outfit text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
@@ -530,7 +530,7 @@ export const FAQPage: React.FC = () => {
                 onClick={() => activateFaqTab('buyer')}
                 className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
                   activeFaqTab === 'buyer'
-                    ? 'bg-gradient-to-r from-[#FF7A1A] to-[#EA580C] text-white shadow-md'
+                    ? 'bg-gradient-to-r from-sun-orange to-[#EA580C] text-white shadow-md'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -546,7 +546,7 @@ export const FAQPage: React.FC = () => {
                 onClick={() => activateFaqTab('seller')}
                 className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
                   activeFaqTab === 'seller'
-                    ? 'bg-gradient-to-r from-[#FF7A1A] to-[#EA580C] text-white shadow-md'
+                    ? 'bg-gradient-to-r from-sun-orange to-[#EA580C] text-white shadow-md'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -598,7 +598,7 @@ export const FAQPage: React.FC = () => {
                       aria-controls={`faq-answer-${faq.id}`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="hidden sm:inline-flex rounded-md bg-orange-100 text-[#FF7A1A] dark:bg-orange-950/60 dark:text-orange-400 px-2 py-0.5 text-[10px] font-extrabold uppercase shrink-0">
+                        <span className="hidden sm:inline-flex rounded-md bg-orange-100 text-sun-orange dark:bg-orange-950/60 dark:text-orange-400 px-2 py-0.5 text-[10px] font-extrabold uppercase shrink-0">
                           {faq.category}
                         </span>
                         <span className="font-outfit text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug">
@@ -607,7 +607,7 @@ export const FAQPage: React.FC = () => {
                       </div>
                       <div
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 transition-transform duration-300 ${
-                          isOpen ? 'rotate-180 bg-orange-100 text-[#FF7A1A] dark:bg-orange-950/60 dark:text-[#FF7A1A]' : ''
+                          isOpen ? 'rotate-180 bg-orange-100 text-sun-orange dark:bg-orange-950/60 dark:text-sun-orange' : ''
                         }`}
                       >
                         <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -655,7 +655,7 @@ export const FAQPage: React.FC = () => {
                             type="button"
                             onClick={() => handleCopyFaqLink(faq.id)}
                             aria-live="polite"
-                            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-[#FF7A1A] transition-colors cursor-pointer"
+                            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-sun-orange transition-colors cursor-pointer"
                           >
                             {copiedFaqId === faq.id ? (
                               <>
@@ -685,8 +685,8 @@ export const FAQPage: React.FC = () => {
         <section className="pt-2">
           <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl">
             {/* Subtle internal glow reflections */}
-            <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-[#FED7AA]/30 blur-[90px] pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-[#CFFAFE]/35 blur-[90px] pointer-events-none" />
+            <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-sun-orange-200/30 blur-[90px] pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-aqua-100/35 blur-[90px] pointer-events-none" />
 
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-1.5 max-w-xl">
@@ -704,7 +704,7 @@ export const FAQPage: React.FC = () => {
                   onClick={() => setIsLiveChatOpen(true)}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white px-6 py-3.5 text-xs sm:text-sm font-extrabold shadow-lg transition-all cursor-pointer active:scale-95 shrink-0"
                 >
-                  <MessageSquare className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                  <MessageSquare className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                   <span>Ask Sophia in Live Chat</span>
                 </button>
               </div>
@@ -731,7 +731,7 @@ export const FAQPage: React.FC = () => {
               <div>
                 <div className="flex items-center gap-1.5">
                   <h4 className="font-outfit font-black text-sm text-white">Sophia M.</h4>
-                  <span className="rounded-full bg-orange-500/20 text-[#FF7A1A] border border-orange-500/30 px-2 py-0.2 text-[9px] font-black uppercase">
+                  <span className="rounded-full bg-orange-500/20 text-sun-orange border border-orange-500/30 px-2 py-0.2 text-[9px] font-black uppercase">
                     AI Concierge
                   </span>
                 </div>
@@ -748,14 +748,14 @@ export const FAQPage: React.FC = () => {
                 className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.sender === 'sophia' && (
-                  <div className="h-7 w-7 rounded-full bg-[#FF7A1A] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                  <div className="h-7 w-7 rounded-full bg-sun-orange text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                     S
                   </div>
                 )}
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
                     msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-[#FF7A1A] to-[#EA580C] text-white rounded-tr-xs shadow-xs'
+                      ? 'bg-gradient-to-r from-sun-orange to-[#EA580C] text-white rounded-tr-xs shadow-xs'
                       : 'bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-slate-100 rounded-tl-xs shadow-xs'
                   }`}
                 >
@@ -777,12 +777,12 @@ export const FAQPage: React.FC = () => {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Type your message or order inquiry..."
-              className="flex-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#FF7A1A]"
+              className="flex-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-sun-orange"
             />
             <button
               type="submit"
               aria-label="Send message to Sophia"
-              className="rounded-full bg-sun-orange hover:bg-[#EA6C13] p-2.5 text-white transition-all cursor-pointer shadow-xs active:scale-95"
+              className="rounded-full bg-sun-orange hover:bg-sun-orange-600 p-2.5 text-white transition-all cursor-pointer shadow-xs active:scale-95"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
             </button>

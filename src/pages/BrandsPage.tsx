@@ -182,18 +182,18 @@ export const BrandsPage: React.FC = () => {
   }, [searchQuery, selectedCategory]);
 
   return (
-    <div className="relative min-h-screen font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] pb-24">
+    <div className="relative min-h-screen font-sans selection:bg-sun-orange/20 selection:text-sun-orange pb-24">
       {/* Radiant ambient glow orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/60 via-[#FFEDD5]/65 to-[#FED7AA]/35 blur-[130px] dark:from-[#FF7A1A]/10 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/60 via-sun-orange-100/65 to-sun-orange-200/35 blur-[130px] dark:from-sun-orange/10 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-12 pt-8 space-y-8">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">Home</Link>
+          <Link to="/" className="hover:text-sun-orange transition-colors">Home</Link>
           <ChevronRight className="h-3 w-3 text-slate-400" aria-hidden="true" />
           <span className="font-semibold text-slate-900 dark:text-white">Official Brand Partners</span>
         </nav>
@@ -203,7 +203,7 @@ export const BrandsPage: React.FC = () => {
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-orange-400/10 via-cyan-400/5 to-transparent rounded-full blur-3xl pointer-events-none" />
           
           <div className="max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50/80 dark:border-orange-900/40 dark:bg-orange-950/30 px-3.5 py-1 text-xs font-bold text-[#FF7A1A]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50/80 dark:border-orange-900/40 dark:bg-orange-950/30 px-3.5 py-1 text-xs font-bold text-sun-orange">
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
               <span>100% Genuine Direct Manufacturer Stores</span>
             </div>
@@ -222,7 +222,7 @@ export const BrandsPage: React.FC = () => {
                 <span>Zero Counterfeits Policy</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <ShieldCheck className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 <span>Original Seals Guaranteed</span>
               </div>
               <div className="flex items-center gap-2">
@@ -245,7 +245,7 @@ export const BrandsPage: React.FC = () => {
               placeholder="Search flagship brands..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 pl-10 pr-4 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#FF7A1A] transition-colors"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 pl-10 pr-4 py-2 text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sun-orange transition-colors"
             />
           </div>
 
@@ -259,7 +259,7 @@ export const BrandsPage: React.FC = () => {
                 aria-pressed={selectedCategory === cat.id}
                 className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
                   selectedCategory === cat.id
-                    ? 'bg-[#FF7A1A] text-white shadow-sm'
+                    ? 'bg-sun-orange text-white shadow-sm'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
@@ -274,7 +274,7 @@ export const BrandsPage: React.FC = () => {
           {filteredBrands.map((brand) => (
             <div
               key={brand.id}
-              className="group rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-[#FF7A1A]/40 transition-all duration-300 flex flex-col justify-between"
+              className="group rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-sun-orange/40 transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 {/* Banner Header */}
@@ -307,10 +307,10 @@ export const BrandsPage: React.FC = () => {
                     <h3 className="font-outfit text-base font-extrabold text-slate-900 dark:text-white line-clamp-1">
                       {brand.name}
                     </h3>
-                    <CheckCircle2 className="h-4 w-4 text-[#00B8C8] shrink-0" aria-hidden="true" />
+                    <CheckCircle2 className="h-4 w-4 text-aqua shrink-0" aria-hidden="true" />
                   </div>
 
-                  <p className="text-xs font-semibold text-[#FF7A1A] line-clamp-1 mb-2">
+                  <p className="text-xs font-semibold text-sun-orange line-clamp-1 mb-2">
                     {brand.tagline}
                   </p>
 
@@ -347,14 +347,14 @@ export const BrandsPage: React.FC = () => {
               <div className="p-5 pt-0 flex gap-2">
                 <Link
                   to={`/products?q=${encodeURIComponent(brand.catalogQuery)}`}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#FF7A1A] hover:text-white text-slate-800 dark:text-white px-3 py-2 text-xs font-bold transition-all"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-sun-orange hover:text-white text-slate-800 dark:text-white px-3 py-2 text-xs font-bold transition-all"
                 >
                   <span>Catalog</span>
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
                 <Link
                   to={brand.storeUrl}
-                  className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-[#FF7A1A] px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all"
+                  className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-sun-orange px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all"
                   title="Visit Flagship Store"
                 >
                   <Store className="h-3.5 w-3.5" aria-hidden="true" />
@@ -377,7 +377,7 @@ export const BrandsPage: React.FC = () => {
           </div>
           <Link
             to="/become-a-seller"
-            className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA6C13] active:scale-95 text-white px-6 py-3.5 text-xs font-outfit font-black tracking-wider uppercase shadow-lg shadow-orange-500/25 transition-all"
+            className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 active:scale-95 text-white px-6 py-3.5 text-xs font-outfit font-black tracking-wider uppercase shadow-lg shadow-orange-500/25 transition-all"
           >
             <span>Apply For Flagship Badge</span>
             <ArrowRight className="h-4 w-4" aria-hidden="true" />

@@ -12,8 +12,8 @@
   --panel-border: #E2E8F0;
   --panel-text: #0F172A;
   --panel-text-muted: #64748B;
-  --panel-primary: #FF7A1A; /* Vendora Sun Orange */
-  --panel-primary-hover: #EA6C13;
+  --panel-primary: var(--color-sun-orange); /* Vendora Sun Orange */
+  --panel-primary-hover: var(--color-sun-orange-600);
   --panel-primary-light: #FFF7ED;
   --panel-accent: #F59E0B; /* Amber */
   --panel-sidebar-bg: rgba(255, 255, 255, 0.72);
@@ -35,7 +35,7 @@ html.dark {
   --panel-text: #F8FAFC;
   --panel-text-muted: #94A3B8;
   --panel-primary: #FF9233;
-  --panel-primary-hover: #FF7A1A;
+  --panel-primary-hover: var(--color-sun-orange);
   --panel-primary-light: #7C2D12;
   --panel-accent: #FBBF24;
   --panel-sidebar-bg: rgba(17, 24, 39, 0.85);
@@ -133,13 +133,13 @@ html.dark .vendor-table tr:hover td {
   border-radius: var(--radius-pill);
   font-weight: 700;
   transition: all 0.15s ease;
-  box-shadow: 0 4px 14px 0 rgba(255, 122, 26, 0.28);
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--color-sun-orange) 28%, transparent);
   border: none;
 }
 
 .vendor-btn-primary:hover {
-  background: linear-gradient(135deg, var(--panel-primary-hover) 0%, #EA6C13 100%);
-  box-shadow: 0 6px 20px 0 rgba(255, 122, 26, 0.38);
+  background: linear-gradient(135deg, var(--panel-primary-hover) 0%, var(--color-sun-orange-600) 100%);
+  box-shadow: 0 6px 20px 0 color-mix(in srgb, var(--color-sun-orange) 38%, transparent);
   transform: translateY(-1px);
 }
 
@@ -451,7 +451,7 @@ html.dark .vendor-dropdown {
 
 .vendor-quick-action:hover {
   border-color: var(--panel-primary);
-  box-shadow: 0 8px 24px -2px rgba(255, 122, 26, 0.15);
+  box-shadow: 0 8px 24px -2px color-mix(in srgb, var(--color-sun-orange) 15%, transparent);
   transform: translateY(-2px);
 }
 
@@ -632,7 +632,7 @@ html.dark .vendor-urgency-indicator {
 /* Vendor scrollbar */
 .vendor-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 122, 26, 0.3) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-sun-orange) 30%, transparent) transparent;
 }
 
 .vendor-scroll::-webkit-scrollbar {
@@ -645,12 +645,12 @@ html.dark .vendor-urgency-indicator {
 }
 
 .vendor-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 122, 26, 0.3);
+  background-color: color-mix(in srgb, var(--color-sun-orange) 30%, transparent);
   border-radius: 9999px;
 }
 
 .vendor-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 122, 26, 0.5);
+  background-color: color-mix(in srgb, var(--color-sun-orange) 50%, transparent);
 }
 
 html.dark .vendor-scroll::-webkit-scrollbar-thumb {

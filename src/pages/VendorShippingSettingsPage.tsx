@@ -218,7 +218,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
           >
             <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Truck className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <Truck className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 <h2 className="text-sm font-bold text-slate-900">
                   Freight rates your store records
                 </h2>
@@ -311,7 +311,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Building className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <Building className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 <div>
                   <h2 className="text-sm font-bold text-slate-900">Pickup origin</h2>
                   <span className="text-[11px] text-slate-400">
@@ -434,7 +434,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Clock className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <Clock className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 <h2 className="text-sm font-bold text-slate-900">Handling window</h2>
               </div>
 
@@ -444,7 +444,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
                     key={value}
                     className={`cursor-pointer rounded-2xl border p-3.5 transition-all ${
                       form.slaWindow === value
-                        ? 'border-[#FF7A1A] bg-orange-50/40 text-orange-950 shadow-xs'
+                        ? 'border-sun-orange bg-orange-50/40 text-orange-950 shadow-xs'
                         : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
                     }`}
                   >

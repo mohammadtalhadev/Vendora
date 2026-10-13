@@ -283,7 +283,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
                   {/* Horizontal Bar Chart Track */}
                   <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className="h-full rounded-full bg-sun-orange transition-all duration-300 group-hover:bg-[#EA6C13]"
+                      className="h-full rounded-full bg-sun-orange transition-all duration-300 group-hover:bg-sun-orange-600"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>

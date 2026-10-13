@@ -107,7 +107,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-[#FF7A1A]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-sun-orange">
               <Store className="h-5 w-5" />
             </div>
             <div>
@@ -138,7 +138,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
           {!user && (
             <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
               Please{' '}
-              <Link to="/login" className="font-bold text-[#FF7A1A] hover:underline">
+              <Link to="/login" className="font-bold text-sun-orange hover:underline">
                 sign in
               </Link>{' '}
               to message this seller.
@@ -159,7 +159,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               <div
                 className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
                   m.sender === 'user'
-                    ? 'rounded-br-xs bg-[#FF7A1A] text-white'
+                    ? 'rounded-br-xs bg-sun-orange text-white'
                     : 'rounded-bl-xs bg-slate-100 text-slate-800'
                 }`}
               >
@@ -186,7 +186,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               type="button"
               disabled={!canChat || !threadId}
               onClick={() => void handleSend(prompt)}
-              className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-orange-300 hover:text-[#FF7A1A] transition-colors disabled:opacity-40"
+              className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-orange-300 hover:text-sun-orange transition-colors disabled:opacity-40"
             >
               {prompt}
             </button>
@@ -208,12 +208,12 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               onChange={(e) => setInputText(e.target.value)}
               placeholder={canChat ? 'Type your question...' : 'Sign in to message the seller'}
               disabled={!canChat || !threadId}
-              className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 focus:border-[#FF7A1A] focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-[#FF7A1A] disabled:opacity-50"
+              className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 focus:border-sun-orange focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-sun-orange disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={!inputText.trim() || !canChat || !threadId}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FF7A1A] text-white shadow-xs hover:bg-[#EA6C13] disabled:opacity-40 transition-colors cursor-pointer"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-sun-orange text-white shadow-xs hover:bg-sun-orange-600 disabled:opacity-40 transition-colors cursor-pointer"
             >
               <Send className="h-4 w-4" />
             </button>

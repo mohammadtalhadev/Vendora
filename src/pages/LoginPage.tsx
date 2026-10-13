@@ -109,14 +109,14 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 pb-16 pt-4 sm:pt-8 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A]">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 pb-16 pt-4 sm:pt-8 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
       {/* =========================================================================
           1. Ethereal Luminous Ambient Orbs (Matching Stitch Spec)
          ========================================================================= */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[640px] h-[640px] rounded-full bg-gradient-to-tr from-[#FED7AA]/50 via-[#FFEDD5]/60 to-[#FED7AA]/30 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5" />
-        <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/60 via-[#F1F5F9]/80 to-[#FFEDD5]/40 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent" />
-        <div className="absolute -bottom-40 left-1/4 w-[580px] h-[580px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/60 via-[#CFFAFE]/40 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5" />
+        <div className="absolute -top-36 -left-28 w-[640px] h-[640px] rounded-full bg-gradient-to-tr from-sun-orange-200/50 via-sun-orange-100/60 to-sun-orange-200/30 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5" />
+        <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-bl from-aqua-100/60 via-[#F1F5F9]/80 to-sun-orange-100/40 blur-[140px] dark:from-aqua/10 dark:via-transparent" />
+        <div className="absolute -bottom-40 left-1/4 w-[580px] h-[580px] rounded-full bg-gradient-to-tr from-sun-orange-100/60 via-aqua-100/40 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -131,7 +131,7 @@ export const LoginPage: React.FC = () => {
           </div>
           <Link
             to="/register"
-            className="hidden sm:inline-flex items-center gap-1.5 font-semibold text-[#FF7A1A] hover:text-[#EA6C13] transition-colors group"
+            className="hidden sm:inline-flex items-center gap-1.5 font-semibold text-sun-orange hover:text-sun-orange-600 transition-colors group"
           >
             <span>Don't have an account? Create one</span>
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -143,14 +143,14 @@ export const LoginPage: React.FC = () => {
            ========================================================================= */}
         <div className="relative w-full rounded-3xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/90 dark:border-white/10 shadow-[0_20px_50px_rgba(15,23,42,0.08)] overflow-hidden lg:grid lg:grid-cols-12 min-h-[720px]">
           {/* Subtle Ambient Reflections */}
-          <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-[#FED7AA]/30 blur-[100px] pointer-events-none" />
-          <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-[#CFFAFE]/40 blur-[110px] pointer-events-none" />
+          <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-sun-orange-200/30 blur-[100px] pointer-events-none" />
+          <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-aqua-100/40 blur-[110px] pointer-events-none" />
 
           {/* =========================================================================
               LEFT COLUMN: Brand & Trust Showcase (5 Cols)
              ========================================================================= */}
           <div className="lg:col-span-5 p-8 sm:p-10 lg:p-12 flex flex-col justify-between bg-white/45 dark:bg-white/[0.03] backdrop-blur-2xl border-b lg:border-b-0 lg:border-r border-white/70 dark:border-white/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#FED7AA]/30 via-[#CFFAFE]/20 to-transparent rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-sun-orange-200/30 via-aqua-100/20 to-transparent rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative z-10 flex flex-col gap-2">
               <div className="flex items-center gap-3.5">
@@ -158,7 +158,7 @@ export const LoginPage: React.FC = () => {
                   <div className="flex items-baseline">
                     <span className="font-outfit text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none flex items-center">
                       Vendora
-                      <span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] ml-0.5 mb-0.5" />
+                      <span className="inline-block h-2 w-2 rounded-full bg-sun-orange ml-0.5 mb-0.5" />
                     </span>
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export const LoginPage: React.FC = () => {
               {/* 3 Frosted Metric Badges */}
               <div className="flex flex-col gap-3 pt-2">
                 <div className="p-3.5 rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/80 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#ECFEFF] dark:bg-cyan-950/40 text-[#00B8C8] flex items-center justify-center shrink-0 border border-[#CFFAFE] dark:border-cyan-800/40">
+                  <div className="w-10 h-10 rounded-xl bg-aqua-50 dark:bg-cyan-950/40 text-aqua flex items-center justify-center shrink-0 border border-aqua-100 dark:border-cyan-800/40">
                     <Store className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">
@@ -189,7 +189,7 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/80 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#FFF7ED] dark:bg-orange-950/40 text-[#FF7A1A] flex items-center justify-center shrink-0 border border-[#FED7AA] dark:border-orange-800/40">
+                  <div className="w-10 h-10 rounded-xl bg-sun-orange-50 dark:bg-orange-950/40 text-sun-orange flex items-center justify-center shrink-0 border border-sun-orange-200 dark:border-orange-800/40">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">
@@ -199,7 +199,7 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-md border border-white/80 dark:border-white/10 shadow-xs flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#FEF9C3] dark:bg-yellow-950/40 text-[#CA8A04] dark:text-yellow-400 flex items-center justify-center shrink-0 border border-[#FEF08A] dark:border-yellow-800/40">
+                  <div className="w-10 h-10 rounded-xl bg-lemon-100 dark:bg-yellow-950/40 text-[#CA8A04] dark:text-yellow-400 flex items-center justify-center shrink-0 border border-lemon-200 dark:border-yellow-800/40">
                     <Truck className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">
@@ -223,7 +223,7 @@ export const LoginPage: React.FC = () => {
                 <div className="p-1 rounded-full bg-slate-200/50 dark:bg-white/10 border border-white/60 dark:border-white/10 flex items-center shadow-inner">
                   <button
                     type="button"
-                    className="px-5 py-2 rounded-full bg-[#FF7A1A] text-white font-outfit font-semibold text-sm shadow-[0_4px_14px_rgba(255,122,26,0.32)] transition-all cursor-pointer"
+                    className="px-5 py-2 rounded-full bg-sun-orange text-white font-outfit font-semibold text-sm shadow-[0_4px_14px_color-mix(in_srgb,var(--color-sun-orange)_32%,transparent)] transition-all cursor-pointer"
                   >
                     Sign In
                   </button>
@@ -351,7 +351,7 @@ export const LoginPage: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={selectedRole === 'seller' ? 'store@vendora.market' : 'name@example.com'}
-                      className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white/70 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 text-sm border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/30 focus:border-[#FF7A1A] shadow-2xs transition-all"
+                      className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white/70 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 text-sm border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-sun-orange/30 focus:border-sun-orange shadow-2xs transition-all"
                       required
                     />
                   </div>
@@ -369,7 +369,7 @@ export const LoginPage: React.FC = () => {
                       onKeyDown={(e) => { if (e.key === 'Escape') setShowResetHint(false); }}
                       aria-expanded={showResetHint}
                       aria-controls="login-reset-hint"
-                      className="text-xs text-[#FF7A1A] hover:text-[#EA6C13] transition-colors font-semibold cursor-pointer"
+                      className="text-xs text-sun-orange hover:text-sun-orange-600 transition-colors font-semibold cursor-pointer"
                     >
                       Forgot credentials?
                     </button>
@@ -382,7 +382,7 @@ export const LoginPage: React.FC = () => {
                       className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200/80 dark:border-orange-800/40 text-[11px] text-slate-600 dark:text-slate-300"
                     >
                       {import.meta.env.DEV ? (
-                        <>For demo evaluation, every test persona signs in with password <span className="font-bold text-[#FF7A1A]">demo1234</span>.</>
+                        <>For demo evaluation, every test persona signs in with password <span className="font-bold text-sun-orange">demo1234</span>.</>
                       ) : (
                         <>If you have forgotten your password, please contact the Vendora support team to reset it.</>
                       )}
@@ -396,7 +396,7 @@ export const LoginPage: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••••••"
-                      className="w-full h-12 pl-12 pr-12 rounded-2xl bg-white/70 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 text-sm border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/30 focus:border-[#FF7A1A] shadow-2xs transition-all"
+                      className="w-full h-12 pl-12 pr-12 rounded-2xl bg-white/70 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 text-sm border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-sun-orange/30 focus:border-sun-orange shadow-2xs transition-all"
                       required
                     />
                     <button
@@ -419,9 +419,9 @@ export const LoginPage: React.FC = () => {
                       className="sr-only peer"
                     />
                     <div
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shadow-2xs peer-focus-visible:ring-2 peer-focus-visible:ring-[#FF7A1A]/40 ${
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shadow-2xs peer-focus-visible:ring-2 peer-focus-visible:ring-sun-orange/40 ${
                         rememberMe
-                          ? 'border-[#FF7A1A] bg-[#FF7A1A]'
+                          ? 'border-sun-orange bg-sun-orange'
                           : 'border-slate-300 dark:border-slate-600 bg-white/90 dark:bg-slate-800'
                       }`}
                     >
@@ -437,7 +437,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="mt-2 w-full h-13 rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] active:scale-[0.99] text-white text-sm font-outfit font-bold flex items-center justify-center gap-2 shadow-[0_4px_18px_rgba(255,122,26,0.32)] transition-all cursor-pointer disabled:opacity-50"
+                  className="mt-2 w-full h-13 rounded-full bg-sun-orange hover:bg-sun-orange-600 active:scale-[0.99] text-white text-sm font-outfit font-bold flex items-center justify-center gap-2 shadow-[0_4px_18px_color-mix(in_srgb,var(--color-sun-orange)_32%,transparent)] transition-all cursor-pointer disabled:opacity-50"
                 >
                   <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Vendora'}</span>
                   <ArrowRight className="h-4 w-4 stroke-[2.5]" />
@@ -457,10 +457,10 @@ export const LoginPage: React.FC = () => {
                   className="flex items-center justify-between w-full text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer"
                 >
                   <span className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-[#FF7A1A]" />
+                    <Sparkles className="h-3.5 w-3.5 text-sun-orange" />
                     <span>Quick Demo Personas (1-Click Login)</span>
                   </span>
-                  <span className="text-[11px] text-[#FF7A1A]">{showDemoGrid ? 'Hide' : 'Show Roles'}</span>
+                  <span className="text-[11px] text-sun-orange">{showDemoGrid ? 'Hide' : 'Show Roles'}</span>
                 </button>
 
                 {showDemoGrid && (
@@ -472,7 +472,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDemoQuickLogin('customer')}
-                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-[#FF7A1A] text-left transition-all cursor-pointer text-xs"
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-sun-orange text-left transition-all cursor-pointer text-xs"
                     >
                       <span className="font-bold text-slate-900 dark:text-white block">Customer</span>
                       <span className="text-[10px] text-slate-400">Buyer catalog</span>
@@ -480,7 +480,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDemoQuickLogin('vendor')}
-                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-[#FF7A1A] text-left transition-all cursor-pointer text-xs"
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-sun-orange text-left transition-all cursor-pointer text-xs"
                     >
                       <span className="font-bold text-slate-900 dark:text-white block">Vendor</span>
                       <span className="text-[10px] text-slate-400">Store console</span>
@@ -488,7 +488,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDemoQuickLogin('admin')}
-                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-[#FF7A1A] text-left transition-all cursor-pointer text-xs"
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-sun-orange text-left transition-all cursor-pointer text-xs"
                     >
                       <span className="font-bold text-slate-900 dark:text-white block">Admin</span>
                       <span className="text-[10px] text-slate-400">Full workspace</span>
@@ -496,7 +496,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDemoQuickLogin('rider')}
-                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-[#FF7A1A] text-left transition-all cursor-pointer text-xs"
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-sun-orange text-left transition-all cursor-pointer text-xs"
                     >
                       <span className="font-bold text-slate-900 dark:text-white block">Rider</span>
                       <span className="text-[10px] text-slate-400">PIN deliveries</span>
@@ -504,7 +504,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDemoQuickLogin('support')}
-                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-[#FF7A1A] text-left transition-all cursor-pointer text-xs"
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-sun-orange text-left transition-all cursor-pointer text-xs"
                     >
                       <span className="font-bold text-slate-900 dark:text-white block">Support</span>
                       <span className="text-[10px] text-slate-400">Disputes desk</span>
@@ -512,7 +512,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDemoQuickLogin('newuser')}
-                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-[#FF7A1A] text-left transition-all cursor-pointer text-xs"
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:border-sun-orange text-left transition-all cursor-pointer text-xs"
                     >
                       <span className="font-bold text-slate-900 dark:text-white block">New User</span>
                       <span className="text-[10px] text-slate-400">Fresh account</span>
@@ -529,7 +529,7 @@ export const LoginPage: React.FC = () => {
                 <span className="text-xs text-slate-600 dark:text-slate-300">New to Vendora?</span>
                 <Link
                   to="/register"
-                  className="font-outfit text-xs text-[#FF7A1A] hover:text-[#EA6C13] font-bold underline transition-colors"
+                  className="font-outfit text-xs text-sun-orange hover:text-sun-orange-600 font-bold underline transition-colors"
                 >
                   Create an account
                 </Link>
@@ -543,7 +543,7 @@ export const LoginPage: React.FC = () => {
            ========================================================================= */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="flex items-center gap-3 rounded-2xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-4 shadow-xs">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF7A1A]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-sun-orange">
               <Truck className="h-5 w-5" />
             </div>
             <div>

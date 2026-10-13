@@ -18,7 +18,7 @@ const actionTone = (action: string): string => {
     return 'bg-rose-100 text-rose-800';
   }
   if (action.includes('refund')) return 'bg-amber-100 text-amber-800';
-  if (action.includes('commission')) return 'bg-orange-100 text-[#FF7A1A]';
+  if (action.includes('commission')) return 'bg-orange-100 text-sun-orange';
   if (action.includes('product')) return 'bg-purple-100 text-purple-800';
   if (action.includes('broadcast') || action.includes('notification')) {
     return 'bg-blue-100 text-blue-800';
@@ -189,7 +189,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search by actor, action, or entity..."
-              className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#FF7A1A] focus:ring-1 focus:ring-[#FF7A1A]/20"
+              className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-sun-orange focus:ring-1 focus:ring-sun-orange/20"
             />
           </div>
         </div>

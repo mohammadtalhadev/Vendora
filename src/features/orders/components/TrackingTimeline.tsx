@@ -269,7 +269,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sun-orange/20 text-[#FF7A1A]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sun-orange/20 text-sun-orange">
                 <Key className="h-6 w-6" />
               </div>
               <div>
@@ -294,7 +294,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                 Key:
               </span>
               <code
-                className="font-mono text-sm sm:text-base font-bold tracking-widest text-[#FFD43B] select-all break-all"
+                className="font-mono text-sm sm:text-base font-bold tracking-widest text-lemon select-all break-all"
                 data-testid="license-key-value"
               >
                 {subOrder.licenseKey || 'VEN-LIC-DEMO-KEY-8942'}
@@ -330,7 +330,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
               </strong>
             </span>
             <div className="flex items-center gap-2">
-              <Download className="h-4 w-4 text-[#FF7A1A]" />
+              <Download className="h-4 w-4 text-sun-orange" />
               <button
                 type="button"
                 onClick={() => {
@@ -345,7 +345,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                   document.body.removeChild(element);
                   setTimeout(() => setDownloadStarted(false), 2000);
                 }}
-                className="font-semibold text-[#FF7A1A] hover:underline"
+                className="font-semibold text-sun-orange hover:underline"
               >
                 {downloadStarted ? 'Downloading Package...' : 'Download Package (.ZIP)'}
               </button>
@@ -392,7 +392,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                           {/* Active Pulse Ring Indicator on Current Stage */}
                           {isCurrent && (
                             <span
-                              className="absolute -inset-2 rounded-full bg-[#FF7A1A]/30 animate-ping opacity-75"
+                              className="absolute -inset-2 rounded-full bg-sun-orange/30 animate-ping opacity-75"
                               data-testid="active-pulse-indicator"
                             />
                           )}
@@ -402,7 +402,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                               isCompleted
                                 ? 'bg-emerald-500 text-white shadow-md'
                                 : isCurrent
-                                ? 'bg-[#FF7A1A] text-white shadow-lg ring-4 ring-[#FF7A1A]/20 animate-pulse'
+                                ? 'bg-sun-orange text-white shadow-lg ring-4 ring-sun-orange/20 animate-pulse'
                                 : 'border-2 border-slate-300 bg-white text-slate-400 group-hover:border-slate-400'
                             }`}
                           >
@@ -419,7 +419,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                           <p
                             className={`text-xs font-bold leading-tight ${
                               isCurrent
-                                ? 'text-[#EA6C13]'
+                                ? 'text-sun-orange-600'
                                 : isCompleted
                                 ? 'text-slate-800'
                                 : 'text-slate-400'
@@ -462,7 +462,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                       <span className="absolute -left-4 flex items-center justify-center">
                         {isCurrent && (
                           <span
-                            className="absolute -inset-1.5 rounded-full bg-[#FF7A1A]/30 animate-ping opacity-75"
+                            className="absolute -inset-1.5 rounded-full bg-sun-orange/30 animate-ping opacity-75"
                             data-testid="active-pulse-indicator"
                           />
                         )}
@@ -471,7 +471,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                             isCompleted
                               ? 'bg-emerald-500 text-white shadow-xs'
                               : isCurrent
-                              ? 'bg-[#FF7A1A] text-white ring-4 ring-[#FF7A1A]/20 shadow-md animate-pulse'
+                              ? 'bg-sun-orange text-white ring-4 ring-sun-orange/20 shadow-md animate-pulse'
                               : 'border-2 border-slate-300 bg-white text-slate-400'
                           }`}
                         >
@@ -494,7 +494,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                           <h4
                             className={`text-sm font-bold ${
                               isCurrent
-                                ? 'text-[#EA6C13]'
+                                ? 'text-sun-orange-600'
                                 : isCompleted
                                 ? 'text-slate-900'
                                 : 'text-slate-500'
@@ -579,7 +579,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4 text-[#FF7A1A]" />
+                  <KeyRound className="h-4 w-4 text-sun-orange" />
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
                     Delivery Verification PIN
                   </span>

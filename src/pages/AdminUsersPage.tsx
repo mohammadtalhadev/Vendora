@@ -205,7 +205,7 @@ export const AdminUsersPage: React.FC = () => {
             type="button"
             onClick={handleExportPage}
             disabled={rows.length === 0}
-            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
           >
             <Download className="h-3.5 w-3.5 text-white stroke-[2.5]" />
             <span className="text-white">Export accounts</span>

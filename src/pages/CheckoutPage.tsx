@@ -244,7 +244,7 @@ export const CheckoutPage: React.FC = () => {
     return (
       <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 antialiased">
         <div className="relative z-10 mx-auto max-w-lg px-4 pt-24 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-[#FF7A1A] dark:bg-orange-950/60">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-sun-orange dark:bg-orange-950/60">
             <Lock className="h-8 w-8" />
           </div>
           <h1 className="font-outfit text-xl font-extrabold text-slate-900 dark:text-white">
@@ -257,7 +257,7 @@ export const CheckoutPage: React.FC = () => {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/login"
-              className="rounded-2xl bg-[#FF7A1A] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#EA6C13]"
+              className="rounded-2xl bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-sun-orange-600"
             >
               Sign In
             </Link>
@@ -277,7 +277,7 @@ export const CheckoutPage: React.FC = () => {
     return (
       <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 antialiased">
         <div className="relative z-10 mx-auto max-w-lg px-4 pt-24 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-[#FF7A1A] dark:bg-orange-950/60">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-sun-orange dark:bg-orange-950/60">
             <Truck className="h-8 w-8" />
           </div>
           <h1 className="font-outfit text-xl font-extrabold text-slate-900 dark:text-white">
@@ -288,7 +288,7 @@ export const CheckoutPage: React.FC = () => {
           </p>
           <Link
             to="/products"
-            className="mt-6 inline-block rounded-2xl bg-[#FF7A1A] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#EA6C13]"
+            className="mt-6 inline-block rounded-2xl bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-sun-orange-600"
           >
             Browse products
           </Link>
@@ -298,20 +298,20 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-16">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-16">
       {/* Radiant ambient glow orbs (Matching Homepage & Storefront) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 pt-6">
         {/* Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">Home</Link>
+          <Link to="/" className="hover:text-sun-orange transition-colors">Home</Link>
           <ChevronRight className="h-3 w-3 text-slate-400" />
-          <Link to="/cart" className="hover:text-[#FF7A1A] transition-colors">Cart</Link>
+          <Link to="/cart" className="hover:text-sun-orange transition-colors">Cart</Link>
           <ChevronRight className="h-3 w-3 text-slate-400" />
           <span className="text-slate-900 dark:text-white font-semibold">Checkout</span>
         </nav>
@@ -404,7 +404,7 @@ export const CheckoutPage: React.FC = () => {
                                     type="button"
                                     onClick={() => updateQuantityInStore(item.id, item.quantity - 1)}
                                     aria-label={`Decrease quantity of ${item.title}`}
-                                    className="px-2 py-1 text-slate-500 hover:text-slate-800 dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] rounded-l-lg"
+                                    className="px-2 py-1 text-slate-500 hover:text-slate-800 dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange rounded-l-lg"
                                   >
                                     <Minus className="h-3 w-3" />
                                   </button>
@@ -415,7 +415,7 @@ export const CheckoutPage: React.FC = () => {
                                     type="button"
                                     onClick={() => updateQuantityInStore(item.id, item.quantity + 1)}
                                     aria-label={`Increase quantity of ${item.title} (up to ${item.maxStock} in stock)`}
-                                    className="px-2 py-1 text-slate-500 hover:text-slate-800 dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] rounded-r-lg"
+                                    className="px-2 py-1 text-slate-500 hover:text-slate-800 dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange rounded-r-lg"
                                   >
                                     <Plus className="h-3 w-3" />
                                   </button>
@@ -460,7 +460,7 @@ export const CheckoutPage: React.FC = () => {
                   {/* Package subtotal footer - priced by checkout_quote */}
                   <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 p-3 text-xs border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                      <Truck className="h-4 w-4 text-[#FF7A1A]" />
+                      <Truck className="h-4 w-4 text-sun-orange" />
                       <span>
                         {quoteGroup
                           ? `Shipping for this package: ${quoteGroup.shippingFee === 0 ? 'FREE' : formatPrice(quoteGroup.shippingFee)}`
@@ -469,7 +469,7 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                     <div className="font-outfit font-bold text-slate-900 dark:text-white mt-1 sm:mt-0">
                       Vendor Subtotal:{' '}
-                      <span className="text-[#FF7A1A] font-extrabold">
+                      <span className="text-sun-orange font-extrabold">
                         {quoteGroup ? formatPrice(quoteGroup.subtotal) : 'Repricing…'}
                       </span>
                     </div>
@@ -490,7 +490,7 @@ export const CheckoutPage: React.FC = () => {
                             key={option}
                             className={`cursor-pointer rounded-2xl border p-4 transition-all relative ${
                               checked
-                                ? 'border-[#FF7A1A] bg-orange-50/40 dark:bg-orange-950/20 shadow-xs ring-1 ring-[#FF7A1A]/30'
+                                ? 'border-sun-orange bg-orange-50/40 dark:bg-orange-950/20 shadow-xs ring-1 ring-sun-orange/30'
                                 : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 bg-white/50 dark:bg-slate-800/40'
                             }`}
                           >
@@ -501,7 +501,7 @@ export const CheckoutPage: React.FC = () => {
                                 value={option}
                                 checked={checked}
                                 onChange={() => chooseDeliveryOption(group.sellerId, option)}
-                                className="mt-1 h-4 w-4 accent-[#FF7A1A] focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                                className="mt-1 h-4 w-4 accent-sun-orange focus-visible:ring-2 focus-visible:ring-sun-orange"
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
@@ -533,7 +533,7 @@ export const CheckoutPage: React.FC = () => {
 
             {/* Buyer Protection Callout - real mechanisms only */}
             <div className="rounded-3xl border border-orange-200/80 bg-orange-50/70 dark:border-orange-900/40 dark:bg-orange-950/20 backdrop-blur-md p-5 flex items-start gap-4 shadow-xs">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FF7A1A] text-white shadow-md shadow-orange-500/20">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sun-orange text-white shadow-md shadow-orange-500/20">
                 <Lock className="h-6 w-6" />
               </div>
               <div>
@@ -552,7 +552,7 @@ export const CheckoutPage: React.FC = () => {
                   </strong>{' '}
                   — is charged by card or promised as cash on delivery when the order is booked. If a
                   delivery arrives wrong,{' '}
-                  <Link to="/disputes" className="font-bold text-[#FF7A1A] hover:underline">
+                  <Link to="/disputes" className="font-bold text-sun-orange hover:underline">
                     open a dispute
                   </Link>{' '}
                   from your order page and the review team decides the refund.
@@ -565,7 +565,7 @@ export const CheckoutPage: React.FC = () => {
               <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#FF7A1A]" />
+                    <MapPin className="h-4 w-4 text-sun-orange" />
                     <h3 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
                       Delivery Address
                     </h3>
@@ -577,7 +577,7 @@ export const CheckoutPage: React.FC = () => {
                     onKeyDown={(e) => { if (e.key === 'Escape') setShowAddressForm(false); }}
                     aria-expanded={showAddressForm}
                     aria-controls="checkout-address-form"
-                    className="text-xs font-bold text-[#FF7A1A] hover:underline flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                    className="text-xs font-bold text-sun-orange hover:underline flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     {showAddressForm ? 'Close form' : 'Add New Address'}
@@ -592,7 +592,7 @@ export const CheckoutPage: React.FC = () => {
                         key={address.id}
                         className={`cursor-pointer rounded-2xl border p-4 transition-all relative ${
                           checked
-                            ? 'border-[#FF7A1A] bg-orange-50/40 dark:bg-orange-950/20 shadow-xs ring-1 ring-[#FF7A1A]/30'
+                            ? 'border-sun-orange bg-orange-50/40 dark:bg-orange-950/20 shadow-xs ring-1 ring-sun-orange/30'
                             : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 bg-white/50 dark:bg-slate-800/40'
                         }`}
                       >
@@ -605,7 +605,7 @@ export const CheckoutPage: React.FC = () => {
                             name="checkout-address"
                             checked={checked}
                             onChange={() => setSelectedAddressId(address.id)}
-                            className="h-4 w-4 accent-[#FF7A1A] focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                            className="h-4 w-4 accent-sun-orange focus-visible:ring-2 focus-visible:ring-sun-orange"
                             aria-label={`Deliver to ${address.label}, ${address.street}, ${address.city}`}
                           />
                         </div>
@@ -642,7 +642,7 @@ export const CheckoutPage: React.FC = () => {
                           type="text"
                           value={addressDraft.label}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, label: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
                       </div>
                       <div>
@@ -654,7 +654,7 @@ export const CheckoutPage: React.FC = () => {
                           type="text"
                           value={addressDraft.fullName}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, fullName: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
                         {addressErrors.fullName && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.fullName}</p>}
                       </div>
@@ -667,7 +667,7 @@ export const CheckoutPage: React.FC = () => {
                           type="text"
                           value={addressDraft.street}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, street: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
                         {addressErrors.street && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.street}</p>}
                       </div>
@@ -680,7 +680,7 @@ export const CheckoutPage: React.FC = () => {
                           type="text"
                           value={addressDraft.city}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, city: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
                         {addressErrors.city && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.city}</p>}
                       </div>
@@ -693,7 +693,7 @@ export const CheckoutPage: React.FC = () => {
                           type="text"
                           value={addressDraft.state}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, state: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
                         {addressErrors.state && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.state}</p>}
                       </div>
@@ -706,7 +706,7 @@ export const CheckoutPage: React.FC = () => {
                           type="text"
                           value={addressDraft.zipCode}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, zipCode: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
                         {addressErrors.zipCode && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.zipCode}</p>}
                       </div>
@@ -718,7 +718,7 @@ export const CheckoutPage: React.FC = () => {
                           id="addr-country"
                           value={addressDraft.country}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, country: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         >
                           <option value="Pakistan">Pakistan</option>
                           <option value="United States">United States</option>
@@ -737,14 +737,14 @@ export const CheckoutPage: React.FC = () => {
                           value={addressDraft.phone}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, phone: e.target.value }))}
                           placeholder="+92 3XX XXXXXXX"
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
                         {addressErrors.phone && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.phone}</p>}
                       </div>
                     </div>
                     <button
                       type="submit"
-                      className="rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                      className="rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
                     >
                       Save address for this order
                     </button>
@@ -756,7 +756,7 @@ export const CheckoutPage: React.FC = () => {
             {/* Select Payment Method */}
             <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="h-4 w-4 text-[#FF7A1A]" />
+                <CreditCard className="h-4 w-4 text-sun-orange" />
                 <h3 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
                   Select Payment Method
                 </h3>
@@ -767,7 +767,7 @@ export const CheckoutPage: React.FC = () => {
                 <label
                   className={`cursor-pointer rounded-2xl border p-4 transition-all ${
                     paymentMethod === 'card'
-                      ? 'border-[#FF7A1A] bg-orange-50/50 dark:bg-orange-950/30 ring-2 ring-[#FF7A1A]/30'
+                      ? 'border-sun-orange bg-orange-50/50 dark:bg-orange-950/30 ring-2 ring-sun-orange/30'
                       : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 bg-white/60 dark:bg-slate-800/40'
                   }`}
                 >
@@ -778,7 +778,7 @@ export const CheckoutPage: React.FC = () => {
                       value="card"
                       checked={paymentMethod === 'card'}
                       onChange={() => setPaymentMethod('card')}
-                      className="h-4 w-4 accent-[#FF7A1A] focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                      className="h-4 w-4 accent-sun-orange focus-visible:ring-2 focus-visible:ring-sun-orange"
                     />
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
                       <CreditCard className="h-4 w-4" />
@@ -793,7 +793,7 @@ export const CheckoutPage: React.FC = () => {
                 <label
                   className={`cursor-pointer rounded-2xl border p-4 transition-all ${
                     paymentMethod === 'cod'
-                      ? 'border-[#FF7A1A] bg-orange-50/50 dark:bg-orange-950/30 ring-2 ring-[#FF7A1A]/30'
+                      ? 'border-sun-orange bg-orange-50/50 dark:bg-orange-950/30 ring-2 ring-sun-orange/30'
                       : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 bg-white/60 dark:bg-slate-800/40'
                   }`}
                 >
@@ -804,7 +804,7 @@ export const CheckoutPage: React.FC = () => {
                       value="cod"
                       checked={paymentMethod === 'cod'}
                       onChange={() => setPaymentMethod('cod')}
-                      className="h-4 w-4 accent-[#FF7A1A] focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                      className="h-4 w-4 accent-sun-orange focus-visible:ring-2 focus-visible:ring-sun-orange"
                     />
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600">
                       <Banknote className="h-4 w-4" />
@@ -835,7 +835,7 @@ export const CheckoutPage: React.FC = () => {
                         if (cardError) setCardError(null);
                       }}
                       placeholder="4242 4242 4242 4242"
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-white focus:border-[#FF7A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-white focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                     />
                     {cardError && (
                       <p role="alert" className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -956,13 +956,13 @@ export const CheckoutPage: React.FC = () => {
                               if (voucherError) setVoucherError(null);
                             }}
                             placeholder="Promo code"
-                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 px-3 py-2 text-xs font-bold uppercase text-slate-800 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 px-3 py-2 text-xs font-bold uppercase text-slate-800 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                           />
                           <button
                             type="button"
                             onClick={handleApplyVoucher}
                             disabled={voucherBusy || voucherInput.trim() === ''}
-                            className="rounded-xl bg-[#FF7A1A] text-white px-3.5 py-2 text-xs font-bold hover:bg-[#EA6C13] disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                            className="rounded-xl bg-sun-orange text-white px-3.5 py-2 text-xs font-bold hover:bg-sun-orange-600 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
                           >
                             {voucherBusy ? 'Checking…' : 'Apply'}
                           </button>
@@ -991,7 +991,7 @@ export const CheckoutPage: React.FC = () => {
                   </>
                 ) : (
                   <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-xs font-semibold text-slate-500">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#FF7A1A]" />
+                    <Loader2 className="h-4 w-4 animate-spin text-sun-orange" />
                     <span>Pricing your cart against live seller rules…</span>
                   </div>
                 )}
@@ -1012,7 +1012,7 @@ export const CheckoutPage: React.FC = () => {
                 type="button"
                 onClick={handlePlaceOrder}
                 disabled={placeOrder.isPending || !quote || totals.isFetching}
-                className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] focus-visible:ring-offset-2"
+                className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange focus-visible:ring-offset-2"
               >
                 {placeOrder.isPending ? (
                   <>
@@ -1029,8 +1029,8 @@ export const CheckoutPage: React.FC = () => {
 
               <p className="mt-3 text-center text-[10px] text-slate-400 leading-normal">
                 By confirming, you agree to the{' '}
-                <Link to="/terms" className="font-semibold hover:text-[#FF7A1A]">Vendora Terms</Link> and{' '}
-                <Link to="/refund-policy" className="font-semibold hover:text-[#FF7A1A]">Refund Policy</Link>.
+                <Link to="/terms" className="font-semibold hover:text-sun-orange">Vendora Terms</Link> and{' '}
+                <Link to="/refund-policy" className="font-semibold hover:text-sun-orange">Refund Policy</Link>.
               </p>
 
               {/* 3 Pillars in a row */}
@@ -1041,14 +1041,14 @@ export const CheckoutPage: React.FC = () => {
                 </div>
                 <Link
                   to="/returns"
-                  className="rounded-xl bg-slate-50 dark:bg-slate-800/40 p-2 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                  className="rounded-xl bg-slate-50 dark:bg-slate-800/40 p-2 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
                 >
                   <RotateCcw className="h-4 w-4 mx-auto mb-1 text-blue-500" />
                   Returns &amp; refunds
                 </Link>
                 <Link
                   to="/disputes"
-                  className="rounded-xl bg-slate-50 dark:bg-slate-800/40 p-2 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                  className="rounded-xl bg-slate-50 dark:bg-slate-800/40 p-2 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
                 >
                   <AlertCircle className="h-4 w-4 mx-auto mb-1 text-purple-500" />
                   Dispute review team
@@ -1059,7 +1059,7 @@ export const CheckoutPage: React.FC = () => {
             {/* Need Assistance - links to the real disputes workspace */}
             <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 shadow-sm flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-[#FF7A1A]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-sun-orange">
                   <Headphones className="h-5 w-5" />
                 </div>
                 <div>
@@ -1071,7 +1071,7 @@ export const CheckoutPage: React.FC = () => {
               </div>
               <Link
                 to="/disputes"
-                className="shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                className="shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
               >
                 Get Support
               </Link>

@@ -225,7 +225,7 @@ export const ProductsPage: React.FC = () => {
             1. Breadcrumbs — only the real category / search from the URL
             ========================================================================= */}
         <nav aria-label="Breadcrumbs" className="flex items-center gap-1.5 text-xs text-slate-500 font-medium pt-1">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">
+          <Link to="/" className="hover:text-sun-orange transition-colors">
             Home
           </Link>
           <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
@@ -269,13 +269,13 @@ export const ProductsPage: React.FC = () => {
           <aside className="hidden lg:block lg:col-span-3 sticky top-28 space-y-5 rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-5 shadow-xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
               <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-sm uppercase tracking-wider">
-                <SlidersHorizontal className="h-4 w-4 text-[#FF7A1A]" />
+                <SlidersHorizontal className="h-4 w-4 text-sun-orange" />
                 <span>Filters</span>
               </div>
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-[11px] font-bold text-slate-400 hover:text-[#FF7A1A] transition-colors cursor-pointer uppercase tracking-wider"
+                className="text-[11px] font-bold text-slate-400 hover:text-sun-orange transition-colors cursor-pointer uppercase tracking-wider"
               >
                 Reset All
               </button>
@@ -341,7 +341,7 @@ export const ProductsPage: React.FC = () => {
                   commitPriceInputs(minInput, e.target.value);
                 }}
                 aria-label="Maximum price slider"
-                className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#FF7A1A]"
+                className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sun-orange"
               />
               <div className="flex justify-between text-[10px] font-bold text-slate-400">
                 <span>{formatPrice(0)}</span>
@@ -402,7 +402,7 @@ export const ProductsPage: React.FC = () => {
                     id="sort-select"
                     value={sort}
                     onChange={(e) => updateParams({ sort: e.target.value }, { resetPage: true })}
-                    className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-[#FF7A1A] focus:outline-none cursor-pointer"
+                    className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-sun-orange focus:outline-none cursor-pointer"
                   >
                     <option value="featured">Featured &amp; Recommended</option>
                     <option value="price_asc">Price: Low to High</option>
@@ -420,7 +420,7 @@ export const ProductsPage: React.FC = () => {
                     aria-pressed={viewMode === 'grid'}
                     className={`p-1.5 rounded-md transition-all cursor-pointer ${
                       viewMode === 'grid'
-                        ? 'bg-white dark:bg-slate-700 text-[#FF7A1A] shadow-xs'
+                        ? 'bg-white dark:bg-slate-700 text-sun-orange shadow-xs'
                         : 'text-slate-400 hover:text-slate-700'
                     }`}
                     title="Grid view"
@@ -434,7 +434,7 @@ export const ProductsPage: React.FC = () => {
                     aria-pressed={viewMode === 'list'}
                     className={`p-1.5 rounded-md transition-all cursor-pointer ${
                       viewMode === 'list'
-                        ? 'bg-white dark:bg-slate-700 text-[#FF7A1A] shadow-xs'
+                        ? 'bg-white dark:bg-slate-700 text-sun-orange shadow-xs'
                         : 'text-slate-400 hover:text-slate-700'
                     }`}
                     title="List view"
@@ -460,7 +460,7 @@ export const ProductsPage: React.FC = () => {
               skeletonCount={8}
               emptyView={
                 <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-12 text-center space-y-3">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-50 text-[#FF7A1A]" aria-hidden="true">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-50 text-sun-orange" aria-hidden="true">
                     <SlidersHorizontal className="h-6 w-6" />
                   </div>
                   <h3 className="font-outfit text-lg font-bold text-slate-900 dark:text-white">
@@ -476,7 +476,7 @@ export const ProductsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="rounded-full bg-[#FF7A1A] text-white px-5 py-2 text-xs font-bold shadow-md hover:bg-[#EA580C] transition-all cursor-pointer"
+                    className="rounded-full bg-sun-orange text-white px-5 py-2 text-xs font-bold shadow-md hover:bg-[#EA580C] transition-all cursor-pointer"
                   >
                     Reset All Filters
                   </button>
@@ -513,7 +513,7 @@ export const ProductsPage: React.FC = () => {
                           {product.category}
                         </div>
                         <Link to={`/products/${product.id}`}>
-                          <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white hover:text-[#FF7A1A] transition-colors truncate">
+                          <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white hover:text-sun-orange transition-colors truncate">
                             {product.title}
                           </h3>
                         </Link>
@@ -557,7 +557,7 @@ export const ProductsPage: React.FC = () => {
                           type="button"
                           onClick={() => handleAddToCart(product)}
                           disabled={product.stock === 0}
-                          className="rounded-full bg-[#FF7A1A] hover:bg-[#EA580C] px-5 py-2 text-xs font-bold text-white shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="rounded-full bg-sun-orange hover:bg-[#EA580C] px-5 py-2 text-xs font-bold text-white shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Add to Cart
                         </button>
@@ -603,7 +603,7 @@ export const ProductsPage: React.FC = () => {
                         aria-label={`Page ${entry}`}
                         className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                           entry === page
-                            ? 'bg-[#FF7A1A] text-white shadow-md shadow-orange-500/25 ring-2 ring-orange-500/20'
+                            ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25 ring-2 ring-orange-500/20'
                             : 'border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -662,7 +662,7 @@ export const ProductsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="w-full py-2 text-xs font-bold text-center text-[#FF7A1A] border border-[#FF7A1A] rounded-xl"
+                  className="w-full py-2 text-xs font-bold text-center text-sun-orange border border-sun-orange rounded-xl"
                 >
                   Reset All Filters
                 </button>
@@ -682,7 +682,7 @@ export const ProductsPage: React.FC = () => {
                         value={minInput}
                         onChange={(e) => setMinInput(e.target.value)}
                         onBlur={() => commitPriceInputs()}
-                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-1.5 font-bold focus:outline-none focus:border-[#FF7A1A]"
+                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-1.5 font-bold focus:outline-none focus:border-sun-orange"
                         placeholder="No min"
                       />
                     </div>
@@ -698,7 +698,7 @@ export const ProductsPage: React.FC = () => {
                         value={maxInput}
                         onChange={(e) => setMaxInput(e.target.value)}
                         onBlur={() => commitPriceInputs()}
-                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-1.5 font-bold focus:outline-none focus:border-[#FF7A1A]"
+                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-1.5 font-bold focus:outline-none focus:border-sun-orange"
                         placeholder="No max"
                       />
                     </div>
@@ -713,7 +713,7 @@ export const ProductsPage: React.FC = () => {
                   commitPriceInputs();
                   setIsMobileFilterOpen(false);
                 }}
-                className="mt-auto w-full py-3 rounded-full bg-[#FF7A1A] text-white font-bold text-xs shadow-md"
+                className="mt-auto w-full py-3 rounded-full bg-sun-orange text-white font-bold text-xs shadow-md"
               >
                 Apply Filters
               </button>

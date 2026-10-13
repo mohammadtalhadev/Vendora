@@ -180,14 +180,14 @@ export const AdminNav: React.FC<AdminNavProps> = ({ className, onNavigate }) => 
           title="Vendora Admin Console"
         >
           <div className="flex flex-col">
-            <span className="font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-[#FF7A1A] transition-colors">
-              Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-all duration-300 group-hover:scale-125" />
+            <span className="font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-sun-orange transition-colors">
+              Vendora<span className="inline-block h-2 w-2 rounded-full bg-sun-orange group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-all duration-300 group-hover:scale-125" />
             </span>
             <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-wider mt-1 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
               Admin Console
             </span>
           </div>
-          <span className="inline-flex items-center rounded-md bg-orange-500/10 dark:bg-orange-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#EA6C13] dark:text-[#FF7A1A] border border-orange-500/20 group-hover:border-orange-500/40 transition-colors">
+          <span className="inline-flex items-center rounded-md bg-orange-500/10 dark:bg-orange-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-sun-orange-600 dark:text-sun-orange border border-orange-500/20 group-hover:border-orange-500/40 transition-colors">
             Admin
           </span>
         </Link>
@@ -210,13 +210,13 @@ export const AdminNav: React.FC<AdminNavProps> = ({ className, onNavigate }) => 
                 cn(
                   'group flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium transition-all select-none',
                   isActive
-                    ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 dark:from-orange-500/20 dark:to-amber-500/10 text-[#EA6C13] dark:text-[#FF7A1A] font-bold border border-orange-500/20 shadow-2xs backdrop-blur-xs'
+                    ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 dark:from-orange-500/20 dark:to-amber-500/10 text-sun-orange-600 dark:text-sun-orange font-bold border border-orange-500/20 shadow-2xs backdrop-blur-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
                 )
               }
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <Icon className="h-4 w-4 shrink-0 transition-colors text-slate-500 dark:text-slate-400 group-hover:text-[#FF7A1A]" />
+                <Icon className="h-4 w-4 shrink-0 transition-colors text-slate-500 dark:text-slate-400 group-hover:text-sun-orange" />
                 <span className="truncate">{item.label}</span>
                 {item.accessibleSubtitle && (
                   <span className="sr-only"> {item.accessibleSubtitle}</span>

@@ -250,7 +250,7 @@ export const VendorOrdersPage: React.FC = () => {
             </button>
             <button
               onClick={handleBulkFulfill}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Package className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
               Bulk Fulfill ({orders.filter((o) => o.status === 'placed').length})
@@ -576,7 +576,7 @@ export const VendorOrdersPage: React.FC = () => {
                       <td className="px-4 py-3.5">
                         <Link
                           to={`/vendor/orders/${order.id}`}
-                          className="flex items-center gap-1.5 font-bold text-slate-900 hover:text-[#EA6C13] transition-colors"
+                          className="flex items-center gap-1.5 font-bold text-slate-900 hover:text-sun-orange-600 transition-colors"
                         >
                           <span>{order.id}</span>
                           <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
@@ -650,7 +650,7 @@ export const VendorOrdersPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleAdvanceStatus(order.id, 'placed')}
-                            className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer transition-all active:scale-95"
+                            className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer transition-all active:scale-95"
                           >
                             Confirm Order
                           </button>
@@ -690,7 +690,7 @@ export const VendorOrdersPage: React.FC = () => {
                           order.status === 'refunded') && (
                           <Link
                             to="/vendor/returns"
-                            className="text-[11px] font-bold text-[#FF7A1A] hover:underline"
+                            className="text-[11px] font-bold text-sun-orange hover:underline"
                           >
                             Handle in Returns
                           </Link>

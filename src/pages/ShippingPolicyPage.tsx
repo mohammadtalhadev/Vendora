@@ -159,12 +159,12 @@ export const ShippingPolicyPage: React.FC = () => {
                 to="/track"
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-glass-pill hover:bg-white transition-all active:scale-95"
               >
-                <Package className="h-4 w-4 text-[#FF7A1A]" />
+                <Package className="h-4 w-4 text-sun-orange" />
                 Track an Order
               </Link>
               <Link
                 to="/faq"
-                className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95"
+                className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95"
               >
                 <Compass className="h-4 w-4" />
                 Help Center
@@ -176,7 +176,7 @@ export const ShippingPolicyPage: React.FC = () => {
           <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-10 shadow-glass backdrop-blur-xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-[#FF7A1A] uppercase tracking-wider mb-1">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-sun-orange uppercase tracking-wider mb-1">
                   <Calculator className="h-3.5 w-3.5" />
                   Real-Time Shipping Fee &amp; Timeline Estimator
                 </div>
@@ -199,7 +199,7 @@ export const ShippingPolicyPage: React.FC = () => {
                     <select
                       value={destCountry}
                       onChange={(e) => setDestCountry(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-[#FF7A1A]"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="US">United States (All 50 States)</option>
                       <option value="CA">Canada</option>
@@ -223,11 +223,11 @@ export const ShippingPolicyPage: React.FC = () => {
                       step="10"
                       value={orderSubtotal}
                       onChange={(e) => setOrderSubtotal(Number(e.target.value))}
-                      className="w-full accent-[#FF7A1A] mt-2 cursor-pointer"
+                      className="w-full accent-sun-orange mt-2 cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                       <span>$20</span>
-                      <span className="font-bold text-[#FF7A1A]">$100 (Free Ground Threshold)</span>
+                      <span className="font-bold text-sun-orange">$100 (Free Ground Threshold)</span>
                       <span>$300+</span>
                     </div>
                   </div>
@@ -240,7 +240,7 @@ export const ShippingPolicyPage: React.FC = () => {
                     <select
                       value={packageWeight}
                       onChange={(e) => setPackageWeight(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-[#FF7A1A]"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="light">Lightweight (&lt; 1 lb) - Accessories &amp; Small Tech</option>
                       <option value="standard">Standard (1 - 5 lbs) - Clothing, Shoes, Audio</option>
@@ -255,7 +255,7 @@ export const ShippingPolicyPage: React.FC = () => {
                     <select
                       value={shippingTier}
                       onChange={(e) => setShippingTier(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-[#FF7A1A]"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="ground">Standard Ground (3 - 5 days)</option>
                       <option value="air">Expedited 2-Day Air (48 hours)</option>
@@ -269,7 +269,7 @@ export const ShippingPolicyPage: React.FC = () => {
               {/* Estimate Result Card (5 cols) */}
               <div className="lg:col-span-5 rounded-2xl border border-orange-200/80 bg-gradient-to-br from-orange-50/90 to-amber-50/70 p-6 space-y-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-sun-orange">
                     Estimated Shipping Cost
                   </span>
                   {calcResult.isFree && (
@@ -304,7 +304,7 @@ export const ShippingPolicyPage: React.FC = () => {
 
                 <Link
                   to="/products"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-[#EA6C13] py-2.5 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 py-2.5 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95"
                 >
                   <span>Explore Catalog Products</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -339,7 +339,7 @@ export const ShippingPolicyPage: React.FC = () => {
 
                     <h4 className="font-bold text-slate-900 text-base">{tier.name}</h4>
                     <div className="text-2xl font-black text-slate-900 font-display">{tier.price}</div>
-                    <div className="text-[11px] font-semibold text-[#FF7A1A]">{tier.priceSub}</div>
+                    <div className="text-[11px] font-semibold text-sun-orange">{tier.priceSub}</div>
 
                     <div className="pt-2 border-t border-slate-100 text-xs text-slate-600 leading-relaxed">
                       {tier.desc}
@@ -362,7 +362,7 @@ export const ShippingPolicyPage: React.FC = () => {
           {/* ── Multi-Vendor Split Shipping Explanation ──────────────── */}
           <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-8 shadow-glass backdrop-blur-xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-[#FF7A1A]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-sun-orange">
                 <Package className="h-5 w-5" />
               </div>
               <div>
@@ -461,7 +461,7 @@ export const ShippingPolicyPage: React.FC = () => {
                       </span>
                       <ChevronDown
                         className={`h-4 w-4 text-slate-500 transition-transform ${
-                          isExpanded ? 'rotate-180 text-[#FF7A1A]' : ''
+                          isExpanded ? 'rotate-180 text-sun-orange' : ''
                         }`}
                       />
                     </button>

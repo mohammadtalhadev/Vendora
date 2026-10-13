@@ -106,7 +106,7 @@ export const AppPromoSection: React.FC = () => {
               </div>
 
               <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-white">
-                <QrCode className="h-4 w-4 text-[#FF7A1A]" />
+                <QrCode className="h-4 w-4 text-sun-orange" />
                 <span>Scan with Camera</span>
               </div>
               <p className="mt-0.5 text-[10px] text-slate-300">

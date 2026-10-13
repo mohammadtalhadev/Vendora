@@ -36,10 +36,10 @@ export const RecommendedShelf: React.FC<RecommendedShelfProps> = ({
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF7A1A]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500/10 text-sun-orange">
               <Sparkles className="h-4 w-4" />
             </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#FF7A1A]">
+            <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
               Personalized Discovery
             </span>
           </div>

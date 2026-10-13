@@ -69,13 +69,13 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
       <div className="w-[260px] xl:w-[280px] shrink-0 border-r border-slate-100 py-2.5 bg-white select-none">
         {isLoadingCategories ? (
           <div className="flex items-center gap-2 px-4 py-6 text-xs font-medium text-slate-400">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#FF7A1A] border-t-transparent" />
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-sun-orange border-t-transparent" />
             Loading categories...
           </div>
         ) : categoriesError ? (
           <div className="px-4 py-6 text-xs text-slate-500">
             Could not load categories.{' '}
-            <Link to="/products" onClick={onClose} className="font-bold text-[#FF7A1A] hover:underline">
+            <Link to="/products" onClick={onClose} className="font-bold text-sun-orange hover:underline">
               Browse all products
             </Link>
           </div>
@@ -94,10 +94,10 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                   onMouseEnter={() => setActiveSlug(cat.slug)}
                   aria-expanded={isActive}
                   aria-controls="mega-menu-pane"
-                  className={`group flex w-[calc(100%-12px)] items-center justify-between mx-1.5 rounded-xl px-4 py-2.5 text-[13px] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
+                  className={`group flex w-[calc(100%-12px)] items-center justify-between mx-1.5 rounded-xl px-4 py-2.5 text-[13px] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
                     isActive
-                      ? 'bg-orange-50 text-[#FF7A1A] font-bold'
-                      : 'text-slate-800 hover:bg-slate-50 hover:text-[#FF7A1A] font-semibold'
+                      ? 'bg-orange-50 text-sun-orange font-bold'
+                      : 'text-slate-800 hover:bg-slate-50 hover:text-sun-orange font-semibold'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -110,8 +110,8 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                       aria-hidden="true"
                       className={`shrink-0 transition-colors ${
                         isActive
-                          ? 'fill-[#FF7A1A]'
-                          : 'fill-slate-400 group-hover:fill-[#FF7A1A]'
+                          ? 'fill-sun-orange'
+                          : 'fill-slate-400 group-hover:fill-sun-orange'
                       }`}
                     >
                       {CATEGORY_ICONS[cat.slug] ?? GENERIC_ICON}
@@ -121,8 +121,8 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                   <ChevronRight
                     className={`h-4 w-4 shrink-0 transition-transform ${
                       isActive
-                        ? 'text-[#FF7A1A] translate-x-0.5'
-                        : 'text-slate-400 group-hover:text-[#FF7A1A]'
+                        ? 'text-sun-orange translate-x-0.5'
+                        : 'text-slate-400 group-hover:text-sun-orange'
                     }`}
                   />
                 </button>
@@ -152,7 +152,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
             <Link
               to={`/products?category=${encodeURIComponent(paneCategory.slug)}`}
               onClick={onClose}
-              className="group shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#FF7A1A] hover:text-white bg-orange-50/80 hover:bg-[#FF7A1A] border border-orange-200/70 hover:border-[#FF7A1A] shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+              className="group shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-sun-orange hover:text-white bg-orange-50/80 hover:bg-sun-orange border border-orange-200/70 hover:border-sun-orange shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
             >
               <span>View All</span>
               <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1" />
@@ -161,7 +161,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
 
           {isLoadingPane ? (
             <div className="flex items-center gap-2 py-8 text-xs font-medium text-slate-400">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#FF7A1A] border-t-transparent" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-sun-orange border-t-transparent" />
               Loading {paneCategory.name}...
             </div>
           ) : (paneProducts?.items.length ?? 0) === 0 ? (
@@ -170,7 +170,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
               <Link
                 to={`/products?category=${encodeURIComponent(paneCategory.slug)}`}
                 onClick={onClose}
-                className="font-bold text-[#FF7A1A] hover:underline"
+                className="font-bold text-sun-orange hover:underline"
               >
                 Check this category later
               </Link>
@@ -182,7 +182,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                   <Link
                     to={`/products/${p.slug || p.id}`}
                     onClick={onClose}
-                    className="group flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-orange-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                    className="group flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-orange-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                   >
                     <div className="w-12 h-12 shrink-0 rounded-lg bg-white border border-slate-100 p-1 flex items-center justify-center overflow-hidden group-hover:border-slate-300 transition-colors">
                       <img
@@ -197,7 +197,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#FF7A1A] transition-colors">
+                      <h4 className="text-xs font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-sun-orange transition-colors">
                         {p.title}
                       </h4>
                       <div className="mt-0.5 flex items-baseline gap-1.5">
@@ -222,7 +222,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
             <Link
               to={`/products?category=${encodeURIComponent(paneCategory.slug)}`}
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#FF7A1A] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#EA580C] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#EA580C] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
             >
               <span>Explore All {paneCategory.name}</span>
               <ArrowRight className="h-3 w-3" />

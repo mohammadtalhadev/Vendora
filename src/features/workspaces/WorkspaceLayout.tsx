@@ -67,9 +67,9 @@ export interface WorkspaceLayoutProps {
 const ROLE_BADGE_STYLES: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   vendor: {
     bg: 'bg-orange-50/90 dark:bg-orange-950/40',
-    text: 'text-[#EA6C13] dark:text-[#ff944d]',
+    text: 'text-sun-orange-600 dark:text-[#ff944d]',
     border: 'border-orange-200/80 dark:border-orange-800/60',
-    dot: 'bg-[#FF7A1A]',
+    dot: 'bg-sun-orange',
   },
   admin: {
     bg: 'bg-indigo-50/90 dark:bg-indigo-950/40',
@@ -501,7 +501,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useDisclosure(isNotificationsOpen, setIsNotificationsOpen, notificationsRef, bellTriggerRef);
@@ -665,12 +664,12 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               {!sidebar && (
                 <div className="flex items-center mr-1">
                   <Link to="/" className="flex items-center gap-2 focus:outline-none group">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF7A1A] to-[#FF9A42] text-white shadow-xs font-black text-sm tracking-tighter">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-sun-orange to-[#FF9A42] text-white shadow-xs font-black text-sm tracking-tighter">
                       V
                     </div>
-                    <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white group-hover:text-[#FF7A1A] transition-colors">
+                    <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white group-hover:text-sun-orange transition-colors">
                       Vendora
-                      <span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] ml-0.5" />
+                      <span className="inline-block h-2 w-2 rounded-full bg-sun-orange ml-0.5" />
                     </span>
                   </Link>
                 </div>
@@ -706,7 +705,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     }}
                     onKeyDown={handleSearchKeyDown}
                     placeholder="Search panel..."
-                    className="w-full h-8 pl-8 pr-12 text-xs rounded-xl border border-white/60 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]/50 transition-all text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                    className="w-full h-8 pl-8 pr-12 text-xs rounded-xl border border-white/60 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-sun-orange/50 transition-all text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
                   />
                   <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 border border-white/60 dark:border-white/10 rounded px-1.5 py-0.5 bg-white/60 dark:bg-slate-800/60">
                     ⌘K
@@ -749,7 +748,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                               )}
                             >
                               <div>
-                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#FF7A1A] transition-colors">
+                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-sun-orange transition-colors">
                                   {item.title}
                                 </div>
                                 <div className="text-[11px] text-slate-400 truncate max-w-[220px]">
@@ -772,11 +771,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             {effectiveRole !== 'support' && effectiveRole !== 'rider' && (
               <Link
                 to="/"
-                className="glass-pill inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-[#FF7A1A] shadow-2xs group"
+                className="glass-pill inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-sun-orange shadow-2xs group"
                 title="Return to customer storefront"
               >
-                <ArrowLeft className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#FF7A1A] transition-colors" />
-                <Store className="h-3.5 w-3.5 text-[#FF7A1A]" />
+                <ArrowLeft className="h-3.5 w-3.5 text-slate-400 group-hover:text-sun-orange transition-colors" />
+                <Store className="h-3.5 w-3.5 text-sun-orange" />
                 <span>Storefront</span>
               </Link>
             )}
@@ -900,7 +899,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   ref={createTriggerRef}
                   type="button"
                   onClick={() => toggleDisclosure(isCreateMenuOpen, setIsCreateMenuOpen)}
-                  className="inline-flex items-center gap-1.5 h-8 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                  className="inline-flex items-center gap-1.5 h-8 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
                   title="Create a first-party listing or a storefront banner"
                   aria-expanded={isCreateMenuOpen}
                   aria-controls={isCreateMenuOpen ? CREATE_MENU_ID : undefined}
@@ -927,9 +926,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     <Link
                       to="/admin/add-product"
                       onClick={() => setIsCreateMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-[#FF7A1A]/10 hover:text-[#EA6C13] dark:hover:text-[#FF7A1A] transition-colors"
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-sun-orange/10 hover:text-sun-orange-600 dark:hover:text-sun-orange transition-colors"
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A]">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-sun-orange">
                         <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </div>
                       <div>
@@ -959,7 +958,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   ref={createTriggerRef}
                   type="button"
                   onClick={() => toggleDisclosure(isCreateMenuOpen, setIsCreateMenuOpen)}
-                  className="inline-flex items-center gap-1.5 h-8 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                  className="inline-flex items-center gap-1.5 h-8 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
                   title="Create a listing, a discount code, or upload store media"
                   aria-expanded={isCreateMenuOpen}
                   aria-controls={isCreateMenuOpen ? CREATE_MENU_ID : undefined}
@@ -983,9 +982,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     <Link
                       to="/vendor/add-product"
                       onClick={() => setIsCreateMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-[#FF7A1A]/10 hover:text-[#EA6C13] dark:hover:text-[#FF7A1A] transition-colors"
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-sun-orange/10 hover:text-sun-orange-600 dark:hover:text-sun-orange transition-colors"
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A]">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-sun-orange">
                         <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                       </div>
                       <div>
@@ -1068,7 +1067,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 <Bell className="h-4 w-4" />
                 {!notificationsError && unreadCount !== null && unreadCount > 0 && (
                   <span
-                    className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF7A1A] px-1 text-[9px] font-bold text-white shadow-2xs"
+                    className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-sun-orange px-1 text-[9px] font-bold text-white shadow-2xs"
                     aria-hidden="true"
                   >
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -1088,7 +1087,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
-                      <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 px-1.5 py-0.2 text-[10px] font-bold text-[#EA6C13]">
+                      <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 px-1.5 py-0.2 text-[10px] font-bold text-sun-orange-600">
                         {notificationReadout}
                       </span>
                     </div>
@@ -1103,14 +1102,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                           unreadCount === null ||
                           unreadCount === 0
                         }
-                        className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-[#EA6C13] disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-sun-orange-600 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {markingAllRead ? 'Marking…' : 'Mark all read'}
                       </button>
                       <Link
                         to={effectiveRole === 'admin' ? '/admin/notifications' : '/notifications'}
                         onClick={() => setIsNotificationsOpen(false)}
-                        className="text-[11px] font-semibold text-[#EA6C13] hover:underline"
+                        className="text-[11px] font-semibold text-sun-orange-600 hover:underline"
                       >
                         View All
                       </Link>
@@ -1205,7 +1204,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                                 setIsNotificationsOpen(false);
                                 readNotification(n);
                               }}
-                              className="text-[11px] font-bold text-[#EA6C13] hover:underline"
+                              className="text-[11px] font-bold text-sun-orange-600 hover:underline"
                             >
                               Open →
                             </Link>
@@ -1215,7 +1214,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                               onClick={() => readNotification(n)}
                               disabled={n.readAt !== null}
                               aria-label={`Mark “${n.title}” read`}
-                              className="text-[11px] font-bold text-slate-500 hover:text-[#EA6C13] disabled:opacity-40"
+                              className="text-[11px] font-bold text-slate-500 hover:text-sun-orange-600 disabled:opacity-40"
                             >
                               {n.readAt !== null ? 'Read' : 'Mark read'}
                             </button>
@@ -1508,7 +1507,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-xl bg-slate-900 dark:bg-[#FF7A1A] text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-[#ea6c13] shadow-xs cursor-pointer"
+                className="px-4 py-1.5 rounded-xl bg-slate-900 dark:bg-sun-orange text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-sun-orange-600 shadow-xs cursor-pointer"
               >
                 Save Changes
               </button>
@@ -1524,7 +1523,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         <DialogContent className="max-w-md sm:max-w-lg p-6 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-2xl text-slate-900 dark:text-slate-100">
           <DialogHeader className="mb-4">
             <div className="flex items-center gap-2 mb-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF7A1A]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-sun-orange">
                 <HelpCircle className="h-4 w-4" />
               </div>
               <DialogTitle className="text-lg font-bold">Workspace shortcuts</DialogTitle>
@@ -1564,7 +1563,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       <Link
                         to={screen.path}
                         onClick={() => setIsHelpModalOpen(false)}
-                        className="block truncate rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-[#EA6C13] transition-colors"
+                        className="block truncate rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-sun-orange-600 transition-colors"
                         title={screen.desc}
                       >
                         {screen.title}

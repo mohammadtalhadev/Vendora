@@ -322,7 +322,7 @@ export const ProductDetailPage: React.FC = () => {
                 onClick={() => setIsBookmarked((prev) => !prev)}
                 className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
                   isBookmarked
-                    ? 'border-orange-200 bg-orange-50 text-[#FF7A1A]'
+                    ? 'border-orange-200 bg-orange-50 text-sun-orange'
                     : 'border-slate-200/80 bg-white text-slate-700 hover:border-slate-300'
                 }`}
                 title="Bookmark item"
@@ -330,7 +330,7 @@ export const ProductDetailPage: React.FC = () => {
               >
                 <Bookmark
                   className={`h-3.5 w-3.5 ${
-                    isBookmarked ? 'fill-[#FF7A1A] text-[#FF7A1A]' : 'text-slate-400'
+                    isBookmarked ? 'fill-sun-orange text-sun-orange' : 'text-slate-400'
                   }`}
                 />
                 <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
@@ -395,7 +395,7 @@ export const ProductDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsZoomOpen(true)}
-                    className="absolute bottom-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-md hover:text-[#FF7A1A] hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 border border-slate-200/80"
+                    className="absolute bottom-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-md hover:text-sun-orange hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 border border-slate-200/80"
                     title="Zoom in view"
                     aria-label="Zoom image"
                   >
@@ -412,7 +412,7 @@ export const ProductDetailPage: React.FC = () => {
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-all cursor-pointer p-1.5 bg-white ${
                         selectedImageIndex === idx
-                          ? 'border-[#FF7A1A] ring-2 ring-orange-500/20'
+                          ? 'border-sun-orange ring-2 ring-orange-500/20'
                           : 'border-slate-200 hover:border-slate-300'
                       }`}
                     >
@@ -435,8 +435,8 @@ export const ProductDetailPage: React.FC = () => {
                       alt=""
                       className="absolute inset-0 h-full w-full object-cover opacity-60 group-hover:scale-105 transition-transform"
                     />
-                    <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-xs text-[#FF7A1A]">
-                      <Play className="h-3 w-3 fill-[#FF7A1A] ml-0.5" />
+                    <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-xs text-sun-orange">
+                      <Play className="h-3 w-3 fill-sun-orange ml-0.5" />
                     </div>
                   </button>
                 </div>
@@ -444,19 +444,19 @@ export const ProductDetailPage: React.FC = () => {
                 {/* Seller Store Card */}
                 <div className="glass-panel rounded-3xl border border-white/80 dark:border-white/10 p-5 shadow-xl space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-[#FF7A1A]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sun-orange">
                       <Store className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Link
                           to={`/vendors/${product.sellerId}`}
-                          className="font-bold text-sm text-slate-900 hover:text-[#FF7A1A] transition-colors truncate"
+                          className="font-bold text-sm text-slate-900 hover:text-sun-orange transition-colors truncate"
                         >
                           {currentSellerName}
                         </Link>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-[#00B8C8] border border-cyan-200/60">
-                          <ShieldCheck className="h-3 w-3 text-[#00B8C8]" />
+                        <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-aqua border border-cyan-200/60">
+                          <ShieldCheck className="h-3 w-3 text-aqua" />
                           Verified
                         </span>
                       </div>
@@ -497,9 +497,9 @@ export const ProductDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsChatOpen(true)}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-[#FF7A1A] hover:text-[#FF7A1A] transition-all cursor-pointer active:scale-95"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-sun-orange hover:text-sun-orange transition-all cursor-pointer active:scale-95"
                     >
-                      <MessageSquare className="h-3.5 w-3.5 text-[#FF7A1A]" />
+                      <MessageSquare className="h-3.5 w-3.5 text-sun-orange" />
                       <span>Live chat</span>
                     </button>
                   </div>
@@ -514,7 +514,7 @@ export const ProductDetailPage: React.FC = () => {
                 <div>
                   <Link
                     to="/products"
-                    className="text-xs font-bold text-[#FF7A1A] hover:underline uppercase tracking-wide"
+                    className="text-xs font-bold text-sun-orange hover:underline uppercase tracking-wide"
                   >
                     {displayBrand}
                   </Link>
@@ -547,7 +547,7 @@ export const ProductDetailPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={scrollToReviews}
-                        className="font-bold text-slate-800 underline hover:text-[#FF7A1A] transition-colors cursor-pointer"
+                        className="font-bold text-slate-800 underline hover:text-sun-orange transition-colors cursor-pointer"
                       >
                         {displayReviews.toLocaleString()} reviews
                       </button>
@@ -559,8 +559,8 @@ export const ProductDetailPage: React.FC = () => {
 
                 {/* ── Marketing Summary / Highlight Section ── */}
                 <div className="rounded-2xl border border-orange-200/70 bg-gradient-to-r from-orange-50/70 via-amber-50/30 to-white p-4 shadow-2xs space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#FF7A1A]">
-                    <Sparkles className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0" />
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-sun-orange">
+                    <Sparkles className="h-3.5 w-3.5 text-sun-orange shrink-0" />
                     <span>{marketingHeadline}</span>
                   </div>
                   <p className="text-xs sm:text-[13px] leading-relaxed text-slate-700 font-medium">
@@ -617,7 +617,7 @@ export const ProductDetailPage: React.FC = () => {
                         aria-pressed={isSelected}
                         className={`w-full cursor-pointer rounded-2xl p-3.5 text-left transition-all ${
                           isSelected
-                            ? 'border-2 border-[#FF7A1A] bg-orange-50/20 shadow-2xs'
+                            ? 'border-2 border-sun-orange bg-orange-50/20 shadow-2xs'
                             : 'border border-slate-200 bg-white hover:border-slate-300'
                         }`}
                       >
@@ -625,7 +625,7 @@ export const ProductDetailPage: React.FC = () => {
                           <span className="block">
                             <span
                               className={`block text-xs font-bold ${
-                                isSelected ? 'text-[#FF7A1A]' : 'text-slate-900'
+                                isSelected ? 'text-sun-orange' : 'text-slate-900'
                               }`}
                             >
                               {choice.title}
@@ -654,7 +654,7 @@ export const ProductDetailPage: React.FC = () => {
                       type="checkbox"
                       checked={hasProtectionPlan}
                       onChange={(e) => setHasProtectionPlan(e.target.checked)}
-                      className="h-4 w-4 rounded-md border-slate-300 text-[#FF7A1A] accent-[#FF7A1A] focus:ring-[#FF7A1A] cursor-pointer"
+                      className="h-4 w-4 rounded-md border-slate-300 text-sun-orange accent-sun-orange focus:ring-sun-orange cursor-pointer"
                     />
                     <span className="font-semibold text-slate-800">
                       2-year protection plan {formatPrice(PROTECTION_PLAN_PRICE)}
@@ -677,7 +677,7 @@ export const ProductDetailPage: React.FC = () => {
                       aria-pressed={shippingOption === 'delivery'}
                       className={`w-full cursor-pointer rounded-xl p-3 transition-all relative text-left ${
                         shippingOption === 'delivery'
-                          ? 'border-2 border-[#FF7A1A] bg-orange-50/20'
+                          ? 'border-2 border-sun-orange bg-orange-50/20'
                           : 'border border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
@@ -692,7 +692,7 @@ export const ProductDetailPage: React.FC = () => {
                               : 'Shipping calculated at checkout'}
                           </span>
                         </span>
-                        <Truck className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                        <Truck className="h-4 w-4 text-sun-orange shrink-0" />
                       </span>
                     </button>
 
@@ -703,7 +703,7 @@ export const ProductDetailPage: React.FC = () => {
                       aria-pressed={shippingOption === 'pickup'}
                       className={`w-full cursor-pointer rounded-xl p-3 transition-all relative text-left ${
                         shippingOption === 'pickup'
-                          ? 'border-2 border-[#FF7A1A] bg-orange-50/20'
+                          ? 'border-2 border-sun-orange bg-orange-50/20'
                           : 'border border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
@@ -752,7 +752,7 @@ export const ProductDetailPage: React.FC = () => {
                       className={`flex w-full items-center justify-center gap-2 rounded-full py-3 text-xs font-bold text-white shadow-sm transition-all cursor-pointer active:scale-[0.99] ${
                         addedAnimation
                           ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-[#FF7A1A] hover:bg-[#EA580C] shadow-orange-glow/40'
+                          : 'bg-sun-orange hover:bg-[#EA580C] shadow-orange-glow/40'
                       }`}
                     >
                       {addedAnimation ? (
@@ -784,7 +784,7 @@ export const ProductDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsOfferOpen(true)}
-                      className="font-bold text-[#FF7A1A] hover:text-[#EA580C] hover:underline cursor-pointer"
+                      className="font-bold text-sun-orange hover:text-[#EA580C] hover:underline cursor-pointer"
                     >
                       Send offer
                     </button>
@@ -873,7 +873,7 @@ export const ProductDetailPage: React.FC = () => {
                       href={displayImages[selectedImageIndex] || displayImages[0]}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[#FF7A1A] hover:underline"
+                      className="inline-flex items-center gap-1 text-sun-orange hover:underline"
                     >
                       Open full resolution
                       <ExternalLink className="h-3 w-3" />

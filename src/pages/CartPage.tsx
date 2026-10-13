@@ -34,7 +34,7 @@ export const CartPage: React.FC = () => {
   if (itemCount === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-[#FF7A1A]">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-sun-orange">
           <Tag className="h-10 w-10" />
         </div>
         <h2 className="mt-6 text-2xl font-bold text-slate-900">Your shopping cart is empty</h2>
@@ -43,7 +43,7 @@ export const CartPage: React.FC = () => {
         </p>
         <Link
           to="/products"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[#EA6C13]"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-sun-orange px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-sun-orange-600"
         >
           <span>Browse Catalog</span>
           <ArrowRight className="h-4 w-4" />
@@ -88,7 +88,7 @@ export const CartPage: React.FC = () => {
                     ) : (
                       <Link
                         to={`/vendors/${group.sellerId}`}
-                        className="text-xs font-bold text-slate-800 hover:text-[#FF7A1A] underline"
+                        className="text-xs font-bold text-slate-800 hover:text-sun-orange underline"
                       >
                         {group.sellerName}
                       </Link>
@@ -112,7 +112,7 @@ export const CartPage: React.FC = () => {
                           <div>
                             <Link
                               to={`/products/${item.productId}`}
-                              className="text-sm font-semibold text-slate-800 hover:text-[#FF7A1A]"
+                              className="text-sm font-semibold text-slate-800 hover:text-sun-orange"
                             >
                               {item.title}
                             </Link>
@@ -231,7 +231,7 @@ export const CartPage: React.FC = () => {
                     onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="Coupon (e.g. VENDORAPRO)"
                     aria-label="Coupon code"
-                    className="flex-1 rounded-full border border-slate-200 px-3 py-2 text-xs focus:border-[#FF7A1A] focus:outline-none uppercase"
+                    className="flex-1 rounded-full border border-slate-200 px-3 py-2 text-xs focus:border-sun-orange focus:outline-none uppercase"
                   />
                   <button
                     type="submit"
@@ -247,7 +247,7 @@ export const CartPage: React.FC = () => {
             {/* Checkout Button */}
             <button
               onClick={() => navigate('/checkout')}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#FF7A1A] py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-[#EA6C13]"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-sun-orange py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-sun-orange-600"
             >
               <span>Proceed to Checkout</span>
               <ArrowRight className="h-4 w-4" />

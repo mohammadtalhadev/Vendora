@@ -218,7 +218,7 @@ export const AdminNotificationsPage = () => {
               <button
                 type="submit"
                 disabled={broadcast.isPending}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all hover:from-[#ea6c13] hover:to-[#e88020] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all hover:from-sun-orange-600 hover:to-[#e88020] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 {broadcast.isPending ? 'Sending…' : 'Send announcement'}
               </button>

@@ -342,9 +342,9 @@ export const OrdersPage: React.FC = () => {
     <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
       {/* Radiant ambient glow orbs (Matching Homepage & Storefront) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 pt-6">
@@ -354,7 +354,7 @@ export const OrdersPage: React.FC = () => {
         <div className="overflow-hidden rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl overflow-hidden border-2 border-[#FF7A1A] shadow-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl overflow-hidden border-2 border-sun-orange shadow-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                 {user?.avatar ? (
                   <img src={user.avatar} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -380,11 +380,11 @@ export const OrdersPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleTabChange('orders')}
-              className="text-left rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 cursor-pointer hover:border-[#FF7A1A]/40 transition-colors"
+              className="text-left rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 cursor-pointer hover:border-sun-orange/40 transition-colors"
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider">Active Orders</span>
-                <Truck className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <Truck className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">{activeCount}</div>
               <span className="text-[11px] font-semibold text-slate-500">
@@ -473,7 +473,7 @@ export const OrdersPage: React.FC = () => {
                     onClick={() => handleTabChange(tab.key)}
                     className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
                       active
-                        ? 'bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] text-white font-bold shadow-md shadow-orange-500/20'
+                        ? 'bg-gradient-to-r from-sun-orange to-[#FF9040] text-white font-bold shadow-md shadow-orange-500/20'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                     }`}
                   >
@@ -661,7 +661,7 @@ export const OrdersPage: React.FC = () => {
                           <div className="flex justify-end pt-1">
                             <Link
                               to={`/orders/${og.id}`}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#EA6C13]"
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-sun-orange-600"
                             >
                               <span>View order &amp; tracking</span>
                               <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -684,7 +684,7 @@ export const OrdersPage: React.FC = () => {
                         The products on packages you have already booked, at the price they booked at.
                       </p>
                     </div>
-                    <Link to="/products" className="text-xs font-bold text-[#FF7A1A] hover:underline flex items-center gap-1">
+                    <Link to="/products" className="text-xs font-bold text-sun-orange hover:underline flex items-center gap-1">
                       <span>Explore Store</span>
                       <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                     </Link>
@@ -733,7 +733,7 @@ export const OrdersPage: React.FC = () => {
                                 />
                               </div>
 
-                              <h4 className="font-outfit mt-3 text-xs font-bold text-slate-900 dark:text-white line-clamp-2 group-hover:text-[#FF7A1A] transition-colors">
+                              <h4 className="font-outfit mt-3 text-xs font-bold text-slate-900 dark:text-white line-clamp-2 group-hover:text-sun-orange transition-colors">
                                 {entry.line.title}
                               </h4>
                               <p className="text-[10px] text-slate-400">
@@ -748,7 +748,7 @@ export const OrdersPage: React.FC = () => {
                                 </span>
                                 <Link
                                   to={`/products/${entry.line.productId}`}
-                                  className="block text-[10px] font-bold text-[#FF7A1A] hover:underline"
+                                  className="block text-[10px] font-bold text-sun-orange hover:underline"
                                 >
                                   Live price &amp; stock
                                 </Link>
@@ -761,7 +761,7 @@ export const OrdersPage: React.FC = () => {
                                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer ${
                                   added
                                     ? 'bg-emerald-600 text-white'
-                                    : 'bg-[#FF7A1A] hover:bg-[#EA6C13] text-white shadow-xs'
+                                    : 'bg-sun-orange hover:bg-sun-orange-600 text-white shadow-xs'
                                 }`}
                               >
                                 {added ? (
@@ -840,7 +840,7 @@ export const OrdersPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleTabChange('addresses')}
-                        className="mt-3 text-xs font-bold text-[#FF7A1A] hover:underline"
+                        className="mt-3 text-xs font-bold text-sun-orange hover:underline"
                       >
                         Addresses used →
                       </button>
@@ -875,7 +875,7 @@ export const OrdersPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleTabChange('payments')}
-                        className="mt-3 text-xs font-bold text-[#FF7A1A] hover:underline"
+                        className="mt-3 text-xs font-bold text-sun-orange hover:underline"
                       >
                         Payments used →
                       </button>
@@ -897,7 +897,7 @@ export const OrdersPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => navigate('/downloads')}
-                        className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline"
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-sun-orange hover:underline"
                       >
                         <Download className="h-3 w-3" aria-hidden="true" />
                         My Downloads →
@@ -928,7 +928,7 @@ export const OrdersPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleTabChange('orders')}
-                      className="rounded-xl bg-[#FF7A1A] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#EA6C13]"
+                      className="rounded-xl bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white hover:bg-sun-orange-600"
                     >
                       View Orders
                     </button>
@@ -960,7 +960,7 @@ export const OrdersPage: React.FC = () => {
                     </div>
                     <Link
                       to="/orders"
-                      className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors"
                     >
                       <RotateCcw className="h-4 w-4" aria-hidden="true" />
                       <span>Go to My Orders</span>
@@ -970,7 +970,7 @@ export const OrdersPage: React.FC = () => {
                   {/* Return & Refund Process */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4 space-y-1.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A1A]">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-100 text-sun-orange">
                         <RotateCcw className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">1. Request a Return</div>
@@ -1135,14 +1135,14 @@ export const OrdersPage: React.FC = () => {
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 text-slate-900 dark:text-white">
-                              <MapPin className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                              <MapPin className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                               <span className="font-outfit text-xs font-bold">
                                 {formatPlacedDate(entry.placedAt)}
                               </span>
                             </div>
                             <Link
                               to={`/orders/${entry.orderGroupId}`}
-                              className="text-[11px] font-bold text-[#FF7A1A] hover:underline"
+                              className="text-[11px] font-bold text-sun-orange hover:underline"
                             >
                               Order #{entry.orderGroupId}
                             </Link>
@@ -1226,7 +1226,7 @@ export const OrdersPage: React.FC = () => {
                           </div>
                           <Link
                             to={`/orders/${payment.orderGroupId}`}
-                            className="shrink-0 text-xs font-bold text-[#FF7A1A] hover:underline"
+                            className="shrink-0 text-xs font-bold text-sun-orange hover:underline"
                           >
                             View that order
                           </Link>
@@ -1236,7 +1236,7 @@ export const OrdersPage: React.FC = () => {
                   </QueryState>
 
                   <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-4 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2.5">
-                    <ShieldCheck className="h-4 w-4 text-[#FF7A1A] shrink-0 mt-0.5" aria-hidden="true" />
+                    <ShieldCheck className="h-4 w-4 text-sun-orange shrink-0 mt-0.5" aria-hidden="true" />
                     <span>
                       Card bookings record only the brand and the last four digits, which is all this page can
                       show; the number itself never reaches the database. A cash-on-delivery order records no
@@ -1246,7 +1246,7 @@ export const OrdersPage: React.FC = () => {
 
                   <Link
                     to="/cart"
-                    className="inline-flex items-center gap-1.5 rounded-2xl border border-[#FF7A1A] px-4 py-2 text-xs font-bold text-[#FF7A1A] hover:bg-orange-50/60 dark:hover:bg-orange-950/20"
+                    className="inline-flex items-center gap-1.5 rounded-2xl border border-sun-orange px-4 py-2 text-xs font-bold text-sun-orange hover:bg-orange-50/60 dark:hover:bg-orange-950/20"
                   >
                     <span>Choose how to pay at checkout</span>
                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1280,7 +1280,7 @@ export const OrdersPage: React.FC = () => {
                       type="button"
                       aria-haspopup="dialog"
                       onClick={() => setShowDisputeModal(true)}
-                      className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors"
                     >
                       <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                       <span>How disputes are opened</span>
@@ -1305,7 +1305,7 @@ export const OrdersPage: React.FC = () => {
                       </Link>
                       <Link
                         to="/contact"
-                        className="rounded-xl bg-[#FF7A1A] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#EA6C13]"
+                        className="rounded-xl bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white hover:bg-sun-orange-600"
                       >
                         Contact Support
                       </Link>
@@ -1361,7 +1361,7 @@ export const OrdersPage: React.FC = () => {
                           required
                           minLength={8}
                           placeholder="At least 8 characters"
-                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#FF7A1A]"
+                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-sun-orange"
                         />
                       </div>
                       <div>
@@ -1380,7 +1380,7 @@ export const OrdersPage: React.FC = () => {
                           required
                           minLength={8}
                           placeholder="Repeat it"
-                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#FF7A1A]"
+                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-sun-orange"
                         />
                       </div>
                     </div>
@@ -1404,7 +1404,7 @@ export const OrdersPage: React.FC = () => {
                       <button
                         type="submit"
                         disabled={passwordBusy}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white transition-colors disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white transition-colors disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500"
                       >
                         {passwordBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
                         <span>{passwordBusy ? 'Saving…' : 'Update Password'}</span>
@@ -1472,7 +1472,7 @@ export const OrdersPage: React.FC = () => {
           <div className="flex justify-end gap-2 pt-1">
             <Link
               to="/contact"
-              className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white shadow-sm"
+              className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-sm"
             >
               Contact Support
             </Link>

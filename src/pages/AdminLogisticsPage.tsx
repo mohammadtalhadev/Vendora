@@ -8,8 +8,8 @@ import type { LogisticsQueueRow } from '../features/admin/api/logistics';
 
 const STATUS_TONE: Record<string, string> = {
   delivered: 'bg-emerald-100 text-emerald-700',
-  in_transit: 'bg-orange-100 text-[#FF7A1A]',
-  shipped: 'bg-orange-100 text-[#FF7A1A]',
+  in_transit: 'bg-orange-100 text-sun-orange',
+  shipped: 'bg-orange-100 text-sun-orange',
   available: 'bg-emerald-100 text-emerald-700',
   busy: 'bg-blue-100 text-blue-700',
   offline: 'bg-slate-200 text-slate-600',
@@ -88,7 +88,7 @@ export const AdminLogisticsPage: React.FC = () => {
             onClick={() => void refetch()}
             className="self-start sm:self-auto inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
           >
-            <Bike className="h-3.5 w-3.5 text-[#FF7A1A]" />
+            <Bike className="h-3.5 w-3.5 text-sun-orange" />
             <span>Refresh Board</span>
           </button>
         </div>
@@ -123,7 +123,7 @@ export const AdminLogisticsPage: React.FC = () => {
         {/* Fleet roster — only the columns the board returns. */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Bike className="h-4 w-4 text-[#FF7A1A]" />
+            <Bike className="h-4 w-4 text-sun-orange" />
             Registered Delivery Couriers
           </h3>
 
@@ -153,7 +153,7 @@ export const AdminLogisticsPage: React.FC = () => {
         {/* Delivery queue */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4 text-xs">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Truck className="h-4 w-4 text-[#FF7A1A]" />
+            <Truck className="h-4 w-4 text-sun-orange" />
             Active Dispatch Queue
           </h3>
 

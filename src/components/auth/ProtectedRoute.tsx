@@ -33,7 +33,7 @@ export function ProtectedRoute({
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#FF7A1A] border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-sun-orange border-t-transparent" />
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Verifying access...</span>
         </div>
       </div>

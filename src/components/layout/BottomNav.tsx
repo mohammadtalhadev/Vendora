@@ -33,14 +33,14 @@ export const BottomNav: React.FC = () => {
               key={to}
               to={to}
               aria-current={isActive ? 'page' : undefined}
-              className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
-                isActive ? 'text-[#FF7A1A]' : 'text-slate-500 hover:text-slate-800'
+              className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
+                isActive ? 'text-sun-orange' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <div className="relative">
                 <Icon className="h-5 w-5" />
                 {badge !== undefined && badge > 0 && (
-                  <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#FF7A1A] text-[9px] font-bold text-white">
+                  <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sun-orange text-[9px] font-bold text-white">
                     {badge}
                   </span>
                 )}

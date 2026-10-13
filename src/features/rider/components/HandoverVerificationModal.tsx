@@ -185,7 +185,7 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
                   disabled={submitting}
                   onChange={(e) => handleDigitChange(idx, e)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
-                  className="h-14 w-12 sm:w-14 rounded-2xl border-2 border-slate-200 bg-white text-center font-mono text-2xl font-black text-slate-900 shadow-xs transition-all focus:border-[#FF7A1A] focus:outline-none focus:ring-4 focus:ring-[#FF7A1A]/15 disabled:bg-slate-50 disabled:text-slate-400"
+                  className="h-14 w-12 sm:w-14 rounded-2xl border-2 border-slate-200 bg-white text-center font-mono text-2xl font-black text-slate-900 shadow-xs transition-all focus:border-sun-orange focus:outline-none focus:ring-4 focus:ring-sun-orange/15 disabled:bg-slate-50 disabled:text-slate-400"
                 />
               ))}
             </div>

@@ -745,7 +745,7 @@ ok('a first-party listing belongs to the platform store', adOneP.sellerId === PL
 ok('and is audited as created',
   (await q(`select count(*)::int c from audit_logs where action='product.create_1p' and entity_id=$1`, [adOneP.id]))[0].c === 1);
 await expectThrow('a listing cannot be invented without a price',
-  () => q(`select admin_create_product_1p('{\"title\":\"No Price\"}'::jsonb)`), 'price above zero');
+  () => q(`select admin_create_product_1p('{"title":"No Price"}'::jsonb)`), 'price above zero');
 
 await q(`select admin_set_user_status($1,'suspended','Chargeback pattern')`, [CU2]);
 ok('an account can be suspended with the reason kept',
@@ -833,7 +833,7 @@ await q(`select admin_assign_product_category($1,$2)`, [aDraft, CAT]);
 await q(`select admin_delete_category($1)`, [adCat.id]);
 ok('an empty category can be deleted', (await q('select count(*)::int c from categories where slug=$1', ['audio-6']))[0].c === 0);
 
-await q(`select admin_save_platform_settings('{\"payoutSchedule\":\"Weekly on Friday\",\"minPayoutFloor\":75}'::jsonb)`);
+await q(`select admin_save_platform_settings('{"payoutSchedule":"Weekly on Friday","minPayoutFloor":75}'::jsonb)`);
 ok('platform settings persist where the console can read them back',
   (await q('select payout_schedule from platform_settings where id'))[0].payout_schedule === 'Weekly on Friday');
 ok('and the change is audited with its before state',

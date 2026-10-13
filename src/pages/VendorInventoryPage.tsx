@@ -334,7 +334,7 @@ export const VendorInventoryPage: React.FC = () => {
                         >
                           <div className="flex items-center gap-2">
                             {isSelected ? (
-                              <CheckSquare className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                              <CheckSquare className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                             ) : (
                               <Square className="h-4 w-4 text-slate-400" aria-hidden="true" />
                             )}
@@ -352,7 +352,7 @@ export const VendorInventoryPage: React.FC = () => {
               type="button"
               onClick={handleBulkSave}
               disabled={isSaving}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60 disabled:cursor-wait"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60 disabled:cursor-wait"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
               {isSaving ? 'Saving…' : 'Save All Changes'}
@@ -443,7 +443,7 @@ export const VendorInventoryPage: React.FC = () => {
             aria-controls="inventory-physical-panel"
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'physical'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -463,7 +463,7 @@ export const VendorInventoryPage: React.FC = () => {
             aria-controls="inventory-digital-panel"
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'digital'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -504,7 +504,7 @@ export const VendorInventoryPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter by SKU or Product Title..."
-                  className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#FF7A1A]"
+                  className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-sun-orange"
                 />
               </div>
             </div>

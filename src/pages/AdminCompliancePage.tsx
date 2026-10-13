@@ -82,7 +82,7 @@ export const AdminCompliancePage: React.FC = () => {
             onClick={() => setActiveTab('evidence')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'evidence'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -97,7 +97,7 @@ export const AdminCompliancePage: React.FC = () => {
             onClick={() => setActiveTab('trail')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'trail'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >

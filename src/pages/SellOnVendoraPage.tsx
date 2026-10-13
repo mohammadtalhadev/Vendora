@@ -84,15 +84,15 @@ export const SellOnVendoraPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="text-center max-w-4xl mx-auto space-y-5">
           {/* Top Pill Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-orange-50/80 dark:border-orange-900/40 dark:bg-orange-950/40 px-4 py-1.5 text-xs font-bold text-[#FF7A1A]">
-            <span className="h-2 w-2 rounded-full bg-[#FF7A1A] animate-pulse" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-orange-50/80 dark:border-orange-900/40 dark:bg-orange-950/40 px-4 py-1.5 text-xs font-bold text-sun-orange">
+            <span className="h-2 w-2 rounded-full bg-sun-orange animate-pulse" />
             0% COMMISSION FOR FIRST 90 DAYS • SBP/SEC COMPLIANT
           </div>
 
           {/* Headline with Brand Gradient */}
           <h1 className="font-outfit text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.15]">
             Scale Your Brand Across{' '}
-            <span className="bg-gradient-to-r from-[#FF7A1A] via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-sun-orange via-purple-600 to-indigo-600 bg-clip-text text-transparent">
               160+ Countries
             </span>{' '}
             With 0% Commission
@@ -107,7 +107,7 @@ export const SellOnVendoraPage: React.FC = () => {
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="#calculator"
-              className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] px-7 py-3.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 hover:scale-105 transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] px-7 py-3.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 hover:scale-105 transition-all flex items-center justify-center gap-2"
             >
               <span>Start Selling Today</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -117,7 +117,7 @@ export const SellOnVendoraPage: React.FC = () => {
               href="#calculator"
               className="w-full sm:w-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-3.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 flex items-center justify-center gap-2"
             >
-              <Calculator className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+              <Calculator className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               <span>Calculate Your Economics</span>
             </a>
           </div>
@@ -135,7 +135,7 @@ export const SellOnVendoraPage: React.FC = () => {
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5">
-              <Zap className="h-4 w-4 text-[#FF7A1A]" />
+              <Zap className="h-4 w-4 text-sun-orange" />
               T+0 Instant Payouts
             </span>
           </div>
@@ -209,7 +209,7 @@ export const SellOnVendoraPage: React.FC = () => {
               <span className="font-outfit font-bold text-slate-700 dark:text-slate-300">
                 Hourly Settlement Velocity (Last 24 Hours)
               </span>
-              <span className="text-[10px] font-semibold text-[#FF7A1A]">Avg. T+1 Settlement SLA Met</span>
+              <span className="text-[10px] font-semibold text-sun-orange">Avg. T+1 Settlement SLA Met</span>
             </div>
 
             {/* SVG Wave */}
@@ -217,8 +217,8 @@ export const SellOnVendoraPage: React.FC = () => {
               <svg viewBox="0 0 500 80" className="h-full w-full overflow-visible" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FF7A1A" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#FF7A1A" stopOpacity="0.0" />
+                    <stop offset="0%" style={{ stopColor: 'var(--color-sun-orange)' }} stopOpacity="0.4" />
+                    <stop offset="100%" style={{ stopColor: 'var(--color-sun-orange)' }} stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
                 <path
@@ -228,11 +228,11 @@ export const SellOnVendoraPage: React.FC = () => {
                 <path
                   d="M0,60 Q60,65 120,50 T240,40 T360,25 T440,20 T500,10"
                   fill="none"
-                  stroke="#FF7A1A"
                   strokeWidth="2.5"
                   strokeLinecap="round"
+                  className="stroke-sun-orange"
                 />
-                <circle cx="500" cy="10" r="4" fill="#FF7A1A" />
+                <circle cx="500" cy="10" r="4" className="fill-sun-orange" />
               </svg>
             </div>
           </div>
@@ -258,7 +258,7 @@ export const SellOnVendoraPage: React.FC = () => {
             {/* Card 1 */}
             <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all">
               <div className="space-y-3">
-                <div className="h-11 w-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-[#FF7A1A] flex items-center justify-center">
+                <div className="h-11 w-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-sun-orange flex items-center justify-center">
                   <Zap className="h-5 w-5" />
                 </div>
                 <h3 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
@@ -268,7 +268,7 @@ export const SellOnVendoraPage: React.FC = () => {
                   Get verified and list your catalogue inventory under 15 minutes with automated AI categorizing and multi-language translation.
                 </p>
               </div>
-              <div className="mt-6 pt-3 border-t border-slate-100 dark:border-slate-800 text-[10px] font-bold text-[#FF7A1A] flex items-center gap-1">
+              <div className="mt-6 pt-3 border-t border-slate-100 dark:border-slate-800 text-[10px] font-bold text-sun-orange flex items-center gap-1">
                 <span>ZERO SETUP WAIT</span>
                 <ArrowRight className="h-3 w-3" />
               </div>
@@ -339,7 +339,7 @@ export const SellOnVendoraPage: React.FC = () => {
         <div id="calculator" className="mt-24 rounded-3xl border border-white/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl p-6 sm:p-10 shadow-xl space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
                 PROJECTED MARGIN MODEL
               </span>
               <h2 className="font-outfit text-xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
@@ -362,7 +362,7 @@ export const SellOnVendoraPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white mb-2">
                   <label htmlFor="seller-monthly-sales">Estimated Monthly Sales</label>
-                  <span className="font-outfit text-base font-black text-[#FF7A1A]">
+                  <span className="font-outfit text-base font-black text-sun-orange">
                     ${salesSlider.toLocaleString()}
                   </span>
                 </div>
@@ -374,7 +374,7 @@ export const SellOnVendoraPage: React.FC = () => {
                   step="5000"
                   value={salesSlider}
                   onChange={(e) => setSalesSlider(Number(e.target.value))}
-                  className="w-full accent-[#FF7A1A] cursor-pointer"
+                  className="w-full accent-sun-orange cursor-pointer"
                 />
                 <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold mt-1">
                   <span>$10,000 / mo</span>
@@ -458,7 +458,7 @@ export const SellOnVendoraPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/become-a-seller')}
-                className="w-full rounded-full bg-sun-orange py-3 text-xs font-bold text-white shadow-md shadow-orange-500/25 hover:bg-[#EA6C13] transition-all cursor-pointer"
+                className="w-full rounded-full bg-sun-orange py-3 text-xs font-bold text-white shadow-md shadow-orange-500/25 hover:bg-sun-orange-600 transition-all cursor-pointer"
               >
                 Start seller application
               </button>
@@ -562,7 +562,7 @@ export const SellOnVendoraPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="mt-24 space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
               FOUNDER TESTIMONIALS &amp; TRACTION
             </span>
             <h2 className="font-outfit text-2xl sm:text-4xl font-black text-slate-900 dark:text-white">
@@ -608,7 +608,7 @@ export const SellOnVendoraPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px]">
-                  <span className="font-bold text-[#FF7A1A]">{t.statBadge}</span>
+                  <span className="font-bold text-sun-orange">{t.statBadge}</span>
                   <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-slate-600 dark:text-slate-300 font-semibold">
                     {t.categoryBadge}
                   </span>
@@ -682,13 +682,13 @@ export const SellOnVendoraPage: React.FC = () => {
             </div>
 
             {/* Tier 2: Growth Brand (Highlighted) */}
-            <div className="relative rounded-3xl border-2 border-[#FF7A1A] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-6 sm:p-8 shadow-2xl flex flex-col justify-between -translate-y-2">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-[#FF7A1A] px-4 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-md">
+            <div className="relative rounded-3xl border-2 border-sun-orange bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-6 sm:p-8 shadow-2xl flex flex-col justify-between -translate-y-2">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-sun-orange px-4 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-md">
                 MOST POPULAR MERCHANT CHOICE
               </div>
 
               <div className="space-y-4 pt-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
                   Growth Brand
                 </span>
                 <div className="font-outfit text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">
@@ -700,27 +700,27 @@ export const SellOnVendoraPage: React.FC = () => {
 
                 <div className="space-y-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Check className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                    <Check className="h-4 w-4 text-sun-orange shrink-0" />
                     <span>0% Fee for Initial 90 Days</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Check className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                    <Check className="h-4 w-4 text-sun-orange shrink-0" />
                     <span>3.5% Optimized Platform Fee</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Check className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                    <Check className="h-4 w-4 text-sun-orange shrink-0" />
                     <span>Priority Prime Category Placement</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Check className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                    <Check className="h-4 w-4 text-sun-orange shrink-0" />
                     <span>Dedicated Brand Account Manager</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Check className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                    <Check className="h-4 w-4 text-sun-orange shrink-0" />
                     <span>Same-Day Multi-Currency Settlement</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Check className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                    <Check className="h-4 w-4 text-sun-orange shrink-0" />
                     <span>T+0 Instant Auto-Commission</span>
                   </div>
                 </div>
@@ -729,7 +729,7 @@ export const SellOnVendoraPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/become-a-seller')}
-                className="mt-8 w-full rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] py-3 text-xs font-bold text-white shadow-lg shadow-orange-500/25 hover:scale-105 transition-all cursor-pointer"
+                className="mt-8 w-full rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] py-3 text-xs font-bold text-white shadow-lg shadow-orange-500/25 hover:scale-105 transition-all cursor-pointer"
               >
                 Launch Growth Tier
               </button>
@@ -805,11 +805,11 @@ export const SellOnVendoraPage: React.FC = () => {
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
               placeholder="Enter your commercial email address"
-              className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold text-slate-800 dark:text-white focus:outline-hidden focus:border-[#FF7A1A]"
+              className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-bold text-slate-800 dark:text-white focus:outline-hidden focus:border-sun-orange"
             />
             <button
               type="submit"
-              className="rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] px-6 py-3 text-xs font-bold text-white shadow-md shadow-orange-500/25 hover:bg-[#EA6C13] transition-all cursor-pointer whitespace-nowrap"
+              className="rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] px-6 py-3 text-xs font-bold text-white shadow-md shadow-orange-500/25 hover:bg-sun-orange-600 transition-all cursor-pointer whitespace-nowrap"
             >
               Claim 0% Free Tier →
             </button>

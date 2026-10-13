@@ -84,10 +84,10 @@ export const RegisterPage: React.FC = () => {
     if (/[^A-Za-z0-9]/.test(customerPassword)) score += 1;
     if (score === 0 && customerPassword.length >= 6) score = 1;
 
-    if (score <= 1) return { score: 1, label: 'Weak', color: 'bg-[#FF4D6D]' };
-    if (score === 2) return { score: 2, label: 'Fair', color: 'bg-[#FFD43B]' };
-    if (score === 3) return { score: 3, label: 'Good', color: 'bg-[#00B8C8]' };
-    return { score: 4, label: 'Very Strong', color: 'bg-[#FF7A1A]' };
+    if (score <= 1) return { score: 1, label: 'Weak', color: 'bg-coral' };
+    if (score === 2) return { score: 2, label: 'Fair', color: 'bg-lemon' };
+    if (score === 3) return { score: 3, label: 'Good', color: 'bg-aqua' };
+    return { score: 4, label: 'Very Strong', color: 'bg-sun-orange' };
   }, [customerPassword]);
 
   // Real-time password security score for Seller
@@ -100,10 +100,10 @@ export const RegisterPage: React.FC = () => {
     if (/[^A-Za-z0-9]/.test(sellerPassword)) score += 1;
     if (score === 0 && sellerPassword.length >= 6) score = 1;
 
-    if (score <= 1) return { score: 1, label: 'Weak', color: 'bg-[#FF4D6D]' };
-    if (score === 2) return { score: 2, label: 'Fair', color: 'bg-[#FFD43B]' };
-    if (score === 3) return { score: 3, label: 'Good', color: 'bg-[#00B8C8]' };
-    return { score: 4, label: 'Very Strong', color: 'bg-[#FF7A1A]' };
+    if (score <= 1) return { score: 1, label: 'Weak', color: 'bg-coral' };
+    if (score === 2) return { score: 2, label: 'Fair', color: 'bg-lemon' };
+    if (score === 3) return { score: 3, label: 'Good', color: 'bg-aqua' };
+    return { score: 4, label: 'Very Strong', color: 'bg-sun-orange' };
   }, [sellerPassword]);
 
   // Customer Form Submission -> Supabase Auth & Profile Sync
@@ -237,14 +237,14 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 pb-16 pt-4 sm:pt-8 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A]">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 pb-16 pt-4 sm:pt-8 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
       {/* =========================================================================
           1. Luminous Ambient Background Glows
          ========================================================================= */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-32 -left-24 w-[650px] h-[650px] rounded-full bg-gradient-to-br from-[#FED7AA]/60 via-[#FFEDD5]/40 to-transparent blur-[110px] dark:from-[#FF7A1A]/10" />
-        <div className="absolute top-1/4 -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-br from-[#CFFAFE]/65 via-[#E0F2FE]/40 to-transparent blur-[120px] dark:from-[#00B8C8]/10" />
-        <div className="absolute -bottom-36 left-1/3 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FEF9C3]/50 via-[#F1F5F9]/80 to-transparent blur-[120px] dark:from-[#FF7A1A]/5" />
+        <div className="absolute -top-32 -left-24 w-[650px] h-[650px] rounded-full bg-gradient-to-br from-sun-orange-200/60 via-sun-orange-100/40 to-transparent blur-[110px] dark:from-sun-orange/10" />
+        <div className="absolute top-1/4 -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-br from-aqua-100/65 via-[#E0F2FE]/40 to-transparent blur-[120px] dark:from-aqua/10" />
+        <div className="absolute -bottom-36 left-1/3 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-lemon-100/50 via-[#F1F5F9]/80 to-transparent blur-[120px] dark:from-sun-orange/5" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -259,7 +259,7 @@ export const RegisterPage: React.FC = () => {
           </div>
           <Link
             to="/login"
-            className="hidden sm:inline-flex items-center gap-1.5 font-semibold text-[#FF7A1A] hover:text-[#EA6C13] transition-colors group"
+            className="hidden sm:inline-flex items-center gap-1.5 font-semibold text-sun-orange hover:text-sun-orange-600 transition-colors group"
           >
             <span>Already have an account? Sign In</span>
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -271,7 +271,7 @@ export const RegisterPage: React.FC = () => {
            ========================================================================= */}
         <div className="relative w-full rounded-3xl overflow-hidden backdrop-blur-xl [backdrop-filter:blur(24px)_saturate(160%)] bg-white/80 dark:bg-slate-900/80 border border-white/90 dark:border-white/10 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.08)]">
           {/* Top Brand Spectrum Rim */}
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FF7A1A] via-[#00B8C8] to-[#FFD43B]" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sun-orange via-aqua to-lemon" />
 
           <div className="relative grid grid-cols-1 lg:grid-cols-12 min-h-[760px]">
             {/* =========================================================================
@@ -287,7 +287,7 @@ export const RegisterPage: React.FC = () => {
                         <span className="font-outfit font-black text-2xl tracking-tight text-slate-900 dark:text-white leading-none">
                           Vendora
                         </span>
-                        <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#FF7A1A] ml-0.5" />
+                        <span className="inline-block h-2.5 w-2.5 rounded-full bg-sun-orange ml-0.5" />
                       </div>
                     </div>
                   </div>
@@ -345,16 +345,16 @@ export const RegisterPage: React.FC = () => {
                   <div
                     role="status"
                     aria-live="polite"
-                    className="mb-5 rounded-2xl bg-[#FFF7ED]/90 dark:bg-orange-950/40 border border-[#FF7A1A]/30 p-3.5 text-xs text-[#C2410C] dark:text-orange-300 font-semibold flex items-center justify-between backdrop-blur-md animate-in fade-in"
+                    className="mb-5 rounded-2xl bg-sun-orange-50/90 dark:bg-orange-950/40 border border-sun-orange/30 p-3.5 text-xs text-sun-orange-700 dark:text-orange-300 font-semibold flex items-center justify-between backdrop-blur-md animate-in fade-in"
                   >
                     <span className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 shrink-0 text-[#FF7A1A]" />
+                      <Mail className="h-4 w-4 shrink-0 text-sun-orange" />
                       {notice}
                     </span>
                     <button
                       type="button"
                       onClick={() => setNotice(null)}
-                      className="text-[#C2410C] dark:text-orange-300 hover:opacity-70 font-bold ml-2 cursor-pointer"
+                      className="text-sun-orange-700 dark:text-orange-300 hover:opacity-70 font-bold ml-2 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -372,18 +372,18 @@ export const RegisterPage: React.FC = () => {
                     aria-pressed={activeRole === 'customer'}
                     className={`role-card text-left p-4 rounded-2xl border-2 transition-all duration-200 relative overflow-hidden group cursor-pointer ${
                       activeRole === 'customer'
-                        ? 'bg-[#FFF7ED] dark:bg-orange-950/20 border-[#FF7A1A] shadow-xs'
+                        ? 'bg-sun-orange-50 dark:bg-orange-950/20 border-sun-orange shadow-xs'
                         : 'bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-slate-300 hover:bg-white/80'
                     }`}
                   >
                     <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-orange-100 dark:bg-orange-900/40 text-[#FF7A1A]">
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-orange-100 dark:bg-orange-900/40 text-sun-orange">
                         Shop & Save
                       </span>
                       <div
                         className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
                           activeRole === 'customer'
-                            ? 'bg-[#FF7A1A] text-white shadow-2xs'
+                            ? 'bg-sun-orange text-white shadow-2xs'
                             : 'bg-slate-200 dark:bg-white/10 text-transparent'
                         }`}
                       >
@@ -391,7 +391,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-[#FF7A1A]">
+                      <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-sun-orange">
                         <ShoppingBag className="h-5 w-5" />
                       </div>
                       <div>
@@ -411,18 +411,18 @@ export const RegisterPage: React.FC = () => {
                     aria-pressed={activeRole === 'seller'}
                     className={`role-card text-left p-4 rounded-2xl border-2 transition-all duration-200 relative overflow-hidden group cursor-pointer ${
                       activeRole === 'seller'
-                        ? 'bg-[#FFF7ED] dark:bg-orange-950/20 border-[#FF7A1A] shadow-xs'
+                        ? 'bg-sun-orange-50 dark:bg-orange-950/20 border-sun-orange shadow-xs'
                         : 'bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-slate-300 hover:bg-white/80'
                     }`}
                   >
                     <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-cyan-100 dark:bg-cyan-900/40 text-[#00B8C8]">
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-cyan-100 dark:bg-cyan-900/40 text-aqua">
                         Sell & Grow
                       </span>
                       <div
                         className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
                           activeRole === 'seller'
-                            ? 'bg-[#FF7A1A] text-white shadow-2xs'
+                            ? 'bg-sun-orange text-white shadow-2xs'
                             : 'bg-slate-200 dark:bg-white/10 text-transparent'
                         }`}
                       >
@@ -430,7 +430,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-[#00B8C8]/10 flex items-center justify-center text-[#00B8C8]">
+                      <div className="w-10 h-10 rounded-xl bg-aqua/10 flex items-center justify-center text-aqua">
                         <Store className="h-5 w-5" />
                       </div>
                       <div>
@@ -455,7 +455,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="customerName" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Full Name
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <User className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="customerName"
@@ -473,7 +473,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="customerEmail" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Personal Email Address
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Mail className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="customerEmail"
@@ -499,7 +499,7 @@ export const RegisterPage: React.FC = () => {
                             <span className="text-base mr-1.5">🇵🇰</span>
                             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">+92</span>
                           </div>
-                          <div className="relative flex-1 flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                          <div className="relative flex-1 flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                             <input
                               id="customerPhone"
                               type="tel"
@@ -517,7 +517,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="customerCity" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Delivery City / Region
                         </label>
-                        <div className="relative rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 flex items-center transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 flex items-center transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <MapPin className="h-4 w-4 text-slate-400 mr-2.5" />
                           <select
                             id="customerCity"
@@ -546,7 +546,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="customerPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Password
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Lock className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="customerPassword"
@@ -594,7 +594,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="customerConfirmPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Confirm Password
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Lock className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="customerConfirmPassword"
@@ -627,16 +627,16 @@ export const RegisterPage: React.FC = () => {
                           onChange={(e) => setCustomerAgreed(e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-5 h-5 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 peer-checked:bg-[#FF7A1A] peer-checked:border-[#FF7A1A] flex items-center justify-center transition-all shadow-2xs mt-0.5">
+                        <div className="w-5 h-5 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 peer-checked:bg-sun-orange peer-checked:border-sun-orange flex items-center justify-center transition-all shadow-2xs mt-0.5">
                           <Check className="h-3 w-3 text-white stroke-[3] opacity-0 peer-checked:opacity-100 transition-opacity" />
                         </div>
                         <span className="text-xs text-slate-600 dark:text-slate-300 leading-normal">
                           I agree to the{' '}
-                          <Link to="/terms" className="text-[#FF7A1A] font-semibold hover:underline">
+                          <Link to="/terms" className="text-sun-orange font-semibold hover:underline">
                             Vendora Customer Terms of Service
                           </Link>{' '}
                           and{' '}
-                          <Link to="/privacy" className="text-[#FF7A1A] font-semibold hover:underline">
+                          <Link to="/privacy" className="text-sun-orange font-semibold hover:underline">
                             Vault Privacy Standard
                           </Link>
                           .
@@ -649,7 +649,7 @@ export const RegisterPage: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full h-13 py-3.5 rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] active:scale-[0.99] text-white font-outfit font-bold text-sm tracking-wide shadow-[0_4px_18px_rgba(255,122,26,0.32)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        className="w-full h-13 py-3.5 rounded-full bg-sun-orange hover:bg-sun-orange-600 active:scale-[0.99] text-white font-outfit font-bold text-sm tracking-wide shadow-[0_4px_18px_color-mix(in_srgb,var(--color-sun-orange)_32%,transparent)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
                         <span>{isSubmitting ? 'Creating account...' : 'Create Customer Account'}</span>
                         <ArrowRight className="h-4 w-4 stroke-[2.5]" />
@@ -700,7 +700,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="storeName" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Store / Brand Name
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Store className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="storeName"
@@ -718,7 +718,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="storeSlug" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Custom Store Slug URL
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <span className="text-xs text-slate-400 font-mono mr-1">vendora.market/store/</span>
                           <input
                             id="storeSlug"
@@ -726,7 +726,7 @@ export const RegisterPage: React.FC = () => {
                             value={storeSlug}
                             onChange={(e) => setStoreSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                             placeholder="brand-slug"
-                            className="w-full bg-transparent border-0 outline-none text-sm text-[#FF7A1A] font-semibold placeholder-slate-400 focus:ring-0 p-0"
+                            className="w-full bg-transparent border-0 outline-none text-sm text-sun-orange font-semibold placeholder-slate-400 focus:ring-0 p-0"
                             required
                           />
                         </div>
@@ -739,7 +739,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="categoryFocus" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Primary Business Category
                         </label>
-                        <div className="relative rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 flex items-center transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 flex items-center transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Building2 className="h-4 w-4 text-slate-400 mr-2.5" />
                           <select
                             id="categoryFocus"
@@ -762,7 +762,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="ownerName" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Merchant Owner / Legal Rep
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <User className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="ownerName"
@@ -783,7 +783,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="businessEmail" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Official Business Email
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Mail className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="businessEmail"
@@ -806,7 +806,7 @@ export const RegisterPage: React.FC = () => {
                             <span className="text-base mr-1.5">🇵🇰</span>
                             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">+92</span>
                           </div>
-                          <div className="relative flex-1 flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                          <div className="relative flex-1 flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                             <input
                               id="businessPhone"
                               type="tel"
@@ -827,7 +827,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="taxNtn" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Tax NTN / CNIC Number <span className="text-[10px] text-slate-400 lowercase">(for verified payouts)</span>
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Building2 className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="taxNtn"
@@ -844,7 +844,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="storeDescription" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Short Store Description
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <FileText className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="storeDescription"
@@ -864,7 +864,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="sellerPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Merchant Portal Password
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Lock className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="sellerPassword"
@@ -905,7 +905,7 @@ export const RegisterPage: React.FC = () => {
                         <label htmlFor="sellerConfirmPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Confirm Password
                         </label>
-                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-[#FF7A1A] focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
+                        <div className="relative flex items-center rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 px-3.5 h-12 transition focus-within:border-sun-orange focus-within:ring-2 focus-within:ring-orange-500/20 shadow-2xs">
                           <Lock className="h-4 w-4 text-slate-400 mr-2.5" />
                           <input
                             id="sellerConfirmPassword"
@@ -938,16 +938,16 @@ export const RegisterPage: React.FC = () => {
                           onChange={(e) => setSellerAgreed(e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-5 h-5 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 peer-checked:bg-[#FF7A1A] peer-checked:border-[#FF7A1A] flex items-center justify-center transition-all shadow-2xs mt-0.5">
+                        <div className="w-5 h-5 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 peer-checked:bg-sun-orange peer-checked:border-sun-orange flex items-center justify-center transition-all shadow-2xs mt-0.5">
                           <Check className="h-3 w-3 text-white stroke-[3] opacity-0 peer-checked:opacity-100 transition-opacity" />
                         </div>
                         <span className="text-xs text-slate-600 dark:text-slate-300 leading-normal">
                           I agree to the{' '}
-                          <Link to="/become-a-seller" className="text-[#FF7A1A] font-semibold hover:underline">
+                          <Link to="/become-a-seller" className="text-sun-orange font-semibold hover:underline">
                             Vendora Merchant Agreement
                           </Link>
                           , <span className="font-semibold text-slate-800 dark:text-white">0% Take Rate Terms</span>, and{' '}
-                          <Link to="/terms" className="text-[#FF7A1A] font-semibold hover:underline">
+                          <Link to="/terms" className="text-sun-orange font-semibold hover:underline">
                             Code of Conduct
                           </Link>
                           .
@@ -960,7 +960,7 @@ export const RegisterPage: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full h-13 py-3.5 rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] active:scale-[0.99] text-white font-outfit font-bold text-sm tracking-wide shadow-[0_4px_18px_rgba(255,122,26,0.32)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        className="w-full h-13 py-3.5 rounded-full bg-sun-orange hover:bg-sun-orange-600 active:scale-[0.99] text-white font-outfit font-bold text-sm tracking-wide shadow-[0_4px_18px_color-mix(in_srgb,var(--color-sun-orange)_32%,transparent)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
                         <span>{isSubmitting ? 'Submitting Application...' : 'Submit Merchant Application'}</span>
                         <ArrowRight className="h-4 w-4 stroke-[2.5]" />
@@ -976,7 +976,7 @@ export const RegisterPage: React.FC = () => {
                   Already have a Vendora account?
                   <Link
                     to="/login"
-                    className="text-[#FF7A1A] font-bold hover:text-[#EA6C13] transition-colors ml-1 inline-flex items-center gap-0.5"
+                    className="text-sun-orange font-bold hover:text-sun-orange-600 transition-colors ml-1 inline-flex items-center gap-0.5"
                   >
                     Sign In
                     <ExternalLink className="h-3.5 w-3.5 ml-0.5" />
@@ -989,8 +989,8 @@ export const RegisterPage: React.FC = () => {
                 LATERAL COLUMN: Dynamic Perks & Privileges (4 Cols)
                ========================================================================= */}
             <div className="lg:col-span-4 bg-slate-50/70 dark:bg-white/[0.02] border-t lg:border-t-0 lg:border-l border-slate-200/70 dark:border-white/10 backdrop-blur-2xl p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute -top-16 -right-16 w-52 h-52 rounded-full bg-[#FED7AA]/35 blur-[75px] pointer-events-none" />
-              <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-[#CFFAFE]/40 blur-[70px] pointer-events-none" />
+              <div className="absolute -top-16 -right-16 w-52 h-52 rounded-full bg-sun-orange-200/35 blur-[75px] pointer-events-none" />
+              <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-aqua-100/40 blur-[70px] pointer-events-none" />
 
               <div className="relative z-10">
                 {/* Dynamic Role Header */}
@@ -1016,7 +1016,7 @@ export const RegisterPage: React.FC = () => {
                     <>
                       <div className="p-4 rounded-2xl bg-white/80 dark:bg-white/5 border border-white dark:border-white/10 shadow-2xs hover:shadow-sm transition-all">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-orange-100/80 dark:bg-orange-950/40 flex items-center justify-center text-[#FF7A1A] shrink-0 mt-0.5">
+                          <div className="w-9 h-9 rounded-xl bg-orange-100/80 dark:bg-orange-950/40 flex items-center justify-center text-sun-orange shrink-0 mt-0.5">
                             <Shield className="h-5 w-5" />
                           </div>
                           <div>
@@ -1032,7 +1032,7 @@ export const RegisterPage: React.FC = () => {
 
                       <div className="p-4 rounded-2xl bg-white/80 dark:bg-white/5 border border-white dark:border-white/10 shadow-2xs hover:shadow-sm transition-all">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-cyan-100/80 dark:bg-cyan-950/40 flex items-center justify-center text-[#00B8C8] shrink-0 mt-0.5">
+                          <div className="w-9 h-9 rounded-xl bg-cyan-100/80 dark:bg-cyan-950/40 flex items-center justify-center text-aqua shrink-0 mt-0.5">
                             <Truck className="h-5 w-5" />
                           </div>
                           <div>
@@ -1064,7 +1064,7 @@ export const RegisterPage: React.FC = () => {
 
                       <div className="p-4 rounded-2xl bg-white/80 dark:bg-white/5 border border-white dark:border-white/10 shadow-2xs hover:shadow-sm transition-all">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-rose-100/80 dark:bg-rose-950/40 flex items-center justify-center text-[#FF4D6D] shrink-0 mt-0.5">
+                          <div className="w-9 h-9 rounded-xl bg-rose-100/80 dark:bg-rose-950/40 flex items-center justify-center text-coral shrink-0 mt-0.5">
                             <Headphones className="h-5 w-5" />
                           </div>
                           <div>
@@ -1082,7 +1082,7 @@ export const RegisterPage: React.FC = () => {
                     <>
                       <div className="p-4 rounded-2xl bg-white/80 dark:bg-white/5 border border-white dark:border-white/10 shadow-2xs hover:shadow-sm transition-all">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-orange-100/80 dark:bg-orange-950/40 flex items-center justify-center text-[#FF7A1A] shrink-0 mt-0.5">
+                          <div className="w-9 h-9 rounded-xl bg-orange-100/80 dark:bg-orange-950/40 flex items-center justify-center text-sun-orange shrink-0 mt-0.5">
                             <Sparkles className="h-5 w-5" />
                           </div>
                           <div>
@@ -1098,7 +1098,7 @@ export const RegisterPage: React.FC = () => {
 
                       <div className="p-4 rounded-2xl bg-white/80 dark:bg-white/5 border border-white dark:border-white/10 shadow-2xs hover:shadow-sm transition-all">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-cyan-100/80 dark:bg-cyan-950/40 flex items-center justify-center text-[#00B8C8] shrink-0 mt-0.5">
+                          <div className="w-9 h-9 rounded-xl bg-cyan-100/80 dark:bg-cyan-950/40 flex items-center justify-center text-aqua shrink-0 mt-0.5">
                             <Building2 className="h-5 w-5" />
                           </div>
                           <div>
@@ -1130,7 +1130,7 @@ export const RegisterPage: React.FC = () => {
 
                       <div className="p-4 rounded-2xl bg-white/80 dark:bg-white/5 border border-white dark:border-white/10 shadow-2xs hover:shadow-sm transition-all">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-rose-100/80 dark:bg-rose-950/40 flex items-center justify-center text-[#FF4D6D] shrink-0 mt-0.5">
+                          <div className="w-9 h-9 rounded-xl bg-rose-100/80 dark:bg-rose-950/40 flex items-center justify-center text-coral shrink-0 mt-0.5">
                             <Shield className="h-5 w-5" />
                           </div>
                           <div>

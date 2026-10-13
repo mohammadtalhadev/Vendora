@@ -144,9 +144,9 @@ export const ReturnsPage: React.FC = () => {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 pt-6">
@@ -154,7 +154,7 @@ export const ReturnsPage: React.FC = () => {
         <div className="overflow-hidden rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl overflow-hidden border-2 border-[#FF7A1A] shadow-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl overflow-hidden border-2 border-sun-orange shadow-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                 <User className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400 dark:text-slate-500" />
               </div>
 
@@ -163,7 +163,7 @@ export const ReturnsPage: React.FC = () => {
                   <h1 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                     Returns &amp; Replacements Hub
                   </h1>
-                  <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 px-2.5 py-0.5 text-[10px] font-bold text-[#FF7A1A] border border-orange-200">
+                  <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 px-2.5 py-0.5 text-[10px] font-bold text-sun-orange border border-orange-200">
                     {displayName}
                   </span>
                 </div>
@@ -174,7 +174,7 @@ export const ReturnsPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 rounded-2xl border border-orange-200/80 bg-orange-50/70 dark:border-orange-900/40 dark:bg-orange-950/30 p-3.5 px-4 shadow-xs">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF7A1A] text-white">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sun-orange text-white">
                 <RotateCcw className="h-5 w-5" />
               </div>
               <div>
@@ -218,7 +218,7 @@ export const ReturnsPage: React.FC = () => {
               <button
                 type="button"
                 aria-current="page"
-                className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] px-4 py-3 text-xs font-bold text-white shadow-md shadow-orange-500/20"
+                className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] px-4 py-3 text-xs font-bold text-white shadow-md shadow-orange-500/20"
               >
                 <span>Returns &amp; Refunds</span>
                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px]">{deliveredItems.length} eligible</span>
@@ -271,7 +271,7 @@ export const ReturnsPage: React.FC = () => {
             {/* 3 Core Guarantees Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="rounded-2xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-5 shadow-sm backdrop-blur-xl flex items-start gap-3.5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-[#FF7A1A]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-sun-orange">
                   <RotateCcw className="h-5 w-5" />
                 </div>
                 <div>
@@ -331,7 +331,7 @@ export const ReturnsPage: React.FC = () => {
                       placeholder={orderGroups[0] ? `e.g. ${orderGroups[0].id}` : 'Enter your order number'}
                       value={lookupOrderId}
                       onChange={(e) => setLookupOrderId(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#FF7A1A]"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-sun-orange"
                     />
                   </div>
                 </div>
@@ -340,7 +340,7 @@ export const ReturnsPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={!lookupOrderId.trim()}
-                    className="w-full rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] disabled:opacity-50 disabled:cursor-not-allowed py-2.5 text-xs font-bold text-white transition-all shadow-sm"
+                    className="w-full rounded-xl bg-sun-orange hover:bg-sun-orange-600 disabled:opacity-50 disabled:cursor-not-allowed py-2.5 text-xs font-bold text-white transition-all shadow-sm"
                   >
                     Find Items
                   </button>
@@ -403,7 +403,7 @@ export const ReturnsPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => startReturnForItem(item)}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs"
                         >
                           <span>Start Return</span>
                           <ArrowRight className="h-3 w-3" />
@@ -504,7 +504,7 @@ export const ReturnsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setWizardStep(2)}
-                  className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white shadow-xs"
+                  className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-xs"
                 >
                   Continue →
                 </button>
@@ -531,7 +531,7 @@ export const ReturnsPage: React.FC = () => {
                     key={opt.key}
                     className={`block p-3 rounded-xl border cursor-pointer text-xs ${
                       resolutionType === opt.key
-                        ? 'border-[#FF7A1A] bg-orange-50/50 dark:bg-orange-950/20'
+                        ? 'border-sun-orange bg-orange-50/50 dark:bg-orange-950/20'
                         : 'border-slate-200 dark:border-slate-700'
                     }`}
                   >
@@ -542,7 +542,7 @@ export const ReturnsPage: React.FC = () => {
                         value={opt.key}
                         checked={resolutionType === opt.key}
                         onChange={() => setResolutionType(opt.key)}
-                        className="accent-[#FF7A1A]"
+                        className="accent-sun-orange"
                       />
                       <span className="font-bold text-slate-900 dark:text-white">{opt.title}</span>
                     </span>
@@ -562,7 +562,7 @@ export const ReturnsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setWizardStep(3)}
-                  className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white shadow-xs"
+                  className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-xs"
                 >
                   Continue →
                 </button>
@@ -588,7 +588,7 @@ export const ReturnsPage: React.FC = () => {
                     key={opt.key}
                     className={`block p-3 rounded-xl border cursor-pointer text-xs ${
                       returnMethod === opt.key
-                        ? 'border-[#FF7A1A] bg-orange-50/50 dark:bg-orange-950/20'
+                        ? 'border-sun-orange bg-orange-50/50 dark:bg-orange-950/20'
                         : 'border-slate-200 dark:border-slate-700'
                     }`}
                   >
@@ -599,7 +599,7 @@ export const ReturnsPage: React.FC = () => {
                         value={opt.key}
                         checked={returnMethod === opt.key}
                         onChange={() => setReturnMethod(opt.key)}
-                        className="accent-[#FF7A1A]"
+                        className="accent-sun-orange"
                       />
                       <span className="font-bold text-slate-900 dark:text-white">{opt.title}</span>
                     </span>
@@ -623,7 +623,7 @@ export const ReturnsPage: React.FC = () => {
                   type="button"
                   onClick={handleFinishReturn}
                   disabled={returnMutation.isPending}
-                  className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] disabled:opacity-60 px-5 py-2 text-xs font-bold text-white shadow-xs"
+                  className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 disabled:opacity-60 px-5 py-2 text-xs font-bold text-white shadow-xs"
                 >
                   {returnMutation.isPending ? 'Submitting…' : 'Submit Return Request'}
                 </button>

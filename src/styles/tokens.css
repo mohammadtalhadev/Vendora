@@ -12,33 +12,29 @@
   /* ==========================================================================
      1. Brand Color Palette Tokens
      ========================================================================== */
-  --color-sun-orange: #FF7A1A;
-  --color-sun-orange-hover: #EA6C13;
-  --color-sun-orange-light: #FFF7ED;
-  --color-sun-orange-muted: rgba(255, 122, 26, 0.12);
+  /* Palette colours are defined ONCE in the @theme block of base.css.
+     Only derived aliases live here, expressed in terms of the canonical vars. */
+  --color-sun-orange-hover: var(--color-sun-orange-600);
+  --color-sun-orange-light: var(--color-sun-orange-50);
+  --color-sun-orange-muted: color-mix(in srgb, var(--color-sun-orange) 12%, transparent);
 
-  --color-aqua: #00B8C8;
-  --color-aqua-hover: #009EAD;
-  --color-aqua-light: #ECFEFF;
-  --color-aqua-muted: rgba(0, 184, 200, 0.12);
+  --color-aqua-hover: var(--color-aqua-600);
+  --color-aqua-light: var(--color-aqua-50);
+  --color-aqua-muted: color-mix(in srgb, var(--color-aqua) 12%, transparent);
 
-  --color-coral: #FF4D6D;
-  --color-coral-hover: #E63D5C;
-  --color-coral-light: #FFF1F2;
-  --color-coral-muted: rgba(255, 77, 109, 0.12);
+  --color-coral-hover: var(--color-coral-600);
+  --color-coral-light: var(--color-coral-50);
+  --color-coral-muted: color-mix(in srgb, var(--color-coral) 12%, transparent);
 
-  --color-lemon: #FFD43B;
-  --color-lemon-hover: #ECC128;
-  --color-lemon-light: #FEFCE8;
-  --color-lemon-muted: rgba(255, 212, 59, 0.16);
+  --color-lemon-hover: var(--color-lemon-600);
+  --color-lemon-light: var(--color-lemon-50);
+  --color-lemon-muted: color-mix(in srgb, var(--color-lemon) 16%, transparent);
 
-  --color-ink: #0F172A;
-  --color-ink-muted: #64748B;
-  --color-ink-subtle: #94A3B8;
+  --color-ink-muted: var(--color-ink-500);
+  --color-ink-subtle: var(--color-ink-400);
 
-  --color-mist: #F8FAFC;
-  --color-mist-light: #FFFFFF;
-  --color-mist-dark: #F1F5F9;
+  --color-mist-light: var(--color-mist-50);
+  --color-mist-dark: var(--color-mist-200);
 
   /* ==========================================================================
      2. Glassmorphism & Blur Tokens
@@ -67,19 +63,16 @@
   --card-solid: #FFFFFF;
   --card-near-solid: rgba(255, 255, 255, 0.96);
 
-  /* Geometry & Radii */
-  --radius-pill: 9999px;
-  --radius-card: 1.25rem;
+  /* Geometry & Radii — pill/card/modal radii are @theme tokens in base.css. */
   --radius-card-lg: 1.5rem;
-  --radius-modal: 1.5rem;
 
   /* ==========================================================================
      3. Color Tokens for Glass Surfaces
      ========================================================================== */
-  --glass-orange-bg: rgba(255, 122, 26, 0.15);
-  --glass-orange-border: rgba(255, 122, 26, 0.3);
-  --glass-aqua-bg: rgba(0, 184, 200, 0.12);
-  --glass-aqua-border: rgba(0, 184, 200, 0.25);
+  --glass-orange-bg: color-mix(in srgb, var(--color-sun-orange) 15%, transparent);
+  --glass-orange-border: color-mix(in srgb, var(--color-sun-orange) 30%, transparent);
+  --glass-aqua-bg: color-mix(in srgb, var(--color-aqua) 12%, transparent);
+  --glass-aqua-border: color-mix(in srgb, var(--color-aqua) 25%, transparent);
   --glass-slate-bg: rgba(15, 23, 42, 0.05);
   --glass-slate-border: rgba(15, 23, 42, 0.1);
 }
@@ -148,7 +141,7 @@
 }
 
 .glass-pill-orange:hover {
-  background: rgba(255, 122, 26, 0.25);
+  background: color-mix(in srgb, var(--color-sun-orange) 25%, transparent);
   box-shadow: var(--glass-shadow-hover);
 }
 
@@ -165,7 +158,7 @@
 }
 
 .glass-pill-aqua:hover {
-  background: rgba(0, 184, 200, 0.2);
+  background: color-mix(in srgb, var(--color-aqua) 20%, transparent);
   box-shadow: var(--glass-shadow-hover);
 }
 
@@ -294,11 +287,11 @@
 }
 
 .glow-orb-orange {
-  background: radial-gradient(circle at center, rgba(255, 122, 26, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--color-sun-orange) 15%, transparent) 0%, transparent 70%);
 }
 
 .glow-orb-aqua {
-  background: radial-gradient(circle at center, rgba(0, 184, 200, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--color-aqua) 12%, transparent) 0%, transparent 70%);
 }
 
 .glow-orb-indigo {

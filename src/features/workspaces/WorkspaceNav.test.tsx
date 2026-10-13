@@ -175,8 +175,8 @@ describe('Workspace Navigation & Layout Shell', () => {
     it('highlights active route correctly', () => {
       renderWorkspace(<VendorNav />, ['/vendor/orders']);
 
-      expect(screen.getByRole('link', { name: /orders/i }).className).toContain('text-[#EA6C13]');
-      expect(screen.getByRole('link', { name: /earnings/i }).className).not.toContain('text-[#EA6C13]');
+      expect(screen.getByRole('link', { name: /orders/i }).className).toContain('text-sun-orange-600');
+      expect(screen.getByRole('link', { name: /earnings/i }).className).not.toContain('text-sun-orange-600');
     });
   });
 

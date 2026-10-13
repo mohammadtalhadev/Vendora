@@ -436,7 +436,7 @@ export const VendorProfilePage: React.FC = () => {
 
             <section className={CARD}>
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <Store className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <Store className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 <h3 className="text-sm font-bold text-slate-900">Not built in this project</h3>
               </div>
               <ul className="space-y-2 text-[11px] text-slate-500">

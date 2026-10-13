@@ -169,7 +169,7 @@ export const AdminSettingsPage: React.FC = () => {
 
   const handleSettingsTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = SETTINGS_TABS.indexOf(activeTab);
-    let nextIndex = currentIndex;
+    let nextIndex: number;
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowDown':
@@ -198,7 +198,7 @@ export const AdminSettingsPage: React.FC = () => {
 
   const handleGatewayModeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = GATEWAY_MODES.indexOf(gatewayMode);
-    let nextIndex = currentIndex;
+    let nextIndex: number;
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowDown':
@@ -259,7 +259,7 @@ export const AdminSettingsPage: React.FC = () => {
             <button
               type="button"
               onClick={handleSave}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Check className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
               <span aria-live="polite">{saveSuccess ? 'Saved Successfully!' : 'Save Configuration'}</span>

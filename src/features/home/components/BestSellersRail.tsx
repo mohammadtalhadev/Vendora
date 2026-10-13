@@ -157,7 +157,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
                 </p>
                 <Link
                   to={`/products/${item.id}`}
-                  className="mt-1 line-clamp-2 text-xs font-bold leading-snug text-slate-900 group-hover:text-[#FF7A1A] transition-colors"
+                  className="mt-1 line-clamp-2 text-xs font-bold leading-snug text-slate-900 group-hover:text-sun-orange transition-colors"
                 >
                   {item.title}
                 </Link>
@@ -185,7 +185,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
                 <button
                   type="button"
                   onClick={() => onAddToCart && onAddToCart(item)}
-                  className="cursor-pointer mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-orange-50 py-2 text-xs font-bold text-[#FF7A1A] transition-all hover:bg-[#FF7A1A] hover:text-white active:scale-95"
+                  className="cursor-pointer mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-orange-50 py-2 text-xs font-bold text-sun-orange transition-all hover:bg-sun-orange hover:text-white active:scale-95"
                 >
                   <ShoppingBag className="h-3.5 w-3.5" />
                   Add to Cart

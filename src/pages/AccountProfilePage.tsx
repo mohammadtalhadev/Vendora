@@ -169,7 +169,7 @@ const dateOf = (iso: string): string => {
 const panelClass =
   'rounded-3xl border border-white/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-6 sm:p-8 shadow-sm space-y-6';
 const inputClass =
-  'mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#FF7A1A]';
+  'mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-sun-orange';
 const labelClass = 'block text-xs font-bold text-slate-700 dark:text-slate-300';
 const chipClass = 'rounded-full px-2 py-0.5 text-[10px] font-bold';
 
@@ -730,11 +730,11 @@ export const AccountProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 pt-6">
@@ -744,7 +744,7 @@ export const AccountProfilePage: React.FC = () => {
         <div className="overflow-hidden rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl overflow-hidden border-2 border-[#FF7A1A] shadow-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-2xl overflow-hidden border-2 border-sun-orange shadow-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                 {user?.avatar ? (
                   <img src={user.avatar} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -763,14 +763,14 @@ export const AccountProfilePage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 rounded-2xl border border-orange-200/80 bg-orange-50/70 dark:border-orange-900/40 dark:bg-orange-950/30 p-3.5 px-4 shadow-xs">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF7A1A] text-white">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sun-orange text-white">
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
                 <h4 className="font-outfit text-xs font-bold text-slate-900 dark:text-white">Returns, refunds &amp; disputes</h4>
                 <p className="text-[11px] text-slate-500">
                   Manage eligible returns and track refund progress seamlessly.{' '}
-                  <Link to="/refund-policy" className="font-bold text-[#FF7A1A] hover:underline">
+                  <Link to="/refund-policy" className="font-bold text-sun-orange hover:underline">
                     Refund policy
                   </Link>
                 </p>
@@ -798,12 +798,12 @@ export const AccountProfilePage: React.FC = () => {
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider">In progress</span>
-                <Truck className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <Truck className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
                 {ordersQuery.isLoading || ordersUnavailable ? '—' : activePackages.length}
               </div>
-              <span className="text-[11px] font-semibold text-[#FF7A1A]">Placed, in transit, or in a return</span>
+              <span className="text-[11px] font-semibold text-sun-orange">Placed, in transit, or in a return</span>
             </button>
 
             <button
@@ -881,7 +881,7 @@ export const AccountProfilePage: React.FC = () => {
                       onClick={() => handleTabChange(tab.key)}
                       className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
                         selected
-                          ? 'bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] text-white font-bold shadow-md shadow-orange-500/20'
+                          ? 'bg-gradient-to-r from-sun-orange to-[#FF9040] text-white font-bold shadow-md shadow-orange-500/20'
                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                       }`}
                     >
@@ -1019,7 +1019,7 @@ export const AccountProfilePage: React.FC = () => {
                           <button
                             type="submit"
                             disabled={profileBusy}
-                            className="rounded-xl bg-[#FF7A1A] text-white px-5 py-2.5 text-xs font-bold hover:bg-[#EA6C13] shadow-md shadow-orange-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="rounded-xl bg-sun-orange text-white px-5 py-2.5 text-xs font-bold hover:bg-sun-orange-600 shadow-md shadow-orange-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {profileBusy ? 'Saving…' : 'Save Changes'}
                           </button>
@@ -1086,7 +1086,7 @@ export const AccountProfilePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleTabChange('addresses')}
-                      className="text-xs font-bold text-[#FF7A1A] hover:underline pt-2 block"
+                      className="text-xs font-bold text-sun-orange hover:underline pt-2 block"
                     >
                       Addresses on your orders →
                     </button>
@@ -1120,7 +1120,7 @@ export const AccountProfilePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleTabChange('payments')}
-                      className="text-xs font-bold text-[#FF7A1A] hover:underline pt-2 block"
+                      className="text-xs font-bold text-sun-orange hover:underline pt-2 block"
                     >
                       What your orders were paid with →
                     </button>
@@ -1215,7 +1215,7 @@ export const AccountProfilePage: React.FC = () => {
                             </div>
                             <Link
                               to={`/orders/${pkg.orderGroupId}`}
-                              className="rounded-xl bg-[#FF7A1A] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs shrink-0"
+                              className="rounded-xl bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white shadow-xs shrink-0"
                             >
                               Open order
                             </Link>
@@ -1257,7 +1257,7 @@ export const AccountProfilePage: React.FC = () => {
                       aria-haspopup="dialog"
                       onClick={() => openReturnDialog('')}
                       disabled={returnablePackages.length === 0}
-                      className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="inline-flex items-center gap-1.5 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <RotateCcw className="h-4 w-4" aria-hidden="true" />
                       <span>Start a Return</span>
@@ -1368,7 +1368,7 @@ export const AccountProfilePage: React.FC = () => {
                     <p className="text-[11px] text-slate-500">
                       Refund amounts and return decisions are written by the seller and the support desk; this page only
                       requests the return. See the{' '}
-                      <Link to="/refund-policy" className="font-bold text-[#FF7A1A] hover:underline">
+                      <Link to="/refund-policy" className="font-bold text-sun-orange hover:underline">
                         refund policy
                       </Link>
                       .
@@ -1400,7 +1400,7 @@ export const AccountProfilePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => openAddAddressModal('home')}
-                      className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
+                      className="inline-flex items-center gap-1.5 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
                     >
                       <Plus className="h-4 w-4" aria-hidden="true" />
                       <span>Add New Address</span>
@@ -1455,7 +1455,7 @@ export const AccountProfilePage: React.FC = () => {
                   {/* Saved addresses list */}
                   {savedAddresses.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-8 text-center space-y-3">
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-[#FF7A1A]">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-sun-orange">
                         <MapPin className="h-6 w-6" />
                       </div>
                       <h4 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
@@ -1467,7 +1467,7 @@ export const AccountProfilePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => openAddAddressModal('home')}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white transition-colors cursor-pointer"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>Add Address</span>
@@ -1482,7 +1482,7 @@ export const AccountProfilePage: React.FC = () => {
                             key={addr.id}
                             className={`rounded-2xl border p-5 space-y-3 transition-all relative ${
                               addr.isDefault
-                                ? 'border-[#FF7A1A]/40 bg-orange-50/20 dark:bg-orange-950/10 shadow-xs'
+                                ? 'border-sun-orange/40 bg-orange-50/20 dark:bg-orange-950/10 shadow-xs'
                                 : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/40'
                             }`}
                           >
@@ -1506,7 +1506,7 @@ export const AccountProfilePage: React.FC = () => {
                                 )}
 
                                 {addr.isDefault && (
-                                  <span className="rounded-full bg-[#FF7A1A]/10 text-[#FF7A1A] border border-[#FF7A1A]/30 px-2 py-0.5 text-[10px] font-bold">
+                                  <span className="rounded-full bg-sun-orange/10 text-sun-orange border border-sun-orange/30 px-2 py-0.5 text-[10px] font-bold">
                                     Default
                                   </span>
                                 )}
@@ -1552,7 +1552,7 @@ export const AccountProfilePage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setDefaultAddress(addr.id)}
-                                  className="text-[11px] font-bold text-[#FF7A1A] hover:underline cursor-pointer"
+                                  className="text-[11px] font-bold text-sun-orange hover:underline cursor-pointer"
                                 >
                                   Set as default address
                                 </button>
@@ -1597,7 +1597,7 @@ export const AccountProfilePage: React.FC = () => {
                                   setAddressZipCode(entry.zipCode || '');
                                   setAddressCountry(entry.country || 'United States');
                                 }}
-                                className="text-[10px] font-bold text-[#FF7A1A] hover:underline cursor-pointer"
+                                className="text-[10px] font-bold text-sun-orange hover:underline cursor-pointer"
                               >
                                 + Save as Home/Work
                               </button>
@@ -1641,7 +1641,7 @@ export const AccountProfilePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={openAddPaymentModal}
-                        className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
                       >
                         <Plus className="h-4 w-4" aria-hidden="true" />
                         <span>Add Payment Method</span>
@@ -1658,7 +1658,7 @@ export const AccountProfilePage: React.FC = () => {
                   {/* Saved cards list */}
                   {savedPaymentMethods.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-8 text-center space-y-3">
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-[#FF7A1A]">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-sun-orange">
                         <CreditCard className="h-6 w-6" />
                       </div>
                       <h4 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
@@ -1670,7 +1670,7 @@ export const AccountProfilePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={openAddPaymentModal}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white transition-colors cursor-pointer"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>Add Payment Method</span>
@@ -1683,7 +1683,7 @@ export const AccountProfilePage: React.FC = () => {
                           key={pm.id}
                           className={`rounded-2xl border p-5 space-y-4 transition-all relative ${
                             pm.isDefault
-                              ? 'border-[#FF7A1A]/40 bg-gradient-to-br from-white via-orange-50/10 to-white dark:from-slate-900 dark:via-orange-950/10 dark:to-slate-900 shadow-xs'
+                              ? 'border-sun-orange/40 bg-gradient-to-br from-white via-orange-50/10 to-white dark:from-slate-900 dark:via-orange-950/10 dark:to-slate-900 shadow-xs'
                               : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/40'
                           }`}
                         >
@@ -1725,14 +1725,14 @@ export const AccountProfilePage: React.FC = () => {
 
                             <div className="flex items-center gap-2">
                               {pm.isDefault ? (
-                                <span className="rounded-full bg-[#FF7A1A]/10 text-[#FF7A1A] border border-[#FF7A1A]/30 px-2.5 py-0.5 text-[10px] font-bold">
+                                <span className="rounded-full bg-sun-orange/10 text-sun-orange border border-sun-orange/30 px-2.5 py-0.5 text-[10px] font-bold">
                                   Default
                                 </span>
                               ) : (
                                 <button
                                   type="button"
                                   onClick={() => setDefaultPaymentMethod(pm.id)}
-                                  className="font-bold text-[#FF7A1A] hover:underline cursor-pointer"
+                                  className="font-bold text-sun-orange hover:underline cursor-pointer"
                                 >
                                   Make default
                                 </button>
@@ -1818,7 +1818,7 @@ export const AccountProfilePage: React.FC = () => {
                         setIsDisputeOpen(true);
                       }}
                       disabled={subOrders.length === 0}
-                      className="inline-flex items-center gap-1.5 rounded-2xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="inline-flex items-center gap-1.5 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                       <span>Open New Dispute</span>
@@ -1883,7 +1883,7 @@ export const AccountProfilePage: React.FC = () => {
                           {caseRow.subOrderId && (
                             <Link
                               to={`/orders/${caseRow.orderGroupId ?? caseRow.subOrderId}`}
-                              className="text-xs font-bold text-[#FF7A1A] hover:underline inline-block"
+                              className="text-xs font-bold text-sun-orange hover:underline inline-block"
                             >
                               Open the order this case is on →
                             </Link>
@@ -1991,7 +1991,7 @@ export const AccountProfilePage: React.FC = () => {
                               <button
                                 type="submit"
                                 disabled={passwordBusy}
-                                className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-4 py-2 text-xs font-bold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                               >
                                 {passwordBusy ? 'Updating…' : 'Update Password'}
                               </button>
@@ -2052,7 +2052,7 @@ export const AccountProfilePage: React.FC = () => {
                       for records.
                     </p>
                     <div className="flex flex-wrap gap-3 pt-1">
-                      <Link to="/contact" className="text-xs font-bold text-[#FF7A1A] hover:underline">
+                      <Link to="/contact" className="text-xs font-bold text-sun-orange hover:underline">
                         Contact support →
                       </Link>
                       <Link to="/help" className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:underline">
@@ -2130,7 +2130,7 @@ export const AccountProfilePage: React.FC = () => {
                 What you want
               </legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white cursor-pointer hover:border-[#FF7A1A]">
+                <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white cursor-pointer hover:border-sun-orange">
                   <input
                     type="radio"
                     name="returnResolution"
@@ -2140,7 +2140,7 @@ export const AccountProfilePage: React.FC = () => {
                   />
                   <span>Replacement</span>
                 </label>
-                <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white cursor-pointer hover:border-[#FF7A1A]">
+                <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white cursor-pointer hover:border-sun-orange">
                   <input
                     type="radio"
                     name="returnResolution"
@@ -2170,7 +2170,7 @@ export const AccountProfilePage: React.FC = () => {
               type="button"
               onClick={submitReturn}
               disabled={returnMutation.isPending || !returnSubOrderId}
-              className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {returnMutation.isPending ? 'Sending…' : 'Request Return'}
             </button>
@@ -2466,7 +2466,7 @@ export const AccountProfilePage: React.FC = () => {
                 type="checkbox"
                 checked={addressIsDefault}
                 onChange={(e) => setAddressIsDefault(e.target.checked)}
-                className="rounded border-slate-300 text-[#FF7A1A] focus:ring-[#FF7A1A] h-4 w-4"
+                className="rounded border-slate-300 text-sun-orange focus:ring-sun-orange h-4 w-4"
               />
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Set as default delivery address for future orders
@@ -2485,7 +2485,7 @@ export const AccountProfilePage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
+                className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
               >
                 {editingAddressId ? 'Save Changes' : 'Save Address'}
               </button>
@@ -2514,7 +2514,7 @@ export const AccountProfilePage: React.FC = () => {
                 onClick={() => setPaymentType('card')}
                 className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   paymentType === 'card'
-                    ? 'border-[#FF7A1A] bg-orange-50 text-[#FF7A1A] dark:bg-orange-950/60 ring-2 ring-orange-500/20'
+                    ? 'border-sun-orange bg-orange-50 text-sun-orange dark:bg-orange-950/60 ring-2 ring-orange-500/20'
                     : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400'
                 }`}
               >
@@ -2526,7 +2526,7 @@ export const AccountProfilePage: React.FC = () => {
                 onClick={() => setPaymentType('cod')}
                 className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   paymentType === 'cod'
-                    ? 'border-[#FF7A1A] bg-orange-50 text-[#FF7A1A] dark:bg-orange-950/60 ring-2 ring-orange-500/20'
+                    ? 'border-sun-orange bg-orange-50 text-sun-orange dark:bg-orange-950/60 ring-2 ring-orange-500/20'
                     : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400'
                 }`}
               >
@@ -2558,7 +2558,7 @@ export const AccountProfilePage: React.FC = () => {
                       Card Number *
                     </label>
                     {cardNumber.length >= 4 && (
-                      <span className="text-[10px] font-bold text-[#FF7A1A]">
+                      <span className="text-[10px] font-bold text-sun-orange">
                         {detectCardBrand(cardNumber)}
                       </span>
                     )}
@@ -2645,7 +2645,7 @@ export const AccountProfilePage: React.FC = () => {
                 type="checkbox"
                 checked={paymentIsDefault}
                 onChange={(e) => setPaymentIsDefault(e.target.checked)}
-                className="rounded border-slate-300 text-[#FF7A1A] focus:ring-[#FF7A1A] h-4 w-4"
+                className="rounded border-slate-300 text-sun-orange focus:ring-sun-orange h-4 w-4"
               />
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Set as default payment method
@@ -2664,7 +2664,7 @@ export const AccountProfilePage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
+                className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
               >
                 Save Payment Method
               </button>

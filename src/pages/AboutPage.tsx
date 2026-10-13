@@ -87,7 +87,7 @@ export const AboutPage: React.FC = () => {
             2. Breadcrumbs Strip
            ========================================================================= */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">
+          <Link to="/" className="hover:text-sun-orange transition-colors">
             Home
           </Link>
           <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
@@ -100,14 +100,14 @@ export const AboutPage: React.FC = () => {
             3. Hero Section: Empowering Independent Creators
            ========================================================================= */}
         <div className="text-center max-w-4xl mx-auto space-y-5">
-          <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-[#FF7A1A] shadow-2xs">
-            <span className="h-2 w-2 rounded-full bg-[#FF7A1A] animate-pulse" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-sun-orange shadow-2xs">
+            <span className="h-2 w-2 rounded-full bg-sun-orange animate-pulse" />
             <span>OUR MISSION &amp; CREED</span>
           </div>
 
           <h1 className="font-outfit text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
             Empowering Independent Creators, Brands &amp; Conscious Shoppers Across{' '}
-            <span className="bg-gradient-to-r from-[#FF7A1A] via-pink-500 to-indigo-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-sun-orange via-pink-500 to-indigo-600 bg-clip-text text-transparent">
               160+ Countries
             </span>
           </h1>
@@ -126,7 +126,7 @@ export const AboutPage: React.FC = () => {
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
                   $450M+
                 </div>
-                <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#FF7A1A] mt-1">
+                <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-sun-orange mt-1">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   <span>100% Escrow Protected</span>
                 </div>
@@ -180,7 +180,7 @@ export const AboutPage: React.FC = () => {
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 pb-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
                 ARCHITECTURAL PRINCIPLES
               </span>
               <h2 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
@@ -197,10 +197,10 @@ export const AboutPage: React.FC = () => {
             <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 p-6 sm:p-7 shadow-[0_15px_35px_rgba(15,23,42,0.04)] backdrop-blur-xl flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A] border border-orange-200/80 dark:border-orange-800/40 shadow-xs">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-sun-orange border border-orange-200/80 dark:border-orange-800/40 shadow-xs">
                     <TrendingUp className="h-5 w-5" />
                   </div>
-                  <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] border border-orange-200">
+                  <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-sun-orange border border-orange-200">
                     Disruptive Economics
                   </span>
                 </div>
@@ -215,7 +215,7 @@ export const AboutPage: React.FC = () => {
               </div>
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-xs font-bold text-slate-500">
                 <span>Standard Market Take: 15% – 30% Cut</span>
-                <span className="text-[#FF7A1A]">Vendora Rate: 0% Base Fee</span>
+                <span className="text-sun-orange">Vendora Rate: 0% Base Fee</span>
               </div>
             </div>
 
@@ -361,7 +361,7 @@ export const AboutPage: React.FC = () => {
           {/* 4 Environmental Pillars Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 p-5 backdrop-blur-xl shadow-xs space-y-2">
-              <div className="h-9 w-9 rounded-xl bg-orange-50 text-[#FF7A1A] flex items-center justify-center font-bold">
+              <div className="h-9 w-9 rounded-xl bg-orange-50 text-sun-orange flex items-center justify-center font-bold">
                 <Package className="h-4 w-4" />
               </div>
               <h4 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
@@ -415,7 +415,7 @@ export const AboutPage: React.FC = () => {
            ========================================================================= */}
         <section className="space-y-6">
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] block">
+            <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
               THE LEADERSHIP
             </span>
             <h2 className="font-outfit text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
@@ -448,7 +448,7 @@ export const AboutPage: React.FC = () => {
                     <h4 className="font-outfit text-base font-black text-slate-900 dark:text-white">
                       {leader.name}
                     </h4>
-                    <p className="text-[11px] font-bold text-[#FF7A1A] mt-0.5">
+                    <p className="text-[11px] font-bold text-sun-orange mt-0.5">
                       {leader.role}
                     </p>
                   </div>
@@ -459,7 +459,7 @@ export const AboutPage: React.FC = () => {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
-                  <Award className="h-3 w-3 text-[#FF7A1A]" />
+                  <Award className="h-3 w-3 text-sun-orange" />
                   <span>{leader.credentials}</span>
                 </div>
               </div>
@@ -474,7 +474,7 @@ export const AboutPage: React.FC = () => {
           {/* Left: Direct Cross-Border Flow Map graphic */}
           <div className="lg:col-span-5 space-y-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
                 GLOBAL LOGISTICS FLOW
               </span>
               <h3 className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
@@ -497,24 +497,23 @@ export const AboutPage: React.FC = () => {
                   <path
                     d="M 40 140 Q 150 40 260 90"
                     fill="none"
-                    stroke="#FF7A1A"
                     strokeWidth="2.5"
                     strokeDasharray="6 4"
-                    className="animate-pulse"
+                    className="animate-pulse stroke-sun-orange"
                   />
                   <path
                     d="M 150 40 Q 200 130 260 160"
                     fill="none"
-                    stroke="#00B8C8"
                     strokeWidth="2"
                     strokeDasharray="4 4"
+                    className="stroke-aqua"
                   />
                 </svg>
 
                 {/* Hub Pins */}
                 <div className="absolute left-8 bottom-12 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-xl shadow-md border border-orange-200 text-center">
-                  <div className="flex items-center gap-1 text-[10px] font-black text-[#FF7A1A]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF7A1A]" />
+                  <div className="flex items-center gap-1 text-[10px] font-black text-sun-orange">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sun-orange" />
                     Hub Karachi 01
                   </div>
                 </div>
@@ -535,7 +534,7 @@ export const AboutPage: React.FC = () => {
               </div>
 
               <div className="mt-4 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-black text-[#FF7A1A]">
+                <div className="flex items-center gap-1.5 text-xs font-black text-sun-orange">
                   <MapPin className="h-3.5 w-3.5" />
                   <span>Primary Port Axis &amp; MENA Corridor</span>
                 </div>
@@ -549,7 +548,7 @@ export const AboutPage: React.FC = () => {
           {/* Right: Milestones in Decentralization Timeline */}
           <div className="lg:col-span-7 space-y-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
                 FOUNDING TIMELINE
               </span>
               <h3 className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
@@ -563,7 +562,7 @@ export const AboutPage: React.FC = () => {
                   key={idx}
                   className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 p-5 shadow-xs backdrop-blur-xl flex items-start gap-4 hover:border-orange-200 transition-colors"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A] border border-orange-200/80 dark:border-orange-800/40 font-outfit font-black text-sm shadow-2xs">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-sun-orange border border-orange-200/80 dark:border-orange-800/40 font-outfit font-black text-sm shadow-2xs">
                     '{item.year.slice(2)}
                   </div>
                   <div className="space-y-1">
@@ -591,11 +590,11 @@ export const AboutPage: React.FC = () => {
         <section className="pt-4">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-8 sm:p-12 text-white shadow-2xl border border-white/10">
             {/* Ambient radiant glow accents */}
-            <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#FF7A1A]/30 blur-[100px] pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-sun-orange/30 blur-[100px] pointer-events-none" />
             <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-indigo-500/30 blur-[110px] pointer-events-none" />
 
             <div className="relative z-10 max-w-2xl space-y-4">
-              <span className="inline-block rounded-full bg-orange-500/20 border border-orange-500/40 px-3.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#FF7A1A]">
+              <span className="inline-block rounded-full bg-orange-500/20 border border-orange-500/40 px-3.5 py-1 text-[10px] font-black uppercase tracking-wider text-sun-orange">
                 BE PART OF THE SHIFT
               </span>
               <h2 className="font-outfit text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
@@ -610,12 +609,12 @@ export const AboutPage: React.FC = () => {
                   to="/products"
                   className="inline-flex items-center gap-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 px-6 py-3.5 text-xs sm:text-sm font-extrabold shadow-lg transition-all active:scale-95 cursor-pointer"
                 >
-                  <ShoppingBag className="h-4 w-4 text-[#FF7A1A]" />
+                  <ShoppingBag className="h-4 w-4 text-sun-orange" />
                   <span>Explore Products</span>
                 </Link>
                 <Link
                   to="/become-a-seller"
-                  className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-[#EA6C13] text-white px-6 py-3.5 text-xs sm:text-sm font-extrabold shadow-lg shadow-orange-500/30 transition-all active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 text-white px-6 py-3.5 text-xs sm:text-sm font-extrabold shadow-lg shadow-orange-500/30 transition-all active:scale-95 cursor-pointer"
                 >
                   <Store className="h-4 w-4" />
                   <span>Sell on Vendora</span>

@@ -76,13 +76,13 @@ export const PrivacyPolicyPage: React.FC = () => {
                 onClick={() => setIsDsarModalOpen(true)}
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-glass-pill hover:bg-white transition-all active:scale-95 cursor-pointer"
               >
-                <UserCheck className="h-4 w-4 text-[#FF7A1A]" />
+                <UserCheck className="h-4 w-4 text-sun-orange" />
                 Download / Delete Data (DSAR)
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95 cursor-pointer"
               >
                 <Printer className="h-4 w-4" />
                 Print Legal Policy
@@ -123,7 +123,7 @@ export const PrivacyPolicyPage: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-glass backdrop-blur-xl flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-[#FF7A1A] shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-sun-orange shrink-0">
                 <Eye className="h-5 w-5" />
               </div>
               <div>
@@ -137,7 +137,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-8 shadow-glass backdrop-blur-xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-[#FF7A1A] uppercase tracking-wider mb-1">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-sun-orange uppercase tracking-wider mb-1">
                   <Sliders className="h-3.5 w-3.5" />
                   Your Privacy, Your Control
                 </div>
@@ -148,7 +148,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSaveCookiePreferences}
-                className="rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white transition-all cursor-pointer shadow-md hover:shadow-orange-glow active:scale-95 self-start sm:self-auto"
+                className="rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white transition-all cursor-pointer shadow-md hover:shadow-orange-glow active:scale-95 self-start sm:self-auto"
               >
                 Save Preferences
               </button>
@@ -182,7 +182,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                       type="checkbox"
                       checked={cookieAnalytics}
                       onChange={(e) => setCookieAnalytics(e.target.checked)}
-                      className="accent-[#FF7A1A] h-4 w-4 cursor-pointer"
+                      className="accent-sun-orange h-4 w-4 cursor-pointer"
                     />
                   </div>
                   <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
@@ -203,7 +203,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                       type="checkbox"
                       checked={cookiePersonalization}
                       onChange={(e) => setCookiePersonalization(e.target.checked)}
-                      className="accent-[#FF7A1A] h-4 w-4 cursor-pointer"
+                      className="accent-sun-orange h-4 w-4 cursor-pointer"
                     />
                   </div>
                   <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
@@ -224,7 +224,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                       type="checkbox"
                       checked={cookieMarketing}
                       onChange={(e) => setCookieMarketing(e.target.checked)}
-                      className="accent-[#FF7A1A] h-4 w-4 cursor-pointer"
+                      className="accent-sun-orange h-4 w-4 cursor-pointer"
                     />
                   </div>
                   <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
@@ -244,32 +244,32 @@ export const PrivacyPolicyPage: React.FC = () => {
             <div className="hidden lg:block lg:col-span-4 sticky top-24 space-y-4">
               <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-glass backdrop-blur-xl space-y-3 text-xs">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-[#FF7A1A]" />
+                  <FileText className="h-4 w-4 text-sun-orange" />
                   Table of Contents
                 </h3>
                 <nav className="space-y-1.5 text-slate-600 font-medium">
-                  <a href="#section-1" className="block py-1 hover:text-[#FF7A1A] transition-colors">
+                  <a href="#section-1" className="block py-1 hover:text-sun-orange transition-colors">
                     1. Information We Collect
                   </a>
-                  <a href="#section-2" className="block py-1 hover:text-[#FF7A1A] transition-colors">
+                  <a href="#section-2" className="block py-1 hover:text-sun-orange transition-colors">
                     2. How We Utilize Your Information
                   </a>
-                  <a href="#section-3" className="block py-1 hover:text-[#FF7A1A] transition-colors font-bold text-slate-900">
+                  <a href="#section-3" className="block py-1 hover:text-sun-orange transition-colors font-bold text-slate-900">
                     3. Multi-Vendor Marketplace Data Separation
                   </a>
-                  <a href="#section-4" className="block py-1 hover:text-[#FF7A1A] transition-colors">
+                  <a href="#section-4" className="block py-1 hover:text-sun-orange transition-colors">
                     4. Cookies &amp; Tracking Technologies
                   </a>
-                  <a href="#section-5" className="block py-1 hover:text-[#FF7A1A] transition-colors">
+                  <a href="#section-5" className="block py-1 hover:text-sun-orange transition-colors">
                     5. Global Privacy Rights (GDPR / CCPA)
                   </a>
-                  <a href="#section-6" className="block py-1 hover:text-[#FF7A1A] transition-colors">
+                  <a href="#section-6" className="block py-1 hover:text-sun-orange transition-colors">
                     6. Security &amp; Encryption Standards
                   </a>
-                  <a href="#section-7" className="block py-1 hover:text-[#FF7A1A] transition-colors">
+                  <a href="#section-7" className="block py-1 hover:text-sun-orange transition-colors">
                     7. Data Retention &amp; Deletion Protocols
                   </a>
-                  <a href="#section-8" className="block py-1 hover:text-[#FF7A1A] transition-colors">
+                  <a href="#section-8" className="block py-1 hover:text-sun-orange transition-colors">
                     8. Contact our Data Protection Officer
                   </a>
                 </nav>
@@ -286,7 +286,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                 </p>
                 <a
                   href="mailto:privacy@vendora.market"
-                  className="inline-block text-[#FF7A1A] font-bold text-xs hover:underline"
+                  className="inline-block text-sun-orange font-bold text-xs hover:underline"
                 >
                   privacy@vendora.market →
                 </a>
@@ -330,7 +330,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               <section id="section-3" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
                 <div className="p-4 rounded-2xl bg-orange-50/80 border border-orange-200/60 space-y-2">
                   <h2 className="text-lg font-black text-slate-900 font-display flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-[#FF7A1A]" />
+                    <ShieldCheck className="h-5 w-5 text-sun-orange" />
                     3. Multi-Vendor Marketplace Data Separation (Zero Leakage)
                   </h2>
                   <p className="text-xs text-slate-700 leading-relaxed">
@@ -414,7 +414,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                   <div className="font-bold text-slate-900">Vendora Global Governance &amp; Privacy Desk</div>
                   <div className="text-slate-600">Attn: Data Protection Officer (DPO)</div>
                   <div className="text-slate-600">Clifton Block 5, Karachi, Sindh, Pakistan</div>
-                  <div className="text-[#FF7A1A] font-bold">Email: privacy@vendora.market</div>
+                  <div className="text-sun-orange font-bold">Email: privacy@vendora.market</div>
                 </div>
               </section>
             </div>
@@ -427,7 +427,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-[#FF7A1A]" />
+              <UserCheck className="h-5 w-5 text-sun-orange" />
               Data Subject Access Request (DSAR)
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
@@ -445,7 +445,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                     name="dsarType"
                     checked={dsarType === 'export'}
                     onChange={() => setDsarType('export')}
-                    className="text-[#FF7A1A]"
+                    className="text-sun-orange"
                   />
                   <div>
                     <strong className="text-slate-900">Export All My Personal Data</strong>
@@ -495,7 +495,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95 cursor-pointer"
+                className="rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95 cursor-pointer"
               >
                 Submit Formal Request
               </button>

@@ -149,7 +149,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
                     onClick={() => handleTabClick(sub.id)}
                     className={`cursor-pointer rounded-full px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap backdrop-blur-md ${
                       isSelected
-                        ? 'border border-[#FF7A1A] bg-orange-500/10 text-[#FF7A1A] shadow-2xs font-bold'
+                        ? 'border border-sun-orange bg-orange-500/10 text-sun-orange shadow-2xs font-bold'
                         : 'border border-slate-200/80 bg-white/70 text-slate-800 hover:border-slate-300 hover:bg-white hover:text-slate-900'
                     }`}
                   >
@@ -164,7 +164,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
         <div className="flex items-center gap-2 shrink-0">
           <Link
             to={computedViewAllHref}
-            className="group mr-2 hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#FF7A1A] hover:text-white bg-orange-50/80 hover:bg-[#FF7A1A] border border-orange-200/70 hover:border-[#FF7A1A] shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-95"
+            className="group mr-2 hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-sun-orange hover:text-white bg-orange-50/80 hover:bg-sun-orange border border-orange-200/70 hover:border-sun-orange shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-95"
           >
             <span>View All</span>
             <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
@@ -194,7 +194,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mr-1.5 shrink-0">
             <span className="font-bold text-slate-700">{title}</span>
             <span className="text-slate-400 font-bold">&rsaquo;</span>
-            <span className="font-extrabold text-[#FF7A1A]">{activeSub.name}</span>
+            <span className="font-extrabold text-sun-orange">{activeSub.name}</span>
             {activeChildId && (
               <>
                 <span className="text-slate-400 font-bold">&rsaquo;</span>
@@ -211,7 +211,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
               onClick={() => handleChildClick('')}
               className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
                 !activeChildId
-                  ? 'bg-[#FF7A1A] text-white shadow-xs'
+                  ? 'bg-sun-orange text-white shadow-xs'
                   : 'bg-white/90 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/70'
               }`}
             >
@@ -227,7 +227,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
                   onClick={() => handleChildClick(child.id)}
                   className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
                     isChildActive
-                      ? 'bg-[#FF7A1A] text-white shadow-xs'
+                      ? 'bg-sun-orange text-white shadow-xs'
                       : 'bg-white/90 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/70'
                   }`}
                 >

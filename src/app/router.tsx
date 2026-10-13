@@ -244,7 +244,7 @@ const SupportDashboardPage = lazy(() =>
 
 const PageLoader: React.FC = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center p-8">
-    <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#FF7A1A] border-t-transparent mb-3" />
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-sun-orange border-t-transparent mb-3" />
     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Loading Vendora...</span>
   </div>
 );
@@ -510,7 +510,7 @@ export const router = createBrowserRouter([
             <p className="mt-2 text-sm text-slate-500">Page not found</p>
             <a
               href="/"
-              className="mt-6 inline-block rounded-full bg-[#FF7A1A] px-6 py-2.5 text-xs font-bold text-white shadow-md"
+              className="mt-6 inline-block rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-md"
             >
               Back to Home
             </a>

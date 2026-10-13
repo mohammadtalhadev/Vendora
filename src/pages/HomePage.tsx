@@ -422,7 +422,7 @@ export const HomePage: React.FC = () => {
             </h2>
             <Link
               to="/products"
-              className="group flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#FF7A1A] transition-colors"
+              className="group flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-sun-orange transition-colors"
             >
               <span>View All</span>
               <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -451,14 +451,14 @@ export const HomePage: React.FC = () => {
                   to={`/products?category=${cat.slug}`}
                   className="group flex flex-col items-center shrink-0 transition-transform hover:-translate-y-1"
                 >
-                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 items-center justify-center rounded-full bg-[#F4F6F8] p-3 overflow-hidden shadow-2xs border border-slate-100 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:bg-[#FFF4EC] group-hover:border-[#FF7A1A]/60 group-hover:ring-4 group-hover:ring-orange-500/15">
+                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 items-center justify-center rounded-full bg-[#F4F6F8] p-3 overflow-hidden shadow-2xs border border-slate-100 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:bg-[#FFF4EC] group-hover:border-sun-orange/60 group-hover:ring-4 group-hover:ring-orange-500/15">
                     <img
                       src={cat.image}
                       alt={cat.name}
                       className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-xs"
                     />
                   </div>
-                  <span className="mt-3 text-xs font-bold text-slate-800 text-center tracking-tight group-hover:text-[#FF7A1A] transition-colors max-w-[100px] leading-tight">
+                  <span className="mt-3 text-xs font-bold text-slate-800 text-center tracking-tight group-hover:text-sun-orange transition-colors max-w-[100px] leading-tight">
                     {cat.name}
                   </span>
                 </Link>
@@ -508,7 +508,7 @@ export const HomePage: React.FC = () => {
                       onClick={() => setSelectedSaleCategory(cat.id)}
                       className={`cursor-pointer rounded-full px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                         isSelected
-                          ? 'border border-[#FF7A1A] bg-orange-50 text-[#FF7A1A] shadow-2xs font-bold'
+                          ? 'border border-sun-orange bg-orange-50 text-sun-orange shadow-2xs font-bold'
                           : 'border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
@@ -521,7 +521,7 @@ export const HomePage: React.FC = () => {
 
             <Link
               to={`/products?category=${currentSaleCategory?.slug || 'electronics'}`}
-              className="group hidden items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline sm:flex shrink-0"
+              className="group hidden items-center gap-1 text-xs font-bold text-sun-orange hover:underline sm:flex shrink-0"
             >
               <span>View All</span>
               <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -825,7 +825,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=appliances"
-                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-[#FF7A1A] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#EA580C] sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#EA580C] sm:text-sm"
                   >
                     Shop Now
                   </Link>

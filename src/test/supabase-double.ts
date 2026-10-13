@@ -201,7 +201,7 @@ function splitSelect(columns: string): string[] {
 function patternToRegExp(pattern: string): RegExp {
   const body = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    .replace(/\%/g, '.*')
+    .replace(/%/g, '.*')
     .replace(/_/g, '.');
   return new RegExp(`^${body}$`, 'i');
 }

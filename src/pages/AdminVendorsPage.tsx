@@ -145,7 +145,7 @@ export const AdminVendorsPage: React.FC = () => {
                 style={{ width: `${activeShare * 100}%` }}
               />
               <div
-                className="bg-[#FF7A1A]"
+                className="bg-sun-orange"
                 style={{ width: `${(1 - activeShare) * 100}%` }}
               />
             </div>
@@ -444,7 +444,7 @@ export const AdminVendorsPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <Link
                                 to={`/admin/vendors/${vendor.id}`}
-                                className="font-bold text-slate-900 truncate hover:text-[#FF7A1A] hover:underline transition-colors"
+                                className="font-bold text-slate-900 truncate hover:text-sun-orange hover:underline transition-colors"
                               >
                                 {vendor.storeName}
                               </Link>

@@ -122,7 +122,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Select Currency"
         aria-expanded={isOpen}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-slate-700 hover:text-[#FF7A1A] hover:bg-slate-100/80 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-slate-700 hover:text-sun-orange hover:bg-slate-100/80 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
       >
         <span className="text-sm leading-none">{config.flag}</span>
         <span className="tracking-tight">

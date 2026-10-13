@@ -55,7 +55,7 @@ export const AffiliatePage: React.FC = () => {
           to="/sell"
           className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg"
         >
-          <Store className="h-5 w-5 text-[#FF7A1A]" />
+          <Store className="h-5 w-5 text-sun-orange" />
           <p className="mt-3 text-sm font-extrabold text-slate-900">Sell on Vendora</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Selling is open today — open a real store and list products now.
@@ -65,7 +65,7 @@ export const AffiliatePage: React.FC = () => {
           to="/products"
           className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg"
         >
-          <ShoppingBag className="h-5 w-5 text-[#FF7A1A]" />
+          <ShoppingBag className="h-5 w-5 text-sun-orange" />
           <p className="mt-3 text-sm font-extrabold text-slate-900">Browse the catalogue</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Shop the live marketplace while the creator program is built.
@@ -75,7 +75,7 @@ export const AffiliatePage: React.FC = () => {
           to="/contact"
           className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg"
         >
-          <Mail className="h-5 w-5 text-[#FF7A1A]" />
+          <Mail className="h-5 w-5 text-sun-orange" />
           <p className="mt-3 text-sm font-extrabold text-slate-900">Ask a question</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Partnership questions are welcome through the contact page.

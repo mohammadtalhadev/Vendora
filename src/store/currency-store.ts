@@ -148,7 +148,7 @@ export function formatCurrencyValue(
   });
 
   const space = config.space ? ' ' : '';
-  let formatted = '';
+  let formatted: string;
 
   if (config.symbolPosition === 'before') {
     formatted = `${config.symbol}${space}${formattedNum}`;

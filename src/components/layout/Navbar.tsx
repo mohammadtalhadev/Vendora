@@ -259,23 +259,23 @@ export const Navbar: React.FC = () => {
         >
           {/* Left links */}
           <div className="flex items-center gap-4 sm:gap-6">
-            <Link to="/faq" className="hover:text-[#FF7A1A] transition-colors">
+            <Link to="/faq" className="hover:text-sun-orange transition-colors">
               FAQ
             </Link>
-            <Link to="/account/profile" className="hover:text-[#FF7A1A] transition-colors">
+            <Link to="/account/profile" className="hover:text-sun-orange transition-colors">
               My account
             </Link>
-            <Link to="/downloads" className="hover:text-[#FF7A1A] transition-colors">
+            <Link to="/downloads" className="hover:text-sun-orange transition-colors">
               Downloads
             </Link>
-            <Link to="/contact" className="hover:text-[#FF7A1A] transition-colors">
+            <Link to="/contact" className="hover:text-sun-orange transition-colors">
               Contact
             </Link>
           </div>
 
           {/* Right Utility Links */}
           <div className="flex items-center gap-3 sm:gap-5">
-            <Link to="/track-order" className="hidden sm:inline hover:text-[#FF7A1A] transition-colors">
+            <Link to="/track-order" className="hidden sm:inline hover:text-sun-orange transition-colors">
               Order Tracking
             </Link>
             <span className="hidden sm:inline text-slate-300">|</span>
@@ -302,8 +302,8 @@ export const Navbar: React.FC = () => {
 
               {/* Logo: "Vendora" in bold navy with interactive dot */}
               <Link to="/" className="flex items-center group pl-1 sm:pl-2">
-                <span className="font-outfit text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 leading-none group-hover:text-[#FF7A1A] transition-colors">
-                  Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] group-hover:bg-slate-900 ml-0.5 transition-colors" />
+                <span className="font-outfit text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 leading-none group-hover:text-sun-orange transition-colors">
+                  Vendora<span className="inline-block h-2 w-2 rounded-full bg-sun-orange group-hover:bg-slate-900 ml-0.5 transition-colors" />
                 </span>
               </Link>
 
@@ -313,10 +313,10 @@ export const Navbar: React.FC = () => {
                   ref={allCategoriesTriggerRef}
                   type="button"
                   onClick={() => setIsAllCategoriesOpen(!isAllCategoriesOpen)}
-                  className={`flex items-center gap-2 rounded-full px-3.5 py-2.5 text-xs sm:text-[13px] font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
+                  className={`flex items-center gap-2 rounded-full px-3.5 py-2.5 text-xs sm:text-[13px] font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
                     isAllCategoriesOpen
-                      ? 'bg-[#FF7A1A] text-white shadow-md shadow-orange-500/25'
-                      : 'bg-slate-900/5 text-slate-700 hover:bg-[#FF7A1A]/10 hover:text-[#FF7A1A]'
+                      ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25'
+                      : 'bg-slate-900/5 text-slate-700 hover:bg-sun-orange/10 hover:text-sun-orange'
                   }`}
                   aria-expanded={isAllCategoriesOpen}
                   aria-haspopup="true"
@@ -342,13 +342,13 @@ export const Navbar: React.FC = () => {
             {/* Center: Frosted Search Capsule with Category Selector & Orange Submit Button */}
             <div className="relative flex-1 max-w-2xl lg:max-w-3xl hidden sm:block" ref={searchContainerRef}>
               <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-                <div className="flex w-full items-center rounded-full bg-white/75 shadow-inner overflow-hidden h-11 sm:h-12 border border-white/80 transition-all focus-within:border-[#FF7A1A]/60 focus-within:bg-white/95 focus-within:shadow-md">
+                <div className="flex w-full items-center rounded-full bg-white/75 shadow-inner overflow-hidden h-11 sm:h-12 border border-white/80 transition-all focus-within:border-sun-orange/60 focus-within:bg-white/95 focus-within:shadow-md">
                   {/* Category Dropdown Pill — backed by the real seeded categories */}
                   <div className="relative shrink-0 hidden sm:block h-full">
                     <button
                       type="button"
                       onClick={() => setIsCategoryPickerOpen(!isCategoryPickerOpen)}
-                      className="flex h-full items-center gap-1.5 px-4 bg-transparent hover:bg-slate-900/5 text-xs font-semibold text-slate-700 cursor-pointer transition-colors rounded-l-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                      className="flex h-full items-center gap-1.5 px-4 bg-transparent hover:bg-slate-900/5 text-xs font-semibold text-slate-700 cursor-pointer transition-colors rounded-l-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                       aria-expanded={isCategoryPickerOpen}
                       aria-controls="navbar-search-category-picker"
                     >
@@ -370,7 +370,7 @@ export const Navbar: React.FC = () => {
                               setIsCategoryPickerOpen(false);
                               searchInputRef.current?.focus();
                             }}
-                            className="flex w-full rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                            className="flex w-full rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-orange-50 hover:text-sun-orange transition-colors"
                           >
                             {cat.name}
                           </button>
@@ -410,7 +410,7 @@ export const Navbar: React.FC = () => {
                   {/* Orange Search Button */}
                   <button
                     type="submit"
-                    className="flex h-full w-12 sm:w-14 shrink-0 items-center justify-center bg-[#FF7A1A] hover:bg-[#EA580C] text-white m-1 rounded-full transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                    className="flex h-full w-12 sm:w-14 shrink-0 items-center justify-center bg-sun-orange hover:bg-[#EA580C] text-white m-1 rounded-full transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                     title="Search"
                     aria-label="Search"
                   >
@@ -439,15 +439,15 @@ export const Navbar: React.FC = () => {
                       type="button"
                       onClick={() => activateSuggestion(index)}
                       onMouseEnter={() => setActiveSuggestionIndex(index)}
-                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
-                        index === activeSuggestionIndex ? 'bg-orange-50 text-[#FF7A1A]' : 'text-slate-700 hover:bg-orange-50 hover:text-[#FF7A1A]'
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
+                        index === activeSuggestionIndex ? 'bg-orange-50 text-sun-orange' : 'text-slate-700 hover:bg-orange-50 hover:text-sun-orange'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <span
                           className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                             s.type === 'category'
-                              ? 'bg-orange-50 text-[#FF7A1A]'
+                              ? 'bg-orange-50 text-sun-orange'
                               : 'bg-amber-50 text-amber-700'
                           }`}
                         >
@@ -472,10 +472,10 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen((v) => !v)}
-                className={`sm:hidden flex h-10 w-10 items-center justify-center rounded-full transition-all shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
+                className={`sm:hidden flex h-10 w-10 items-center justify-center rounded-full transition-all shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
                   isMobileSearchOpen
-                    ? 'bg-orange-50 text-[#FF7A1A] shadow-xs'
-                    : 'text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-[#FF7A1A]'
+                    ? 'bg-orange-50 text-sun-orange shadow-xs'
+                    : 'text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-sun-orange'
                 }`}
                 title="Search products"
                 aria-expanded={isMobileSearchOpen}
@@ -487,7 +487,7 @@ export const Navbar: React.FC = () => {
               {/* Wishlist */}
               <Link
                 to="/wishlist"
-                className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-[#FF7A1A] transition-all group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-sun-orange transition-all group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                 title="Wishlist"
                 aria-label="Wishlist"
               >
@@ -500,12 +500,12 @@ export const Navbar: React.FC = () => {
               </Link>
 
               {/* In-App Notification Center Dropdown */}
-              <NotificationDropdown triggerClassName="relative hidden sm:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer focus:outline-hidden" />
+              <NotificationDropdown triggerClassName="relative hidden sm:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer focus:outline-hidden" />
 
               {/* Compare / Exchange Icon */}
               <Link
                 to="/compare"
-                className="relative hidden lg:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                className="relative hidden lg:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                 title="Compare Products"
                 aria-label="Compare Products"
               >
@@ -522,19 +522,19 @@ export const Navbar: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-                  className="flex items-center gap-2 rounded-full pl-1.5 pr-2 sm:pr-3 py-1.5 text-slate-700 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                  className="flex items-center gap-2 rounded-full pl-1.5 pr-2 sm:pr-3 py-1.5 text-slate-700 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                   aria-expanded={isRoleMenuOpen}
                   aria-controls="navbar-account-menu"
                   aria-label="Account and personas menu"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/5 group-hover:bg-[#FF7A1A]/10 group-hover:text-[#FF7A1A] text-slate-700 transition-colors">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/5 group-hover:bg-sun-orange/10 group-hover:text-sun-orange text-slate-700 transition-colors">
                     <User className="h-4.5 w-4.5" />
                   </div>
                   <div className="hidden xl:flex flex-col text-left leading-tight">
                     <span className="text-[10px] text-slate-400 font-normal">
                       {user ? 'Welcome,' : 'Sign In'}
                     </span>
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-[#FF7A1A] flex items-center gap-1 transition-colors">
+                    <span className="text-xs font-bold text-slate-900 group-hover:text-sun-orange flex items-center gap-1 transition-colors">
                       {user ? user.name.split(' ')[0] : 'Account'}
                       <ChevronDown className="h-3 w-3 text-slate-400" />
                     </span>
@@ -548,7 +548,7 @@ export const Navbar: React.FC = () => {
                     <div className="border-b border-slate-100 pb-3 mb-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="font-bold text-sm text-slate-900 truncate">{user.name}</div>
-                        <span className="shrink-0 rounded-full bg-orange-50 border border-orange-200/60 px-2 py-0.5 text-[10px] font-bold text-[#FF7A1A] uppercase tracking-wide">
+                        <span className="shrink-0 rounded-full bg-orange-50 border border-orange-200/60 px-2 py-0.5 text-[10px] font-bold text-sun-orange uppercase tracking-wide">
                           {user.roles[0]}
                         </span>
                       </div>
@@ -561,7 +561,7 @@ export const Navbar: React.FC = () => {
                         <Link
                           to="/login"
                           onClick={() => setIsRoleMenuOpen(false)}
-                          className="flex-1 text-center rounded-xl bg-[#FF7A1A] py-2 text-xs font-bold text-white hover:bg-[#EA580C] shadow-xs transition-colors"
+                          className="flex-1 text-center rounded-xl bg-sun-orange py-2 text-xs font-bold text-white hover:bg-[#EA580C] shadow-xs transition-colors"
                         >
                           Sign In
                         </Link>
@@ -722,7 +722,7 @@ export const Navbar: React.FC = () => {
                             type="button"
                             onClick={() => void handleRoleSelect(key)}
                             className={`rounded-lg px-2 py-1 text-center text-[11px] font-medium transition-colors hover:bg-slate-100 cursor-pointer ${
-                              roleKeys.includes(key) ? 'bg-orange-50 font-bold text-[#FF7A1A]' : 'text-slate-600'
+                              roleKeys.includes(key) ? 'bg-orange-50 font-bold text-sun-orange' : 'text-slate-600'
                             }`}
                           >
                             {label}
@@ -745,13 +745,13 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={openCart}
-              className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-800 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all shrink-0 group"
+              className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-800 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all shrink-0 group"
               title="Shopping Cart"
               aria-label="Open shopping cart"
             >
               <ShoppingCart className="h-5 w-5 transition-transform group-hover:scale-110" />
               {itemCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF7A1A] px-0.5 text-[10px] font-extrabold text-white shadow-xs">
+                <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-sun-orange px-0.5 text-[10px] font-extrabold text-white shadow-xs">
                   {itemCount}
                 </span>
               )}
@@ -775,11 +775,11 @@ export const Navbar: React.FC = () => {
               value={mobileSearchTerm}
               onChange={(e) => setMobileSearchTerm(e.target.value)}
               placeholder="Search products, brands and more..."
-              className="w-full bg-white/80 rounded-full border border-white/80 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-[#FF7A1A]/60 focus:bg-white transition-all"
+              className="w-full bg-white/80 rounded-full border border-white/80 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-sun-orange/60 focus:bg-white transition-all"
             />
             <button
               type="submit"
-              className="flex h-10 w-11 shrink-0 items-center justify-center rounded-full bg-[#FF7A1A] hover:bg-[#EA580C] text-white transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+              className="flex h-10 w-11 shrink-0 items-center justify-center rounded-full bg-sun-orange hover:bg-[#EA580C] text-white transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
               title="Search"
               aria-label="Search"
             >
@@ -798,63 +798,63 @@ export const Navbar: React.FC = () => {
               <Link
                 to="/"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Home
               </Link>
               <Link
                 to="/products"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Shop Catalog
               </Link>
               <Link
                 to="/products?category=electronics"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Electronics
               </Link>
               <Link
                 to="/products?category=home-kitchen"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Home &amp; Furniture
               </Link>
               <Link
                 to="/track-order"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Order Tracking
               </Link>
               <Link
                 to="/notifications"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Notifications
               </Link>
               <Link
                 to="/about"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 About Vendora
               </Link>
               <Link
                 to="/blog"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Blog
               </Link>
               <Link
                 to="/contact"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-sun-orange transition-colors"
               >
                 Contact Us
               </Link>

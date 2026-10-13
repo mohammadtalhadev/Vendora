@@ -345,7 +345,7 @@ export const VendorImportExportPage: React.FC = () => {
             onClick={() => setActiveTab('import')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'import'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -358,7 +358,7 @@ export const VendorImportExportPage: React.FC = () => {
             onClick={() => setActiveTab('export')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'export'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -371,7 +371,7 @@ export const VendorImportExportPage: React.FC = () => {
           <div className="space-y-6">
             {/* Upload & Template */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 text-center hover:border-[#FF7A1A] transition-colors relative">
+              <div className="md:col-span-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 text-center hover:border-sun-orange transition-colors relative">
                 <input
                   id="catalog-file"
                   key={fileName || 'empty'}
@@ -380,7 +380,7 @@ export const VendorImportExportPage: React.FC = () => {
                   onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#FF7A1A] mb-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-sun-orange mb-3">
                   <FileSpreadsheet className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">{fileName || 'Choose a catalog CSV'}</h3>
@@ -588,7 +588,7 @@ export const VendorImportExportPage: React.FC = () => {
             {!report && importRows.length === 0 && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-3 text-xs">
                 <div className="flex items-center gap-2 text-slate-900">
-                  <Info className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                  <Info className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                   <h3 className="text-sm font-bold">What an import does here</h3>
                 </div>
                 <ul className="space-y-1.5 text-slate-500 list-disc pl-5">

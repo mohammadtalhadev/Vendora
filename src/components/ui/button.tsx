@@ -22,9 +22,9 @@ export interface ButtonVariantOptions {
 
 const variantStyles: Record<ButtonVariant, string> = {
   default:
-    'bg-sun-orange text-white hover:bg-[#EA6C13] shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
+    'bg-sun-orange text-white hover:bg-sun-orange-600 shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
   'orange-cta':
-    'bg-sun-orange text-white hover:bg-[#EA6C13] shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
+    'bg-sun-orange text-white hover:bg-sun-orange-600 shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
   ink:
     'bg-ink dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-ink/90 dark:hover:bg-white active:scale-[0.98] shadow-sm',
   'glass-pill':

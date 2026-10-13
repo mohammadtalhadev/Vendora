@@ -441,7 +441,7 @@ export const AdminProductsPage: React.FC = () => {
 
   const handleStatusTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = STATUS_TABS.indexOf(activeStatusTab);
-    let nextIndex = currentIndex;
+    let nextIndex: number;
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowDown':
@@ -487,7 +487,7 @@ export const AdminProductsPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
             <Link
               to="/admin/add-product"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               Add Product
             </Link>
@@ -504,7 +504,7 @@ export const AdminProductsPage: React.FC = () => {
                   showToast('No pending items in queue.');
                 }
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               Review Queue ({counts.pendingReview} Pending)
             </button>
@@ -678,7 +678,7 @@ export const AdminProductsPage: React.FC = () => {
             </div>
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button type="button" onClick={() => setIsAssignModalOpen(false)} className="px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleConfirmAssign} disabled={!selectedModerator} className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">Confirm Assignment</button>
+              <button type="button" onClick={handleConfirmAssign} disabled={!selectedModerator} className="px-4 py-2 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">Confirm Assignment</button>
             </div>
           </div>
         </ModalWrapper>

@@ -521,7 +521,7 @@ export const VendorDashboardPage: React.FC = () => {
               aria-label="Sync store metrics, queues and earnings"
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              <RefreshCcw className={`h-3.5 w-3.5 text-slate-400 ${isRefreshing ? 'animate-spin text-[#FF7A1A]' : ''}`} aria-hidden="true" />
+              <RefreshCcw className={`h-3.5 w-3.5 text-slate-400 ${isRefreshing ? 'animate-spin text-sun-orange' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline">Sync</span>
             </button>
 
@@ -529,7 +529,7 @@ export const VendorDashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsProductModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Plus className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden="true" />
               <span>Add Product</span>
@@ -568,7 +568,7 @@ export const VendorDashboardPage: React.FC = () => {
             className="group flex items-center justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs transition-all text-left cursor-pointer"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A] group-hover:bg-[#FF7A1A] group-hover:text-white transition-colors">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-sun-orange group-hover:bg-sun-orange group-hover:text-white transition-colors">
                 <Plus className="h-4 w-4 stroke-[2.5]" />
               </div>
               <div className="min-w-0">
@@ -576,7 +576,7 @@ export const VendorDashboardPage: React.FC = () => {
                 <p className="text-[10px] text-slate-400 truncate">New listing</p>
               </div>
             </div>
-            <span className="shrink-0 text-[10px] font-bold text-[#EA6C13] bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 px-1.5 py-0.5 rounded">
+            <span className="shrink-0 text-[10px] font-bold text-sun-orange-600 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 px-1.5 py-0.5 rounded">
               + New
             </span>
           </button>
@@ -883,8 +883,8 @@ export const VendorDashboardPage: React.FC = () => {
                   <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="h-full w-full overflow-visible">
                     <polyline
                       fill="none"
-                      stroke="#FF7A1A"
                       strokeWidth="2.5"
+                      className="stroke-sun-orange"
                       points={months
                         .map((m, i) => {
                           const x = (i / (months.length - 1)) * 290 + 5;
@@ -896,7 +896,7 @@ export const VendorDashboardPage: React.FC = () => {
                     {months.map((m, i) => {
                       const x = (i / (months.length - 1)) * 290 + 5;
                       const y = 90 - (m.gross / maxMonthGross) * 75;
-                      return <circle key={m.month} cx={x} cy={y} r="3" fill="#FF7A1A" />;
+                      return <circle key={m.month} cx={x} cy={y} r="3" className="fill-sun-orange" />;
                     })}
                   </svg>
                 ) : (
@@ -1035,8 +1035,8 @@ export const VendorDashboardPage: React.FC = () => {
               <svg viewBox="0 0 900 200" preserveAspectRatio="none" className="h-full w-full overflow-visible">
                 <defs>
                   <linearGradient id="vendorGrossGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FF7A1A" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#FF7A1A" stopOpacity="0.02" />
+                    <stop offset="0%" style={{ stopColor: 'var(--color-sun-orange)' }} stopOpacity="0.25" />
+                    <stop offset="100%" style={{ stopColor: 'var(--color-sun-orange)' }} stopOpacity="0.02" />
                   </linearGradient>
                 </defs>
 
@@ -1047,8 +1047,8 @@ export const VendorDashboardPage: React.FC = () => {
                 <polyline
                   points={grossPoints}
                   fill="none"
-                  stroke="#FF7A1A"
                   strokeWidth="2.5"
+                  className="stroke-sun-orange"
                 />
                 <polyline
                   points={netPoints}
@@ -1076,7 +1076,7 @@ export const VendorDashboardPage: React.FC = () => {
           {/* Legend */}
           <div className="mt-4 flex flex-wrap items-center justify-center gap-6 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-xs bg-[#FF7A1A]" />
+              <span className="h-2.5 w-2.5 rounded-xs bg-sun-orange" />
               <span className="font-semibold text-slate-800 dark:text-slate-200">Gross settled</span>
             </div>
             <div className="flex items-center gap-2">
@@ -1129,7 +1129,7 @@ export const VendorDashboardPage: React.FC = () => {
                 </span>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-                <Link to="/vendor/orders" className="flex items-center justify-between text-xs font-bold text-[#EA6C13] hover:underline">
+                <Link to="/vendor/orders" className="flex items-center justify-between text-xs font-bold text-sun-orange-600 hover:underline">
                   <span>Process {placedCount} orders</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -1496,7 +1496,7 @@ export const VendorDashboardPage: React.FC = () => {
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="font-bold text-slate-400 text-xs w-4">#{idx + 1}</span>
                         <div className="min-w-0">
-                          <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-[#FF7A1A] transition-colors">{p.title}</div>
+                          <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-sun-orange transition-colors">{p.title}</div>
                           <div className="text-[10px] text-slate-400">
                             {p.units} {p.units === 1 ? 'unit' : 'units'} delivered
                           </div>

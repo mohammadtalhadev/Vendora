@@ -56,7 +56,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
     return (
       <Link
         to={`/vendors/${href}`}
-        className="font-bold text-slate-900 text-sm hover:text-[#FF7A1A] transition-colors"
+        className="font-bold text-slate-900 text-sm hover:text-sun-orange transition-colors"
       >
         {label}
       </Link>
@@ -68,7 +68,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
       {/* Section Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
         <div>
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#FF7A1A]">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-sun-orange">
             COMPARE MARKETPLACE MERCHANTS
           </span>
           <h3 className="font-outfit mt-0.5 text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -160,7 +160,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
                         disabled
                         aria-pressed
                         aria-label="Currently selected seller"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white shadow-xs cursor-default"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white shadow-xs cursor-default"
                       >
                         <Check className="h-3.5 w-3.5 stroke-[3]" />
                         <span>Current Choice</span>
@@ -170,7 +170,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
                         type="button"
                         onClick={() => handleSelect(offer)}
                         aria-label={`Select seller ${offer.sellerName || ''}`.trim()}
-                        className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:border-[#FF7A1A] hover:bg-orange-50 hover:text-[#FF7A1A] transition-all cursor-pointer active:scale-95"
+                        className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:border-sun-orange hover:bg-orange-50 hover:text-sun-orange transition-all cursor-pointer active:scale-95"
                       >
                         Select Seller
                       </button>
@@ -192,7 +192,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
               key={offer.id}
               className={`rounded-2xl border p-4 transition-all ${
                 isSelected
-                  ? 'border-[#FF7A1A] bg-orange-50/30 shadow-xs'
+                  ? 'border-sun-orange bg-orange-50/30 shadow-xs'
                   : 'border-slate-200 bg-white'
               }`}
             >
@@ -238,7 +238,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
                     disabled
                     aria-pressed
                     aria-label="Currently selected seller"
-                    className="inline-flex items-center gap-1 rounded-lg bg-[#FF7A1A] px-3 py-1.5 text-xs font-bold text-white shadow-xs"
+                    className="inline-flex items-center gap-1 rounded-lg bg-sun-orange px-3 py-1.5 text-xs font-bold text-white shadow-xs"
                   >
                     <Check className="h-3 w-3 stroke-[3]" />
                     <span>Current Choice</span>
@@ -248,7 +248,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
                     type="button"
                     onClick={() => handleSelect(offer)}
                     aria-label={`Select seller ${offer.sellerName || ''}`.trim()}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#FF7A1A] hover:text-[#FF7A1A]"
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-sun-orange hover:text-sun-orange"
                   >
                     Select Seller
                   </button>

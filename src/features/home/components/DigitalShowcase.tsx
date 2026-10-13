@@ -89,12 +89,12 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
               to="/downloads"
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white/90 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white hover:text-slate-900"
             >
-              <DownloadCloud className="h-4 w-4 text-[#FF7A1A]" />
+              <DownloadCloud className="h-4 w-4 text-sun-orange" />
               <span>My Vault</span>
             </Link>
             <Link
               to="/products?category=digital-products"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4.5 py-2.5 text-xs font-bold text-white shadow-md shadow-slate-900/15 transition-all hover:bg-[#FF7A1A] hover:shadow-orange-500/20 active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4.5 py-2.5 text-xs font-bold text-white shadow-md shadow-slate-900/15 transition-all hover:bg-sun-orange hover:shadow-orange-500/20 active:scale-95"
             >
               <span>Explore All Digital</span>
               <ChevronRight className="h-4 w-4" />
@@ -161,7 +161,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-outfit mt-4 text-sm font-extrabold leading-snug text-slate-900 group-hover:text-[#FF7A1A] transition-colors line-clamp-2">
+                  <h3 className="font-outfit mt-4 text-sm font-extrabold leading-snug text-slate-900 group-hover:text-sun-orange transition-colors line-clamp-2">
                     {product.title}
                   </h3>
 
@@ -205,7 +205,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
                   <button
                     type="button"
                     onClick={() => handleBuy(product)}
-                    className="cursor-pointer mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:bg-[#FF7A1A] hover:shadow-md hover:shadow-orange-500/20 active:scale-95"
+                    className="cursor-pointer mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:bg-sun-orange hover:shadow-md hover:shadow-orange-500/20 active:scale-95"
                   >
                     <DownloadCloud className="h-3.5 w-3.5" />
                     <span>Instant Access</span>

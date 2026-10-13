@@ -96,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Product Title */}
         <Link to={`/products/${product.id}`} className="mt-1 block">
-          <h4 className="font-outfit line-clamp-2 min-h-[2.2rem] sm:min-h-[2.5rem] text-xs sm:text-[13px] font-semibold leading-snug text-slate-800 transition-colors group-hover:text-[#FF7A1A]">
+          <h4 className="font-outfit line-clamp-2 min-h-[2.2rem] sm:min-h-[2.5rem] text-xs sm:text-[13px] font-semibold leading-snug text-slate-800 transition-colors group-hover:text-sun-orange">
             {product.title}
           </h4>
         </Link>
@@ -135,11 +135,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Sold by seller + Verified Badge with hover tooltip */}
         <div className="mt-2 sm:mt-2.5 flex max-w-full items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-slate-600">
-          <Store className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-[#00B8C8]" />
+          <Store className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-aqua" />
           <span className="shrink-0 font-medium text-slate-500">Sold by</span>
           <Link
             to={`/products?seller=${encodeURIComponent(product.sellerId)}`}
-            className="truncate font-bold text-slate-900 hover:text-[#FF7A1A] hover:underline"
+            className="truncate font-bold text-slate-900 hover:text-sun-orange hover:underline"
             title={product.sellerName}
           >
             {product.sellerName}
@@ -152,7 +152,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 aria-label="Verified Badge"
                 title="Verified Badge"
               >
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#00B8C8] hover:scale-110 transition-transform" />
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-aqua hover:scale-110 transition-transform" />
               </span>
               {/* Tooltip on hover/focus */}
               <div
@@ -208,7 +208,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
               type="button"
               onClick={() => onAddToCart(product)}
               disabled={product.stock === 0}
-              className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#FF7A1A] hover:bg-[#EA580C] py-2 sm:py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sun-orange hover:bg-[#EA580C] py-2 sm:py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={`Add ${product.title} to cart`}
             >
               <ShoppingCart className="h-3.5 w-3.5" />
@@ -221,7 +221,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 type="button"
                 onClick={() => onAddToCart(product)}
                 disabled={product.stock === 0}
-                className="sm:hidden flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#FF7A1A]/30 bg-[#FF7A1A]/[0.08] py-1.5 text-[11px] font-bold text-[#EA580C] backdrop-blur-md transition-all hover:border-transparent hover:bg-[#FF7A1A] hover:text-white hover:shadow-orange-glow active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#FF7A1A]/[0.08] disabled:hover:text-[#EA580C]"
+                className="sm:hidden flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-sun-orange/30 bg-sun-orange/[0.08] py-1.5 text-[11px] font-bold text-[#EA580C] backdrop-blur-md transition-all hover:border-transparent hover:bg-sun-orange hover:text-white hover:shadow-orange-glow active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-sun-orange/[0.08] disabled:hover:text-[#EA580C]"
                 aria-label={`Add ${product.title} to cart`}
               >
                 <ShoppingCart className="h-3 w-3" />
@@ -233,7 +233,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 type="button"
                 onClick={() => onAddToCart(product)}
                 disabled={product.stock === 0}
-                className="hidden sm:flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-[#FF7A1A]/30 bg-[#FF7A1A]/[0.08] py-1.5 sm:py-2 text-[11px] font-bold text-[#EA580C] backdrop-blur-md opacity-0 shadow-sm transition-all duration-200 hover:border-transparent hover:bg-[#FF7A1A] hover:text-white hover:shadow-orange-glow group-hover:opacity-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#FF7A1A]/[0.08] disabled:hover:text-[#EA580C]"
+                className="hidden sm:flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-sun-orange/30 bg-sun-orange/[0.08] py-1.5 sm:py-2 text-[11px] font-bold text-[#EA580C] backdrop-blur-md opacity-0 shadow-sm transition-all duration-200 hover:border-transparent hover:bg-sun-orange hover:text-white hover:shadow-orange-glow group-hover:opacity-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-sun-orange/[0.08] disabled:hover:text-[#EA580C]"
                 aria-label={`Add ${product.title} to cart`}
               >
                 <ShoppingCart className="h-3.5 w-3.5" />

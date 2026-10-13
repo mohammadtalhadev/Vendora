@@ -49,7 +49,7 @@ export const TermsPage: React.FC = () => {
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10">
         {/* Breadcrumbs */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">
+          <Link to="/" className="hover:text-sun-orange transition-colors">
             Home
           </Link>
           <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
@@ -62,7 +62,7 @@ export const TermsPage: React.FC = () => {
         <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-10 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl space-y-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-[#FF7A1A]">
+              <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-sun-orange">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 <span>INSTITUTIONAL COMPLIANCE REGIME 2026</span>
               </div>
@@ -117,7 +117,7 @@ export const TermsPage: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                   TABLE OF CLAUSES
                 </span>
-                <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 text-[#FF7A1A] px-2 py-0.5 text-[9px] font-black">
+                <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 text-sun-orange px-2 py-0.5 text-[9px] font-black">
                   8 SECTIONS
                 </span>
               </div>
@@ -130,7 +130,7 @@ export const TermsPage: React.FC = () => {
                     onClick={() => scrollToClause(c.id)}
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
                       activeClause === c.id
-                        ? 'bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A] border border-orange-200/80 dark:border-orange-800/40 shadow-2xs'
+                        ? 'bg-orange-50 dark:bg-orange-950/40 text-sun-orange border border-orange-200/80 dark:border-orange-800/40 shadow-2xs'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
@@ -179,7 +179,7 @@ export const TermsPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/5 space-y-1.5">
                   <div className="flex items-center gap-2 text-xs font-black text-slate-900 dark:text-white">
-                    <UserCheck className="h-4 w-4 text-[#FF7A1A]" />
+                    <UserCheck className="h-4 w-4 text-sun-orange" />
                     <span>Verified Buyer</span>
                   </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
@@ -220,7 +220,7 @@ export const TermsPage: React.FC = () => {
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                   <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-white/5">
-                    <span className="text-[10px] font-black text-[#FF7A1A] block">1. Inspection Guarantee</span>
+                    <span className="text-[10px] font-black text-sun-orange block">1. Inspection Guarantee</span>
                     <span className="text-[11px] text-slate-500">Immediate deposit into escrow</span>
                   </div>
                   <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-white/5">
@@ -251,7 +251,7 @@ export const TermsPage: React.FC = () => {
             {/* Clause 3.0 */}
             <div id="clause-3" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-orange-100 text-[#FF7A1A] dark:bg-orange-950/60 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                <span className="rounded-full bg-orange-100 text-sun-orange dark:bg-orange-950/60 px-2.5 py-0.5 text-[10px] font-black uppercase">
                   CLAUSE 3.0
                 </span>
                 <span className="text-[11px] font-bold text-slate-400">MERCHANT ECONOMICS &amp; CONDUCT</span>
@@ -265,7 +265,7 @@ export const TermsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/5 space-y-1">
-                  <span className="font-outfit text-lg font-black text-[#FF7A1A]">Listing Fee: $0</span>
+                  <span className="font-outfit text-lg font-black text-sun-orange">Listing Fee: $0</span>
                   <p className="text-[11px] text-slate-500">
                     Commission is charged only on settled orders, at the rate published for the product's category.
                   </p>
@@ -301,7 +301,7 @@ export const TermsPage: React.FC = () => {
                 </div>
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-white/5">
                   <span className="text-[9px] font-bold text-slate-400 uppercase block">CUT-OFF BENCHMARK</span>
-                  <span className="font-outfit font-black text-[#FF7A1A] text-sm">PKR 4,500</span>
+                  <span className="font-outfit font-black text-sun-orange text-sm">PKR 4,500</span>
                 </div>
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-white/5">
                   <span className="text-[9px] font-bold text-slate-400 uppercase block">TELEMETRY SECURITY</span>
@@ -323,19 +323,19 @@ export const TermsPage: React.FC = () => {
               </h2>
               <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
                 <div className="flex items-start gap-2.5">
-                  <span className="h-5 w-5 rounded-full bg-orange-100 text-[#FF7A1A] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                  <span className="h-5 w-5 rounded-full bg-orange-100 text-sun-orange flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                     1
                   </span>
                   <span><strong>Initiate Through Self-Service Resolution:</strong> Request digital QR drop-off pass or doorstep pickup in your account.</span>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <span className="h-5 w-5 rounded-full bg-orange-100 text-[#FF7A1A] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                  <span className="h-5 w-5 rounded-full bg-orange-100 text-sun-orange flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                     2
                   </span>
                   <span><strong>Complimentary Courier Pickup:</strong> We dispatch a carrier rider directly to your address with zero transit fees.</span>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <span className="h-5 w-5 rounded-full bg-orange-100 text-[#FF7A1A] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                  <span className="h-5 w-5 rounded-full bg-orange-100 text-sun-orange flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                     3
                   </span>
                   <span><strong>Rapid Settlement SLA:</strong> Instant store credit or direct bank card reversal within 24 to 48 hours of scan receipt.</span>
@@ -427,7 +427,7 @@ export const TermsPage: React.FC = () => {
             <div className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_15px_35px_rgba(15,23,42,0.05)] backdrop-blur-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-[#FF7A1A] block">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
                     DIRECT INSTITUTIONAL CHANNELS
                   </span>
                   <h3 className="font-outfit text-xl font-black text-slate-900 dark:text-white">
@@ -442,10 +442,10 @@ export const TermsPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-white/5 space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
-                    <Scale className="h-4 w-4 text-[#FF7A1A]" />
+                    <Scale className="h-4 w-4 text-sun-orange" />
                     <span>Legal Counsel</span>
                   </div>
-                  <a href="mailto:legal@vendora.market" className="text-[#FF7A1A] font-semibold text-[11px] hover:underline block">
+                  <a href="mailto:legal@vendora.market" className="text-sun-orange font-semibold text-[11px] hover:underline block">
                     legal@vendora.market
                   </a>
                 </div>

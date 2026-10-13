@@ -33,7 +33,7 @@ export const BackToTopButton: React.FC = () => {
       <button
         type="button"
         onClick={scrollToTop}
-        className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/80 bg-white/90 p-0 text-slate-700 shadow-xl shadow-slate-900/10 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-orange-300 hover:bg-white hover:text-[#FF7A1A] hover:shadow-2xl hover:shadow-orange-500/20 active:scale-95 cursor-pointer"
+        className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-white/80 bg-white/90 p-0 text-slate-700 shadow-xl shadow-slate-900/10 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-orange-300 hover:bg-white hover:text-sun-orange hover:shadow-2xl hover:shadow-orange-500/20 active:scale-95 cursor-pointer"
         aria-label="Scroll back to top"
       >
         {/* Circular Progress Stroke (Subtle) */}
@@ -57,7 +57,7 @@ export const BackToTopButton: React.FC = () => {
             strokeDasharray={125.6}
             strokeDashoffset={125.6 - (125.6 * scrollProgress) / 100}
             strokeLinecap="round"
-            className="text-[#FF7A1A] transition-all duration-150"
+            className="text-sun-orange transition-all duration-150"
           />
         </svg>
 

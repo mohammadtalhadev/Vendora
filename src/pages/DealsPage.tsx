@@ -185,24 +185,24 @@ export const DealsPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] pb-24">
+    <div className="relative min-h-screen font-sans selection:bg-sun-orange/20 selection:text-sun-orange pb-24">
       {/* Radiant ambient glow orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/60 via-[#FFEDD5]/65 to-[#FED7AA]/35 blur-[130px] dark:from-[#FF7A1A]/10 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/60 via-sun-orange-100/65 to-sun-orange-200/35 blur-[130px] dark:from-sun-orange/10 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-12 pt-8 space-y-8">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">Home</Link>
+          <Link to="/" className="hover:text-sun-orange transition-colors">Home</Link>
           <ChevronRight className="h-3 w-3 text-slate-400" aria-hidden="true" />
           <span className="font-semibold text-slate-900 dark:text-white">Daily Flash Deals &amp; Discounts</span>
         </nav>
 
         {/* Hero Banner with Countdown Timer */}
-        <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-gradient-to-r from-orange-500 via-rose-500 to-[#FF7A1A] p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+        <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-gradient-to-r from-orange-500 via-rose-500 to-sun-orange p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
           <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
@@ -266,7 +266,7 @@ export const DealsPage: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                   selected
-                    ? 'bg-[#FF7A1A] text-white shadow-md shadow-orange-500/25'
+                    ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -288,7 +288,7 @@ export const DealsPage: React.FC = () => {
             return (
               <div
                 key={deal.id}
-                className="group rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-5 shadow-sm hover:shadow-xl hover:border-[#FF7A1A]/40 transition-all duration-300 flex flex-col justify-between"
+                className="group rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-5 shadow-sm hover:shadow-xl hover:border-sun-orange/40 transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* Image with discount badge */}
@@ -356,7 +356,7 @@ export const DealsPage: React.FC = () => {
                   className={`w-full inline-flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-bold transition-all cursor-pointer ${
                     isAdded
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25'
-                      : 'bg-[#FF7A1A] hover:bg-[#EA6C13] text-white shadow-md shadow-orange-500/25 active:scale-95'
+                      : 'bg-sun-orange hover:bg-sun-orange-600 text-white shadow-md shadow-orange-500/25 active:scale-95'
                   }`}
                 >
                   {isAdded ? (

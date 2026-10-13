@@ -24,14 +24,14 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="relative mt-0 overflow-hidden backdrop-blur-2xl bg-white/80 dark:bg-slate-900/85 border-t border-slate-200/70 dark:border-white/10 shadow-[0_-20px_50px_rgba(15,23,42,0.03)] text-slate-700 dark:text-slate-300 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A]">
+    <footer className="relative mt-0 overflow-hidden backdrop-blur-2xl bg-white/80 dark:bg-slate-900/85 border-t border-slate-200/70 dark:border-white/10 shadow-[0_-20px_50px_rgba(15,23,42,0.03)] text-slate-700 dark:text-slate-300 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
       {/* 1. Multi-tone Gradient Top Stripe matching Sign In & Register Glass Panels */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FF7A1A] via-[#00B8C8] to-[#FFD43B]" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sun-orange via-aqua to-lemon" />
 
       {/* 2. Ethereal Ambient Glowing Orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-20 w-80 h-80 rounded-full bg-gradient-to-tr from-[#FED7AA]/35 via-[#FFEDD5]/40 to-transparent blur-[110px] dark:from-[#FF7A1A]/10 pointer-events-none" />
-        <div className="absolute -bottom-28 -right-20 w-72 h-72 rounded-full bg-gradient-to-bl from-[#CFFAFE]/40 via-[#F1F5F9]/60 to-transparent blur-[100px] dark:from-[#00B8C8]/10 pointer-events-none" />
+        <div className="absolute -top-36 -left-20 w-80 h-80 rounded-full bg-gradient-to-tr from-sun-orange-200/35 via-sun-orange-100/40 to-transparent blur-[110px] dark:from-sun-orange/10 pointer-events-none" />
+        <div className="absolute -bottom-28 -right-20 w-72 h-72 rounded-full bg-gradient-to-bl from-aqua-100/40 via-[#F1F5F9]/60 to-transparent blur-[100px] dark:from-aqua/10 pointer-events-none" />
       </div>
 
 
@@ -40,13 +40,13 @@ export const Footer: React.FC = () => {
       <div className="relative z-10 border-b border-slate-200/60 dark:border-white/10 bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 backdrop-blur-xl py-8 overflow-hidden">
         {/* Radiant ambient glow orbs (Matching Homepage) */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-          <div className="absolute -top-24 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[90px] dark:from-[#FF7A1A]/15 pointer-events-none" />
-          <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[90px] dark:from-[#00B8C8]/15 pointer-events-none" />
+          <div className="absolute -top-24 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[90px] dark:from-sun-orange/15 pointer-events-none" />
+          <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[90px] dark:from-aqua/15 pointer-events-none" />
         </div>
 
         <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-6 px-4 sm:px-6 lg:flex-row lg:px-8">
           <div className="flex items-center gap-4 text-center sm:text-left">
-            <div className="w-11 h-11 rounded-2xl bg-[#FF7A1A]/10 dark:bg-[#FF7A1A]/20 flex items-center justify-center text-[#FF7A1A] border border-[#FF7A1A]/20 shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-sun-orange/10 dark:bg-sun-orange/20 flex items-center justify-center text-sun-orange border border-sun-orange/20 shrink-0">
               <Mail className="w-5 h-5" />
             </div>
             <div>
@@ -54,7 +54,7 @@ export const Footer: React.FC = () => {
                 <h3 className="font-outfit text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   Subscribe to the Vendora Dispatch
                 </h3>
-                <span className="rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#FFA057] px-2.5 py-0.5 text-[10px] font-outfit font-black text-white uppercase tracking-wider shadow-xs">
+                <span className="rounded-full bg-gradient-to-r from-sun-orange to-[#FFA057] px-2.5 py-0.5 text-[10px] font-outfit font-black text-white uppercase tracking-wider shadow-xs">
                   Get 15% Off
                 </span>
               </div>
@@ -77,12 +77,12 @@ export const Footer: React.FC = () => {
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email address..."
-                className="w-full rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/90 dark:bg-slate-800/90 px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-[#FF7A1A] focus:ring-2 focus:ring-orange-500/20 transition-all shadow-inner"
+                className="w-full rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/90 dark:bg-slate-800/90 px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-sun-orange focus:ring-2 focus:ring-orange-500/20 transition-all shadow-inner"
               />
             </div>
             <button
               type="submit"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#FF7A1A] hover:bg-[#EA6C13] active:scale-[0.98] px-5 py-2.5 text-xs font-outfit font-bold text-white shadow-[0_4px_16px_rgba(255,122,26,0.3)] transition-all cursor-pointer"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sun-orange hover:bg-sun-orange-600 active:scale-[0.98] px-5 py-2.5 text-xs font-outfit font-bold text-white shadow-[0_4px_16px_color-mix(in_srgb,var(--color-sun-orange)_30%,transparent)] transition-all cursor-pointer"
             >
               {isSubscribed ? (
                 <>
@@ -107,13 +107,13 @@ export const Footer: React.FC = () => {
           <div>
             <h5 className="font-outfit text-sm font-bold tracking-tight text-slate-900 dark:text-white">Let Us Help You</h5>
             <ul className="mt-4 space-y-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
-              <li><Link to="/orders" className="hover:text-[#FF7A1A] transition-colors">Your Orders</Link></li>
-              <li><Link to="/returns" className="hover:text-[#FF7A1A] transition-colors">Returns &amp; Replacements</Link></li>
-              <li><Link to="/shipping" className="hover:text-[#FF7A1A] transition-colors">Shipping Rates &amp; Policies</Link></li>
-              <li><Link to="/refund-policy" className="hover:text-[#FF7A1A] transition-colors">Refund &amp; Return Policy</Link></li>
-              <li><Link to="/privacy" className="hover:text-[#FF7A1A] transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="hover:text-[#FF7A1A] transition-colors">Terms &amp; Conditions</Link></li>
-              <li><Link to="/faq" className="hover:text-[#FF7A1A] transition-colors">Help Center &amp; FAQ</Link></li>
+              <li><Link to="/orders" className="hover:text-sun-orange transition-colors">Your Orders</Link></li>
+              <li><Link to="/returns" className="hover:text-sun-orange transition-colors">Returns &amp; Replacements</Link></li>
+              <li><Link to="/shipping" className="hover:text-sun-orange transition-colors">Shipping Rates &amp; Policies</Link></li>
+              <li><Link to="/refund-policy" className="hover:text-sun-orange transition-colors">Refund &amp; Return Policy</Link></li>
+              <li><Link to="/privacy" className="hover:text-sun-orange transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-sun-orange transition-colors">Terms &amp; Conditions</Link></li>
+              <li><Link to="/faq" className="hover:text-sun-orange transition-colors">Help Center &amp; FAQ</Link></li>
             </ul>
           </div>
 
@@ -121,10 +121,10 @@ export const Footer: React.FC = () => {
           <div>
             <h5 className="font-outfit text-sm font-bold tracking-tight text-slate-900 dark:text-white">Make Money with Us</h5>
             <ul className="mt-4 space-y-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
-              <li><Link to="/sell" className="hover:text-[#FF7A1A] transition-colors">Sell on Vendora</Link></li>
-              <li><Link to="/affiliates" className="hover:text-[#FF7A1A] transition-colors">Become an Affiliate</Link></li>
-              <li><Link to="/become-a-seller" className="hover:text-[#FF7A1A] transition-colors">Open Brand Store</Link></li>
-              <li><Link to="/become-a-seller" className="hover:text-[#FF7A1A] transition-colors">Vendor Guidelines &amp; Fees</Link></li>
+              <li><Link to="/sell" className="hover:text-sun-orange transition-colors">Sell on Vendora</Link></li>
+              <li><Link to="/affiliates" className="hover:text-sun-orange transition-colors">Become an Affiliate</Link></li>
+              <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Open Brand Store</Link></li>
+              <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Vendor Guidelines &amp; Fees</Link></li>
             </ul>
           </div>
 
@@ -132,11 +132,11 @@ export const Footer: React.FC = () => {
           <div>
             <h5 className="font-outfit text-sm font-bold tracking-tight text-slate-900 dark:text-white">Get to Know Us</h5>
             <ul className="mt-4 space-y-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
-              <li><Link to="/about" className="hover:text-[#FF7A1A] transition-colors">About Vendora</Link></li>
-              <li><Link to="/careers" className="hover:text-[#FF7A1A] transition-colors">Careers &amp; Opportunities</Link></li>
-              <li><Link to="/brands" className="hover:text-[#FF7A1A] transition-colors">Official Brand Stores</Link></li>
-              <li><Link to="/deals" className="hover:text-[#FF7A1A] transition-colors">Flash Deals &amp; Discounts</Link></li>
-              <li><Link to="/blog" className="hover:text-[#FF7A1A] transition-colors">The Vendora Journal</Link></li>
+              <li><Link to="/about" className="hover:text-sun-orange transition-colors">About Vendora</Link></li>
+              <li><Link to="/careers" className="hover:text-sun-orange transition-colors">Careers &amp; Opportunities</Link></li>
+              <li><Link to="/brands" className="hover:text-sun-orange transition-colors">Official Brand Stores</Link></li>
+              <li><Link to="/deals" className="hover:text-sun-orange transition-colors">Flash Deals &amp; Discounts</Link></li>
+              <li><Link to="/blog" className="hover:text-sun-orange transition-colors">The Vendora Journal</Link></li>
             </ul>
           </div>
 
@@ -145,26 +145,26 @@ export const Footer: React.FC = () => {
             <h5 className="font-outfit text-sm font-bold tracking-tight text-slate-900 dark:text-white">Customer Support</h5>
             <ul className="mt-4 space-y-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
               <li className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0" />
-                <a href="tel:+923005558363" className="font-bold text-[#FF7A1A] hover:underline">
+                <Phone className="h-3.5 w-3.5 text-sun-orange shrink-0" />
+                <a href="tel:+923005558363" className="font-bold text-sun-orange hover:underline">
                   +92 (300) 555-VENDORA
                 </a>
               </li>
               <li>
                 <a
                   href="mailto:support@vendora.market"
-                  className="flex items-center gap-2 hover:text-[#FF7A1A] transition-colors"
+                  className="flex items-center gap-2 hover:text-sun-orange transition-colors"
                 >
-                  <Mail className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0" />
+                  <Mail className="h-3.5 w-3.5 text-sun-orange shrink-0" />
                   <span>support@vendora.market</span>
                 </a>
               </li>
               <li>
                 <Link
                   to="/disputes"
-                  className="flex items-center gap-2 hover:text-[#FF7A1A] transition-colors"
+                  className="flex items-center gap-2 hover:text-sun-orange transition-colors"
                 >
-                  <Headphones className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0" />
+                  <Headphones className="h-3.5 w-3.5 text-sun-orange shrink-0" />
                   <span>Disputes &amp; Claims Desk</span>
                 </Link>
               </li>
@@ -176,7 +176,7 @@ export const Footer: React.FC = () => {
                       href="https://t.me"
                       target="_blank"
                       rel="noreferrer"
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 hover:bg-[#FF7A1A] text-slate-700 hover:text-white dark:bg-white/10 dark:text-white transition-all shadow-2xs"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 hover:bg-sun-orange text-slate-700 hover:text-white dark:bg-white/10 dark:text-white transition-all shadow-2xs"
                       title="Telegram Support"
                     >
                       <Send className="h-3.5 w-3.5" />
@@ -185,7 +185,7 @@ export const Footer: React.FC = () => {
                       href="https://whatsapp.com"
                       target="_blank"
                       rel="noreferrer"
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 hover:bg-[#FF7A1A] text-slate-700 hover:text-white dark:bg-white/10 dark:text-white transition-all shadow-2xs"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 hover:bg-sun-orange text-slate-700 hover:text-white dark:bg-white/10 dark:text-white transition-all shadow-2xs"
                       title="WhatsApp Support"
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
@@ -194,17 +194,17 @@ export const Footer: React.FC = () => {
                 </div>
               </li>
               <li className="pt-1">
-                <Link to="/faq" className="hover:text-[#FF7A1A] transition-colors">
+                <Link to="/faq" className="hover:text-sun-orange transition-colors">
                   Knowledge Base &amp; FAQ
                 </Link>
               </li>
               <li>
-                <Link to="/track-order" className="hover:text-[#FF7A1A] transition-colors">
+                <Link to="/track-order" className="hover:text-sun-orange transition-colors">
                   Track Your Package
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-[#FF7A1A] transition-colors">
+                <Link to="/contact" className="hover:text-sun-orange transition-colors">
                   Contact Support Desk
                 </Link>
               </li>
@@ -226,7 +226,7 @@ export const Footer: React.FC = () => {
                   href="https://facebook.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-[#FF7A1A] text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-sun-orange text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
                   aria-label="Facebook"
                   title="Facebook"
                 >
@@ -239,7 +239,7 @@ export const Footer: React.FC = () => {
                   href="https://x.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-[#FF7A1A] text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-sun-orange text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
                   aria-label="X (formerly Twitter)"
                   title="X (Twitter)"
                 >
@@ -252,7 +252,7 @@ export const Footer: React.FC = () => {
                   href="https://instagram.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-[#FF7A1A] text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-sun-orange text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
                   aria-label="Instagram"
                   title="Instagram"
                 >
@@ -265,7 +265,7 @@ export const Footer: React.FC = () => {
                   href="https://youtube.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-[#FF7A1A] text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-sun-orange text-slate-700 hover:text-white dark:bg-white/10 dark:text-white shadow-2xs transition-all hover:scale-110"
                   aria-label="YouTube"
                   title="YouTube"
                 >
@@ -290,11 +290,11 @@ export const Footer: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-            <Link to="/privacy" className="hover:text-[#FF7A1A] transition-colors">Privacy Policy</Link>
+            <Link to="/privacy" className="hover:text-sun-orange transition-colors">Privacy Policy</Link>
             <span>•</span>
-            <Link to="/terms" className="hover:text-[#FF7A1A] transition-colors">Terms of Service</Link>
+            <Link to="/terms" className="hover:text-sun-orange transition-colors">Terms of Service</Link>
             <span>•</span>
-            <Link to="/refund-policy" className="hover:text-[#FF7A1A] transition-colors">Buyer Protection</Link>
+            <Link to="/refund-policy" className="hover:text-sun-orange transition-colors">Buyer Protection</Link>
           </div>
         </div>
       </div>

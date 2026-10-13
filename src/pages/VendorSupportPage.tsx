@@ -139,7 +139,7 @@ const DisputeThread: React.FC<{ dispute: VendorDispute }> = ({ dispute }) => {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Add the tracking numbers, delivery proof or clarification your side of the case needs…"
-          className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 focus:outline-none focus:border-[#FF7A1A]"
+          className="w-full rounded-xl border border-slate-200 p-3 text-xs text-slate-900 focus:outline-none focus:border-sun-orange"
         />
         <div className="flex items-center justify-between gap-3">
           <span className="text-[10px] text-slate-400">
@@ -149,7 +149,7 @@ const DisputeThread: React.FC<{ dispute: VendorDispute }> = ({ dispute }) => {
             type="button"
             onClick={() => void send()}
             disabled={!draft.trim() || reply.isPending}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[#EA580C] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[#EA580C] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send className="h-3.5 w-3.5" aria-hidden="true" />
             {reply.isPending ? 'Sending…' : 'Send reply'}
@@ -248,7 +248,7 @@ export const VendorSupportPage: React.FC = () => {
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder="Filter by reason, buyer, status or case id"
-                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-xs placeholder-slate-400 focus:outline-none focus:border-[#FF7A1A]"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-xs placeholder-slate-400 focus:outline-none focus:border-sun-orange"
               />
             </div>
           </div>
@@ -383,7 +383,7 @@ export const VendorSupportPage: React.FC = () => {
               </div>
               <div className="text-xs font-bold text-slate-900">{card.title}</div>
               <p className="text-[11px] text-slate-500 leading-relaxed">{card.body}</p>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#FF7A1A]">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sun-orange">
                 Open
                 <ArrowRight className="h-3 w-3" aria-hidden="true" />
               </span>
@@ -436,7 +436,7 @@ export const VendorSupportPage: React.FC = () => {
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-[#FF7A1A]" aria-hidden="true" />
+                <Ticket className="h-5 w-5 text-sun-orange" aria-hidden="true" />
                 Dispute thread
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">

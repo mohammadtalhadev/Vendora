@@ -28,7 +28,7 @@ export const RefundPolicyPage: React.FC = () => {
       time: 'Instant (0 seconds)',
       perk: '+5% Extra Cash Bonus',
       badge: 'RECOMMENDED',
-      badgeColor: 'bg-orange-100 text-[#FF7A1A] border-orange-200',
+      badgeColor: 'bg-orange-100 text-sun-orange border-orange-200',
       note: 'Available in your wallet the moment courier scans return parcel. Never expires.',
     },
     {
@@ -157,12 +157,12 @@ export const RefundPolicyPage: React.FC = () => {
                 to="/returns"
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-glass-pill hover:bg-white transition-all active:scale-95"
               >
-                <RotateCcw className="h-4 w-4 text-[#FF7A1A]" />
+                <RotateCcw className="h-4 w-4 text-sun-orange" />
                 Start a Return
               </Link>
               <Link
                 to="/disputes"
-                className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] hover:bg-[#EA6C13] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95"
+                className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95"
               >
                 <ShieldCheck className="h-4 w-4" />
                 Disputes &amp; Claims Desk
@@ -234,7 +234,7 @@ export const RefundPolicyPage: React.FC = () => {
           <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-10 shadow-glass backdrop-blur-xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
               <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-[#FF7A1A] uppercase tracking-wider mb-1">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-sun-orange uppercase tracking-wider mb-1">
                   <Calculator className="h-3.5 w-3.5" />
                   Interactive Transparency Tool
                 </div>
@@ -261,7 +261,7 @@ export const RefundPolicyPage: React.FC = () => {
                     step="5"
                     value={origPrice}
                     onChange={(e) => setOrigPrice(Number(e.target.value))}
-                    className="w-full accent-[#FF7A1A] mt-1 cursor-pointer"
+                    className="w-full accent-sun-orange mt-1 cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 mt-1">
                     <span>$10</span>
@@ -277,7 +277,7 @@ export const RefundPolicyPage: React.FC = () => {
                     <select
                       value={returnType}
                       onChange={(e) => setReturnType(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-[#FF7A1A]"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="defective">Defective / Damaged / Seller Error ($0 Return Fee)</option>
                       <option value="remorse">Changed Mind / Remorse ($4.99 Courier Fee)</option>
@@ -290,7 +290,7 @@ export const RefundPolicyPage: React.FC = () => {
                     <select
                       value={payoutDest}
                       onChange={(e) => setPayoutDest(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-[#FF7A1A]"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="credit">Vendora Store Credit (+5% Cash Bonus)</option>
                       <option value="card">Original Credit / Debit Card (Standard)</option>
@@ -337,7 +337,7 @@ export const RefundPolicyPage: React.FC = () => {
 
                 <Link
                   to="/returns"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-[#EA6C13] py-2.5 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 py-2.5 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95"
                 >
                   <span>Start Return with This Option</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -371,7 +371,7 @@ export const RefundPolicyPage: React.FC = () => {
                     </div>
                     <h4 className="font-bold text-slate-900 text-sm">{m.method}</h4>
                     <div className="text-lg font-black text-slate-900 font-display flex items-center gap-1.5">
-                      <Clock className="h-4 w-4 text-[#FF7A1A]" />
+                      <Clock className="h-4 w-4 text-sun-orange" />
                       <span>{m.time}</span>
                     </div>
                     <div className="text-[11px] font-semibold text-emerald-700">{m.perk}</div>
@@ -433,7 +433,7 @@ export const RefundPolicyPage: React.FC = () => {
                       </span>
                       <ChevronDown
                         className={`h-4 w-4 text-slate-500 transition-transform ${
-                          isExpanded ? 'rotate-180 text-[#FF7A1A]' : ''
+                          isExpanded ? 'rotate-180 text-sun-orange' : ''
                         }`}
                       />
                     </button>

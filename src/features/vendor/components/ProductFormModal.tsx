@@ -210,7 +210,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
     <>
       <DialogHeader>
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-[#FF7A1A]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-sun-orange">
             <Package className="h-4 w-4" aria-hidden="true" />
           </span>
           <DialogTitle>
@@ -499,7 +499,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
           <div className="space-y-4">
             <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <Sparkles className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
                   Quick Variant Generator
                 </span>

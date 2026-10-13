@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Lint, build (typecheck) and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          # No engines field / .nvmrc in the repo; Vite 8 needs Node 20.19+.
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        # package-lock.json must be in sync with package.json — if this step
+        # fails after adding a dependency, run `npm install` locally and
+        # commit the updated lockfile.
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (includes `tsc -b` typecheck)
+        run: npm run build
+
+      - name: Test
+        run: npm test

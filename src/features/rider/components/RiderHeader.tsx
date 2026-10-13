@@ -43,8 +43,8 @@ const STATUS_OPTIONS: StatusOption[] = [
     label: 'Busy',
     hint: 'At capacity right now',
     Icon: Clock,
-    activeClass: 'border-orange-300 bg-orange-50 text-[#EA6C13]',
-    dotClass: 'bg-[#FF7A1A]',
+    activeClass: 'border-orange-300 bg-orange-50 text-sun-orange-600',
+    dotClass: 'bg-sun-orange',
   },
   {
     value: 'offline',
@@ -176,7 +176,7 @@ export const RiderHeader: React.FC<RiderHeaderProps> = ({
               className="glass-pill inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs"
               title={`Vehicle type: ${vehicleType}`}
             >
-              <span className="text-[#00B8C8]">{renderVehicleIcon()}</span>
+              <span className="text-aqua">{renderVehicleIcon()}</span>
               <span>{vehicleType}</span>
             </div>
           ) : (
@@ -189,7 +189,7 @@ export const RiderHeader: React.FC<RiderHeaderProps> = ({
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs transition-all',
               activeDeliveries > 0
-                ? 'border-orange-200 bg-orange-50 text-[#EA6C13]'
+                ? 'border-orange-200 bg-orange-50 text-sun-orange-600'
                 : 'border-slate-200 bg-slate-50 text-slate-600'
             )}
             title={`${activeDeliveries} parcels on your board`}

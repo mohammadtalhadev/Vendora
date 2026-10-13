@@ -11,7 +11,6 @@ const fx = loadFixture();
 const money = (s: string) => Number(s.replace(/[^0-9.-]/g, ''));
 
 const server = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-const customerSession = (fx.personas as any).customer?.session;
 
 test.describe('golden path through the real UI', () => {
   test('signing in with the demo form lands the customer in their account', async ({ page }) => {

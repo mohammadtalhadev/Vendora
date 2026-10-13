@@ -201,12 +201,12 @@ export const OrderDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-16">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-16">
       {/* Radiant ambient glow orbs (Matching Homepage) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6">
@@ -304,7 +304,7 @@ export const OrderDetailPage: React.FC = () => {
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                       Grand Total
                     </span>
-                    <p className="text-base font-extrabold text-[#EA6C13]">
+                    <p className="text-base font-extrabold text-sun-orange-600">
                       {formatPrice(grandTotal)}
                     </p>
                   </div>
@@ -319,7 +319,7 @@ export const OrderDetailPage: React.FC = () => {
                   data-testid="shipping-address-card"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-[#FF7A1A]">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-sun-orange">
                       <MapPin className="h-4 w-4" />
                     </div>
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
@@ -418,7 +418,7 @@ export const OrderDetailPage: React.FC = () => {
                     {/* Sub-order Header */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 p-5 sm:px-6">
                       <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A1A]">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-sun-orange">
                           <Store className="h-5 w-5" />
                         </div>
                         <div>
@@ -624,7 +624,7 @@ export const OrderDetailPage: React.FC = () => {
               id="cancel-reason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-[#FF7A1A] focus:outline-none"
+              className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
             >
               <option value="Found better price / Ordered by mistake">
                 Found better price / Ordered by mistake
@@ -681,7 +681,7 @@ export const OrderDetailPage: React.FC = () => {
                 id="return-reason"
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-[#FF7A1A] focus:outline-none"
+                className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
               >
                 <option value="Defective or not functioning as described">
                   Defective or not functioning as described
@@ -706,7 +706,7 @@ export const OrderDetailPage: React.FC = () => {
                 onChange={(e) => setReturnNotes(e.target.value)}
                 placeholder="Provide photos or serial number details if applicable..."
                 rows={3}
-                className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-[#FF7A1A] focus:outline-none"
+                className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
               />
             </div>
           </div>

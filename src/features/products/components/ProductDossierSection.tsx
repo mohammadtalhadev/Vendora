@@ -47,7 +47,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
       {/* ── Sub-Section 1: Formula Mechanism & Biological Action ──── */}
       <div className="space-y-3">
         <h4 className="font-outfit flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 tracking-tight">
-          <Sparkles className="h-4 w-4 text-[#FF7A1A]" />
+          <Sparkles className="h-4 w-4 text-sun-orange" />
           <span>{mechanismHeadline}</span>
         </h4>
         <p className="text-xs sm:text-sm leading-relaxed text-slate-600 font-normal">
@@ -65,7 +65,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Step 1 */}
           <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-5 space-y-2 hover:bg-slate-50 hover:border-slate-300 transition-all">
-            <span className="text-[10px] font-extrabold tracking-widest text-[#FF7A1A] uppercase">
+            <span className="text-[10px] font-extrabold tracking-widest text-sun-orange uppercase">
               STEP 01
             </span>
             <h5 className="font-bold text-slate-900 text-sm">
@@ -78,7 +78,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
 
           {/* Step 2 */}
           <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-5 space-y-2 hover:bg-slate-50 hover:border-slate-300 transition-all">
-            <span className="text-[10px] font-extrabold tracking-widest text-[#FF7A1A] uppercase">
+            <span className="text-[10px] font-extrabold tracking-widest text-sun-orange uppercase">
               STEP 02
             </span>
             <h5 className="font-bold text-slate-900 text-sm">
@@ -91,7 +91,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
 
           {/* Step 3 */}
           <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-5 space-y-2 hover:bg-slate-50 hover:border-slate-300 transition-all">
-            <span className="text-[10px] font-extrabold tracking-widest text-[#FF7A1A] uppercase">
+            <span className="text-[10px] font-extrabold tracking-widest text-sun-orange uppercase">
               STEP 03
             </span>
             <h5 className="font-bold text-slate-900 text-sm">
@@ -107,7 +107,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
       {/* ── Sub-Section 3: Technical Specifications & Key Facts ───── */}
       <div className="space-y-4 pt-2">
         <h4 className="font-outfit flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 tracking-tight">
-          <ListFilter className="h-4 w-4 text-[#FF7A1A]" />
+          <ListFilter className="h-4 w-4 text-sun-orange" />
           <span>Technical Specifications &amp; Key Facts</span>
         </h4>
 

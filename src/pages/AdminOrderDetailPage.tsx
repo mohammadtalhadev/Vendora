@@ -227,7 +227,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                         <span className="font-bold text-slate-900 text-sm">{sub.storeName}</span>
                         <span className="font-mono text-slate-400 text-xs ml-2">#{sub.id}</span>
                       </div>
-                      <span className="rounded-full bg-orange-100 text-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-bold uppercase">
+                      <span className="rounded-full bg-orange-100 text-sun-orange px-2.5 py-0.5 text-[10px] font-bold uppercase">
                         {sub.status}
                       </span>
                     </div>
@@ -298,7 +298,7 @@ export const AdminOrderDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-2 text-xs">
                 <div className="flex items-center gap-2 text-slate-900 font-bold">
-                  <MapPin className="h-4 w-4 text-[#FF7A1A]" />
+                  <MapPin className="h-4 w-4 text-sun-orange" />
                   <span>Delivery Destination</span>
                 </div>
                 {order.shippingAddress ? (

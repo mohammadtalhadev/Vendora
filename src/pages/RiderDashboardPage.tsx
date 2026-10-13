@@ -52,7 +52,7 @@ const STATUS_META: Record<string, { label: string; tone: string }> = {
   in_transit: { label: 'In transit', tone: 'border-sky-300 bg-sky-50 text-sky-800' },
   out_for_delivery: {
     label: 'Out for delivery',
-    tone: 'border-orange-300 bg-orange-50 text-[#EA6C13] animate-pulse',
+    tone: 'border-orange-300 bg-orange-50 text-sun-orange-600 animate-pulse',
   },
   failed: { label: 'Reported', tone: 'border-rose-300 bg-rose-50 text-rose-800' },
 };
@@ -178,7 +178,7 @@ const DropCard: React.FC<DropCardProps> = ({
             Deliver to
           </span>
           <div className="mt-1.5 flex items-start gap-2">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#EA6C13]" />
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sun-orange-600" />
             <div className="text-xs text-slate-700">
               <div className="font-semibold text-slate-900">{drop.address.street}</div>
               {(locality || drop.address.country) && (
@@ -279,7 +279,7 @@ const DropCard: React.FC<DropCardProps> = ({
               data-testid="btn-deliver"
               disabled={busy}
               onClick={() => onDeliver(drop)}
-              className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl bg-[#FF7A1A] px-5 py-3 text-sm font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:bg-[#EA6C13] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl bg-sun-orange px-5 py-3 text-sm font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:bg-sun-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShieldCheck className="h-4 w-4" />
               <span>Deliver</span>
@@ -330,7 +330,7 @@ const CountTile: React.FC<{
 const BoardLoading: React.FC = () => (
   <div data-testid="board-loading" className="space-y-3">
     <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
-      <Loader2 className="h-4 w-4 animate-spin text-[#FF7A1A]" />
+      <Loader2 className="h-4 w-4 animate-spin text-sun-orange" />
       Reading your board from dispatch…
     </div>
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
@@ -588,7 +588,7 @@ export const RiderDashboardPage: React.FC = () => {
                     label="Delivered all time"
                     value={counts.completedAllTime}
                     hint="Every handover you have made"
-                    tone="bg-orange-50 text-[#EA6C13]"
+                    tone="bg-orange-50 text-sun-orange-600"
                     icon={<Truck className="h-4 w-4" />}
                   />
                 </div>

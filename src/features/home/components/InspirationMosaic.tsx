@@ -121,10 +121,10 @@ export const InspirationMosaic: React.FC = () => {
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF7A1A]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500/10 text-sun-orange">
               <Sparkles className="h-4 w-4" />
             </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#FF7A1A]">
+            <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
               Curated Visuals
             </span>
           </div>
@@ -138,9 +138,9 @@ export const InspirationMosaic: React.FC = () => {
 
         <Link
           to="/products"
-          className="group inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#FF7A1A] transition-colors"
+          className="group inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-sun-orange transition-colors"
         >
-          <Eye className="h-4 w-4 text-[#FF7A1A]" />
+          <Eye className="h-4 w-4 text-sun-orange" />
           <span>Explore All Collections</span>
         </Link>
       </div>
@@ -175,7 +175,7 @@ export const InspirationMosaic: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveHotspotId(isOpen ? null : hs.id)}
-                    className="relative flex h-8 w-8 items-center justify-center rounded-full bg-[#FF7A1A] text-white shadow-lg shadow-orange-500/50 hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    className="relative flex h-8 w-8 items-center justify-center rounded-full bg-sun-orange text-white shadow-lg shadow-orange-500/50 hover:scale-110 active:scale-95 transition-transform cursor-pointer"
                     title={hs.title}
                   >
                     <span className="absolute inset-0 rounded-full bg-orange-400 animate-ping opacity-60 pointer-events-none" />
@@ -195,14 +195,14 @@ export const InspirationMosaic: React.FC = () => {
                           <p className="line-clamp-1 text-xs font-bold text-slate-900">
                             {hs.title}
                           </p>
-                          <p className="font-outfit text-xs font-black text-[#FF7A1A]">
+                          <p className="font-outfit text-xs font-black text-sun-orange">
                             {formatPrice(hs.price)}
                           </p>
                         </div>
                       </div>
                       <Link
                         to={hs.productUrl}
-                        className="mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl bg-slate-900 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#FF7A1A]"
+                        className="mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl bg-slate-900 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-sun-orange"
                       >
                         <span>Shop This Item</span>
                         <ArrowUpRight className="h-3 w-3" />

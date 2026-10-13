@@ -12,10 +12,10 @@
   --panel-border: #E2E8F0;
   --panel-text: #0F172A;
   --panel-text-muted: #64748B;
-  --panel-primary: #FF7A1A;
-  --panel-primary-hover: #EA6C13;
+  --panel-primary: var(--color-sun-orange);
+  --panel-primary-hover: var(--color-sun-orange-600);
   --panel-primary-light: #FFF7ED;
-  --panel-accent: #00B8C8;
+  --panel-accent: var(--color-aqua);
   --panel-sidebar-bg: rgba(255, 255, 255, 0.8);
   --panel-header-bg: rgba(255, 255, 255, 0.9);
   --panel-card-bg: rgba(255, 255, 255, 0.95);
@@ -32,7 +32,7 @@ html.dark {
   --panel-border: #273449;
   --panel-text: #F8FAFC;
   --panel-text-muted: #94A3B8;
-  --panel-primary: #FF7A1A;
+  --panel-primary: var(--color-sun-orange);
   --panel-primary-hover: #FF9233;
   --panel-primary-light: #7C2D12;
   --panel-accent: #22D3EE;
@@ -78,12 +78,12 @@ html.dark {
   color: white;
   border-radius: 9999px;
   font-weight: 700;
-  box-shadow: 0 4px 14px 0 rgba(255, 122, 26, 0.28);
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--color-sun-orange) 28%, transparent);
 }
 
 .homepage-btn-primary:hover {
   background-color: var(--panel-primary-hover);
-  box-shadow: 0 6px 20px 0 rgba(255, 122, 26, 0.38);
+  box-shadow: 0 6px 20px 0 color-mix(in srgb, var(--color-sun-orange) 38%, transparent);
 }
 
 .homepage-btn-secondary {
@@ -176,7 +176,7 @@ html.dark .homepage-trust-strip {
 /* Newsletter section */
 .homepage-newsletter {
   background: var(--panel-primary);
-  background: linear-gradient(135deg, var(--panel-primary) 0%, #EA6C13 100%);
+  background: linear-gradient(135deg, var(--panel-primary) 0%, var(--color-sun-orange-600) 100%);
 }
 
 .homepage-newsletter input {
@@ -193,7 +193,7 @@ html.dark .homepage-trust-strip {
   background: rgba(255, 255, 255, 0.25);
   border-color: white;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 122, 26, 0.3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-sun-orange) 30%, transparent);
 }
 
 /* Footer */

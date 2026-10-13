@@ -251,7 +251,7 @@ export const NotificationsPage: React.FC = () => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FF7A1A] to-amber-500 text-white shadow-md shadow-orange-500/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-sun-orange to-amber-500 text-white shadow-md shadow-orange-500/20">
                   <Bell className="h-6 w-6 stroke-[2]" />
                 </div>
                 <div>
@@ -301,7 +301,7 @@ export const NotificationsPage: React.FC = () => {
                   value={pageFilter}
                   onChange={(event) => setPageFilter(event.target.value)}
                   placeholder="Narrow these results by keyword..."
-                  className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-[#FF7A1A] focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#FF7A1A]/20"
+                  className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-sun-orange focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-sun-orange/20"
                 />
                 {pageFilter && (
                   <button
@@ -397,7 +397,7 @@ export const NotificationsPage: React.FC = () => {
         {!userId ? (
           /* A notice is addressed to an account, so an anonymous visitor has none to read. */
           <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white py-16 px-6 text-center shadow-xs">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-[#FF7A1A]">
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-sun-orange">
               <BellOff className="h-10 w-10 stroke-[1.5]" />
             </div>
             <h2 className="text-xl font-extrabold text-slate-900">Sign in to see your notices</h2>
@@ -407,7 +407,7 @@ export const NotificationsPage: React.FC = () => {
             </p>
             <Link
               to="/login"
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-[#EA6C13] px-6 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-6 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95"
             >
               <span>Sign in</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -440,7 +440,7 @@ export const NotificationsPage: React.FC = () => {
           total === 0 && activeCategory === 'all' ? (
             /* The account's tray really is empty. */
             <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white py-16 px-6 text-center shadow-xs">
-              <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-[#FF7A1A]">
+              <div className="relative mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-sun-orange">
                 <BellOff className="h-10 w-10 stroke-[1.5]" />
                 <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xs">
                   <Check className="h-3.5 w-3.5 stroke-[3]" />
@@ -454,7 +454,7 @@ export const NotificationsPage: React.FC = () => {
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   to="/products"
-                  className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-[#EA6C13] px-6 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95"
+                  className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-6 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95"
                 >
                   <span>Browse Marketplace</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -564,8 +564,8 @@ export const NotificationsPage: React.FC = () => {
                           </span>
 
                           {isUnread && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-[#FF7A1A] px-2 py-0.5 text-[10px] font-bold">
-                              <span className="h-1.5 w-1.5 rounded-full bg-[#FF7A1A]" />
+                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-sun-orange px-2 py-0.5 text-[10px] font-bold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-sun-orange" />
                               Unread
                             </span>
                           )}

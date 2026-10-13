@@ -108,7 +108,7 @@ export const ApplicationPendingCard: FC<ApplicationPendingCardProps> = ({
         className,
       )}
     >
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-[#FF7A1A] shadow-inner">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-sun-orange shadow-inner">
         <Clock className="h-8 w-8 animate-pulse" aria-hidden="true" />
       </div>
 
@@ -125,8 +125,8 @@ export const ApplicationPendingCard: FC<ApplicationPendingCardProps> = ({
       </div>
 
       {/* Review Time Badge */}
-      <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-orange-200/90 bg-orange-50 px-4 py-2 text-xs font-semibold text-[#EA6C13] shadow-xs">
-        <Clock className="h-4 w-4 shrink-0 text-[#FF7A1A]" aria-hidden="true" />
+      <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-orange-200/90 bg-orange-50 px-4 py-2 text-xs font-semibold text-sun-orange-600 shadow-xs">
+        <Clock className="h-4 w-4 shrink-0 text-sun-orange" aria-hidden="true" />
         <span data-testid="estimated-review-time">
           Estimated review time: {estimatedTime}
         </span>
@@ -340,7 +340,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
     >
       <div className="mb-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A1A]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-sun-orange">
             <Store className="h-5 w-5" />
           </div>
           <div>
@@ -388,7 +388,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             <p
               id="businessName-error"
               role="alert"
-              className="mt-1.5 text-xs font-medium text-[#FF4D6D]"
+              className="mt-1.5 text-xs font-medium text-coral"
             >
               {errors.businessName}
             </p>
@@ -424,7 +424,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             <p
               id="storeSlug-error"
               role="alert"
-              className="mt-1.5 text-xs font-medium text-[#FF4D6D]"
+              className="mt-1.5 text-xs font-medium text-coral"
             >
               {errors.storeSlug}
             </p>
@@ -453,8 +453,8 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
                 'disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer',
                 errors.categoryFocus
-                  ? 'border-[#FF4D6D] focus-visible:border-[#FF4D6D] focus-visible:ring-rose-200'
-                  : 'border-slate-200 focus-visible:border-[#FF7A1A] focus-visible:ring-orange-200',
+                  ? 'border-coral focus-visible:border-coral focus-visible:ring-rose-200'
+                  : 'border-slate-200 focus-visible:border-sun-orange focus-visible:ring-orange-200',
               )}
             >
               <option value="">Select a primary category focus...</option>
@@ -472,7 +472,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             <p
               id="categoryFocus-error"
               role="alert"
-              className="mt-1.5 text-xs font-medium text-[#FF4D6D]"
+              className="mt-1.5 text-xs font-medium text-coral"
             >
               {errors.categoryFocus}
             </p>
@@ -504,7 +504,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             <p
               id="businessEmail-error"
               role="alert"
-              className="mt-1.5 text-xs font-medium text-[#FF4D6D]"
+              className="mt-1.5 text-xs font-medium text-coral"
             >
               {errors.businessEmail}
             </p>
@@ -534,8 +534,8 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 resize-none',
               'disabled:cursor-not-allowed disabled:opacity-50',
               errors.storeDescription
-                ? 'border-[#FF4D6D] focus-visible:border-[#FF4D6D] focus-visible:ring-rose-200'
-                : 'border-slate-200 focus-visible:border-[#FF7A1A] focus-visible:ring-orange-200',
+                ? 'border-coral focus-visible:border-coral focus-visible:ring-rose-200'
+                : 'border-slate-200 focus-visible:border-sun-orange focus-visible:ring-orange-200',
             )}
           />
           <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
@@ -546,7 +546,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             <p
               id="storeDescription-error"
               role="alert"
-              className="mt-1.5 text-xs font-medium text-[#FF4D6D]"
+              className="mt-1.5 text-xs font-medium text-coral"
             >
               {errors.storeDescription}
             </p>
@@ -565,14 +565,14 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
               disabled={isSubmitting}
               aria-invalid={!!errors.termsAccepted}
               aria-describedby={errors.termsAccepted ? 'termsAccepted-error' : undefined}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#FF7A1A] focus:ring-[#FF7A1A]"
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sun-orange focus:ring-sun-orange"
             />
             <div className="text-xs text-slate-700">
               <span>I accept the </span>
               <a
                 href="#terms"
                 onClick={(e) => e.preventDefault()}
-                className="font-medium text-[#FF7A1A] hover:underline"
+                className="font-medium text-sun-orange hover:underline"
               >
                 Vendora Merchant Agreement
               </a>
@@ -583,7 +583,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             <p
               id="termsAccepted-error"
               role="alert"
-              className="mt-2 text-xs font-medium text-[#FF4D6D]"
+              className="mt-2 text-xs font-medium text-coral"
             >
               {errors.termsAccepted}
             </p>

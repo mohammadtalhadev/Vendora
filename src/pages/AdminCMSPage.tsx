@@ -158,7 +158,7 @@ export const AdminCMSPage: React.FC = () => {
 
   const handleCmsTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = CMS_TABS.indexOf(activeTab);
-    let nextIndex = currentIndex;
+    let nextIndex: number;
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowDown':
@@ -201,7 +201,7 @@ export const AdminCMSPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddBannerOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
               <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
               <span className="text-white">Add Hero Banner</span>
@@ -226,7 +226,7 @@ export const AdminCMSPage: React.FC = () => {
             onClick={() => setActiveTab('banners')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'banners'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -244,7 +244,7 @@ export const AdminCMSPage: React.FC = () => {
             onClick={() => setActiveTab('coupons')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'coupons'
-                ? 'border-[#FF7A1A] text-[#FF7A1A]'
+                ? 'border-sun-orange text-sun-orange'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -317,7 +317,7 @@ export const AdminCMSPage: React.FC = () => {
                             checked={b.published}
                             disabled={toggleBannerMutation.isPending}
                             onChange={() => toggleBannerMutation.mutate(b)}
-                            className="rounded text-[#FF7A1A] focus:ring-[#FF7A1A]"
+                            className="rounded text-sun-orange focus:ring-sun-orange"
                           />
                           <span>Active on Storefront</span>
                         </label>
@@ -398,7 +398,7 @@ export const AdminCMSPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={createCouponMutation.isPending}
-                  className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] text-white px-5 py-2.5 font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer text-xs active:scale-95 disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] text-white px-5 py-2.5 font-bold shadow-sm shadow-orange-500/20 transition-all cursor-pointer text-xs active:scale-95 disabled:opacity-50"
                 >
                   {createCouponMutation.isPending ? 'Creating…' : 'Create Code'}
                 </button>
@@ -436,7 +436,7 @@ export const AdminCMSPage: React.FC = () => {
                     {couponList.map((c) => (
                       <tr key={c.id}>
                         <td className="p-4 font-mono font-bold text-slate-900">{c.code}</td>
-                        <td className="p-4 font-bold text-[#FF7A1A]">{discountLabel(c)}</td>
+                        <td className="p-4 font-bold text-sun-orange">{discountLabel(c)}</td>
                         <td className="p-4 text-slate-600">{formatPrice(c.minimumOrder)}</td>
                         <td className="p-4 text-slate-600">{c.usageCount} / {c.usageLimit}</td>
                         <td className="p-4">
@@ -572,7 +572,7 @@ export const AdminCMSPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={createBannerMutation.isPending}
-                    className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-5 py-2 font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer text-xs active:scale-95 disabled:opacity-50"
+                    className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-5 py-2 font-bold text-white shadow-sm shadow-orange-500/20 cursor-pointer text-xs active:scale-95 disabled:opacity-50"
                   >
                     {createBannerMutation.isPending ? 'Saving…' : 'Save Banner'}
                   </button>

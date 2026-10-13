@@ -40,7 +40,7 @@ export function App() {
             <Dialog.Trigger asChild>
               <button
                 style={{
-                  background: '#FF7A1A',
+                  background: 'var(--color-sun-orange)',
                   color: '#fff',
                   border: 'none',
                   padding: '12px 24px',

@@ -160,12 +160,12 @@ export const VendorStorefrontPage: React.FC = () => {
   const storeFailed = !storeQuery.isLoading && storeQuery.isError && !storeNotFound;
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
       {/* Radiant ambient glow orbs (Matching Homepage & Storefront) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 pt-6">
@@ -175,7 +175,7 @@ export const VendorStorefrontPage: React.FC = () => {
             role="status"
             aria-live="polite"
           >
-            <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#FF7A1A] border-t-transparent" />
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-sun-orange border-t-transparent" />
             <span className="text-xs font-bold text-slate-500">Loading this store…</span>
           </div>
         )}
@@ -192,7 +192,7 @@ export const VendorStorefrontPage: React.FC = () => {
             </p>
             <Link
               to="/products"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white hover:bg-[#EA6C13]"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white hover:bg-sun-orange-600"
             >
               Browse the marketplace
               <ArrowRight className="h-3.5 w-3.5" />
@@ -210,7 +210,7 @@ export const VendorStorefrontPage: React.FC = () => {
             <button
               type="button"
               onClick={() => void storeQuery.refetch()}
-              className="mt-4 rounded-xl bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white hover:bg-[#EA6C13]"
+              className="mt-4 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white hover:bg-sun-orange-600"
             >
               Try again
             </button>
@@ -237,7 +237,7 @@ export const VendorStorefrontPage: React.FC = () => {
 
                 <div className="absolute top-4 right-4 flex items-center gap-2">
                   <span className="rounded-full bg-slate-950/65 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white border border-white/20 flex items-center gap-1.5 shadow-sm">
-                    <ShieldCheck className="h-3.5 w-3.5 text-[#00B8C8]" />
+                    <ShieldCheck className="h-3.5 w-3.5 text-aqua" />
                     {store.status === 'active' ? 'Store active' : 'Store suspended'}
                   </span>
                 </div>
@@ -389,7 +389,7 @@ export const VendorStorefrontPage: React.FC = () => {
                   aria-pressed={activeCategory === name}
                   className={`rounded-full px-4 py-2 transition-all whitespace-nowrap ${
                     activeCategory === name
-                      ? 'bg-[#FF7A1A] text-white shadow-md'
+                      ? 'bg-sun-orange text-white shadow-md'
                       : 'bg-white/80 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800'
                   }`}
                 >
@@ -407,7 +407,7 @@ export const VendorStorefrontPage: React.FC = () => {
                 <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-5 shadow-sm space-y-5">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div className="flex items-center gap-2">
-                      <SlidersHorizontal className="h-4 w-4 text-[#FF7A1A]" />
+                      <SlidersHorizontal className="h-4 w-4 text-sun-orange" />
                       <h3 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
                         Store Filters
                       </h3>
@@ -433,7 +433,7 @@ export const VendorStorefrontPage: React.FC = () => {
                       onChange={(e) => setSearchInput(e.target.value)}
                       placeholder={`Search ${store.storeName}`}
                       aria-label={`Search products in ${store.storeName}`}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 py-2 pl-9 pr-3 text-xs font-medium text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 py-2 pl-9 pr-3 text-xs font-medium text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sun-orange"
                     />
                   </div>
 
@@ -444,7 +444,7 @@ export const VendorStorefrontPage: React.FC = () => {
                         type="checkbox"
                         checked={inStockOnly}
                         onChange={(e) => setInStockOnly(e.target.checked)}
-                        className="h-4 w-4 rounded text-[#FF7A1A] focus:ring-[#FF7A1A]"
+                        className="h-4 w-4 rounded text-sun-orange focus:ring-sun-orange"
                       />
                       <span>In stock only</span>
                     </label>
@@ -467,7 +467,7 @@ export const VendorStorefrontPage: React.FC = () => {
                       onChange={(e) => setPriceMax(Number(e.target.value))}
                       aria-labelledby="store-price-range-label"
                       aria-valuetext={priceMax >= PRICE_CEILING ? 'No limit' : formatPrice(priceMax)}
-                      className="w-full accent-[#FF7A1A] cursor-pointer"
+                      className="w-full accent-sun-orange cursor-pointer"
                     />
                   </div>
                 </div>
@@ -654,7 +654,7 @@ export const VendorStorefrontPage: React.FC = () => {
                             </div>
 
                             {/* Product Title (links to its detail page) */}
-                            <h4 className="font-outfit mt-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-[#FF7A1A] transition-colors">
+                            <h4 className="font-outfit mt-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-sun-orange transition-colors">
                               <Link to={`/products/${prod.id}`}>{prod.title}</Link>
                             </h4>
 
@@ -692,7 +692,7 @@ export const VendorStorefrontPage: React.FC = () => {
                                 className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all shadow-xs disabled:cursor-not-allowed disabled:opacity-50 ${
                                   isAdded
                                     ? 'bg-emerald-600 text-white'
-                                    : 'bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] text-white hover:from-[#EA6C13] hover:to-[#FF7A1A]'
+                                    : 'bg-gradient-to-r from-sun-orange to-[#FF9040] text-white hover:from-sun-orange-600 hover:to-sun-orange'
                                 }`}
                               >
                                 {isAdded ? (
@@ -730,7 +730,7 @@ export const VendorStorefrontPage: React.FC = () => {
                         type="button"
                         onClick={() => setLimit((l) => l + PAGE_SIZE)}
                         disabled={productsQuery.isFetching}
-                        className="font-outfit font-bold text-slate-900 dark:text-white flex items-center gap-1.5 hover:text-[#FF7A1A] disabled:opacity-50"
+                        className="font-outfit font-bold text-slate-900 dark:text-white flex items-center gap-1.5 hover:text-sun-orange disabled:opacity-50"
                       >
                         <span>
                           {productsQuery.isFetching

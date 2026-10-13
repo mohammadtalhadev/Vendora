@@ -81,7 +81,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
           onClick={() => setActiveTab('new-arrivals')}
           className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
             activeTab === 'new-arrivals'
-              ? 'text-[#0C1046] border-b-2 border-[#FF7A1A] pb-3 -mb-[17px] font-extrabold'
+              ? 'text-[#0C1046] border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
               : 'text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -92,7 +92,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
           onClick={() => setActiveTab('best-sellers')}
           className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
             activeTab === 'best-sellers'
-              ? 'text-[#0C1046] border-b-2 border-[#FF7A1A] pb-3 -mb-[17px] font-extrabold'
+              ? 'text-[#0C1046] border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
               : 'text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -103,7 +103,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
           onClick={() => setActiveTab('best-offers')}
           className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
             activeTab === 'best-offers'
-              ? 'text-[#0C1046] border-b-2 border-[#FF7A1A] pb-3 -mb-[17px] font-extrabold'
+              ? 'text-[#0C1046] border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
               : 'text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -158,7 +158,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
             </p>
             <Link
               to="/deals"
-              className="mt-4 inline-flex items-center justify-center gap-1 font-outfit text-sm font-bold text-[#FF7A1A] hover:underline"
+              className="mt-4 inline-flex items-center justify-center gap-1 font-outfit text-sm font-bold text-sun-orange hover:underline"
             >
               <span>Shop Now</span>
             </Link>

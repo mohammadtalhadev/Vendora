@@ -142,7 +142,7 @@ export const ContactPage: React.FC = () => {
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">
+          <Link to="/" className="hover:text-sun-orange transition-colors">
             Home
           </Link>
           <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" aria-hidden="true" />
@@ -153,7 +153,7 @@ export const ContactPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
           <div className="lg:col-span-7 space-y-4">
             <span className="glass-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              <Phone className="h-3.5 w-3.5 text-[#FF7A1A]" />
+              <Phone className="h-3.5 w-3.5 text-sun-orange" />
               Vendora Care
             </span>
             <h1 className="font-outfit text-3xl font-black tracking-tight text-slate-900 sm:text-5xl">
@@ -178,7 +178,7 @@ export const ContactPage: React.FC = () => {
           {/* Response times */}
           <div className="glass-card lg:col-span-5 rounded-[26px] border border-white/80 bg-white/75 p-6 backdrop-blur-xl shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500">
-              <Clock className="h-4 w-4 text-[#FF7A1A]" />
+              <Clock className="h-4 w-4 text-sun-orange" />
               Response times
             </div>
             <ul className="mt-4 space-y-3">
@@ -210,7 +210,7 @@ export const ContactPage: React.FC = () => {
                   aria-pressed={selected}
                   className={`flex flex-col rounded-[22px] border p-5 text-left transition-all duration-200 ${
                     selected
-                      ? 'border-[#FF7A1A]/60 bg-orange-50/70 shadow-md shadow-orange-500/10'
+                      ? 'border-sun-orange/60 bg-orange-50/70 shadow-md shadow-orange-500/10'
                       : 'border-white/80 bg-white/70 hover:-translate-y-0.5 hover:border-orange-200/80 hover:shadow-lg'
                   } backdrop-blur-md`}
                 >
@@ -219,7 +219,7 @@ export const ContactPage: React.FC = () => {
                   </span>
                   <span className="mt-3 text-sm font-extrabold tracking-tight text-slate-900">{channel.title}</span>
                   <span className="mt-1 text-[11px] leading-relaxed text-slate-500">{channel.blurb}</span>
-                  <span className="mt-3 text-[11px] font-bold text-[#FF7A1A]">{channel.email}</span>
+                  <span className="mt-3 text-[11px] font-bold text-sun-orange">{channel.email}</span>
                   {'phone' in channel && channel.phone ? (
                     <span className="text-[11px] font-semibold text-slate-500">{channel.phone}</span>
                   ) : null}
@@ -254,7 +254,7 @@ export const ContactPage: React.FC = () => {
                     value={form.name}
                     onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                     aria-invalid={Boolean(errors.name)}
-                    className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#FF7A1A] focus:ring-2 focus:ring-sun-orange/30"
+                    className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sun-orange focus:ring-2 focus:ring-sun-orange/30"
                   />
                   {errors.name ? (
                     <p role="alert" className="mt-1 text-[11px] font-semibold text-rose-600">
@@ -276,7 +276,7 @@ export const ContactPage: React.FC = () => {
                     value={form.email}
                     onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
                     aria-invalid={Boolean(errors.email)}
-                    className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#FF7A1A] focus:ring-2 focus:ring-sun-orange/30"
+                    className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sun-orange focus:ring-2 focus:ring-sun-orange/30"
                   />
                   {errors.email ? (
                     <p role="alert" className="mt-1 text-[11px] font-semibold text-rose-600">
@@ -297,7 +297,7 @@ export const ContactPage: React.FC = () => {
                   placeholder="ORD-98421"
                   value={form.orderId}
                   onChange={(event) => setForm((prev) => ({ ...prev, orderId: event.target.value }))}
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#FF7A1A] focus:ring-2 focus:ring-sun-orange/30"
+                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sun-orange focus:ring-2 focus:ring-sun-orange/30"
                 />
               </div>
 
@@ -312,7 +312,7 @@ export const ContactPage: React.FC = () => {
                   value={form.message}
                   onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
                   aria-invalid={Boolean(errors.message)}
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none transition focus:border-[#FF7A1A] focus:ring-2 focus:ring-sun-orange/30"
+                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none transition focus:border-sun-orange focus:ring-2 focus:ring-sun-orange/30"
                 />
                 {errors.message ? (
                   <p role="alert" className="mt-1 text-[11px] font-semibold text-rose-600">
@@ -357,22 +357,22 @@ export const ContactPage: React.FC = () => {
               <h3 className="text-sm font-extrabold tracking-tight text-slate-900">Faster ways to solve it</h3>
               <ul className="mt-4 space-y-2.5 text-xs font-medium text-slate-600">
                 <li>
-                  <Link to="/orders" className="inline-flex items-center gap-1.5 hover:text-[#FF7A1A]">
+                  <Link to="/orders" className="inline-flex items-center gap-1.5 hover:text-sun-orange">
                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /> Order history &amp; status
                   </Link>
                 </li>
                 <li>
-                  <Link to="/returns" className="inline-flex items-center gap-1.5 hover:text-[#FF7A1A]">
+                  <Link to="/returns" className="inline-flex items-center gap-1.5 hover:text-sun-orange">
                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /> Start a return or replacement
                   </Link>
                 </li>
                 <li>
-                  <Link to="/disputes" className="inline-flex items-center gap-1.5 hover:text-[#FF7A1A]">
+                  <Link to="/disputes" className="inline-flex items-center gap-1.5 hover:text-sun-orange">
                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /> Escalate to the dispute desk
                   </Link>
                 </li>
                 <li>
-                  <Link to="/become-a-seller" className="inline-flex items-center gap-1.5 hover:text-[#FF7A1A]">
+                  <Link to="/become-a-seller" className="inline-flex items-center gap-1.5 hover:text-sun-orange">
                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" /> Seller fee schedule &amp; guidelines
                   </Link>
                 </li>

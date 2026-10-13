@@ -157,7 +157,7 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
                     onClick={() => onAddToCart(item)}
                     type="button"
                     title="Add to cart"
-                    className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#FF7A1A] text-white shadow-xs hover:bg-[#EA6C13] transition-transform active:scale-95 cursor-pointer"
+                    className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-sun-orange text-white shadow-xs hover:bg-sun-orange-600 transition-transform active:scale-95 cursor-pointer"
                   >
                     <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </button>

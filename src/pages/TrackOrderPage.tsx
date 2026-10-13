@@ -424,11 +424,11 @@ export const TrackOrderPage: React.FC = () => {
             1. Breadcrumbs Strip
             ========================================================================= */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          <Link to="/" className="hover:text-[#FF7A1A] transition-colors">
+          <Link to="/" className="hover:text-sun-orange transition-colors">
             Home
           </Link>
           <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
-          <Link to="/help" className="hover:text-[#FF7A1A] transition-colors">
+          <Link to="/help" className="hover:text-sun-orange transition-colors">
             Care &amp; Support
           </Link>
           <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
@@ -441,8 +441,8 @@ export const TrackOrderPage: React.FC = () => {
             2. Hero Section
             ========================================================================= */}
         <div className="relative overflow-hidden rounded-3xl bg-white/75 dark:bg-slate-900/75 border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_15px_35px_rgba(15,23,42,0.05)] backdrop-blur-xl">
-          <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-[#FED7AA]/30 blur-[90px] pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-[#CFFAFE]/35 blur-[90px] pointer-events-none" />
+          <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-sun-orange-200/30 blur-[90px] pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-aqua-100/35 blur-[90px] pointer-events-none" />
           <div className="relative z-10 max-w-3xl space-y-2.5">
             <h1 className="font-outfit text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Real-Time Package Dispatch &amp; Live Carrier Tracking
@@ -457,7 +457,7 @@ export const TrackOrderPage: React.FC = () => {
             3. Search / Lookup Form Box (Floating Frosted Card)
             ========================================================================= */}
         <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 p-5 sm:p-7 shadow-[0_15px_35px_rgba(15,23,42,0.05)] backdrop-blur-xl space-y-5">
-          <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-[#FED7AA]/25 blur-[90px] pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-sun-orange-200/25 blur-[90px] pointer-events-none" />
           <div className="relative z-10 space-y-5">
             {/* Top Toggle Tabs */}
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-4">
@@ -503,7 +503,7 @@ export const TrackOrderPage: React.FC = () => {
                   value={consignInput}
                   onChange={(e) => setConsignInput(e.target.value)}
                   placeholder={activeTab === 'awb' ? 'e.g. VEN-002410-PK' : 'e.g. VEN-948210'}
-                  className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-slate-800/70 px-4 py-3 text-xs sm:text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#FF7A1A] focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all shadow-inner"
+                  className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-slate-800/70 px-4 py-3 text-xs sm:text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-sun-orange focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all shadow-inner"
                 />
               </div>
             </div>
@@ -518,7 +518,7 @@ export const TrackOrderPage: React.FC = () => {
                   id="carrier-select"
                   value={selectedCarrier}
                   onChange={(e) => setSelectedCarrier(e.target.value)}
-                  className="w-full appearance-none rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-slate-800/70 px-4 py-3 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:border-[#FF7A1A] focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all cursor-pointer shadow-inner pr-10"
+                  className="w-full appearance-none rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-slate-800/70 px-4 py-3 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:border-sun-orange focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all cursor-pointer shadow-inner pr-10"
                 >
                   <option value="Vendora Express (3–6h)">Vendora Express (3–6h)</option>
                   <option value="SpeedXpert Local">SpeedXpert Local City</option>
@@ -534,7 +534,7 @@ export const TrackOrderPage: React.FC = () => {
             <div className="md:col-span-3">
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#EA580C] px-5 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 hover:from-[#EA580C] hover:to-[#C2410C] transition-all cursor-pointer hover:shadow-orange-500/35 active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sun-orange to-[#EA580C] px-5 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 hover:from-[#EA580C] hover:to-sun-orange-700 transition-all cursor-pointer hover:shadow-orange-500/35 active:scale-[0.98]"
               >
                 <span>Track Package Now</span>
                 <ChevronRight className="h-4 w-4" />
@@ -560,8 +560,8 @@ export const TrackOrderPage: React.FC = () => {
                   onClick={() => handleSelectRecent(key)}
                   className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-orange-100 text-[#FF7A1A] border border-orange-300 dark:bg-orange-950/60 dark:border-orange-700'
-                      : 'bg-slate-100 text-slate-600 hover:bg-orange-50 hover:text-[#FF7A1A] border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-white/10'
+                      ? 'bg-orange-100 text-sun-orange border border-orange-300 dark:bg-orange-950/60 dark:border-orange-700'
+                      : 'bg-slate-100 text-slate-600 hover:bg-orange-50 hover:text-sun-orange border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-white/10'
                   }`}
                 >
                   {label}
@@ -576,8 +576,8 @@ export const TrackOrderPage: React.FC = () => {
             4. Active Tracked Package Card (Card with Order Info, Milestones, Telemetry)
             ========================================================================= */}
         <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.06)] space-y-7">
-          <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-[#FED7AA]/25 blur-[100px] pointer-events-none" />
-          <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-[#CFFAFE]/30 blur-[110px] pointer-events-none" />
+          <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-sun-orange-200/25 blur-[100px] pointer-events-none" />
+          <div className="absolute -bottom-32 -right-32 w-80 h-80 rounded-full bg-aqua-100/30 blur-[110px] pointer-events-none" />
           <div className="relative z-10 space-y-7">
           {/* Header Bar: Order Number, Dispatch Badges & Estimated Delivery */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-white/10 pb-5">
@@ -586,7 +586,7 @@ export const TrackOrderPage: React.FC = () => {
                 <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                   Order #{currentOrder.orderId}
                 </h2>
-                <span className="rounded-full bg-orange-100 text-[#FF7A1A] border border-orange-200 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-wide">
+                <span className="rounded-full bg-orange-100 text-sun-orange border border-orange-200 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-wide">
                   {currentOrder.dispatchBadge}
                 </span>
                 <span className="rounded-full bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800/40 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-wide">
@@ -600,14 +600,14 @@ export const TrackOrderPage: React.FC = () => {
 
             {/* Estimated Delivery Box */}
             <div className="flex items-center gap-3 rounded-2xl bg-orange-50/70 dark:bg-orange-950/30 border border-orange-200/80 dark:border-orange-900/30 px-4 py-2.5 self-start md:self-auto">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF7A1A] text-white shadow-xs">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sun-orange text-white shadow-xs">
                 <Clock className="h-5 w-5" />
               </div>
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                   ESTIMATED DELIVERY
                 </span>
-                <span className="font-outfit text-sm sm:text-base font-extrabold text-[#FF7A1A]">
+                <span className="font-outfit text-sm sm:text-base font-extrabold text-sun-orange">
                   {currentOrder.estimatedDelivery}
                 </span>
               </div>
@@ -637,7 +637,7 @@ export const TrackOrderPage: React.FC = () => {
             <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
               <Link
                 to={`/orders/${currentOrder.orderId}/invoice`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-orange-400 hover:text-[#FF7A1A] transition-all"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-orange-400 hover:text-sun-orange transition-all"
               >
                 <FileText className="h-3.5 w-3.5" />
                 <span>View Invoice</span>
@@ -648,14 +648,14 @@ export const TrackOrderPage: React.FC = () => {
                   navigator.clipboard?.writeText(window.location.href);
                   showToast('Tracking link copied to clipboard', 'info');
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-orange-400 hover:text-[#FF7A1A] transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-orange-400 hover:text-sun-orange transition-all cursor-pointer"
               >
                 <Share2 className="h-3.5 w-3.5" />
                 <span>Share Link</span>
               </button>
               <Link
                 to="/customer/messages"
-                className="inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-[#EA6C13] transition-all"
+                className="inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-sun-orange-600 transition-all"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
                 <span>Merchant Chat</span>
@@ -666,7 +666,7 @@ export const TrackOrderPage: React.FC = () => {
           {/* Fulfillment Milestones Header */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-950/50 text-[#FF7A1A]">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-950/50 text-sun-orange">
                 <Zap className="h-4 w-4" />
               </div>
               <h3 className="font-outfit text-base font-extrabold text-slate-900 dark:text-white">
@@ -686,9 +686,9 @@ export const TrackOrderPage: React.FC = () => {
                       <div
                         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all shadow-xs ${
                           isCompleted
-                            ? 'bg-[#FF7A1A] text-white ring-4 ring-orange-100 dark:ring-orange-950/40'
+                            ? 'bg-sun-orange text-white ring-4 ring-orange-100 dark:ring-orange-950/40'
                             : isInTransit
-                            ? 'bg-[#FF7A1A] text-white ring-4 ring-orange-200 dark:ring-orange-900/50 animate-pulse'
+                            ? 'bg-sun-orange text-white ring-4 ring-orange-200 dark:ring-orange-900/50 animate-pulse'
                             : 'border-2 border-slate-300 dark:border-slate-700 text-slate-400 bg-white dark:bg-slate-800'
                         }`}
                       >
@@ -703,7 +703,7 @@ export const TrackOrderPage: React.FC = () => {
                       <div className="flex-1 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${
-                            isCompleted || isInTransit ? 'bg-[#FF7A1A]' : 'bg-transparent'
+                            isCompleted || isInTransit ? 'bg-sun-orange' : 'bg-transparent'
                           }`}
                         />
                       </div>
@@ -716,7 +716,7 @@ export const TrackOrderPage: React.FC = () => {
                           isCompleted
                             ? 'text-emerald-600 dark:text-emerald-400'
                             : isInTransit
-                            ? 'text-[#FF7A1A]'
+                            ? 'text-sun-orange'
                             : 'text-slate-400'
                         }`}
                       >
@@ -744,7 +744,7 @@ export const TrackOrderPage: React.FC = () => {
               {/* Telemetry Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Compass className="h-4 w-4 text-[#FF7A1A]" />
+                  <Compass className="h-4 w-4 text-sun-orange" />
                   <span className="font-outfit text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                     Live Carrier Telemetry
                   </span>
@@ -765,7 +765,7 @@ export const TrackOrderPage: React.FC = () => {
                   <defs>
                     <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#EA580C" />
-                      <stop offset="60%" stopColor="#FF7A1A" />
+                      <stop offset="60%" style={{ stopColor: 'var(--color-sun-orange)' }} />
                       <stop offset="100%" stopColor="#3B82F6" />
                     </linearGradient>
                   </defs>
@@ -792,12 +792,12 @@ export const TrackOrderPage: React.FC = () => {
                 {/* Active Rider Pin along the route */}
                 <div className="relative z-10 flex flex-col items-center -mt-6">
                   <div className="rounded-full bg-slate-900 text-white px-2.5 py-1 text-[10px] font-extrabold flex items-center gap-1 shadow-lg border border-white/20">
-                    <Bike className="h-3 w-3 text-[#FF7A1A]" />
+                    <Bike className="h-3 w-3 text-sun-orange" />
                     <span>Rider: {currentOrder.rider.distance} • Speed: {currentOrder.rider.speed}</span>
                   </div>
                   <div className="relative flex h-6 w-6 items-center justify-center mt-1">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4 w-4 bg-[#FF7A1A] border-2 border-white"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-sun-orange border-2 border-white"></span>
                   </div>
                 </div>
 
@@ -859,7 +859,7 @@ export const TrackOrderPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleCopyOtp}
-                      className="p-1 text-slate-400 hover:text-[#FF7A1A] transition-colors cursor-pointer"
+                      className="p-1 text-slate-400 hover:text-sun-orange transition-colors cursor-pointer"
                       title="Copy OTP"
                       aria-label="Copy OTP"
                     >
@@ -883,7 +883,7 @@ export const TrackOrderPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSendInstructions}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/40 dark:hover:bg-orange-900/40 text-[#FF7A1A] border border-orange-200/80 dark:border-orange-800/40 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/40 dark:hover:bg-orange-900/40 text-sun-orange border border-orange-200/80 dark:border-orange-800/40 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-2xs"
                 >
                   <Send className="h-3.5 w-3.5" />
                   <span>{instructionsSent ? 'Instructions Sent!' : 'Send Doorstep Access Instructions'}</span>
@@ -911,7 +911,7 @@ export const TrackOrderPage: React.FC = () => {
                 <span className="font-outfit text-3xl font-black text-orange-200 dark:text-orange-900/60">
                   01
                 </span>
-                <span className="rounded-full bg-orange-100 text-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-extrabold uppercase">
+                <span className="rounded-full bg-orange-100 text-sun-orange px-2.5 py-0.5 text-[10px] font-extrabold uppercase">
                   Express Available
                 </span>
               </div>
@@ -926,7 +926,7 @@ export const TrackOrderPage: React.FC = () => {
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Same-Day Express</span>
-                  <span className="font-black text-[#FF7A1A]">3 – 6 Hours</span>
+                  <span className="font-black text-sun-orange">3 – 6 Hours</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Standard Delivery</span>
@@ -934,7 +934,7 @@ export const TrackOrderPage: React.FC = () => {
                 </div>
               </div>
               <div className="rounded-xl bg-orange-50/70 dark:bg-orange-950/20 p-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                <Clock className="h-3 w-3 text-[#FF7A1A]" />
+                <Clock className="h-3 w-3 text-sun-orange" />
                 <span>Order before 12 PM for same-day dispatch</span>
               </div>
             </div>
@@ -1034,13 +1034,13 @@ export const TrackOrderPage: React.FC = () => {
                 href="tel:021111948210"
                 className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-white/5 hover:border-orange-400 hover:bg-orange-50/30 transition-all text-center group"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-[#FF7A1A] group-hover:scale-110 transition-transform">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-sun-orange group-hover:scale-110 transition-transform">
                   <Phone className="h-5 w-5" />
                 </div>
                 <span className="mt-2 text-xs font-extrabold text-slate-900 dark:text-white">
                   Direct Line
                 </span>
-                <span className="text-[11px] font-bold text-[#FF7A1A]">
+                <span className="text-[11px] font-bold text-sun-orange">
                   021-111-948-210
                 </span>
                 <span className="text-[10px] text-slate-400">
@@ -1138,11 +1138,11 @@ export const TrackOrderPage: React.FC = () => {
                     onClick={() => setOpenFaq(isOpen ? null : index)}
                     aria-expanded={isOpen}
                     aria-controls={`faq-panel-${index}`}
-                    className="w-full flex items-center justify-between p-4.5 text-left text-xs sm:text-sm font-bold text-slate-900 dark:text-white hover:text-[#FF7A1A] transition-colors cursor-pointer gap-4"
+                    className="w-full flex items-center justify-between p-4.5 text-left text-xs sm:text-sm font-bold text-slate-900 dark:text-white hover:text-sun-orange transition-colors cursor-pointer gap-4"
                   >
                     <span>{faq.question}</span>
                     {isOpen ? (
-                      <ChevronUp className="h-4 w-4 text-[#FF7A1A] shrink-0" />
+                      <ChevronUp className="h-4 w-4 text-sun-orange shrink-0" />
                     ) : (
                       <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />
                     )}

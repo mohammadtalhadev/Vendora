@@ -110,7 +110,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             <Link
               to="/products"
               onClick={onClose}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#FF7A1A] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-[#EA580C] active:scale-95"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-[#EA580C] active:scale-95"
             >
               Browse Products
               <ArrowRight className="h-3.5 w-3.5" />
@@ -137,7 +137,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         <Link
                           to={`/products/${item.productId}`}
                           onClick={onClose}
-                          className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900 transition-colors hover:text-[#FF7A1A]"
+                          className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900 transition-colors hover:text-sun-orange"
                         >
                           {item.title}
                         </Link>
@@ -191,7 +191,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               <Link
                 to="/cart"
                 onClick={onClose}
-                className="block pt-1 text-center text-xs font-semibold text-slate-500 transition-colors hover:text-[#FF7A1A]"
+                className="block pt-1 text-center text-xs font-semibold text-slate-500 transition-colors hover:text-sun-orange"
               >
                 View full cart details
               </Link>
@@ -232,7 +232,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         onChange={(e) => setCouponCode(e.target.value)}
                         placeholder="Coupon code"
                         aria-label="Coupon code"
-                        className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-xs font-mono uppercase text-slate-800 placeholder:normal-case focus:border-[#FF7A1A] focus:outline-none"
+                        className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-xs font-mono uppercase text-slate-800 placeholder:normal-case focus:border-sun-orange focus:outline-none"
                       />
                       <button
                         type="submit"
@@ -262,7 +262,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={handleCheckout}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#FF7A1A] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-[#EA580C] active:scale-[0.98]"
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-sun-orange py-3.5 text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-[#EA580C] active:scale-[0.98]"
               >
                 Check out
                 <ArrowRight className="h-4 w-4" />

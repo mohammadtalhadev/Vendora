@@ -72,7 +72,7 @@ const TILE_ICON = 'flex h-7 w-7 items-center justify-center rounded-lg bg-slate-
 const GHOST_BUTTON =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-45';
 const PRIMARY_BUTTON =
-  'inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
 const DANGER_BUTTON =
   'inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:opacity-45';
 const FIELD =
@@ -831,7 +831,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <button
                 type="button"
                 onClick={() => setUploadOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
               >
                 <Upload className="h-3.5 w-3.5" />
                 <span>Upload a file</span>
@@ -1375,7 +1375,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <button
                 type="submit"
                 disabled={upload.isPending || uploadQueue.length === 0}
-                className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {upload.isPending ? `Uploading… (${uploadQueue.length})` : `Upload ${uploadQueue.length || ''}`.trim()}
               </button>
@@ -1457,7 +1457,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 type="button"
                 onClick={() => void confirmMove()}
                 disabled={move.isPending}
-                className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {move.isPending ? 'Moving…' : 'Confirm move'}
               </button>

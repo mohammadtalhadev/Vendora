@@ -53,14 +53,14 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
             <h3 className="mt-4 text-xl font-bold text-slate-900">Offer Submitted!</h3>
             <p className="mt-2 text-xs text-slate-600 max-w-xs">
               Your offer of <span className="font-bold text-slate-900">${offerPrice}</span> was sent to{' '}
-              <span className="font-bold text-[#FF7A1A]">{sellerName}</span>. You will receive an email response shortly.
+              <span className="font-bold text-sun-orange">{sellerName}</span>. You will receive an email response shortly.
             </p>
           </div>
         ) : (
           <div>
-            <div className="flex items-center gap-2 text-[#FF7A1A]">
-              <Tag className="h-5 w-5 text-[#FF7A1A]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-[#FF7A1A]">Make an Offer</span>
+            <div className="flex items-center gap-2 text-sun-orange">
+              <Tag className="h-5 w-5 text-sun-orange" />
+              <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">Make an Offer</span>
             </div>
 
             <h3 className="mt-2 text-xl font-extrabold text-slate-900">Send Price Offer</h3>
@@ -71,7 +71,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                 <span className="text-[11px] text-slate-500">Current Listing Price</span>
                 <p className="text-sm font-bold text-slate-700">{formatPrice(currentPrice)}</p>
               </div>
-              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-[#FF7A1A] ring-1 ring-orange-200/70">
+              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-sun-orange ring-1 ring-orange-200/70">
                 Seller: {sellerName}
               </span>
             </div>
@@ -94,7 +94,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                     required
                     value={offerPrice}
                     onChange={(e) => setOfferPrice(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-8 pr-4 text-sm font-bold text-slate-800 shadow-xs focus:border-[#FF7A1A] focus:outline-hidden focus:ring-2 focus:ring-[#FF7A1A]/20"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-8 pr-4 text-sm font-bold text-slate-800 shadow-xs focus:border-sun-orange focus:outline-hidden focus:ring-2 focus:ring-sun-orange/20"
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
@@ -112,7 +112,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="e.g. Ready to purchase immediately if offer is accepted..."
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-800 shadow-xs focus:border-[#FF7A1A] focus:outline-hidden focus:ring-2 focus:ring-[#FF7A1A]/20 placeholder:text-slate-400"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-800 shadow-xs focus:border-sun-orange focus:outline-hidden focus:ring-2 focus:ring-sun-orange/20 placeholder:text-slate-400"
                 />
               </div>
 
@@ -126,7 +126,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF8C38] hover:from-[#EA6C13] hover:to-[#FF7A1A] py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF8C38] hover:from-sun-orange-600 hover:to-sun-orange py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                 >
                   Submit Offer
                 </button>

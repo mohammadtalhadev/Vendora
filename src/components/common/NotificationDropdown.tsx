@@ -193,7 +193,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         onClick={() => setIsOpen((prev) => !prev)}
         className={
           triggerClassName ||
-          'relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-700 hover:text-[#FF7A1A] hover:bg-slate-100 transition-colors cursor-pointer focus:outline-hidden'
+          'relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-700 hover:text-sun-orange hover:bg-slate-100 transition-colors cursor-pointer focus:outline-hidden'
         }
       >
         <Bell className="h-5 w-5" />
@@ -252,7 +252,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                   Checking
                 </span>
               ) : unread > 0 ? (
-                <span className="rounded-full bg-orange-50 text-[#FF7A1A] border border-orange-200/50 px-2 py-0.5 text-[10px] font-bold">
+                <span className="rounded-full bg-orange-50 text-sun-orange border border-orange-200/50 px-2 py-0.5 text-[10px] font-bold">
                   {unread} unread
                 </span>
               ) : (
@@ -270,7 +270,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               }
               className={`flex items-center gap-1 text-[11px] font-semibold transition-colors ${
                 unread > 0 && !list.isError && !actions.markAllRead.isPending
-                  ? 'text-[#FF7A1A] hover:text-[#EA580C] cursor-pointer'
+                  ? 'text-sun-orange hover:text-[#EA580C] cursor-pointer'
                   : 'text-slate-400 cursor-not-allowed'
               }`}
             >
@@ -406,7 +406,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     {isUnread && (
                       <span
                         aria-label="Unread indicator"
-                        className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#FF7A1A]"
+                        className="mt-1 h-2 w-2 shrink-0 rounded-full bg-sun-orange"
                       />
                     )}
                     </button>
@@ -433,7 +433,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             <Link
               to="/notifications"
               onClick={() => setIsOpen(false)}
-              className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-[#FF7A1A] hover:text-[#EA580C] transition-colors"
+              className="flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-sun-orange hover:text-[#EA580C] transition-colors"
             >
               <span>View All Notifications</span>
               <ArrowRight className="h-3.5 w-3.5" />

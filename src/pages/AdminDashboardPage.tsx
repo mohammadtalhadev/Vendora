@@ -164,7 +164,7 @@ export const AdminDashboardPage: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
               title="Re-read the platform numbers from the database"
             >
-              <RotateCw className={`h-3.5 w-3.5 text-[#FF7A1A] ${dashboard.isFetching ? 'animate-spin' : ''}`} />
+              <RotateCw className={`h-3.5 w-3.5 text-sun-orange ${dashboard.isFetching ? 'animate-spin' : ''}`} />
               <span>{dashboard.isFetching ? 'Refreshing...' : 'Refresh Numbers'}</span>
             </button>
           </div>
@@ -843,7 +843,7 @@ export const AdminDashboardPage: React.FC = () => {
                           className="flex items-center justify-between gap-2 py-1 px-1.5 rounded-lg hover:bg-slate-50 transition-colors"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-orange-200 bg-orange-50 text-[#FF7A1A]">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-orange-200 bg-orange-50 text-sun-orange">
                               <Package className="h-3.5 w-3.5" />
                             </div>
                             <p className="text-xs font-bold text-slate-900 truncate">

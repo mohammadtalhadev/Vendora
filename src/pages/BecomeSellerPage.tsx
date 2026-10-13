@@ -56,12 +56,12 @@ export const BecomeSellerPage: React.FC = () => {
   const netTakeHome = monthlySales - platformFee;
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-24">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-24">
       {/* Radiant ambient glow orbs (Matching Homepage & Storefront) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
-        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
-        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-sun-orange-100/70 via-aqua-100/50 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none" />
       </div>
 
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 pt-8 space-y-16">
@@ -71,7 +71,7 @@ export const BecomeSellerPage: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <h1 className="font-outfit text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
             Transparent Pricing. Fair Growth.{' '}
-            <span className="bg-gradient-to-r from-[#FF7A1A] to-rose-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-sun-orange to-rose-600 bg-clip-text text-transparent">
               Zero Hidden Fees.
             </span>
           </h1>
@@ -83,7 +83,7 @@ export const BecomeSellerPage: React.FC = () => {
           {/* 4 Stat Badges Strip - Staggered Rhythmic Heights ("koi upper koi neechy") */}
           <div className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
             <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1 md:translate-y-0">
-              <div className="font-outfit text-2xl sm:text-3xl font-black text-[#FF7A1A]">0%</div>
+              <div className="font-outfit text-2xl sm:text-3xl font-black text-sun-orange">0%</div>
               <p className="text-[11px] text-slate-500 font-semibold mt-1">Risk-Free Onboarding</p>
             </div>
 
@@ -117,7 +117,7 @@ export const BecomeSellerPage: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 dark:bg-orange-950/40 text-[#FF7A1A] mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 dark:bg-orange-950/40 text-sun-orange mb-4">
                 <DollarSign className="h-6 w-6" aria-hidden="true" />
               </div>
               <div className="flex items-center gap-2 mb-1.5">
@@ -133,7 +133,7 @@ export const BecomeSellerPage: React.FC = () => {
             </div>
 
             <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 dark:bg-cyan-950/40 text-[#00B8C8] mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 dark:bg-cyan-950/40 text-aqua mb-4">
                 <Zap className="h-6 w-6" aria-hidden="true" />
               </div>
               <div className="flex items-center gap-2 mb-1.5">
@@ -277,7 +277,7 @@ export const BecomeSellerPage: React.FC = () => {
         <div className="mt-16 rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 dark:border-slate-800 pb-6 mb-6">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
                 Guaranteed Tiered Commission Structure
               </span>
               <h2 className="font-outfit text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
@@ -292,7 +292,7 @@ export const BecomeSellerPage: React.FC = () => {
             <div className="rounded-2xl border border-orange-200/80 bg-orange-50/70 dark:border-orange-900/40 dark:bg-orange-950/30 p-4 lg:w-96 shrink-0 shadow-xs">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-outfit text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <Calculator className="h-3.5 w-3.5 text-[#FF7A1A]" aria-hidden="true" />
+                  <Calculator className="h-3.5 w-3.5 text-sun-orange" aria-hidden="true" />
                   Earnings Simulator
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">Real-Time Estimator</span>
@@ -345,8 +345,8 @@ export const BecomeSellerPage: React.FC = () => {
                 {/* Row 1 */}
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                   <td className="py-4 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 backdrop-blur-md text-[#FF7A1A] flex items-center justify-center shrink-0 shadow-2xs">
-                      <Zap className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                    <div className="h-8 w-8 rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 backdrop-blur-md text-sun-orange flex items-center justify-center shrink-0 shadow-2xs">
+                      <Zap className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                     </div>
                     <div>
                       <div>Electronics &amp; Audio</div>
@@ -461,7 +461,7 @@ export const BecomeSellerPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="mt-16 space-y-6">
           <div className="text-center max-w-2xl mx-auto">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
               SBP COMPLIANT ESCROW SETTLEMENT REGIME
             </span>
             <h2 className="font-outfit text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
@@ -479,11 +479,11 @@ export const BecomeSellerPage: React.FC = () => {
                 01
               </span>
               <div className="space-y-4 relative z-10">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50/90 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 backdrop-blur-md text-[#FF7A1A] shadow-2xs">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50/90 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 backdrop-blur-md text-sun-orange shadow-2xs">
                   <Lock className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
                     Step 01 • Order Placed
                   </span>
                   <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white mt-0.5">
@@ -567,7 +567,7 @@ export const BecomeSellerPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="mt-16 rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm">
           <div className="mb-6">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF7A1A]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
               Operations &amp; Logistics Standard
             </span>
             <h2 className="font-outfit text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
@@ -589,7 +589,7 @@ export const BecomeSellerPage: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 text-xs border border-white/50 shadow-md">
                 <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
-                  <Zap className="h-3.5 w-3.5 text-[#FF7A1A]" aria-hidden="true" />
+                  <Zap className="h-3.5 w-3.5 text-sun-orange" aria-hidden="true" />
                   <span>Bykea Express Fast-Track</span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-0.5">
@@ -601,8 +601,8 @@ export const BecomeSellerPage: React.FC = () => {
             {/* Right 4 SLA Cards Grid - Staggered Rhythmic Heights ("koi upper koi neechy") */}
             <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
               <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all sm:translate-y-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 text-[#FF7A1A] mb-2.5 shadow-2xs">
-                  <Package className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 text-sun-orange mb-2.5 shadow-2xs">
+                  <Package className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 </div>
                 <h4 className="font-outfit text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                   Standard National Orders
@@ -741,17 +741,17 @@ export const BecomeSellerPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-gradient-to-br from-orange-50/90 via-white/85 to-cyan-50/75 dark:from-slate-900/90 dark:via-slate-800/80 dark:to-slate-900/90 backdrop-blur-2xl p-8 sm:p-14 shadow-xl text-center space-y-5">
           {/* Top Multi-tone Accent Stripe */}
-          <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#FF7A1A] via-[#00B8C8] to-[#FFD43B]" />
+          <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-sun-orange via-aqua to-lemon" />
 
           {/* Ambient Glowing Orbs inside CTA */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-            <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-gradient-to-tr from-[#FED7AA]/50 via-[#FFEDD5]/60 to-transparent blur-[90px] dark:from-[#FF7A1A]/15 pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-gradient-to-bl from-[#CFFAFE]/60 via-[#F1F5F9]/70 to-transparent blur-[90px] dark:from-[#00B8C8]/15 pointer-events-none" />
+            <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-gradient-to-tr from-sun-orange-200/50 via-sun-orange-100/60 to-transparent blur-[90px] dark:from-sun-orange/15 pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-gradient-to-bl from-aqua-100/60 via-[#F1F5F9]/70 to-transparent blur-[90px] dark:from-aqua/15 pointer-events-none" />
           </div>
 
           <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/85 dark:bg-orange-950/40 px-3.5 py-1 text-[11px] font-bold text-[#FF7A1A] shadow-xs">
-              <Sparkles className="h-3 w-3 text-[#FF7A1A]" aria-hidden="true" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/85 dark:bg-orange-950/40 px-3.5 py-1 text-[11px] font-bold text-sun-orange shadow-xs">
+              <Sparkles className="h-3 w-3 text-sun-orange" aria-hidden="true" />
               LAUNCH WITH 90 DAYS ZERO COMMISSION GUARANTEE
             </div>
 
@@ -767,7 +767,7 @@ export const BecomeSellerPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowApplicationModal(true)}
-                className="rounded-2xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9040] hover:from-[#EA6C13] hover:to-[#FF7A1A] px-7 py-3.5 text-xs font-bold text-white shadow-lg shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                className="rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] hover:from-sun-orange-600 hover:to-sun-orange px-7 py-3.5 text-xs font-bold text-white shadow-lg shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <span>Apply as a Merchant</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />

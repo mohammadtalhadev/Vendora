@@ -121,7 +121,7 @@ export const BrandSpotlight: React.FC = () => {
 
               {/* Middle: Store Info */}
               <div className="mt-4">
-                <h3 className="font-outfit text-sm font-extrabold text-slate-900 group-hover:text-[#FF7A1A] transition-colors line-clamp-1">
+                <h3 className="font-outfit text-sm font-extrabold text-slate-900 group-hover:text-sun-orange transition-colors line-clamp-1">
                   {store.storeName}
                 </h3>
                 {blurb && (
@@ -142,7 +142,7 @@ export const BrandSpotlight: React.FC = () => {
 
               {/* Bottom: Visit Store */}
               <div className="mt-4 flex items-center justify-end border-t border-slate-100 pt-3 text-[11px]">
-                <span className="inline-flex items-center gap-1 font-bold text-[#FF7A1A] group-hover:underline">
+                <span className="inline-flex items-center gap-1 font-bold text-sun-orange group-hover:underline">
                   Visit Store <ArrowUpRight className="h-3 w-3" />
                 </span>
               </div>

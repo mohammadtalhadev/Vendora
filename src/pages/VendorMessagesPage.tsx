@@ -500,7 +500,7 @@ export const VendorMessagesPage: React.FC = () => {
                       >
                         <span
                           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
-                            mine ? 'bg-[#EA6C13]' : 'bg-slate-900'
+                            mine ? 'bg-sun-orange-600' : 'bg-slate-900'
                           }`}
                         >
                           {mine ? 'YOU' : initials(message.senderName)}

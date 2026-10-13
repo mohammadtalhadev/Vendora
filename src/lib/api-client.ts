@@ -49,7 +49,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     throw new ApiError(response.status, `Server returned HTML instead of JSON for ${endpoint}`);
   }
 
-  let data: any = null;
+  let data: any;
   try {
     data = JSON.parse(text);
   } catch {
