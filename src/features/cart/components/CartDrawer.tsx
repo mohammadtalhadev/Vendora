@@ -126,7 +126,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             <Link
               to="/products"
               onClick={onClose}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-[#EA580C] active:scale-95"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-sun-orange-600 active:scale-95"
             >
               Browse Products
               <ArrowRight className="h-3.5 w-3.5" />
@@ -278,7 +278,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={handleCheckout}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-sun-orange py-3.5 text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-[#EA580C] active:scale-[0.98]"
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-sun-orange py-3.5 text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-sun-orange-600 active:scale-[0.98]"
               >
                 Check out
                 <ArrowRight className="h-4 w-4" />

@@ -149,7 +149,7 @@ const DisputeThread: React.FC<{ dispute: VendorDispute }> = ({ dispute }) => {
             type="button"
             onClick={() => void send()}
             disabled={!draft.trim() || reply.isPending}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[#EA580C] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white transition-all hover:bg-sun-orange-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send className="h-3.5 w-3.5" aria-hidden="true" />
             {reply.isPending ? 'Sending…' : 'Send reply'}

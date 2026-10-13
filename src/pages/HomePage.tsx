@@ -5,6 +5,8 @@ import {
   ChevronLeft,
   CheckCircle2,
 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { useReveal } from '../hooks/useReveal';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
 import {
@@ -16,6 +18,7 @@ import {
 } from '../features/products';
 import { useProducts } from '../features/catalog/hooks/useProducts';
 import {
+  SectionHeading,
   DealsStrip,
   BestSellersRail,
   RecommendedShelf,
@@ -172,6 +175,9 @@ const CountdownPills: React.FC<CountdownPillsProps> = ({
 export const HomePage: React.FC = () => {
   const { addItem } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+
+  // Scroll reveal for the page's `.reveal` sections and grid items.
+  useReveal();
 
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -357,6 +363,26 @@ export const HomePage: React.FC = () => {
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <Link to={slide.link} className="absolute inset-0 z-20" title={slide.title} />
+                  {heroSlideIndex === idx && (
+                    <div className="pointer-events-none absolute inset-0 z-30 flex items-center bg-gradient-to-r from-slate-950/75 via-slate-950/30 to-transparent">
+                      <div className="hero-copy-in max-w-xl px-6 pl-14 sm:px-12 sm:pl-16 lg:px-16">
+                        <h2 className="font-outfit text-3xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-4xl lg:text-5xl">
+                          {slide.title}
+                        </h2>
+                        <p className="mt-3 max-w-md text-xs font-medium leading-relaxed text-white/85 sm:text-base">
+                          {slide.subtitle}
+                        </p>
+                        <div className="pointer-events-auto mt-6 flex flex-wrap items-center gap-3">
+                          <Button asChild variant="gradient" size="lg">
+                            <Link to={slide.link}>Shop Now</Link>
+                          </Button>
+                          <Button asChild variant="outline" size="lg">
+                            <Link to="/products">View All</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -415,19 +441,19 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             2. Explore Popular Categories
             ========================================================================= */}
-        <section className="mb-12">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
-              Explore Popular Categories
-            </h2>
-            <Link
-              to="/products"
-              className="group flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-sun-orange transition-colors"
-            >
-              <span>View All</span>
-              <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </div>
+        <section className="reveal mb-14">
+          <SectionHeading
+            title="Explore Popular Categories"
+            action={
+              <Link
+                to="/products"
+                className="group flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-sun-orange transition-colors"
+              >
+                <span>View All</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            }
+          />
 
           <div className="relative flex items-center justify-between">
             {/* Left arrow scroll button */}
@@ -491,13 +517,11 @@ export const HomePage: React.FC = () => {
             3. Limited Campaign (Sale Offers by Parent Category)
             ========================================================================= */}
         {parentCategoriesWithSales.length > 0 && (
-        <section className="mb-14">
-          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-3 sm:gap-5">
-              <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl whitespace-nowrap">
-                Limited Campaign
-              </h2>
-              {/* Parent category pills: only show categories that have products on sale */}
+        <section className="reveal mb-14">
+          <SectionHeading
+            title="Limited Campaign"
+            inline={
+              /* Parent category pills: only show categories that have products on sale */
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                 {parentCategoriesWithSales.map((cat) => {
                   const isSelected = selectedSaleCategory === cat.id;
@@ -517,26 +541,28 @@ export const HomePage: React.FC = () => {
                   );
                 })}
               </div>
-            </div>
-
-            <Link
-              to={`/products?category=${currentSaleCategory?.slug || 'electronics'}`}
-              className="group hidden items-center gap-1 text-xs font-bold text-sun-orange hover:underline sm:flex shrink-0"
-            >
-              <span>View All</span>
-              <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </div>
+            }
+            action={
+              <Link
+                to={`/products?category=${currentSaleCategory?.slug || 'electronics'}`}
+                className="group hidden items-center gap-1 text-xs font-bold text-sun-orange hover:underline sm:flex shrink-0"
+              >
+                <span>View All</span>
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            }
+          />
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {currentSaleCategory?.products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-                onToggleWishlist={handleToggleWishlist}
-                isWishlisted={isInWishlist(product.id)}
-              />
+              <div key={product.id} className="reveal h-full">
+                <ProductCard
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onToggleWishlist={handleToggleWishlist}
+                  isWishlisted={isInWishlist(product.id)}
+                />
+              </div>
             ))}
           </div>
         </section>
@@ -545,7 +571,7 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             3A. Electronics Bento Countdown Promo (Screenshot 2026-10-05 235506.png)
             ========================================================================= */}
-        <section className="mb-14">
+        <section className="reveal mb-14">
           <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-12">
             {/* Left Large Card: Headphones, Laptops & More */}
             <div className="group relative min-h-[400px] overflow-hidden rounded-[26px] bg-[#EFEFEF] shadow-sm transition-all hover:shadow-lg sm:min-h-[460px] md:col-span-7">
@@ -658,15 +684,17 @@ export const HomePage: React.FC = () => {
             3B. Product Cards Carousel 1: Electronics (with sub-category tabs)
             ========================================================================= */}
         {electronicsItems.length > 0 && (
-          <ProductCarouselWithTabs
-            title="Electronics"
-            categorySlug="electronics"
-            tabs={ELECTRONICS_SUBCATEGORIES}
-            products={electronicsItems}
-            onAddToCart={handleAddToCart}
-            onToggleWishlist={handleToggleWishlist}
-            isInWishlist={isInWishlist}
-          />
+          <div className="reveal">
+            <ProductCarouselWithTabs
+              title="Electronics"
+              categorySlug="electronics"
+              tabs={ELECTRONICS_SUBCATEGORIES}
+              products={electronicsItems}
+              onAddToCart={handleAddToCart}
+              onToggleWishlist={handleToggleWishlist}
+              isInWishlist={isInWishlist}
+            />
+          </div>
         )}
 
         {/* =========================================================================
@@ -681,7 +709,7 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             3C. Dual Countdown Beauty Promo
             ========================================================================= */}
-        <section className="mb-14">
+        <section className="reveal mb-14">
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {/* Card 1: Glow Up Your Routine */}
             <div className="group relative min-h-[360px] overflow-hidden rounded-[26px] bg-[#F2F1EF] shadow-sm transition-all hover:shadow-lg sm:min-h-[440px]">
@@ -762,14 +790,16 @@ export const HomePage: React.FC = () => {
             3D. Product Cards Carousel 2: Beauty & Personal Care (without tabs)
             ========================================================================= */}
         {beautyItems.length > 0 && (
-          <ProductCarouselWithoutTabs
-            title="Beauty & Personal Care"
-            categorySlug="beauty-personal-care"
-            products={beautyItems}
-            onAddToCart={handleAddToCart}
-            onToggleWishlist={handleToggleWishlist}
-            isInWishlist={isInWishlist}
-          />
+          <div className="reveal">
+            <ProductCarouselWithoutTabs
+              title="Beauty & Personal Care"
+              categorySlug="beauty-personal-care"
+              products={beautyItems}
+              onAddToCart={handleAddToCart}
+              onToggleWishlist={handleToggleWishlist}
+              isInWishlist={isInWishlist}
+            />
+          </div>
         )}
 
         {/* =========================================================================
@@ -784,7 +814,7 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             3E. Home Equipment Bento Promo
             ========================================================================= */}
-        <section className="mb-14">
+        <section className="reveal mb-14">
           <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-12">
             {/* Left tall card: Kitchen Favorites */}
             <Link
@@ -825,7 +855,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=appliances"
-                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#EA580C] sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-sun-orange-600 sm:text-sm"
                   >
                     Shop Now
                   </Link>
@@ -887,14 +917,16 @@ export const HomePage: React.FC = () => {
             3F. Product Cards Carousel 3: Home & Kitchen (without tabs)
             ========================================================================= */}
         {homeItems.length > 0 && (
-          <ProductCarouselWithoutTabs
-            title="Home & Kitchen"
-            categorySlug="home-kitchen"
-            products={homeItems}
-            onAddToCart={handleAddToCart}
-            onToggleWishlist={handleToggleWishlist}
-            isInWishlist={isInWishlist}
-          />
+          <div className="reveal">
+            <ProductCarouselWithoutTabs
+              title="Home & Kitchen"
+              categorySlug="home-kitchen"
+              products={homeItems}
+              onAddToCart={handleAddToCart}
+              onToggleWishlist={handleToggleWishlist}
+              isInWishlist={isInWishlist}
+            />
+          </div>
         )}
 
 

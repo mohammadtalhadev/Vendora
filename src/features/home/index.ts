@@ -1,3 +1,4 @@
+export { SectionHeading, type SectionHeadingProps } from './components/SectionHeading';
 export { SellerSpotlight, type SellerSpotlightProps } from './components/SellerSpotlight';
 export { DealsStrip, type DealsStripProps } from './components/DealsStrip';
 export { BestSellersRail, type BestSellersRailProps } from './components/BestSellersRail';

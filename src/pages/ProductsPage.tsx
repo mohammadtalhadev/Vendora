@@ -473,7 +473,7 @@ export const ProductsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="rounded-full bg-sun-orange text-white px-5 py-2 text-xs font-bold shadow-md hover:bg-[#EA580C] transition-all cursor-pointer"
+                    className="rounded-full bg-sun-orange text-white px-5 py-2 text-xs font-bold shadow-md hover:bg-sun-orange-600 transition-all cursor-pointer"
                   >
                     Reset All Filters
                   </button>
@@ -554,7 +554,7 @@ export const ProductsPage: React.FC = () => {
                           type="button"
                           onClick={() => handleAddToCart(product)}
                           disabled={product.stock === 0}
-                          className="rounded-full bg-sun-orange hover:bg-[#EA580C] px-5 py-2 text-xs font-bold text-white shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Add to Cart
                         </button>

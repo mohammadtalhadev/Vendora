@@ -208,7 +208,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
               type="button"
               onClick={() => onAddToCart(product)}
               disabled={product.stock === 0}
-              className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sun-orange hover:bg-[#EA580C] py-2 sm:py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sun-orange hover:bg-sun-orange-600 py-2 sm:py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={`Add ${product.title} to cart`}
             >
               <ShoppingCart className="h-3.5 w-3.5" />

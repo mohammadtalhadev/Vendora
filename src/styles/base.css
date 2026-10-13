@@ -618,3 +618,58 @@ html.dark a.text-slate-600:not([class*="dark:text-"]) {
     background: rgba(15, 23, 42, 0.8) !important;
   }
 }
+
+/* ==========================================================================
+   Motion: Hero Entrance (Shared)
+   Transform/opacity only; disabled under prefers-reduced-motion.
+   ========================================================================== */
+@keyframes vendora-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The active hero slide's copy block mounts when its slide becomes active,
+   so this animation is both the page-load entrance and the slide-change
+   entrance. */
+.hero-copy-in {
+  animation: vendora-hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-copy-in {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Motion: Scroll Reveal (Shared)
+   Elements start lifted/faded; useReveal adds .reveal-visible once when
+   they enter the viewport. Transform/opacity only; under
+   prefers-reduced-motion elements are simply always visible.
+   ========================================================================== */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

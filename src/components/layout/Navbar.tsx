@@ -410,7 +410,7 @@ export const Navbar: React.FC = () => {
                   {/* Orange Search Button */}
                   <button
                     type="submit"
-                    className="flex h-full w-12 sm:w-14 shrink-0 items-center justify-center bg-sun-orange hover:bg-[#EA580C] text-white m-1 rounded-full transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+                    className="flex h-full w-12 sm:w-14 shrink-0 items-center justify-center bg-sun-orange hover:bg-sun-orange-600 text-white m-1 rounded-full transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                     title="Search"
                     aria-label="Search"
                   >
@@ -561,7 +561,7 @@ export const Navbar: React.FC = () => {
                         <Link
                           to="/login"
                           onClick={() => setIsRoleMenuOpen(false)}
-                          className="flex-1 text-center rounded-xl bg-sun-orange py-2 text-xs font-bold text-white hover:bg-[#EA580C] shadow-xs transition-colors"
+                          className="flex-1 text-center rounded-xl bg-sun-orange py-2 text-xs font-bold text-white hover:bg-sun-orange-600 shadow-xs transition-colors"
                         >
                           Sign In
                         </Link>
@@ -779,7 +779,7 @@ export const Navbar: React.FC = () => {
             />
             <button
               type="submit"
-              className="flex h-10 w-11 shrink-0 items-center justify-center rounded-full bg-sun-orange hover:bg-[#EA580C] text-white transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+              className="flex h-10 w-11 shrink-0 items-center justify-center rounded-full bg-sun-orange hover:bg-sun-orange-600 text-white transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
               title="Search"
               aria-label="Search"
             >

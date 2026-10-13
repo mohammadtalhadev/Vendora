@@ -4,6 +4,8 @@ import { Trophy, Star, ShoppingBag, Heart, Zap } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
 import { domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
+import { useReveal } from '../../../hooks/useReveal';
+import { SectionHeading } from './SectionHeading';
 
 export interface BestSellersRailProps {
   onAddToCart?: (product: ProductItem) => void;
@@ -27,6 +29,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
   onToggleWishlist,
   isInWishlist,
 }) => {
+  useReveal();
   const { formatPrice } = useCurrency();
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -59,10 +62,10 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
   };
 
   return (
-    <section className="mb-14">
+    <section className="reveal mb-14">
       {/* Header with Title and Category Filters */}
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+      <SectionHeading
+        eyebrow={
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
               <Trophy className="h-4 w-4" />
@@ -71,16 +74,11 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
               Official Leaderboard
             </span>
           </div>
-          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl font-outfit">
-            Best-Sellers Rail
-          </h2>
-          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Top-rated products ranked by genuine customer review volume
-          </p>
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        }
+        title="Best-Sellers Rail"
+        subtitle="Top-rated products ranked by genuine customer review volume"
+        action={
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
           {CATEGORY_TABS.map((tab) => {
             const isActive = selectedCategory === tab.id;
             return (
@@ -98,8 +96,9 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
               </button>
             );
           })}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Grid of Best Sellers */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

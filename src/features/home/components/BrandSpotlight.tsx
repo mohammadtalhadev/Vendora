@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, ChevronLeft, Store, ArrowUpRight, Star } from 'lucide-react';
 import { fetchStoreDirectory } from '../../vendor/api/store';
+import { SectionHeading } from './SectionHeading';
+import { useReveal } from '../../../hooks/useReveal';
 
 /**
  * Stores on Vendora — the real store directory.
@@ -24,6 +26,7 @@ import { fetchStoreDirectory } from '../../vendor/api/store';
  * load, the section renders nothing rather than placeholder stores.
  */
 export const BrandSpotlight: React.FC = () => {
+  useReveal();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data, isError } = useQuery({
     queryKey: ['home', 'store-directory'],
@@ -45,10 +48,10 @@ export const BrandSpotlight: React.FC = () => {
   };
 
   return (
-    <section className="mb-14">
+    <section className="reveal mb-14">
       {/* Header */}
-      <div className="mb-6 flex items-end justify-between">
-        <div>
+      <SectionHeading
+        eyebrow={
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-700">
               <Store className="h-4 w-4" />
@@ -57,15 +60,11 @@ export const BrandSpotlight: React.FC = () => {
               Stores on Vendora
             </span>
           </div>
-          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl font-outfit">
-            Shop by Store
-          </h2>
-          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            The sellers currently active on Vendora — every card is a real storefront.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+        }
+        title="Shop by Store"
+        subtitle="The sellers currently active on Vendora — every card is a real storefront."
+        action={
+          <div className="flex items-center gap-2">
           {/* Scroll navigation arrows */}
           <button
             type="button"
@@ -83,8 +82,9 @@ export const BrandSpotlight: React.FC = () => {
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Single-Row Scrollable Rail of Real Store Cards */}
       <div

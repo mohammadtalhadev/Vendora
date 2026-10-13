@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductCard, domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
+import { useReveal } from '../../../hooks/useReveal';
 
 export interface DealsStripProps {
   onAddToCart?: (product: ProductItem) => void;
@@ -21,6 +22,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
   onToggleWishlist,
   isInWishlist,
 }) => {
+  useReveal();
   const [activeTab, setActiveTab] = useState<'best-sellers' | 'new-arrivals' | 'best-offers'>('best-sellers');
   const [timeLeft, setTimeLeft] = useState({ hours: 20, minutes: 45, seconds: 9 });
 
@@ -73,7 +75,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
       : bestOffers;
 
   return (
-    <section className="mb-14">
+    <section className="reveal mb-14">
       {/* Top Centered Section Tabs matching the user screenshot */}
       <div className="mb-7 flex items-center justify-center gap-6 sm:gap-10 border-b border-slate-200/80 pb-4">
         <button
@@ -170,13 +172,14 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
           {products.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
               {products.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  onAddToCart={onAddToCart || (() => {})}
-                  onToggleWishlist={onToggleWishlist || (() => {})}
-                  isWishlisted={isInWishlist ? isInWishlist(p.id) : false}
-                />
+                <div key={p.id} className="reveal h-full">
+                  <ProductCard
+                    product={p}
+                    onAddToCart={onAddToCart || (() => {})}
+                    onToggleWishlist={onToggleWishlist || (() => {})}
+                    isWishlisted={isInWishlist ? isInWishlist(p.id) : false}
+                  />
+                </div>
               ))}
             </div>
           ) : (

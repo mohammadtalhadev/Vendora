@@ -644,7 +644,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="flex items-center gap-1.5 rounded-xl bg-sun-orange px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#EA580C]"
+                  className="flex items-center gap-1.5 rounded-xl bg-sun-orange px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-sun-orange-600"
                 >
                   <Printer className="h-4 w-4" aria-hidden="true" />
                   Print Document

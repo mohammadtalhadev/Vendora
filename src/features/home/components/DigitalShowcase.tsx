@@ -13,6 +13,8 @@ import {
 import { useCurrency } from '../../../store/currency-store';
 import { domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
+import { useReveal } from '../../../hooks/useReveal';
+import { SectionHeading } from './SectionHeading';
 import type { Product } from '../../../types/domain';
 
 export interface DigitalShowcaseProps {
@@ -51,6 +53,7 @@ const CARD_PRESETS = [
  * database, and Buy adds that genuine product to the cart.
  */
 export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart }) => {
+  useReveal();
   const { formatPrice } = useCurrency();
   const { data } = useProducts({ type: 'digital', page: 1, limit: 4 });
 
@@ -64,7 +67,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
   if (products.length === 0) return null;
 
   return (
-    <section className="mb-14">
+    <section className="reveal mb-14">
       {/* Frosted Glass Outer Shell with Ambient Color Glows */}
       <div className="relative overflow-hidden rounded-[32px] border border-white/90 bg-white/75 p-6 sm:p-9 backdrop-blur-2xl shadow-xl shadow-slate-900/5 transition-all">
         {/* Soft Ambient Radiance Orbs behind the frosted glass */}
@@ -73,18 +76,13 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
         <div className="pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 h-64 w-96 rounded-full bg-indigo-300/10 blur-3xl" />
 
         {/* Header Row */}
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200/70 pb-6">
-          <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl font-outfit">
-              Digital Goods &amp; Software Vault
-            </h2>
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm max-w-2xl">
-              Official genuine OEM licenses, UI design systems, production codebases &amp; cinematic media packs delivered directly to your dashboard in seconds
-            </p>
-          </div>
-
-          {/* Action Links */}
-          <div className="flex items-center gap-3 shrink-0">
+        <div className="relative z-10 border-b border-slate-200/70 pb-6">
+          <SectionHeading
+            className="mb-0"
+            title="Digital Goods & Software Vault"
+            subtitle="Official genuine OEM licenses, UI design systems, production codebases & cinematic media packs delivered directly to your dashboard in seconds"
+            action={
+              <div className="flex items-center gap-3 shrink-0">
             <Link
               to="/downloads"
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white/90 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs backdrop-blur-md transition-all hover:border-slate-300 hover:bg-white hover:text-slate-900"
@@ -99,7 +97,9 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
               <span>Explore All Digital</span>
               <ChevronRight className="h-4 w-4" />
             </Link>
-          </div>
+              </div>
+            }
+          />
         </div>
 
         {/* Feature Pills Subheader */}

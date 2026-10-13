@@ -222,7 +222,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
             <Link
               to={`/products?category=${encodeURIComponent(paneCategory.slug)}`}
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#EA580C] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-sun-orange-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
             >
               <span>Explore All {paneCategory.name}</span>
               <ArrowRight className="h-3 w-3" />

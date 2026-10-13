@@ -3,7 +3,7 @@ import { QrCode, BellRing, ShieldCheck, Zap, Sparkles, Star } from 'lucide-react
 
 export const AppPromoSection: React.FC = () => {
   return (
-    <section className="mb-14">
+    <section className="reveal mb-14">
       <div className="relative overflow-hidden rounded-[32px] border border-orange-200/80 bg-gradient-to-br from-[#0C1046] via-[#111A5A] to-[#1E1B4B] p-7 sm:p-10 text-white shadow-2xl">
         {/* Ambient Glow Orbs */}
         <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl" />

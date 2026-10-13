@@ -40,6 +40,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../../components/ui/dialog';
+import { Button } from '../../components/ui/button';
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -1508,12 +1509,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="px-4 py-1.5 rounded-xl bg-slate-900 dark:bg-sun-orange text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-sun-orange-600 shadow-xs cursor-pointer"
-              >
+              <Button type="submit" variant="gradient" size="sm">
                 Save Changes
-              </button>
+              </Button>
             </div>
           </form>
         </DialogContent>

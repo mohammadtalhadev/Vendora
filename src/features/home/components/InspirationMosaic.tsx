@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Eye, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
+import { SectionHeading } from './SectionHeading';
 
 interface Hotspot {
   id: string;
@@ -116,10 +117,10 @@ export const InspirationMosaic: React.FC = () => {
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
 
   return (
-    <section className="mb-14">
+    <section className="reveal mb-14">
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+      <SectionHeading
+        eyebrow={
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500/10 text-sun-orange">
               <Sparkles className="h-4 w-4" />
@@ -128,22 +129,19 @@ export const InspirationMosaic: React.FC = () => {
               Curated Visuals
             </span>
           </div>
-          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl font-outfit">
-            Inspiration Mosaic &amp; Shop The Look
-          </h2>
-          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Explore authentic lifestyle environments — tap any interactive pin to shop individual curated items
-          </p>
-        </div>
-
-        <Link
+        }
+        title="Inspiration Mosaic & Shop The Look"
+        subtitle="Explore authentic lifestyle environments — tap any interactive pin to shop individual curated items"
+        action={
+          <Link
           to="/products"
           className="group inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-sun-orange transition-colors"
         >
           <Eye className="h-4 w-4 text-sun-orange" />
           <span>Explore All Collections</span>
-        </Link>
-      </div>
+          </Link>
+        }
+      />
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-12">

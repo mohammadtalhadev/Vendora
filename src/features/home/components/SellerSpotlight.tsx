@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Star, ShieldCheck, TrendingUp, ChevronRight, Rocket, Sparkles } from 'lucide-react';
+import { SectionHeading } from './SectionHeading';
 /**
  * Display shape for a spotlighted seller. Defined here (it previously lived in the
  * deleted legacy store) — a parent feeding this component maps real
@@ -35,15 +36,11 @@ export const SellerSpotlight: React.FC<SellerSpotlightProps> = ({ vendors }) => 
   if (vendors.length === 0) return null;
 
   return (
-    <section className="mb-14">
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">Meet Top Verified Sellers</h2>
-          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            KYC-verified flagship stores powering the Vendora marketplace
-          </p>
-        </div>
-      </div>
+    <section className="reveal mb-14">
+      <SectionHeading
+        title="Meet Top Verified Sellers"
+        subtitle="KYC-verified flagship stores powering the Vendora marketplace"
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {vendors.map((vendor) => (

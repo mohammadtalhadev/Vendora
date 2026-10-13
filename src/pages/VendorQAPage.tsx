@@ -276,7 +276,7 @@ export const VendorQAPage: React.FC = () => {
                           type="button"
                           onClick={() => submitAnswer(item, 'edit')}
                           disabled={answerQuestion.isPending}
-                          className="px-4 py-1.5 text-xs font-bold bg-sun-orange hover:bg-[#EA580C] text-white rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                          className="px-4 py-1.5 text-xs font-bold bg-sun-orange hover:bg-sun-orange-600 text-white rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                         >
                           Update Answer
                         </button>
@@ -335,7 +335,7 @@ export const VendorQAPage: React.FC = () => {
                         type="button"
                         onClick={() => submitAnswer(item, 'compose')}
                         disabled={answerQuestion.isPending || !replyText.trim()}
-                        className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-sun-orange hover:bg-[#EA580C] text-white rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                        className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-sun-orange hover:bg-sun-orange-600 text-white rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                       >
                         <Send className="h-3.5 w-3.5" aria-hidden="true" />
                         Submit Answer
@@ -350,7 +350,7 @@ export const VendorQAPage: React.FC = () => {
                         setComposingId(item.id);
                         setReplyText('');
                       }}
-                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-sun-orange hover:bg-[#EA580C] text-white rounded-xl shadow-sm transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-sun-orange hover:bg-sun-orange-600 text-white rounded-xl shadow-sm transition-all cursor-pointer"
                     >
                       <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
                       Compose Answer
