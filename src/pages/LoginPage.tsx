@@ -15,7 +15,7 @@ import {
   Store,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import type { DemoRoleKey } from '../store/auth-store';
+import type { DemoRoleKey } from '../lib/demo-accounts';
 import { useCartStore } from '../store/cart-store';
 
 export const LoginPage: React.FC = () => {
@@ -381,7 +381,11 @@ export const LoginPage: React.FC = () => {
                       onKeyDown={(e) => { if (e.key === 'Escape') { setShowResetHint(false); resetHintTriggerRef.current?.focus(); } }}
                       className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200/80 dark:border-orange-800/40 text-[11px] text-slate-600 dark:text-slate-300"
                     >
-                      For demo evaluation, every test persona signs in with password <span className="font-bold text-[#FF7A1A]">demo1234</span>.
+                      {import.meta.env.DEV ? (
+                        <>For demo evaluation, every test persona signs in with password <span className="font-bold text-[#FF7A1A]">demo1234</span>.</>
+                      ) : (
+                        <>If you have forgotten your password, please contact the Vendora support team to reset it.</>
+                      )}
                     </div>
                   )}
                   <div className="relative flex items-center">
@@ -440,7 +444,8 @@ export const LoginPage: React.FC = () => {
                 </button>
               </form>
 
-              {/* 1-Click Demo Testing Drawer Toggle */}
+              {/* 1-Click Demo Testing Drawer Toggle — local development only */}
+              {import.meta.env.DEV && (
               <div className="mt-6 pt-4 border-t border-slate-200/60 dark:border-white/10">
                 <button
                   type="button"
@@ -515,6 +520,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                 )}
               </div>
+              )}
             </div>
 
             {/* Bottom Security Footer */}

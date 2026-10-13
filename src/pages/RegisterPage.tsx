@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { useCartStore } from '../store/cart-store';
-import { supabaseApplications } from '../lib/supabase-service';
+import { submitVendorApplication } from '../features/vendor/api/applications';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -194,19 +194,18 @@ export const RegisterPage: React.FC = () => {
       const { user } = await signUp(ownerName.trim(), businessEmail.trim(), sellerPassword);
 
       // 2. Submit the vendor application to the database table
-      await supabaseApplications.submitApplication({
-        userId: user?.id,
+      await submitVendorApplication({
         proposedStoreName: storeName.trim(),
-        slug: storeSlug.trim(),
+        proposedSlug: storeSlug.trim(),
+        description: storeDescription.trim(),
         businessType: categoryFocus,
         contactEmail: businessEmail.trim(),
         contactPhone: businessPhone.trim() || undefined,
         kycDocuments: {
           taxNtn: taxNtn.trim(),
-          description: storeDescription.trim(),
           representative: ownerName.trim(),
         },
-      });
+      }, user?.id);
 
       if (!user) {
         setNotice(

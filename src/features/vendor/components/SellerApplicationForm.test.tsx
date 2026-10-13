@@ -7,11 +7,24 @@ import {
   sellerApplicationSchema,
 } from './SellerApplicationForm';
 import { BecomeSellerPage } from '../../../pages/BecomeSellerPage';
-import { useAuthStore, DEMO_ACCOUNTS } from '../../../store/auth-store';
+import { useAuthStore } from '../../../store/auth-store';
+import { DEMO_ACCOUNTS } from '../../../lib/demo-accounts';
+import { supabaseDouble } from '../../../test/supabase-double';
 import type { User } from '../../../types/domain';
+
+// The application form now persists to the real vendor_applications table via
+// the typed features API, so — like every other suite that exercises a
+// Supabase-backed flow — this file installs the repo's Supabase double. (The
+// legacy service writer swallowed every failure, which is why this suite
+// previously passed against a live-fetch client.)
+vi.mock('../../../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../../../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
 
 describe('Seller Onboarding & Application Workflow', () => {
   beforeEach(() => {
+    supabaseDouble.reset();
     // Reset auth store before each test
     useAuthStore.setState({
       user: null,

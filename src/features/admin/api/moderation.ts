@@ -151,6 +151,8 @@ export interface FirstPartyDraft {
   variants?: unknown[];
   stock?: number;
   status?: 'draft' | 'pending_review' | 'approved';
+  shippingSettings?: Record<string, unknown> | null;
+  digitalAssetInfo?: Record<string, unknown> | null;
 }
 
 /**
@@ -172,9 +174,37 @@ export async function createFirstPartyProduct(draft: FirstPartyDraft): Promise<{
       variants: draft.variants ?? [],
       stock: draft.stock ?? 0,
       status: draft.status ?? 'pending_review',
+      // Only sent when the caller supplies them: the RPC defaults both to '{}',
+      // and omitting the keys keeps the payload contract the API tests pin.
+      ...(draft.shippingSettings ? { shippingSettings: draft.shippingSettings } : {}),
+      ...(draft.digitalAssetInfo ? { digitalAssetInfo: draft.digitalAssetInfo } : {}),
     }),
   });
   if (error) throw rpcFailed('Could not publish the listing', error.message);
   const root = asRecord(data);
   return { id: text(root.id), status: text(root.status), sellerId: text(root.sellerId) };
+}
+
+/**
+ * Uploads a first-party product image to the `product-images` bucket under the
+ * platform store's folder ('vendora' — the seller_type='platform' store the 1P
+ * RPC sells from). The storage policy admits admins under any vendor folder.
+ * Replaces the legacy service-layer uploader; failures throw instead of
+ * silently degrading to a local blob URL that would break once persisted.
+ */
+export async function uploadFirstPartyProductImage(file: File): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const cleanName = file.name
+    .substring(0, Math.max(0, file.name.lastIndexOf('.')))
+    .replace(/[^a-zA-Z0-9_-]/g, '_');
+  const objectPath = `vendora/${Date.now()}_${cleanName}.${ext}`;
+
+  const { error } = await supabase.storage.from('product-images').upload(objectPath, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (error) throw new Error(`Image upload failed: ${error.message}`);
+
+  const { data } = supabase.storage.from('product-images').getPublicUrl(objectPath);
+  return data.publicUrl;
 }

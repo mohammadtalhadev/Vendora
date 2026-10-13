@@ -1,10 +1,5 @@
 import { create } from 'zustand';
 import type { User, UserRole } from '../types/domain';
-import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '../lib/demo-accounts';
-import type { DemoRoleKey } from '../lib/demo-accounts';
-
-export { DEMO_ACCOUNTS, DEMO_PASSWORD };
-export type { DemoRoleKey };
 
 interface AuthState {
   user: User | null;

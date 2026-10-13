@@ -15,7 +15,8 @@ import {
   Headphones,
   LogOut,
 } from 'lucide-react';
-import { useAuthStore, type DemoRoleKey } from '../../store/auth-store';
+import { useAuthStore } from '../../store/auth-store';
+import type { DemoRoleKey } from '../../lib/demo-accounts';
 import { useAuth } from '../../lib/auth-context';
 import { useCartStore, useCartCalculations } from '../../store/cart-store';
 import { useWishlistStore } from '../../store/wishlist-store';
@@ -692,7 +693,8 @@ export const Navbar: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Demo Persona Switcher */}
+                  {/* Demo Persona Switcher — local development only, never in production builds */}
+                  {import.meta.env.DEV && (
                   <div className="border-t border-slate-100 pt-2">
                     <div className="px-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                       Switch Demo Persona
@@ -729,6 +731,7 @@ export const Navbar: React.FC = () => {
                       </p>
                     )}
                   </div>
+                  )}
                 </div>
               )}
             </div>

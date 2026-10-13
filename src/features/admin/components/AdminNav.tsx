@@ -244,7 +244,7 @@ export const AdminNav: React.FC<AdminNavProps> = ({ className, onNavigate }) => 
                 {user?.name ?? 'Admin User'}
               </p>
               <p className="truncate text-[10px] text-slate-400 leading-tight">
-                {user?.email ?? 'admin@demo.test'}
+                {user?.email ?? ''}
               </p>
             </div>
           </div>

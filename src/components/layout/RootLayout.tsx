@@ -1,21 +1,17 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
 import { Footer } from './Footer';
-import { useMarketplaceStore } from '../../store/marketplace-store';
 
 // All pages across the website include the global Navbar, Footer, and ambient chrome.
+// (The legacy client-side store sync that used to run here is gone: every page now
+// reads the real database through the typed features/** React Query layer.)
 const CHROMELESS_PATHS: string[] = [];
 
 export const RootLayout: React.FC = () => {
-  const syncWithDatabase = useMarketplaceStore((state) => state.syncWithDatabase);
   const { pathname } = useLocation();
   const isChromeless = CHROMELESS_PATHS.includes(pathname);
-
-  useEffect(() => {
-    syncWithDatabase();
-  }, [syncWithDatabase]);
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] text-slate-900 dark:text-slate-100">

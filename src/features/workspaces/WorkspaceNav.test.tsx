@@ -6,7 +6,8 @@ import { VendorNav } from '../vendor/components/VendorNav';
 import { AdminNav } from '../admin/components/AdminNav';
 import { RiderHeader } from '../rider/components/RiderHeader';
 import { SupportHeader } from '../support/components/SupportHeader';
-import { useAuthStore, DEMO_ACCOUNTS } from '../../store/auth-store';
+import { useAuthStore } from '../../store/auth-store';
+import { DEMO_ACCOUNTS } from '../../lib/demo-accounts';
 import { renderWorkspace, signInVendor } from '../../test/vendor-render';
 import { dashboardJson, supabaseDouble } from '../../test/supabase-double';
 

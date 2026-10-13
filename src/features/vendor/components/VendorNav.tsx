@@ -310,7 +310,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
                 <h2 className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">{storeName}</h2>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                <span className="truncate">{user?.email ?? 'vendor@demo.test'}</span>
+                <span className="truncate">{user?.email ?? ''}</span>
               </div>
             </div>
           </div>
@@ -405,7 +405,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
                 {user?.name ?? 'Seller User'}
               </p>
               <p className="truncate text-[10px] text-slate-400 leading-tight">
-                {user?.email ?? 'vendor@demo.test'}
+                {user?.email ?? ''}
               </p>
             </div>
           </div>

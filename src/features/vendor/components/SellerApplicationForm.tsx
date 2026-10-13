@@ -19,7 +19,7 @@ import { Badge } from '../../../components/ui/badge';
 import { useAuthStore } from '../../../store/auth-store';
 import { cn } from '../../../lib/utils';
 import type { User } from '../../../types/domain';
-import { supabaseApplications } from '../../../lib/supabase-service';
+import { submitVendorApplication } from '../api/applications';
 
 export const CATEGORY_OPTIONS = [
   { value: 'electronics', label: 'Electronics & Audio' },
@@ -281,14 +281,13 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
       const currentUser = useAuthStore.getState().user;
       
       // Persist to Supabase vendor_applications table
-      await supabaseApplications.submitApplication({
-        userId: currentUser?.id,
+      await submitVendorApplication({
         proposedStoreName: result.data.businessName,
-        slug: result.data.storeSlug,
+        proposedSlug: result.data.storeSlug,
+        description: result.data.storeDescription,
         businessType: result.data.categoryFocus,
         contactEmail: result.data.businessEmail,
-        businessAddress: { description: result.data.storeDescription },
-      });
+      }, currentUser?.id);
 
       if (onSubmit) {
         await onSubmit(result.data);

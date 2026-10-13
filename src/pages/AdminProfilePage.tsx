@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { useAuthStore } from '../store/auth-store';
 import {
   Dialog,
   DialogContent,
@@ -34,14 +35,19 @@ import {
 } from '../components/ui/dialog';
 
 export const AdminProfilePage: React.FC = () => {
+  const currentUser = useAuthStore((s) => s.user);
+  const nameParts = (currentUser?.name ?? '').trim().split(/\s+/).filter(Boolean);
+  const profileFirstName = nameParts[0] ?? '';
+  const profileLastName = nameParts.slice(1).join(' ');
+  const profileEmail = currentUser?.email ?? '';
   const [activeTab, setActiveTab] = useState<
     'profile' | 'security' | 'permissions' | 'sessions' | 'audit'
   >('profile');
 
-  // Form State
-  const [firstName, setFirstName] = useState('Sarah');
-  const [lastName, setLastName] = useState('Chen');
-  const [workEmail, setWorkEmail] = useState('admin@demo.test');
+  // Form State — initialised from the signed-in admin, never a seeded demo identity
+  const [firstName, setFirstName] = useState(profileFirstName);
+  const [lastName, setLastName] = useState(profileLastName);
+  const [workEmail, setWorkEmail] = useState(profileEmail);
   const [directPhone, setDirectPhone] = useState('+1 (555) 382-9012');
   const [jobTitle, setJobTitle] = useState('Head of Marketplace Operations & Platform Risk');
   const [department, setDepartment] = useState('Platform Engineering & Operations');
@@ -116,9 +122,9 @@ export const AdminProfilePage: React.FC = () => {
   };
 
   const handleDiscard = () => {
-    setFirstName('Sarah');
-    setLastName('Chen');
-    setWorkEmail('admin@demo.test');
+    setFirstName(profileFirstName);
+    setLastName(profileLastName);
+    setWorkEmail(profileEmail);
     setDirectPhone('+1 (555) 382-9012');
     setJobTitle('Head of Marketplace Operations & Platform Risk');
     setDepartment('Platform Engineering & Operations');

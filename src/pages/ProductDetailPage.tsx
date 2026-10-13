@@ -897,6 +897,8 @@ export const ProductDetailPage: React.FC = () => {
               isOpen={isChatOpen}
               onClose={() => setIsChatOpen(false)}
               sellerName={currentSellerName}
+              sellerId={product.sellerId}
+              productId={product.id}
             />
           </div>
         )}

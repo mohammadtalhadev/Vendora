@@ -4,10 +4,11 @@ import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './styles/base.css';
 import { router } from './app/router';
-import { enableMocking } from './mocks/browser';
 import { SmoothScrollProvider } from './components/SmoothScrollProvider';
 import { GlobalCarouselArrows } from './components/GlobalCarouselArrows';
 import { AuthProvider } from './lib/auth-context';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { isSupabaseConfigured } from './lib/supabase';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,17 +21,57 @@ const queryClient = new QueryClient({
   },
 });
 
-enableMocking().then(() => {
+/**
+ * Shown instead of the storefront when the Supabase env vars are missing, so a
+ * misconfigured deployment explains itself instead of white-screening (which
+ * is what the old import-time throw in lib/supabase did to production).
+ */
+function ConfigErrorScreen() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-[#0b1120]">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h1 className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
+          Vendora is not configured
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+          This deployment is missing its Supabase connection. The site operator needs to set{' '}
+          <code className="font-mono text-[13px] text-slate-800 dark:text-slate-200">
+            VITE_SUPABASE_URL
+          </code>{' '}
+          and{' '}
+          <code className="font-mono text-[13px] text-slate-800 dark:text-slate-200">
+            VITE_SUPABASE_ANON_KEY
+          </code>{' '}
+          in the environment variables (see <span className="font-mono text-[13px]">.env.example</span>)
+          and redeploy.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function renderApp() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SmoothScrollProvider>
-            <GlobalCarouselArrows />
-            <RouterProvider router={router} />
-          </SmoothScrollProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <ErrorBoundary>
+        {isSupabaseConfigured ? (
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <SmoothScrollProvider>
+                <GlobalCarouselArrows />
+                <RouterProvider router={router} />
+              </SmoothScrollProvider>
+            </AuthProvider>
+          </QueryClientProvider>
+        ) : (
+          <ConfigErrorScreen />
+        )}
+      </ErrorBoundary>
     </StrictMode>,
   );
-});
+}
+
+// Every read and write goes to the real Supabase database through the typed
+// features/** APIs — there is no mock layer in any mode, so the app renders
+// immediately.
+renderApp();

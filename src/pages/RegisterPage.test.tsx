@@ -190,7 +190,7 @@ describe('RegisterPage Component (Vendora Dual-Role Customer & Seller Portal)', 
       expect(applications.length).toBeGreaterThan(0);
       const app = applications[0];
       expect(app.proposed_store_name).toBe('Khaadi Crafts Hub');
-      expect(app.slug).toBe('khaadi-crafts-hub');
+      expect(app.proposed_slug).toBe('khaadi-crafts-hub');
       expect(app.contact_email).toBe('tariq.seller@vendora.pk');
     });
   });

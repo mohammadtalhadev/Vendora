@@ -18,15 +18,17 @@ export const isSupabaseConfigured =
       !anonKey.includes('<your-anon-public-key>'),
   );
 
-if (!isSupabaseConfigured && !isTest) {
-  throw new Error(
-    'Supabase is not configured: set valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env (see .env.example).',
-  );
-}
+/**
+ * Production builds must keep rendering, even when the operator has not set the
+ * Supabase environment yet. The previous import-time throw blank-screened every
+ * page before the app could explain the misconfiguration.
+ */
+const PLACEHOLDER_URL = 'https://placeholder.supabase.co';
+const PLACEHOLDER_ANON_KEY = 'placeholder-anon-key';
 
 export const supabase: SupabaseClient<Database> = createClient<Database>(
-  isTest ? TEST_SUPABASE_URL : (url as string),
-  isTest ? 'test-anon-key' : (anonKey as string),
+  isTest ? TEST_SUPABASE_URL : isSupabaseConfigured ? (url as string) : PLACEHOLDER_URL,
+  isTest ? 'test-anon-key' : isSupabaseConfigured ? (anonKey as string) : PLACEHOLDER_ANON_KEY,
   {
     auth: {
       persistSession: true,

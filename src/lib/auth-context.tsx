@@ -3,9 +3,9 @@ import type { Session } from '@supabase/supabase-js';
 import * as sessionApi from '../features/auth/api/session';
 import type { SignUpResult } from '../features/auth/api/session';
 import { hasAnyRole, hasPermission } from '../features/auth/rbac';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoRoleKey } from '../lib/demo-accounts';
 import type { User, UserRole } from '../types/domain';
-import { useAuthStore, DEMO_ACCOUNTS, DEMO_PASSWORD } from '../store/auth-store';
-import type { DemoRoleKey } from '../store/auth-store';
+import { useAuthStore } from '../store/auth-store';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
 

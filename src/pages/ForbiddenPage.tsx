@@ -55,7 +55,8 @@ export const ForbiddenPage: React.FC = () => {
           )}
         </p>
 
-        {/* Demo Persona Switcher Card */}
+        {/* Demo Persona Switcher Card — local development only */}
+        {import.meta.env.DEV && (
         <div className="glass-panel-elevated mt-8 rounded-3xl p-6 text-left border border-white/90 dark:border-white/10 shadow-xl">
           <div className="flex items-center gap-2 mb-4">
             <KeyRound className="h-4 w-4 text-amber-500" />
@@ -108,6 +109,7 @@ export const ForbiddenPage: React.FC = () => {
             </p>
           )}
         </div>
+        )}
 
         {/* Back and Alternate Links */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">

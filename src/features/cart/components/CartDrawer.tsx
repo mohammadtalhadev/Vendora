@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { X, Minus, Plus, Trash2, Tag, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCartStore, useCartCalculations } from '../../../store/cart-store';
 import { useCurrency } from '../../../store/currency-store';
-import { supabasePromotions } from '../../../lib/supabase-service';
+import { fetchCouponByCode } from '../api/promotions';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -40,35 +40,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     const code = couponCode.trim().toUpperCase();
     if (!code) return;
 
+    // Only live promotions from the database are accepted — checkout_pricing
+    // applies the same rules server-side, so a code that works here works at
+    // checkout. (This replaces hardcoded fallback codes that always succeeded.)
     try {
-      const dbCoupon = await supabasePromotions.validateCoupon(code, subtotal);
-      if (dbCoupon && dbCoupon.valid) {
-        applyCoupon({
-          code: dbCoupon.code,
-          type: (dbCoupon.discountType as 'percentage' | 'fixed') || 'percentage',
-          value: dbCoupon.discountValue ?? 0,
-        });
-        setCouponCode('');
-        return;
-      } else if (dbCoupon && !dbCoupon.valid) {
-        setCouponError(dbCoupon.reason || 'Coupon terms not met.');
-        return;
-      }
-    } catch {
-      // fall through to fallback codes
-    }
-
-    if (code === 'VENDORAPRO' || code === 'SAVE10') {
-      applyCoupon({ code, type: 'percentage', value: 10 });
+      const coupon = await fetchCouponByCode(code, subtotal);
+      applyCoupon(coupon);
       setCouponCode('');
-    } else if (code === 'TECH20') {
-      applyCoupon({ code, type: 'fixed', value: 20 });
-      setCouponCode('');
-    } else if (code === 'VENDORA15') {
-      applyCoupon({ code, type: 'percentage', value: 15 });
-      setCouponCode('');
-    } else {
-      setCouponError('Invalid code. Try "SAVE10", "TECH20", or "VENDORA15".');
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : 'That code could not be applied.');
     }
   };
 

@@ -1,7 +1,31 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Star, ShieldCheck, TrendingUp, ChevronRight, Rocket, Sparkles } from 'lucide-react';
-import type { MarketplaceVendor } from '../../../store/marketplace-store';
+/**
+ * Display shape for a spotlighted seller. Defined here (it previously lived in the
+ * deleted legacy store) — a parent feeding this component maps real
+ * vendor_profiles data into it.
+ */
+export interface MarketplaceVendor {
+  id: string;
+  storeName: string;
+  category: string;
+  subdomain: string;
+  ownerName: string;
+  countryCode: string;
+  email: string;
+  kycStatus: 'Verified' | 'Pending Review' | 'Investigation';
+  performanceTier: 'Tier 1 Elite' | 'Tier 2 Verified' | 'Tier 3 Standard';
+  revenue: number;
+  revenueFormatted: string;
+  trend: string;
+  trendType: 'positive' | 'neutral' | 'frozen';
+  status: 'active' | 'suspended';
+  commissionRate: number;
+  rating: number;
+  reviewCount: number;
+  joinedDate: string;
+}
 
 export interface SellerSpotlightProps {
   vendors: MarketplaceVendor[];

@@ -7,20 +7,27 @@ import {
   ShieldCheck,
   ExternalLink,
 } from 'lucide-react';
-import { mockDb } from '../mocks/db';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth-store';
+import { createDispute, fetchMyDisputes, postDisputeMessage } from '../features/orders/api/disputes';
 import type { Dispute, DisputeStatus } from '../types/domain';
 
 export const CustomerDisputesPage: React.FC = () => {
   const { id: disputeIdParam } = useParams<{ id: string }>();
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
-  const [disputes, setDisputes] = useState<Dispute[]>(mockDb.disputes);
-  const [selectedDisputeId, setSelectedDisputeId] = useState<string>(
-    disputeIdParam || disputes[0]?.id || 'DSP-401',
-  );
+  const disputesQuery = useQuery({
+    queryKey: ['my-disputes', user?.id ?? 'anon'],
+    queryFn: ({ signal }) => fetchMyDisputes(signal),
+    enabled: Boolean(user),
+  });
+  const disputes: Dispute[] = disputesQuery.data ?? [];
+
+  const [selectedDisputeId, setSelectedDisputeId] = useState<string>(disputeIdParam || '');
 
   const [replyMessage, setReplyMessage] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
   const [isFilingNew, setIsFilingNew] = useState(false);
   const fileClaimTriggerRef = useRef<HTMLButtonElement>(null);
   const fileClaimPanelRef = useRef<HTMLDivElement>(null);
@@ -37,86 +44,43 @@ export const CustomerDisputesPage: React.FC = () => {
     fileClaimWasOpenRef.current = isFilingNew;
   }, [isFilingNew]);
   const [newReason, setNewReason] = useState('Item arrived defective or damaged');
-  const [newSubOrderId, setNewSubOrderId] = useState('SUB-98421-A');
+  const [newSubOrderId, setNewSubOrderId] = useState('');
   const [newNotes, setNewNotes] = useState('');
 
   const activeDispute = disputes.find((d) => d.id === selectedDisputeId) || disputes[0];
 
+  const replyMutation = useMutation({
+    mutationFn: ({ disputeId, content }: { disputeId: string; content: string }) =>
+      postDisputeMessage(disputeId, content),
+    onSuccess: () => {
+      setFormError(null);
+      setReplyMessage('');
+      void queryClient.invalidateQueries({ queryKey: ['my-disputes'] });
+    },
+    onError: (err) => setFormError(err instanceof Error ? err.message : 'Failed to send your message.'),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createDispute,
+    onSuccess: (dispute) => {
+      setFormError(null);
+      setSelectedDisputeId(dispute.id);
+      setIsFilingNew(false);
+      setNewNotes('');
+      void queryClient.invalidateQueries({ queryKey: ['my-disputes'] });
+    },
+    onError: (err) => setFormError(err instanceof Error ? err.message : 'Failed to file your dispute.'),
+  });
+
   const handleSendReply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyMessage.trim() || !activeDispute) return;
-
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      senderRole: 'customer' as const,
-      senderName: user?.name || 'Customer',
-      content: replyMessage.trim(),
-      isInternalNote: false,
-      timestamp: new Date().toISOString(),
-    };
-
-    const updatedDispute: Dispute = {
-      ...activeDispute,
-      messages: [...activeDispute.messages, newMessage],
-    };
-
-    setDisputes((prev) =>
-      prev.map((d) => (d.id === activeDispute.id ? updatedDispute : d)),
-    );
-    try {
-      mockDb.addDisputeMessage(activeDispute.id, newMessage);
-      fetch(`/api/disputes/${activeDispute.id}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMessage),
-      }).catch(() => {});
-    } catch {
-      // ignore
-    }
-    setReplyMessage('');
+    replyMutation.mutate({ disputeId: activeDispute.id, content: replyMessage });
   };
 
   const handleCreateDispute = (e: React.FormEvent) => {
     e.preventDefault();
-    const newDisputeObj: Dispute = {
-      id: `DSP-${Math.floor(100 + Math.random() * 900)}`,
-      subOrderId: newSubOrderId,
-      orderGroupId: 'ORD-98421',
-      customerId: user?.id || 'usr-customer-1',
-      customerName: user?.name || 'Sarah Customer',
-      vendorId: 'vendor-tech-1',
-      vendorName: 'Apex Audio & Gear',
-      reason: newReason,
-      status: 'open',
-      urgency: 'standard',
-      createdAt: new Date().toISOString(),
-      messages: [
-        {
-          id: `msg-${Date.now()}`,
-          senderRole: 'customer',
-          senderName: user?.name || 'Customer',
-          content: newNotes || `Dispute opened for order ${newSubOrderId}: ${newReason}`,
-          isInternalNote: false,
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    };
-
-    try {
-      mockDb.createDispute(newDisputeObj);
-      fetch('/api/disputes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDisputeObj),
-      }).catch(() => {});
-    } catch {
-      // ignore
-    }
-
-    setDisputes([newDisputeObj, ...disputes]);
-    setSelectedDisputeId(newDisputeObj.id);
-    setIsFilingNew(false);
-    setNewNotes('');
+    createMutation.mutate({ subOrderId: newSubOrderId, reason: newReason, notes: newNotes });
   };
 
   const getStatusBadge = (status: DisputeStatus) => {
@@ -171,7 +135,7 @@ export const CustomerDisputesPage: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange dark:text-orange-400 mb-2">
               <Scale className="h-3.5 w-3.5" />
-              <span>Escrow & Buyer Protection</span>
+              <span>Buyer Protection</span>
             </div>
             <h1 className="font-outfit text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
               Order Disputes & Claims Center
@@ -195,6 +159,25 @@ export const CustomerDisputesPage: React.FC = () => {
           </button>
         </div>
 
+        {!user && (
+          <div className="glass-panel rounded-3xl p-6 mb-8 text-sm text-slate-600 dark:text-slate-300">
+            Please <Link to="/login" className="font-bold text-sun-orange underline">sign in</Link> to view and manage your disputes.
+          </div>
+        )}
+        {user && disputesQuery.isLoading && (
+          <p className="text-sm text-slate-500 mb-8" role="status">Loading your disputes…</p>
+        )}
+        {user && disputesQuery.isError && (
+          <div className="rounded-3xl bg-rose-50 border border-rose-200 p-6 mb-8 text-sm font-bold text-rose-900" role="alert">
+            {disputesQuery.error instanceof Error ? disputesQuery.error.message : 'Your disputes could not be loaded.'}
+          </div>
+        )}
+        {formError && (
+          <div className="rounded-3xl bg-rose-50 border border-rose-200 p-4 mb-8 text-xs font-bold text-rose-900" role="alert">
+            {formError}
+          </div>
+        )}
+
         {/* 2-Column Dispute Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left: Disputes Queue List (4 cols) */}
@@ -203,7 +186,7 @@ export const CustomerDisputesPage: React.FC = () => {
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Active Claims ({disputes.length})
               </h3>
-              <span className="text-[11px] font-bold text-slate-400">Escrow Locked</span>
+              <span className="text-[11px] font-bold text-slate-400">Real-time status</span>
             </div>
 
             {disputes.map((dispute) => {
@@ -275,7 +258,7 @@ export const CustomerDisputesPage: React.FC = () => {
                 <div className="px-6 py-3 bg-orange-50/50 dark:bg-orange-950/20 border-b border-orange-100/60 dark:border-orange-900/30 flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300">
                   <ShieldCheck className="h-4 w-4 text-sun-orange shrink-0" />
                   <span>
-                    Vendora Escrow Protection active. Payment remains held safely until both parties reach mutual resolution.
+                    Your case is reviewed by Vendora mediators together with the seller until a resolution is recorded.
                   </span>
                 </div>
 
@@ -368,7 +351,7 @@ export const CustomerDisputesPage: React.FC = () => {
                   File an Order Dispute
                 </h3>
                 <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 text-sun-orange px-3 py-1 text-[11px] font-bold">
-                  Escrow Guarantee
+                  Buyer Protection
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">

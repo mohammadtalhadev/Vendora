@@ -24,29 +24,33 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import type { Product, ProductType, Variant } from '../types/domain';
-import { mockDb } from '../mocks/db';
-import { useMarketplaceStore } from '../store/marketplace-store';
+import type { ProductType, Variant } from '../types/domain';
 import { useCurrency } from '../store/currency-store';
-import { supabaseStorage } from '../lib/supabase-service';
+import { useAdminActions } from '../features/admin/hooks/useAdminActions';
+import { useCategoryTree } from '../features/admin/hooks/useAdminQueries';
+import { uploadFirstPartyProductImage, type FirstPartyDraft } from '../features/admin/api/moderation';
 import { cn } from '../lib/utils';
 
 export const AdminAddProductPage: React.FC = () => {
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
+  const actions = useAdminActions();
+  const categoryTree = useCategoryTree();
+  const categoryOptions = (categoryTree.data?.roots ?? []).flatMap((root) => [
+    { id: root.id, name: root.name },
+    ...root.children.map((child) => ({ id: child.id, name: `${root.name} / ${child.name}` })),
+  ]);
 
   // Basic Information
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
-  const [category, setCategory] = useState('cat-electronics');
+  const [category, setCategory] = useState('');
   const [brand, setBrand] = useState('Vendora');
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
 
   // Media
-  const [images, setImages] = useState<string[]>([
-    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-  ]);
+  const [images, setImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -132,19 +136,11 @@ export const AdminAddProductPage: React.FC = () => {
     if (!file) return;
     setIsUploadingImage(true);
     try {
-      const { url, error } = await supabaseStorage.uploadProductImage(file);
-      if (error || !url) {
-        const localUrl = URL.createObjectURL(file);
-        setImages((prev) => [...prev, localUrl]);
-        showToast('Image attached locally (Storage fallback).');
-      } else {
-        setImages((prev) => [...prev, url]);
-        showToast('Image uploaded directly to Supabase Storage!');
-      }
-    } catch {
-      const localUrl = URL.createObjectURL(file);
-      setImages((prev) => [...prev, localUrl]);
-      showToast('Image attached locally.');
+      const url = await uploadFirstPartyProductImage(file);
+      setImages((prev) => [...prev, url]);
+      showToast('Image uploaded to Supabase Storage.');
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Image upload failed.');
     } finally {
       setIsUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -242,7 +238,7 @@ export const AdminAddProductPage: React.FC = () => {
   const filledFieldsCount = completionFields.filter(Boolean).length;
   const completionScore = Math.round((filledFieldsCount / completionFields.length) * 100);
 
-  const handleSaveProduct = (targetStatus: 'approved' | 'draft' = 'approved') => {
+  const handleSaveProduct = async (targetStatus: 'approved' | 'draft' = 'approved') => {
     setErrorMessage(null);
 
     if (!title.trim()) {
@@ -264,25 +260,23 @@ export const AdminAddProductPage: React.FC = () => {
       return;
     }
 
-    // Product is created by Admin and strictly marked as sold by Vendora
-    const newProduct: Product = {
-      id: `prod-1p-${Date.now()}`,
+    // Persisted through the admin_create_product_1p RPC as a first-party
+    // ("Sold by Vendora") listing. The old flow wrote the product into the mock database,
+    // localStorage and the legacy marketplace store, so it never existed in
+    // the real catalog.
+    const draft: FirstPartyDraft = {
       title: title.trim(),
-      slug: slug || title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      slug: slug || undefined,
       description: description.trim() || headline.trim() || title.trim(),
-      category,
+      categoryId: category || null,
       brand: brand.trim() || 'Vendora',
-      images: images.length > 0 ? images : [
-        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-      ],
+      images,
       price: priceNum,
-      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : undefined,
+      compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       type: productType,
-      sellerId: 'platform',
-      sellerName: 'Vendora',
-      sellerType: 'platform',
       variants: hasVariants && variants.length > 0 ? variants : [],
       stock: stockNum,
+      status: targetStatus,
       shippingSettings:
         productType === 'physical'
           ? {
@@ -290,41 +284,28 @@ export const AdminAddProductPage: React.FC = () => {
               freeShipping: freeShipping || parseFloat(shippingFee) === 0,
               weightKg: parseFloat(weightKg) || 0.5,
             }
-          : undefined,
+          : null,
       digitalAssetInfo:
         productType === 'digital'
           ? {
               licenseType,
-              downloadUrl: downloadUrl || '/downloads/package.zip',
+              downloadUrl: downloadUrl || '',
             }
-          : undefined,
-      rating: 5.0,
-      reviewCount: 0,
-      status: targetStatus,
-      createdAt: new Date().toISOString(),
+          : null,
     };
 
-    // 1. Commit to mockDb
-    mockDb.products.unshift(newProduct);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('vd:v1:products', JSON.stringify(mockDb.products));
-      } catch {
-        // ignore
-      }
-    }
-
-    // 2. Commit to Zustand Marketplace Store
     try {
-      useMarketplaceStore.getState().addProduct(newProduct);
-    } catch {
-      // Ignore if unseeded
+      await actions.createFirstPartyProduct.mutateAsync(draft);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'The product could not be saved.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
 
     showToast(
       targetStatus === 'approved'
-        ? `Official product "${newProduct.title}" published as Sold by Vendora!`
-        : `Product "${newProduct.title}" saved as draft.`
+        ? `Official product "${draft.title}" published as Sold by Vendora!`
+        : `Product "${draft.title}" saved as draft.`
     );
 
     setTimeout(() => {
@@ -467,12 +448,13 @@ export const AdminAddProductPage: React.FC = () => {
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full admin-select h-10"
                   >
-                    <option value="cat-electronics">Electronics &amp; Smart Tech</option>
-                    <option value="cat-audio">Audio &amp; Pro Acoustics</option>
-                    <option value="cat-hardware">Hardware &amp; Computing</option>
-                    <option value="cat-apparel">Apparel &amp; Fashion</option>
-                    <option value="cat-home">Home &amp; Living</option>
-                    <option value="cat-digital">Digital Licenses &amp; Software</option>
+                    <option value="">Uncategorised</option>
+                    {categoryOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                    {categoryTree.isLoading && <option disabled>Loading categories…</option>}
                   </select>
                 </div>
 
