@@ -4,6 +4,23 @@
  * This file is ALWAYS loaded - contains the design system foundation
  */
 
+/*
+ * PAGE CONTAINER SCALE — the only three content widths a page may use.
+ * Pick by page family, never ad-hoc, so side gutters stay identical as
+ * the user navigates (a fourth width is what made pages "jump" sideways):
+ *
+ *   Storefront (home, catalogue, product, wishlist):
+ *     max-w-[1600px] px-4 sm:px-6 lg:px-8
+ *   Content / account (auth cards, account, orders, dashboards' content):
+ *     max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+ *   Reading (legal, blog posts, long-form text):
+ *     max-w-5xl mx-auto px-4 sm:px-6 lg:px-8
+ *
+ * The ambient background is painted ONCE by the shell (RootLayout for the
+ * storefront tree, WorkspaceLayout for panels) — pages never re-paint
+ * their own gradient/orb layer on top of it.
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @import './tokens.css';
@@ -271,6 +288,10 @@ pre {
 
 html {
   overflow-x: clip;
+  /* Reserve the scrollbar gutter on every page, scrollable or not: without
+     it, navigating between a tall page (scrollbar shown) and a short one
+     (none) shifts the whole layout sideways by the scrollbar's width. */
+  scrollbar-gutter: stable;
 }
 
 body {

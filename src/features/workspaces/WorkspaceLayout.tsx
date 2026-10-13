@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ScrollManager } from '../../components/ScrollManager';
+import { useLenisWrapper } from '../../hooks/useLenisWrapper';
 import {
   Store,
   ArrowLeft,
@@ -311,6 +312,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileDrawerRef = useRef<HTMLDivElement>(null);
+  // The <main> below is an inner scroller (the shell frame is h-screen), so
+  // the window Lenis never smooths it — it gets its own wrapper-mode Lenis.
+  const mainScrollRef = useLenisWrapper<HTMLElement>();
 
   // Derived first: the palette, the create menu and the tray all key off the signed-in role.
   const effectiveRole = (role || user?.roles[0] || 'vendor').toLowerCase();
@@ -1348,43 +1352,51 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         )}
       </header>
 
-        {/* Main Content Area (Independent isolated scrolling, page only) */}
+        {/* Main Content Area (Independent isolated scrolling, page only).
+            data-lenis-prevent keeps the WINDOW Lenis out of this scroller;
+            the wrapper-mode Lenis from useLenisWrapper smooths it instead
+            (it is bound to this element, so the attribute does not block it). */}
         <main
+          ref={mainScrollRef}
           data-lenis-prevent
           data-scroll-reset
           className="flex-1 h-full min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 relative z-10 dark:[&_h1]:text-slate-50 dark:[&_h2]:text-slate-50"
         >
-          {/* Breadcrumbs for deeper pages */}
-          {crumbs.length > 1 && (
-            <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-slate-400">
-              {crumbs.map((c, i) => (
-                <React.Fragment key={c.path}>
-                  {i > 0 && <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-600" />}
-                  {i === crumbs.length - 1 ? (
-                    <span className="font-semibold text-slate-700 dark:text-slate-200">{c.label}</span>
-                  ) : (
-                    <Link to={c.path} className="hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
-                      {c.label}
-                    </Link>
-                  )}
-                </React.Fragment>
-              ))}
-            </nav>
-          )}
+          {/* Lenis wrapper mode measures this content element for its
+              scroll limit; it must wrap everything the scroller holds. */}
+          <div data-lenis-content className="min-h-full">
+            {/* Breadcrumbs for deeper pages */}
+            {crumbs.length > 1 && (
+              <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-slate-400">
+                {crumbs.map((c, i) => (
+                  <React.Fragment key={c.path}>
+                    {i > 0 && <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-600" />}
+                    {i === crumbs.length - 1 ? (
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{c.label}</span>
+                    ) : (
+                      <Link to={c.path} className="hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                        {c.label}
+                      </Link>
+                    )}
+                  </React.Fragment>
+                ))}
+              </nav>
+            )}
 
-          {!children && (title || subtitle) && (
-            <div className="mb-6">
-              {title && (
-                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">
-                  {title}
-                </h1>
-              )}
-              {subtitle && (
-                <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
-              )}
-            </div>
-          )}
-          {children ?? <Outlet />}
+            {!children && (title || subtitle) && (
+              <div className="mb-6">
+                {title && (
+                  <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">
+                    {title}
+                  </h1>
+                )}
+                {subtitle && (
+                  <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+                )}
+              </div>
+            )}
+            {children ?? <Outlet />}
+          </div>
         </main>
       </div>
 

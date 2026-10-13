@@ -133,15 +133,9 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 pb-16 pt-4 sm:pt-8 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
-      {/* =========================================================================
-          1. Ethereal Luminous Ambient Orbs (Matching Stitch Spec)
-         ========================================================================= */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-36 -left-28 w-[640px] h-[640px] rounded-full bg-gradient-to-tr from-sun-orange-200/50 via-sun-orange-100/60 to-sun-orange-200/30 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5" />
-        <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-bl from-aqua-100/60 via-[#F1F5F9]/80 to-sun-orange-100/40 blur-[140px] dark:from-aqua/10 dark:via-transparent" />
-        <div className="absolute -bottom-40 left-1/4 w-[580px] h-[580px] rounded-full bg-gradient-to-tr from-sun-orange-100/60 via-aqua-100/40 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5" />
-      </div>
+    <div className="relative min-h-screen overflow-hidden pb-16 pt-4 sm:pt-8 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
+      {/* No page-level background: RootLayout paints the one ambient
+          gradient + orbs for the whole storefront tree. */}
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}

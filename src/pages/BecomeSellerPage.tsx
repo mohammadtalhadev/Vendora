@@ -81,24 +81,24 @@ export const BecomeSellerPage: React.FC = () => {
             Enable and grow Vendora partners with verified Pakistani merchants — featuring regulated escrow payout schedules, fair selling charters, and market-leading commission structures.
           </p>
 
-          {/* 4 Stat Badges Strip - Staggered Rhythmic Heights ("koi upper koi neechy") */}
-          <div className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1 md:translate-y-0">
+          {/* 4 Stat Badges Strip - one aligned, equal-height row */}
+          <div className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 items-stretch">
+            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
               <div className="font-outfit text-2xl sm:text-3xl font-black text-sun-orange">0%</div>
               <p className="text-[11px] text-slate-500 font-semibold mt-1">Risk-Free Onboarding</p>
             </div>
 
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:translate-y-2 md:translate-y-3">
+            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
               <div className="font-outfit text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">Monday</div>
               <p className="text-[11px] text-slate-500 font-semibold mt-1">Global Swift Liquidation</p>
             </div>
 
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-2 md:-translate-y-1.5">
+            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
               <div className="font-outfit text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">SBP Tier-1</div>
               <p className="text-[11px] text-slate-500 font-semibold mt-1">Escrow Security Control</p>
             </div>
 
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:translate-y-2 md:translate-y-3">
+            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-5 text-center shadow-xs hover:shadow-md transition-all hover:-translate-y-1">
               <div className="font-outfit text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">{formatPrice(0)}</div>
               <p className="text-[11px] text-slate-500 font-semibold mt-1">Platform Maintenance Fee</p>
             </div>
@@ -473,9 +473,9 @@ export const BecomeSellerPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
             {/* Step 01 */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between md:translate-y-0">
+            <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <span aria-hidden="true" className="absolute -bottom-4 -right-2 font-outfit text-8xl font-black text-slate-100 dark:text-slate-800/40 pointer-events-none select-none">
                 01
               </span>
@@ -504,7 +504,7 @@ export const BecomeSellerPage: React.FC = () => {
             </div>
 
             {/* Step 02 */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between md:translate-y-6">
+            <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <span aria-hidden="true" className="absolute -bottom-4 -right-2 font-outfit text-8xl font-black text-slate-100 dark:text-slate-800/40 pointer-events-none select-none">
                 02
               </span>
@@ -533,7 +533,7 @@ export const BecomeSellerPage: React.FC = () => {
             </div>
 
             {/* Step 03 */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between md:-translate-y-1">
+            <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <span aria-hidden="true" className="absolute -bottom-4 -right-2 font-outfit text-8xl font-black text-slate-100 dark:text-slate-800/40 pointer-events-none select-none">
                 03
               </span>
@@ -599,9 +599,9 @@ export const BecomeSellerPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right 4 SLA Cards Grid - Staggered Rhythmic Heights ("koi upper koi neechy") */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all sm:translate-y-0">
+            {/* Right 4 SLA Cards Grid - one aligned, equal-height grid */}
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 text-sun-orange mb-2.5 shadow-2xs">
                   <Package className="h-4 w-4 text-sun-orange" aria-hidden="true" />
                 </div>
@@ -613,7 +613,7 @@ export const BecomeSellerPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all sm:translate-y-3">
+              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50/90 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/40 text-purple-600 dark:text-purple-400 mb-2.5 shadow-2xs">
                   <Truck className="h-4 w-4" aria-hidden="true" />
                 </div>
@@ -625,7 +625,7 @@ export const BecomeSellerPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all sm:-translate-y-1.5">
+              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/40 text-blue-600 dark:text-blue-400 mb-2.5 shadow-2xs">
                   <Lock className="h-4 w-4" aria-hidden="true" />
                 </div>
@@ -637,7 +637,7 @@ export const BecomeSellerPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all sm:translate-y-2">
+              <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-4.5 shadow-2xs hover:shadow-md transition-all">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/40 text-rose-600 dark:text-rose-400 mb-2.5 shadow-2xs">
                   <AlertOctagon className="h-4 w-4" aria-hidden="true" />
                 </div>
@@ -668,9 +668,9 @@ export const BecomeSellerPage: React.FC = () => {
             </p>
           </div>
 
-          {/* 3 Staggered Code of Conduct Cards ("koi upper koi neechy") */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 space-y-3 shadow-xs hover:shadow-md transition-all md:translate-y-0">
+          {/* 3 Code of Conduct Cards - one aligned, equal-height row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 flex flex-col gap-3 shadow-xs hover:shadow-md transition-all">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/40 backdrop-blur-md text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
                   <ShieldCheck className="h-4 w-4" aria-hidden="true" />
@@ -680,12 +680,12 @@ export const BecomeSellerPage: React.FC = () => {
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                 Vendora operates zero tolerance on counterfeit or imitation merchandise. Any vendor found distributing imitation goods will face immediate account closure, forfeiture of escrow funds, and blacklisting.
               </p>
-              <div className="pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
+              <div className="mt-auto pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
                 Personal punitive fine of 100,000 PKR if breach occurs
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 space-y-3 shadow-xs hover:shadow-md transition-all md:translate-y-6">
+            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 flex flex-col gap-3 shadow-xs hover:shadow-md transition-all">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-xl bg-purple-50/90 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/40 backdrop-blur-md text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 shadow-2xs">
                   <Camera className="h-4 w-4" aria-hidden="true" />
@@ -695,12 +695,12 @@ export const BecomeSellerPage: React.FC = () => {
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                 Every listing must use actual products photographed in white/neutral studio light. Stock 3D render mockups without real products will fail onboarding review.
               </p>
-              <div className="pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
+              <div className="mt-auto pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
                 Minimum 3 distinct angles, 1000x1000px on clean background
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 space-y-3 shadow-xs hover:shadow-md transition-all md:-translate-y-1">
+            <div className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl p-6 flex flex-col gap-3 shadow-xs hover:shadow-md transition-all">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/40 backdrop-blur-md text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs">
                   <MessageSquare className="h-4 w-4" aria-hidden="true" />
@@ -710,7 +710,7 @@ export const BecomeSellerPage: React.FC = () => {
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                 All interactions via Buyer-Seller Messaging must maintain professional courtesy. Diverting customers to external WhatsApp/Direct bank transfers is strictly prohibited and results in immediate delisting.
               </p>
-              <div className="pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
+              <div className="mt-auto pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
                 Encrypted messaging recorded for escrow audit
               </div>
             </div>

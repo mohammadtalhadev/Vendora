@@ -239,15 +239,9 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 pb-16 pt-4 sm:pt-8 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
-      {/* =========================================================================
-          1. Luminous Ambient Background Glows
-         ========================================================================= */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        <div className="absolute -top-32 -left-24 w-[650px] h-[650px] rounded-full bg-gradient-to-br from-sun-orange-200/60 via-sun-orange-100/40 to-transparent blur-[110px] dark:from-sun-orange/10" />
-        <div className="absolute top-1/4 -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-br from-aqua-100/65 via-[#E0F2FE]/40 to-transparent blur-[120px] dark:from-aqua/10" />
-        <div className="absolute -bottom-36 left-1/3 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-lemon-100/50 via-[#F1F5F9]/80 to-transparent blur-[120px] dark:from-sun-orange/5" />
-      </div>
+    <div className="relative min-h-screen overflow-hidden pb-16 pt-4 sm:pt-8 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
+      {/* No page-level background: RootLayout paints the one ambient
+          gradient + orbs for the whole storefront tree. */}
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
@@ -570,9 +564,10 @@ export const RegisterPage: React.FC = () => {
                           </button>
                         </div>
 
-                        {/* Security Meter */}
-                        <div className="pt-1 space-y-1">
-                          <div className="grid grid-cols-4 gap-1.5">
+                        {/* Security Meter — bars only in the bar row; the
+                            label is a separate caption row beneath it */}
+                        <div className="pt-1">
+                          <div className="grid grid-cols-4 gap-1.5" aria-hidden="true">
                             {[1, 2, 3, 4].map((step) => (
                               <div
                                 key={step}
@@ -584,9 +579,9 @@ export const RegisterPage: React.FC = () => {
                               />
                             ))}
                           </div>
-                          <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                          <div className="mt-2 flex justify-between items-center text-[11px] text-slate-400 font-medium">
                             <span>Strength:</span>
-                            <span className="uppercase font-semibold text-slate-600 dark:text-slate-300">
+                            <span className="font-semibold text-slate-600 dark:text-slate-300">
                               {customerPasswordSecurity.label}
                             </span>
                           </div>
@@ -888,9 +883,10 @@ export const RegisterPage: React.FC = () => {
                             {showSellerPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                           </button>
                         </div>
-                        {/* Security Meter */}
-                        <div className="pt-1 space-y-1">
-                          <div className="grid grid-cols-4 gap-1.5">
+                        {/* Security Meter — same structure as the customer
+                            form: bars only in the bar row, label caption below */}
+                        <div className="pt-1">
+                          <div className="grid grid-cols-4 gap-1.5" aria-hidden="true">
                             {[1, 2, 3, 4].map((step) => (
                               <div
                                 key={step}
@@ -901,6 +897,12 @@ export const RegisterPage: React.FC = () => {
                                 }`}
                               />
                             ))}
+                          </div>
+                          <div className="mt-2 flex justify-between items-center text-[11px] text-slate-400 font-medium">
+                            <span>Strength:</span>
+                            <span className="font-semibold text-slate-600 dark:text-slate-300">
+                              {sellerPasswordSecurity.label}
+                            </span>
                           </div>
                         </div>
                       </div>
