@@ -242,6 +242,10 @@ export function createSupabaseDouble() {
     categories: [],
     cart_items: [],
     wishlist_items: [],
+    // The customer's own address book and saved payment methods (Phase 8 tables):
+    // owner-scoped rows the account screens read and write directly under RLS.
+    user_addresses: [],
+    user_payment_methods: [],
     reviews: [],
     promotions: [],
     orders: [],
@@ -2670,6 +2674,14 @@ export function createSupabaseDouble() {
       tables.wishlist_items.push(item);
       return item;
     },
+    seedAddress(address: Row) {
+      tables.user_addresses.push(address);
+      return address;
+    },
+    seedPaymentMethod(method: Row) {
+      tables.user_payment_methods.push(method);
+      return method;
+    },
     seedReview(review: Row) {
       tables.reviews.push(review);
       return review;
@@ -2970,6 +2982,45 @@ export function wishlistRow(overrides: Partial<Row> = {}): Row {
     user_id: 'user-1',
     product_id: productRow().id,
     created_at: '2026-10-05T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A user_addresses row: the owner's own book entry, a home address by default. */
+export function addressRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: 'addr-1',
+    user_id: 'user-1',
+    type: 'home',
+    label: 'Home',
+    full_name: 'Alex Buyer',
+    phone: '+92 300 1234567',
+    street: '12 Canal Road',
+    city: 'Lahore',
+    state: 'Punjab',
+    zip_code: '54000',
+    country: 'Pakistan',
+    is_default: false,
+    created_at: '2026-10-05T00:00:00.000Z',
+    updated_at: '2026-10-05T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A user_payment_methods row: display metadata only - brand and last4, never a number. */
+export function paymentMethodRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: 'pm-1',
+    user_id: 'user-1',
+    type: 'card',
+    brand: 'Visa',
+    cardholder_name: 'Alex Buyer',
+    last4: '4242',
+    expiry_month: '12',
+    expiry_year: '28',
+    is_default: false,
+    created_at: '2026-10-05T00:00:00.000Z',
+    updated_at: '2026-10-05T00:00:00.000Z',
     ...overrides,
   };
 }

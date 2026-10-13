@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -29,11 +29,12 @@ import {
 import { useAuthStore } from '../store/auth-store';
 import { useWishlistStore } from '../store/wishlist-store';
 import { useCurrency } from '../store/currency-store';
+import { useSavedAddresses, useSavedAddressActions } from '../features/account/hooks/useSavedAddresses';
 import {
-  useUserAccountStore,
-  type AddressType,
-  type UserSavedAddress,
-} from '../store/user-account-store';
+  useSavedPaymentMethods,
+  useSavedPaymentMethodActions,
+} from '../features/account/hooks/useSavedPaymentMethods';
+import type { AddressType, UserSavedAddress } from '../features/account/types';
 import { detectCardBrand } from '../features/checkout/utils/luhn';
 import { useAuth } from '../lib/auth-context';
 import { useOrders, useUpdateSubOrderStatus } from '../features/orders/hooks/useOrders';
@@ -405,23 +406,15 @@ export const AccountProfilePage: React.FC = () => {
 
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
 
-  // Saved Addresses and Payment Methods from user-account-store
-  const {
-    savedAddresses,
-    savedPaymentMethods,
-    syncForUser,
-    addAddress,
-    updateAddress,
-    deleteAddress,
-    setDefaultAddress,
-    addPaymentMethod,
-    deletePaymentMethod,
-    setDefaultPaymentMethod,
-  } = useUserAccountStore();
-
-  useEffect(() => {
-    syncForUser(user?.id ?? null);
-  }, [user?.id, syncForUser]);
+  // Saved addresses and payment methods live in `user_addresses` /
+  // `user_payment_methods` now. Until the customer's own rows land - and forever
+  // for a new account - the lists are honestly empty, never seeded fiction.
+  const addressesQuery = useSavedAddresses();
+  const savedAddresses = addressesQuery.data ?? [];
+  const addressActions = useSavedAddressActions();
+  const paymentsQuery = useSavedPaymentMethods();
+  const savedPaymentMethods = paymentsQuery.data ?? [];
+  const paymentActions = useSavedPaymentMethodActions();
 
   // Address Modal & Form State
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -484,7 +477,7 @@ export const AccountProfilePage: React.FC = () => {
     setIsAddressModalOpen(true);
   };
 
-  const handleSaveAddress = (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addressFullName.trim()) {
       setAddressError('Please enter a recipient name.');
@@ -503,36 +496,31 @@ export const AccountProfilePage: React.FC = () => {
       return;
     }
 
-    if (editingAddressId) {
-      updateAddress(editingAddressId, {
-        type: addressType,
-        label: addressLabel.trim() || (addressType === 'home' ? 'Home' : addressType === 'work' ? 'Work' : 'Other'),
-        fullName: addressFullName.trim(),
-        phone: addressPhone.trim(),
-        street: addressStreet.trim(),
-        city: addressCity.trim(),
-        state: addressState.trim(),
-        zipCode: addressZipCode.trim(),
-        country: addressCountry.trim() || 'United States',
-        isDefault: addressIsDefault,
-      });
-      setAddressBanner('Address updated successfully.');
-    } else {
-      addAddress({
-        type: addressType,
-        label: addressLabel.trim() || (addressType === 'home' ? 'Home' : addressType === 'work' ? 'Work' : 'Other'),
-        fullName: addressFullName.trim(),
-        phone: addressPhone.trim(),
-        street: addressStreet.trim(),
-        city: addressCity.trim(),
-        state: addressState.trim(),
-        zipCode: addressZipCode.trim(),
-        country: addressCountry.trim() || 'United States',
-        isDefault: addressIsDefault,
-      });
-      setAddressBanner('New address added to your address book.');
+    const draft = {
+      type: addressType,
+      label: addressLabel.trim() || (addressType === 'home' ? 'Home' : addressType === 'work' ? 'Work' : 'Other'),
+      fullName: addressFullName.trim(),
+      phone: addressPhone.trim(),
+      street: addressStreet.trim(),
+      city: addressCity.trim(),
+      state: addressState.trim(),
+      zipCode: addressZipCode.trim(),
+      country: addressCountry.trim() || 'United States',
+      isDefault: addressIsDefault,
+    };
+
+    try {
+      if (editingAddressId) {
+        await addressActions.update.mutateAsync({ id: editingAddressId, updates: draft });
+        setAddressBanner('Address updated successfully.');
+      } else {
+        await addressActions.create.mutateAsync(draft);
+        setAddressBanner('New address added to your address book.');
+      }
+      setIsAddressModalOpen(false);
+    } catch (cause) {
+      setAddressError(messageOf(cause));
     }
-    setIsAddressModalOpen(false);
   };
 
   const openAddPaymentModal = () => {
@@ -547,45 +535,50 @@ export const AccountProfilePage: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handleSavePaymentMethod = (e: React.FormEvent) => {
+  const handleSavePaymentMethod = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (paymentType === 'card') {
-      const cleanNum = cardNumber.replace(/[\s-]/g, '');
-      if (!cleanNum || cleanNum.length < 13 || !/^\d+$/.test(cleanNum)) {
-        setPaymentError('Please enter a valid card number (13-19 digits).');
-        return;
-      }
-      if (!cardholderName.trim()) {
-        setPaymentError('Please enter the name printed on the card.');
-        return;
-      }
-      if (!cvv.trim() || cvv.length < 3) {
-        setPaymentError('Please enter a valid CVV (3-4 digits).');
-        return;
-      }
-      const detected = detectCardBrand(cleanNum);
-      const brand = detected === 'Unknown' ? 'Card' : detected;
-      const last4 = cleanNum.slice(-4);
+    try {
+      if (paymentType === 'card') {
+        const cleanNum = cardNumber.replace(/[\s-]/g, '');
+        if (!cleanNum || cleanNum.length < 13 || !/^\d+$/.test(cleanNum)) {
+          setPaymentError('Please enter a valid card number (13-19 digits).');
+          return;
+        }
+        if (!cardholderName.trim()) {
+          setPaymentError('Please enter the name printed on the card.');
+          return;
+        }
+        if (!cvv.trim() || cvv.length < 3) {
+          setPaymentError('Please enter a valid CVV (3-4 digits).');
+          return;
+        }
+        const detected = detectCardBrand(cleanNum);
+        const brand = detected === 'Unknown' ? 'Card' : detected;
+        const last4 = cleanNum.slice(-4);
 
-      addPaymentMethod({
-        type: 'card',
-        brand,
-        cardholderName: cardholderName.trim(),
-        last4,
-        expiryMonth,
-        expiryYear,
-        isDefault: paymentIsDefault,
-      });
-      setPaymentBanner(`Payment card (${brand} ending in ${last4}) saved.`);
-    } else {
-      addPaymentMethod({
-        type: 'cod',
-        brand: 'Cash on Delivery',
-        isDefault: paymentIsDefault,
-      });
-      setPaymentBanner('Cash on Delivery payment preference saved.');
+        // Only the metadata crosses the wire: the full number and CVV end here.
+        await paymentActions.create.mutateAsync({
+          type: 'card',
+          brand,
+          cardholderName: cardholderName.trim(),
+          last4,
+          expiryMonth,
+          expiryYear,
+          isDefault: paymentIsDefault,
+        });
+        setPaymentBanner(`Payment card (${brand} ending in ${last4}) saved.`);
+      } else {
+        await paymentActions.create.mutateAsync({
+          type: 'cod',
+          brand: 'Cash on Delivery',
+          isDefault: paymentIsDefault,
+        });
+        setPaymentBanner('Cash on Delivery payment preference saved.');
+      }
+      setIsPaymentModalOpen(false);
+    } catch (cause) {
+      setPaymentError(messageOf(cause));
     }
-    setIsPaymentModalOpen(false);
   };
 
   const displayName = user?.name || user?.email || 'there';
@@ -698,8 +691,8 @@ export const AccountProfilePage: React.FC = () => {
     profile: 'Identity',
     orders: ordersQuery.isLoading ? 'History' : `${subOrders.length} packages`,
     returns: openReturns.length > 0 ? `${openReturns.length} open` : 'RMA',
-    addresses: `${savedAddresses.length} saved`,
-    payments: `${savedPaymentMethods.length} saved`,
+    addresses: addressesQuery.isLoading ? 'Address book' : `${savedAddresses.length} saved`,
+    payments: paymentsQuery.isLoading ? 'Methods' : `${savedPaymentMethods.length} saved`,
     disputes: disputesQuery.isLoading ? 'Support' : `${disputes.length} cases`,
     security: 'Password',
   };
@@ -1453,7 +1446,22 @@ export const AccountProfilePage: React.FC = () => {
                   </div>
 
                   {/* Saved addresses list */}
-                  {savedAddresses.length === 0 ? (
+                  {addressesQuery.isLoading ? (
+                    <p className="text-xs text-slate-500">Loading your saved addresses…</p>
+                  ) : addressesQuery.isError ? (
+                    <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/20 p-4 space-y-2">
+                      <p className="text-[11px] text-rose-600 font-bold" role="alert" aria-live="assertive">
+                        {messageOf(addressesQuery.error)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void addressesQuery.refetch()}
+                        className="text-[11px] font-bold text-sun-orange hover:underline cursor-pointer"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : savedAddresses.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-8 text-center space-y-3">
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-sun-orange">
                         <MapPin className="h-6 w-6" />
@@ -1523,7 +1531,7 @@ export const AccountProfilePage: React.FC = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => deleteAddress(addr.id)}
+                                  onClick={() => addressActions.remove.mutate(addr.id)}
                                   title="Delete address"
                                   className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                                 >
@@ -1551,7 +1559,7 @@ export const AccountProfilePage: React.FC = () => {
                               <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                                 <button
                                   type="button"
-                                  onClick={() => setDefaultAddress(addr.id)}
+                                  onClick={() => addressActions.setDefault.mutate(addr.id)}
                                   className="text-[11px] font-bold text-sun-orange hover:underline cursor-pointer"
                                 >
                                   Set as default address
@@ -1656,7 +1664,22 @@ export const AccountProfilePage: React.FC = () => {
                   )}
 
                   {/* Saved cards list */}
-                  {savedPaymentMethods.length === 0 ? (
+                  {paymentsQuery.isLoading ? (
+                    <p className="text-xs text-slate-500">Loading your saved payment methods…</p>
+                  ) : paymentsQuery.isError ? (
+                    <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/20 p-4 space-y-2">
+                      <p className="text-[11px] text-rose-600 font-bold" role="alert" aria-live="assertive">
+                        {messageOf(paymentsQuery.error)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void paymentsQuery.refetch()}
+                        className="text-[11px] font-bold text-sun-orange hover:underline cursor-pointer"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : savedPaymentMethods.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-8 text-center space-y-3">
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-sun-orange">
                         <CreditCard className="h-6 w-6" />
@@ -1706,7 +1729,7 @@ export const AccountProfilePage: React.FC = () => {
 
                             <button
                               type="button"
-                              onClick={() => deletePaymentMethod(pm.id)}
+                              onClick={() => paymentActions.remove.mutate(pm.id)}
                               title="Delete payment method"
                               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                             >
@@ -1731,7 +1754,7 @@ export const AccountProfilePage: React.FC = () => {
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => setDefaultPaymentMethod(pm.id)}
+                                  onClick={() => paymentActions.setDefault.mutate(pm.id)}
                                   className="font-bold text-sun-orange hover:underline cursor-pointer"
                                 >
                                   Make default
@@ -2349,7 +2372,7 @@ export const AccountProfilePage: React.FC = () => {
                   required
                   value={addressFullName}
                   onChange={(e) => setAddressFullName(e.target.value)}
-                  placeholder="e.g. Sarah Jenkins"
+                  placeholder="Full name"
                   className={inputClass}
                 />
               </div>

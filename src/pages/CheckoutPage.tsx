@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -26,6 +26,8 @@ import { useCheckoutQuote, usePlaceOrder } from '../features/checkout/hooks/useC
 import { cartSignature, type DeliveryChoice } from '../features/checkout/api/checkout';
 import { useCheckoutDraftStore } from '../features/checkout/store/checkout-draft';
 import { fetchCouponByCode } from '../features/cart/api/promotions';
+import { useSavedAddresses, useSavedAddressActions } from '../features/account/hooks/useSavedAddresses';
+import type { AddressType } from '../features/account/types';
 import { shippingAddressSchema, type CartItem, type ShippingAddress } from '../types/domain';
 import { validateCardLuhn, detectCardBrand } from '../features/checkout/utils/luhn';
 import type { PaymentMethod } from '../features/checkout/types';
@@ -33,32 +35,14 @@ import type { PaymentMethod } from '../features/checkout/types';
 interface AddressOption extends ShippingAddress {
   id: string;
   label: string;
+  isDefault?: boolean;
 }
 
-const DEFAULT_ADDRESSES: AddressOption[] = [
-  {
-    id: 'addr-home',
-    label: 'Primary Home',
-    fullName: '',
-    street: 'House 42-B, Khayaban-e-Seher, Phase 6',
-    city: 'Karachi',
-    state: 'Sindh',
-    zipCode: '75500',
-    country: 'Pakistan',
-    phone: '+92 321 445-8910',
-  },
-  {
-    id: 'addr-office',
-    label: 'Office',
-    fullName: '',
-    street: 'Suite 302, Arfa Software Technology Park',
-    city: 'Lahore',
-    state: 'Punjab',
-    zipCode: '54000',
-    country: 'Pakistan',
-    phone: '+92 300 987-6543',
-  },
-];
+const ADDRESS_TYPE_LABELS: Record<AddressType, string> = {
+  home: 'Home',
+  work: 'Work',
+  other: 'Other',
+};
 
 const emptyDraft = (name: string): AddressOption => ({
   id: '',
@@ -98,15 +82,55 @@ export const CheckoutPage: React.FC = () => {
 
   const placeOrder = usePlaceOrder();
 
-  // Address state: the two seeded entries plus any address the customer adds here.
-  const [addresses, setAddresses] = useState<AddressOption[]>(() =>
-    DEFAULT_ADDRESSES.map((a) => ({ ...a, fullName: user?.name ?? '' })),
+  // Address state: the signed-in customer's own saved addresses from
+  // `user_addresses`, merged with any address added during this checkout.
+  // Nothing is seeded - a customer with an empty book gets the form, open.
+  const savedAddressesQuery = useSavedAddresses();
+  const addressActions = useSavedAddressActions();
+  const savedOptions = useMemo<AddressOption[]>(
+    () =>
+      (savedAddressesQuery.data ?? []).map((saved) => ({
+        id: saved.id,
+        label: saved.label || ADDRESS_TYPE_LABELS[saved.type],
+        isDefault: saved.isDefault,
+        fullName: saved.fullName,
+        street: saved.street,
+        city: saved.city,
+        state: saved.state,
+        zipCode: saved.zipCode,
+        country: saved.country,
+        phone: saved.phone,
+      })),
+    [savedAddressesQuery.data],
   );
-  const [selectedAddressId, setSelectedAddressId] = useState<string>('addr-home');
+  const [sessionAddresses, setSessionAddresses] = useState<AddressOption[]>([]);
+  const addresses = useMemo<AddressOption[]>(() => {
+    const merged = [...savedOptions];
+    for (const added of sessionAddresses) {
+      if (!merged.some((option) => option.id === added.id)) merged.push(added);
+    }
+    return merged;
+  }, [savedOptions, sessionAddresses]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const addressFormTriggerRef = useRef<HTMLButtonElement>(null);
-  const [addressDraft, setAddressDraft] = useState<AddressOption>(() => emptyDraft(user?.name ?? ''));
+  const [addressDraft, setAddressDraft] = useState<AddressOption>(() => emptyDraft(''));
   const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
+
+  // First landing: the customer's default address wins, else the first saved
+  // one. With an empty book - or an unreadable one - nothing is selected and
+  // the manual entry form opens instead of an invented pre-selection.
+  const addressesSettled = savedAddressesQuery.isSuccess || savedAddressesQuery.isError;
+  useEffect(() => {
+    if (selectedAddressId && addresses.some((a) => a.id === selectedAddressId)) return;
+    const preferred = addresses.find((a) => a.isDefault) ?? addresses[0];
+    if (preferred) {
+      setSelectedAddressId(preferred.id);
+    } else if (addressesSettled) {
+      setSelectedAddressId(null);
+      setShowAddressForm(true);
+    }
+  }, [addresses, selectedAddressId, addressesSettled]);
 
   // Payment: only the methods place_order accepts.
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
@@ -148,7 +172,7 @@ export const CheckoutPage: React.FC = () => {
     return Array.from(map.values());
   }, [items]);
 
-  const handleAddAddress = (e: React.FormEvent) => {
+  const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     const validation = shippingAddressSchema.safeParse(addressDraft);
     if (!validation.success) {
@@ -159,13 +183,50 @@ export const CheckoutPage: React.FC = () => {
       setAddressErrors(errors);
       return;
     }
-    const id = `addr-${Date.now()}`;
-    const added: AddressOption = { ...validation.data, id, label: addressDraft.label || 'New address' };
-    setAddresses((prev) => [...prev, added]);
-    setSelectedAddressId(id);
+    const label = addressDraft.label || 'New address';
+    let added: AddressOption | null = null;
+    if (user?.id) {
+      try {
+        // A signed-in customer's new address joins their saved book, so the
+        // next checkout - and their account page - can offer it again.
+        const created = await addressActions.create.mutateAsync({
+          type: 'other',
+          label,
+          fullName: validation.data.fullName,
+          phone: validation.data.phone,
+          street: validation.data.street,
+          city: validation.data.city,
+          state: validation.data.state,
+          zipCode: validation.data.zipCode,
+          country: validation.data.country,
+          isDefault: false,
+        });
+        added = {
+          id: created.id,
+          label: created.label || label,
+          isDefault: created.isDefault,
+          fullName: created.fullName,
+          street: created.street,
+          city: created.city,
+          state: created.state,
+          zipCode: created.zipCode,
+          country: created.country,
+          phone: created.phone,
+        };
+      } catch {
+        // The book could not be written (for instance it is not provisioned
+        // yet): the address the customer just typed still serves this order.
+        added = null;
+      }
+    }
+    if (!added) {
+      added = { ...validation.data, id: `addr-session-${Date.now()}`, label };
+    }
+    setSessionAddresses((prev) => [...prev, added]);
+    setSelectedAddressId(added.id);
     setShowAddressForm(false);
     setAddressErrors({});
-    setAddressDraft(emptyDraft(user?.name ?? ''));
+    setAddressDraft(emptyDraft(''));
   };
 
   const handleApplyVoucher = async () => {
@@ -624,7 +685,8 @@ export const CheckoutPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Inline new-address form: adds to this page's address state */}
+                {/* Inline new-address form: persists to the customer's saved
+                    book when signed in, and serves this order either way */}
                 {showAddressForm && (
                   <form
                     id="checkout-address-form"

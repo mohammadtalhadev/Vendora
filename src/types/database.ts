@@ -1399,6 +1399,115 @@ export type Database = {
         }
       ]
     },
+    "user_addresses": {
+      Row: {
+        "id": string,
+        "user_id": string,
+        "type": string,
+        "label": string,
+        "full_name": string,
+        "phone": string,
+        "street": string,
+        "city": string,
+        "state": string,
+        "zip_code": string,
+        "country": string,
+        "is_default": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "user_id": string,
+        "type"?: string,
+        "label"?: string,
+        "full_name": string,
+        "phone"?: string,
+        "street": string,
+        "city": string,
+        "state"?: string,
+        "zip_code"?: string,
+        "country"?: string,
+        "is_default"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "user_id"?: string,
+        "type"?: string,
+        "label"?: string,
+        "full_name"?: string,
+        "phone"?: string,
+        "street"?: string,
+        "city"?: string,
+        "state"?: string,
+        "zip_code"?: string,
+        "country"?: string,
+        "is_default"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "user_addresses_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "user_payment_methods": {
+      Row: {
+        "id": string,
+        "user_id": string,
+        "type": string,
+        "brand": string,
+        "cardholder_name": string | null,
+        "last4": string | null,
+        "expiry_month": string | null,
+        "expiry_year": string | null,
+        "is_default": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "user_id": string,
+        "type"?: string,
+        "brand"?: string,
+        "cardholder_name"?: string | null,
+        "last4"?: string | null,
+        "expiry_month"?: string | null,
+        "expiry_year"?: string | null,
+        "is_default"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "user_id"?: string,
+        "type"?: string,
+        "brand"?: string,
+        "cardholder_name"?: string | null,
+        "last4"?: string | null,
+        "expiry_month"?: string | null,
+        "expiry_year"?: string | null,
+        "is_default"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "user_payment_methods_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
     "vendor_applications": {
       Row: {
         "id": string,

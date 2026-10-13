@@ -21,6 +21,18 @@ vi.mock('../api/checkout', async (importOriginal) => {
   return { ...actual, quoteCheckout: vi.fn(), placeOrder: vi.fn() };
 });
 
+// Step 1's saved addresses are the signed-in customer's own `user_addresses` rows,
+// so the suite runs against the double with a seeded address book.
+vi.mock('../../../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../../../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+import { addressRow, supabaseDouble } from '../../../test/supabase-double';
+
+const HOME_ADDRESS_ID = 'addr-seed-home';
+const OFFICE_ADDRESS_ID = 'addr-seed-office';
+
 const PLATFORM = 'platform';
 const VENDOR = 'vendor-tech-1';
 const EXPRESS_FEE = 15;
@@ -163,6 +175,12 @@ async function renderCheckout() {
   const Wrapper = createTestWrapper();
   render(<AccordionCheckout />, { wrapper: Wrapper });
   await waitFor(() => expect(screen.getByTestId('step-1-content')).toBeInTheDocument());
+  // The saved options arrive with the address-book read; downstream steps start
+  // from the populated default, so wait until it is on screen.
+  await waitFor(() => expect(screen.getByTestId(`saved-address-${HOME_ADDRESS_ID}`)).toBeInTheDocument());
+  await waitFor(() =>
+    expect((screen.getByTestId('input-street') as HTMLInputElement).value).toBe('14 Rosewood Lane'),
+  );
 }
 
 /** Step 2 lists packages only once the quote lands, so each flow waits for them. */
@@ -186,6 +204,48 @@ async function clickPlaceOrder() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+
+  // The demo customer's own address book: a default home address and a work one,
+  // seeded as rows - the component must read them, never invent them.
+  supabaseDouble.reset();
+  supabaseDouble.authState.session = {
+    access_token: 't',
+    user: { id: DEMO_ACCOUNTS.customer.id, email: DEMO_ACCOUNTS.customer.email },
+  };
+  supabaseDouble.seedAddress(
+    addressRow({
+      id: HOME_ADDRESS_ID,
+      user_id: DEMO_ACCOUNTS.customer.id,
+      type: 'home',
+      label: 'Home',
+      full_name: 'Sarah Customer',
+      street: '14 Rosewood Lane',
+      city: 'Austin',
+      state: 'TX',
+      zip_code: '73301',
+      country: 'United States',
+      phone: '555-010-2233',
+      is_default: true,
+      created_at: '2026-10-01T00:00:00.000Z',
+    }),
+  );
+  supabaseDouble.seedAddress(
+    addressRow({
+      id: OFFICE_ADDRESS_ID,
+      user_id: DEMO_ACCOUNTS.customer.id,
+      type: 'work',
+      label: 'Office',
+      full_name: 'Sarah Customer',
+      street: '77 Pearl Street',
+      city: 'Boulder',
+      state: 'CO',
+      zip_code: '80302',
+      country: 'United States',
+      phone: '555-010-9988',
+      is_default: false,
+      created_at: '2026-10-02T00:00:00.000Z',
+    }),
+  );
 
   useAuthStore.setState({
     user: DEMO_ACCOUNTS.customer,
@@ -220,26 +280,43 @@ describe('AccordionCheckout Component', () => {
       await renderCheckout();
 
       expect(screen.getByTestId('step-1-content')).toBeInTheDocument();
-      expect(screen.getByTestId('saved-address-addr-home')).toBeInTheDocument();
-      expect(screen.getByTestId('saved-address-addr-office')).toBeInTheDocument();
+      expect(screen.getByTestId(`saved-address-${HOME_ADDRESS_ID}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`saved-address-${OFFICE_ADDRESS_ID}`)).toBeInTheDocument();
       expect(screen.getByTestId('saved-address-new')).toBeInTheDocument();
 
+      // The populated form is the customer's seeded default row, read back -
+      // not a preset the component carried.
       const nameInput = screen.getByTestId('input-fullName') as HTMLInputElement;
       expect(nameInput.value).toBe('Sarah Customer');
       const streetInput = screen.getByTestId('input-street') as HTMLInputElement;
-      expect(streetInput.value).toBe('742 Evergreen Terrace');
+      expect(streetInput.value).toBe('14 Rosewood Lane');
     });
 
     it('switches address when selecting another saved address radio', async () => {
       await renderCheckout();
 
-      const officeRadio = screen.getByTestId('saved-address-addr-office').querySelector('input')!;
+      const officeRadio = screen.getByTestId(`saved-address-${OFFICE_ADDRESS_ID}`).querySelector('input')!;
       fireEvent.click(officeRadio);
 
       const streetInput = screen.getByTestId('input-street') as HTMLInputElement;
-      expect(streetInput.value).toBe('100 Silicon Vista Blvd, Suite 400');
+      expect(streetInput.value).toBe('77 Pearl Street');
       const cityInput = screen.getByTestId('input-city') as HTMLInputElement;
-      expect(cityInput.value).toBe('San Jose');
+      expect(cityInput.value).toBe('Boulder');
+    });
+
+    it('offers only the new-address form when the customer has saved nothing', async () => {
+      supabaseDouble.tables.user_addresses.length = 0;
+
+      const Wrapper = createTestWrapper();
+      render(<AccordionCheckout />, { wrapper: Wrapper });
+      await waitFor(() => expect(screen.getByTestId('step-1-content')).toBeInTheDocument());
+
+      // No invented saved addresses: the only option is entering one, blank.
+      expect(screen.getByTestId('saved-address-new')).toBeInTheDocument();
+      expect(screen.queryByTestId(`saved-address-${HOME_ADDRESS_ID}`)).not.toBeInTheDocument();
+      expect(screen.queryByTestId(`saved-address-${OFFICE_ADDRESS_ID}`)).not.toBeInTheDocument();
+      const streetInput = screen.getByTestId('input-street') as HTMLInputElement;
+      expect(streetInput.value).toBe('');
     });
 
     it('enforces Zod validation when attempting to submit blank required address fields', async () => {
@@ -314,6 +391,11 @@ describe('AccordionCheckout Component', () => {
 
       const Wrapper = createTestWrapper();
       render(<AccordionCheckout />, { wrapper: Wrapper });
+      // The address book is a read now: wait for the default row to populate
+      // the form before continuing, the way a real session would.
+      await waitFor(() =>
+        expect((screen.getByTestId('input-street') as HTMLInputElement).value).toBe('14 Rosewood Lane'),
+      );
       fireEvent.click(screen.getByTestId('btn-continue-delivery'));
 
       expect(screen.getByTestId('quote-pending')).toBeInTheDocument();
@@ -370,6 +452,9 @@ describe('AccordionCheckout Component', () => {
       const Wrapper = createTestWrapper();
       render(<AccordionCheckout onSuccess={onSuccessMock} />, { wrapper: Wrapper });
       await waitFor(() => expect(screen.getByTestId('step-1-content')).toBeInTheDocument());
+      await waitFor(() =>
+        expect((screen.getByTestId('input-street') as HTMLInputElement).value).toBe('14 Rosewood Lane'),
+      );
 
       await toDeliveryOptions();
       // Express on the vendor package only, so the booking must carry that split.

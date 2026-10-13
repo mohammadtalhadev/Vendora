@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { FC, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { ShippingAddress } from '../../../types/domain';
@@ -17,6 +17,8 @@ import { useAuthStore } from '../../../store/auth-store';
 import { useCurrency } from '../../../store/currency-store';
 import { useCheckoutDraftStore } from '../store/checkout-draft';
 import { useCheckoutTotals, usePlaceOrder } from '../hooks/useCheckout';
+import { useSavedAddresses } from '../../account/hooks/useSavedAddresses';
+import type { AddressType } from '../../account/types';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
@@ -44,32 +46,22 @@ interface SavedAddressItem extends ShippingAddress {
   isDefault?: boolean;
 }
 
-const SAVED_ADDRESS_PRESETS: SavedAddressItem[] = [
-  {
-    id: 'addr-home',
-    label: 'Home',
-    fullName: 'Sarah Customer',
-    street: '742 Evergreen Terrace',
-    city: 'San Francisco',
-    state: 'CA',
-    zipCode: '94105',
-    country: 'United States',
-    phone: '555-234-5678',
-    isDefault: true,
-  },
-  {
-    id: 'addr-office',
-    label: 'Office',
-    fullName: 'Sarah Customer',
-    street: '100 Silicon Vista Blvd, Suite 400',
-    city: 'San Jose',
-    state: 'CA',
-    zipCode: '95113',
-    country: 'United States',
-    phone: '555-876-5432',
-    isDefault: false,
-  },
-];
+const ADDRESS_TYPE_LABELS: Record<AddressType, string> = {
+  home: 'Home',
+  work: 'Work',
+  other: 'Other',
+};
+
+/** The blank form a customer with no saved address starts from. */
+const EMPTY_SHIPPING_ADDRESS: ShippingAddress = {
+  fullName: '',
+  street: '',
+  city: '',
+  state: '',
+  zipCode: '',
+  country: 'United States',
+  phone: '',
+};
 
 export interface AccordionCheckoutProps {
   onSuccess?: (orderId: string) => void;
@@ -109,13 +101,51 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
     review: false,
   });
 
-  // Step 1: Shipping Address State
-  const [selectedAddressId, setSelectedAddressId] = useState<string>('addr-home');
+  // Step 1: Shipping Address State. The saved options are the customer's own
+  // rows from `user_addresses`; nothing is pre-filled, so until the book lands
+  // (and whenever it is empty) the form starts blank on the "new" option.
+  const savedAddressesQuery = useSavedAddresses();
+  const savedAddressOptions = useMemo<SavedAddressItem[]>(
+    () =>
+      (savedAddressesQuery.data ?? []).map((saved) => ({
+        id: saved.id,
+        label: saved.label || ADDRESS_TYPE_LABELS[saved.type],
+        isDefault: saved.isDefault,
+        fullName: saved.fullName,
+        street: saved.street,
+        city: saved.city,
+        state: saved.state,
+        zipCode: saved.zipCode,
+        country: saved.country,
+        phone: saved.phone,
+      })),
+    [savedAddressesQuery.data],
+  );
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>(() => ({
-    ...SAVED_ADDRESS_PRESETS[0],
-    fullName: user?.name || SAVED_ADDRESS_PRESETS[0].fullName,
+    ...EMPTY_SHIPPING_ADDRESS,
   }));
   const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
+  const [addressPicked, setAddressPicked] = useState(false);
+
+  // Once the book lands, the customer's default address (else their first)
+  // fills the form - unless they have already chosen an option themselves.
+  useEffect(() => {
+    if (addressPicked) return;
+    const preferred = savedAddressOptions.find((a) => a.isDefault) ?? savedAddressOptions[0];
+    if (!preferred) return;
+    setAddressPicked(true);
+    setSelectedAddressId(preferred.id);
+    setShippingAddress({
+      fullName: preferred.fullName,
+      street: preferred.street,
+      city: preferred.city,
+      state: preferred.state,
+      zipCode: preferred.zipCode,
+      country: preferred.country,
+      phone: preferred.phone,
+    });
+  }, [savedAddressOptions, addressPicked]);
 
   // Step 3: Payment Method State
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
@@ -145,6 +175,7 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
 
   // Handle saved address radio selection
   const handleSelectSavedAddress = (id: string) => {
+    setAddressPicked(true);
     setSelectedAddressId(id);
     setAddressErrors({});
     if (id === 'new') {
@@ -158,7 +189,7 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
         phone: '',
       });
     } else {
-      const found = SAVED_ADDRESS_PRESETS.find((a) => a.id === id);
+      const found = savedAddressOptions.find((a) => a.id === id);
       if (found) {
         setShippingAddress({
           fullName: found.fullName,
@@ -441,7 +472,7 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {SAVED_ADDRESS_PRESETS.map((preset) => (
+                  {savedAddressOptions.map((preset) => (
                     <label
                       key={preset.id}
                       className={`relative flex cursor-pointer flex-col justify-between rounded-2xl border p-4 text-left transition-all ${
