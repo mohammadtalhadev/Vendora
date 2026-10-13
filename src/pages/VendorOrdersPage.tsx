@@ -5,7 +5,6 @@ import {
   Package,
   Truck,
   Search,
-  ChevronDown,
   Printer,
   FileText,
   SlidersHorizontal,
@@ -17,6 +16,15 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { useVendorData } from '../features/vendor/hooks/useVendorData';
 import type { SubOrderStatus } from '../types/domain';
 
@@ -223,6 +231,206 @@ export const VendorOrdersPage: React.FC = () => {
   const selectedTotal = selectedPackages.reduce((sum, o) => sum + o.gross, 0);
   const readyEligible = selectedPackages.filter((o) => READY_ELIGIBLE.includes(o.status));
 
+  /**
+   * Order columns for DataTable. Every cell carries the hand-rolled table's
+   * content unchanged — including the local STATUS_PILL (its labels and dot are
+   * this page's own, not the shared StatusBadge map's) and the Batch-13
+   * fulfilment Buttons. The select-all checkbox lives in the first column's
+   * header, the per-row checkboxes in its cells; the row's `sub-order-card-<id>`
+   * test hook and the selected-row wash arrive via `getRowProps`/`rowClassName`.
+   * The page keeps its own footer (counts, rows-per-page, Previous/Next).
+   */
+  const orderColumns: DataTableColumn<(typeof orders)[number]>[] = [
+    {
+      key: 'select',
+      align: 'center',
+      headerClassName: 'w-10 py-3.5 text-[11px]',
+      className: 'w-10 py-3.5',
+      header: (
+        <input
+          type="checkbox"
+          checked={
+            filteredOrders.length > 0 &&
+            filteredOrders.every((o) => selectedOrderIds.includes(o.id))
+          }
+          onChange={toggleSelectAll}
+          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+        />
+      ),
+      cell: (order) => (
+        <input
+          type="checkbox"
+          checked={selectedOrderIds.includes(order.id)}
+          onChange={() => toggleSelectOne(order.id)}
+          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+        />
+      ),
+    },
+    {
+      key: 'order',
+      header: 'ORDER ID & DATE',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (order) => (
+        <>
+          <Link
+            to={`/vendor/orders/${order.id}`}
+            className="flex items-center gap-1.5 font-bold text-slate-900 hover:text-sun-orange-600 transition-colors"
+          >
+            <span>{order.id}</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+          </Link>
+          <div className="text-[11px] text-slate-400">
+            {new Date(order.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'customer',
+      header: 'CUSTOMER & DESTINATION',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (order) => (
+        <>
+          <div className="font-bold text-slate-900">{order.buyerAddress?.fullName || order.buyerEmail || 'Buyer'}</div>
+          <div className="text-[11px] text-slate-400 truncate max-w-xs">
+            {[order.buyerEmail, order.buyerAddress?.city && `${order.buyerAddress.city}, ${order.buyerAddress.state}`]
+              .filter(Boolean)
+              .join(' • ')}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'items',
+      header: 'ITEMS',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (order) => (
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <Package className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <div>
+            <div className="font-semibold text-slate-900 truncate max-w-xs">
+              {order.items[0]?.title ?? 'No line items on this sub-order'}
+            </div>
+            <div className="text-[10px] text-slate-400">
+              {order.items.length} item{order.items.length > 1 ? 's' : ''} in shipment
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'total',
+      header: 'TOTAL & PAYMENT',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (order) => (
+        <>
+          <div className="font-bold text-slate-900">${(order.subtotal + order.shippingFee).toFixed(2)}</div>
+          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
+            <Check className="h-3 w-3" aria-hidden="true" />
+            <span>
+              {order.paymentMethod === 'cod'
+                ? 'Cash on delivery'
+                : 'Card, charged at checkout'}
+            </span>
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'FULFILLMENT STATUS',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (order) => (
+        <>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_PILL[order.status].pill}`}
+          >
+            <span
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_PILL[order.status].dot}`}
+            />
+            {STATUS_PILL[order.status].label}
+          </span>
+          {order.trackingNumber && (
+            <div className="mt-1 text-[10px] font-mono text-slate-400 truncate max-w-[14rem]">
+              {order.carrierName ? `${order.carrierName} · ` : ''}
+              {order.trackingNumber}
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'action',
+      header: 'ACTION',
+      align: 'right',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5',
+      cell: (order) => (
+        <>
+          {order.status === 'placed' && (
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={() => handleAdvanceStatus(order.id, 'placed')}
+            >
+              Confirm Order
+            </Button>
+          )}
+          {order.status === 'confirmed' && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
+            >
+              Mark Packed
+            </Button>
+          )}
+          {order.status === 'packed' && (
+            <Button
+              type="button"
+              variant="ink"
+              size="sm"
+              onClick={() => handleAdvanceStatus(order.id, 'packed')}
+            >
+              Ready for Rider Pickup
+            </Button>
+          )}
+          {order.status === 'ready_for_pickup' && (
+            <span className="text-[11px] font-semibold text-slate-500">
+              {order.riderId ? 'Rider assigned' : 'Awaiting rider assignment'}
+            </span>
+          )}
+          {order.status === 'delivered' && (
+            <span className="text-[11px] font-semibold text-emerald-600">
+              Delivered by rider
+            </span>
+          )}
+          {(order.status === 'return_requested' ||
+            order.status === 'return_approved' ||
+            order.status === 'return_rejected' ||
+            order.status === 'returned' ||
+            order.status === 'refunded') && (
+            <Link
+              to="/vendor/returns"
+              className="text-[11px] font-bold text-sun-orange hover:underline"
+            >
+              Handle in Returns
+            </Link>
+          )}
+        </>
+      ),
+    },
+  ];
+
   return (
     <WorkspaceLayout
       role="vendor"
@@ -402,69 +610,81 @@ export const VendorOrdersPage: React.FC = () => {
 
         {/* Filter Controls Bar */}
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input
+          <div className="flex-1">
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search order id, item title or buyer email"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden"
+              leftIcon={<Search className="h-3.5 w-3.5" aria-hidden="true" />}
+              className="h-9 rounded-lg bg-slate-50/60 text-xs text-slate-800"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <select
-                value={ageFilter}
-                onChange={(e) => {
-                  setAgeFilter(e.target.value as 'all' | '7' | '30');
-                  setCurrentPage(1);
-                }}
-                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
+            <Select
+              value={ageFilter}
+              onValueChange={(value) => {
+                setAgeFilter(value as 'all' | '7' | '30');
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger
+                aria-label="Order age"
+                className="h-9 w-auto text-xs font-medium text-slate-700"
               >
-                <option value="all">Booked any time</option>
-                <option value="7">Booked in last 7 days</option>
-                <option value="30">Booked in last 30 days</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Booked any time</SelectItem>
+                <SelectItem value="7" className="text-xs">Booked in last 7 days</SelectItem>
+                <SelectItem value="30" className="text-xs">Booked in last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <div className="relative">
-              <select
-                value={carrierFilter}
-                onChange={(e) => {
-                  setCarrierFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
+            <Select
+              value={carrierFilter}
+              onValueChange={(value) => {
+                setCarrierFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger
+                aria-label="Carrier"
+                className="h-9 w-auto text-xs font-medium text-slate-700"
               >
-                <option value="all">Any carrier</option>
-                <option value="none">No carrier recorded</option>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Any carrier</SelectItem>
+                <SelectItem value="none" className="text-xs">No carrier recorded</SelectItem>
                 {carriers.map((carrier) => (
-                  <option key={carrier} value={carrier}>
+                  <SelectItem key={carrier} value={carrier} className="text-xs">
                     {carrier}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            </div>
+              </SelectContent>
+            </Select>
 
-            <div className="relative">
-              <select
-                value={paymentFilter}
-                onChange={(e) => {
-                  setPaymentFilter(e.target.value as 'all' | 'card' | 'cod');
-                  setCurrentPage(1);
-                }}
-                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
+            <Select
+              value={paymentFilter}
+              onValueChange={(value) => {
+                setPaymentFilter(value as 'all' | 'card' | 'cod');
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger
+                aria-label="Payment method"
+                className="h-9 w-auto text-xs font-medium text-slate-700"
               >
-                <option value="all">Payment: any</option>
-                <option value="card">Paid by card</option>
-                <option value="cod">Cash on delivery</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Payment: any</SelectItem>
+                <SelectItem value="card" className="text-xs">Paid by card</SelectItem>
+                <SelectItem value="cod" className="text-xs">Cash on delivery</SelectItem>
+              </SelectContent>
+            </Select>
 
             {(ageFilter !== 'all' ||
               carrierFilter !== 'all' ||
@@ -534,180 +754,16 @@ export const VendorOrdersPage: React.FC = () => {
 
         {/* Orders Data Table */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th className="w-10 px-4 py-3.5 text-center">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredOrders.length > 0 &&
-                        filteredOrders.every((o) => selectedOrderIds.includes(o.id))
-                      }
-                      onChange={toggleSelectAll}
-                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                    />
-                  </th>
-                  <th className="px-4 py-3.5">ORDER ID &amp; DATE</th>
-                  <th className="px-4 py-3.5">CUSTOMER &amp; DESTINATION</th>
-                  <th className="px-4 py-3.5">ITEMS</th>
-                  <th className="px-4 py-3.5">TOTAL &amp; PAYMENT</th>
-                  <th className="px-4 py-3.5">FULFILLMENT STATUS</th>
-                  <th className="px-4 py-3.5 text-right">ACTION</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {paginatedOrders.map((order) => {
-                  const isChecked = selectedOrderIds.includes(order.id);
-                  return (
-                    <tr
-                      key={order.id}
-                      data-testid={`sub-order-card-${order.id}`}
-                      className={`hover:bg-slate-50/70 transition-colors ${isChecked ? 'bg-slate-50/80' : ''}`}
-                    >
-                      <td className="w-10 px-4 py-3.5 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleSelectOne(order.id)}
-                          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                        />
-                      </td>
-
-                      {/* ORDER ID & DATE */}
-                      <td className="px-4 py-3.5">
-                        <Link
-                          to={`/vendor/orders/${order.id}`}
-                          className="flex items-center gap-1.5 font-bold text-slate-900 hover:text-sun-orange-600 transition-colors"
-                        >
-                          <span>{order.id}</span>
-                          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                        </Link>
-                        <div className="text-[11px] text-slate-400">
-                          {new Date(order.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </td>
-
-                      {/* CUSTOMER & DESTINATION */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900">{order.buyerAddress?.fullName || order.buyerEmail || 'Buyer'}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-xs">
-                          {[order.buyerEmail, order.buyerAddress?.city && `${order.buyerAddress.city}, ${order.buyerAddress.state}`]
-                            .filter(Boolean)
-                            .join(' • ')}
-                        </div>
-                      </td>
-
-                      {/* ITEMS */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                            <Package className="h-4 w-4" aria-hidden="true" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-slate-900 truncate max-w-xs">
-                              {order.items[0]?.title ?? 'No line items on this sub-order'}
-                            </div>
-                            <div className="text-[10px] text-slate-400">
-                              {order.items.length} item{order.items.length > 1 ? 's' : ''} in shipment
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* TOTAL & PAYMENT */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900">${(order.subtotal + order.shippingFee).toFixed(2)}</div>
-                        <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
-                          <Check className="h-3 w-3" aria-hidden="true" />
-                          <span>
-                            {order.paymentMethod === 'cod'
-                              ? 'Cash on delivery'
-                              : 'Card, charged at checkout'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* FULFILLMENT STATUS */}
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_PILL[order.status].pill}`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_PILL[order.status].dot}`}
-                          />
-                          {STATUS_PILL[order.status].label}
-                        </span>
-                        {order.trackingNumber && (
-                          <div className="mt-1 text-[10px] font-mono text-slate-400 truncate max-w-[14rem]">
-                            {order.carrierName ? `${order.carrierName} · ` : ''}
-                            {order.trackingNumber}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* ACTION (Sequential advancement state machine) */}
-                      <td className="px-4 py-3.5 text-right">
-                        {order.status === 'placed' && (
-                          <Button
-                            type="button"
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleAdvanceStatus(order.id, 'placed')}
-                          >
-                            Confirm Order
-                          </Button>
-                        )}
-                        {order.status === 'confirmed' && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleAdvanceStatus(order.id, 'confirmed')}
-                          >
-                            Mark Packed
-                          </Button>
-                        )}
-                        {order.status === 'packed' && (
-                          <Button
-                            type="button"
-                            variant="ink"
-                            size="sm"
-                            onClick={() => handleAdvanceStatus(order.id, 'packed')}
-                          >
-                            Ready for Rider Pickup
-                          </Button>
-                        )}
-                        {order.status === 'ready_for_pickup' && (
-                          <span className="text-[11px] font-semibold text-slate-500">
-                            {order.riderId ? 'Rider assigned' : 'Awaiting rider assignment'}
-                          </span>
-                        )}
-                        {order.status === 'delivered' && (
-                          <span className="text-[11px] font-semibold text-emerald-600">
-                            Delivered by rider
-                          </span>
-                        )}
-                        {(order.status === 'return_requested' ||
-                          order.status === 'return_approved' ||
-                          order.status === 'return_rejected' ||
-                          order.status === 'returned' ||
-                          order.status === 'refunded') && (
-                          <Link
-                            to="/vendor/returns"
-                            className="text-[11px] font-bold text-sun-orange hover:underline"
-                          >
-                            Handle in Returns
-                          </Link>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={orderColumns}
+            rows={paginatedOrders}
+            getRowKey={(order) => order.id}
+            getRowProps={(order) => ({ 'data-testid': `sub-order-card-${order.id}` })}
+            rowClassName={(order) =>
+              selectedOrderIds.includes(order.id) ? 'bg-slate-50/80' : ''
+            }
+            emptyState={<></>}
+          />
 
           {/* Table Footer / Pagination */}
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500">

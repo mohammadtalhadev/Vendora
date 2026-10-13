@@ -90,4 +90,45 @@ describe('DataTable pattern', () => {
     fireEvent.click(screen.getByRole('cell', { name: 'Beta' }));
     expect(onRowClick).toHaveBeenCalledWith(rows[1]);
   });
+
+  it('applies getRowProps attributes and classes to the matching rows', () => {
+    render(
+      <DataTable
+        columns={columns}
+        rows={rows}
+        getRowKey={(r) => r.id}
+        getRowProps={(row, index) => ({
+          'data-testid': `row-${row.id}`,
+          'aria-selected': index === 0,
+          className: index === 0 ? 'bg-slate-50' : undefined,
+        })}
+      />,
+    );
+    const first = screen.getByTestId('row-r1');
+    expect(first.tagName).toBe('TR');
+    expect(first).toHaveAttribute('aria-selected', 'true');
+    expect(first).toHaveClass('bg-slate-50');
+    const second = screen.getByTestId('row-r2');
+    expect(second).toHaveAttribute('aria-selected', 'false');
+    expect(second).not.toHaveClass('bg-slate-50');
+  });
+
+  it('composes a getRowProps onClick with onRowClick instead of replacing it', () => {
+    const rowPropClick = vi.fn();
+    const onRowClick = vi.fn();
+    render(
+      <DataTable
+        columns={columns}
+        rows={rows}
+        getRowKey={(r) => r.id}
+        onRowClick={onRowClick}
+        getRowProps={() => ({ onClick: rowPropClick })}
+      />,
+    );
+    const row = screen.getByRole('cell', { name: 'Beta' }).closest('tr');
+    expect(row).toHaveClass('cursor-pointer');
+    fireEvent.click(screen.getByRole('cell', { name: 'Beta' }));
+    expect(rowPropClick).toHaveBeenCalledTimes(1);
+    expect(onRowClick).toHaveBeenCalledWith(rows[1]);
+  });
 });

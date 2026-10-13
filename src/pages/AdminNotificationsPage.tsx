@@ -10,6 +10,7 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { Button } from '../components/ui/button';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { useBroadcastLog } from '../features/admin/hooks/useAdminQueries';
 import { useNotificationActions } from '../features/notifications/hooks/useNotifications';
 import type { NotificationKind } from '../features/notifications/api/notifications';
@@ -69,6 +70,82 @@ export const AdminNotificationsPage = () => {
   const rows = log.data?.rows ?? [];
   const total = log.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  /**
+   * Delivery-log columns for DataTable. Cell content is the hand-rolled table's,
+   * unchanged; the row's `log-row-<id>` test hook rides in through `getRowProps`
+   * because it belongs on the `<tr>`, not on any cell. The page keeps its own
+   * pager below the table — DataTable's footer speaks a different format.
+   */
+  const logColumns: DataTableColumn<(typeof rows)[number]>[] = [
+    {
+      key: 'sentBy',
+      header: 'Sent by',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5 align-top',
+      cell: (row) => (
+        <>
+          <div className="font-semibold text-slate-900">{row.actorName || '—'}</div>
+          <div className="text-[11px] text-slate-400">{labelOf(KINDS, row.type)}</div>
+        </>
+      ),
+    },
+    {
+      key: 'audience',
+      header: 'Audience',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5 align-top',
+      cell: (row) => (
+        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+          {labelOf(AUDIENCES, row.audience)}
+        </span>
+      ),
+    },
+    {
+      key: 'announcement',
+      header: 'Announcement',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5 align-top',
+      cell: (row) => (
+        <>
+          <div className="font-bold text-slate-900">{row.title}</div>
+          <p className="mt-0.5 max-w-2xl text-[11px] leading-relaxed text-slate-600">
+            {row.message}
+          </p>
+          {row.href !== null && row.href !== '' && (
+            <p className="mt-1 text-[11px] text-slate-400">
+              Opens <code className="text-[11px] text-slate-500">{row.href}</code>
+            </p>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'reached',
+      header: 'Reached',
+      align: 'right',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5 align-top',
+      cell: (row) => (
+        <>
+          <div data-testid={`log-reached-${row.id}`} className="font-bold text-slate-900">
+            {row.recipients.toLocaleString()}
+          </div>
+          <div className="text-[11px] text-slate-400">
+            {row.recipients === 1 ? 'account' : 'accounts'}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'when',
+      header: 'When',
+      align: 'right',
+      headerClassName: 'py-3.5 text-[11px]',
+      className: 'py-3.5 align-top text-[11px] text-slate-500',
+      cell: (row) => new Date(row.createdAt).toLocaleString(),
+    },
+  ];
 
   const send = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -332,64 +409,13 @@ export const AdminNotificationsPage = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table
-                  className="w-full text-left text-xs"
-                  aria-label="Announcement delivery log"
-                >
-                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th scope="col" className="px-4 py-3.5">Sent by</th>
-                      <th scope="col" className="px-4 py-3.5">Audience</th>
-                      <th scope="col" className="px-4 py-3.5">Announcement</th>
-                      <th scope="col" className="px-4 py-3.5 text-right">Reached</th>
-                      <th scope="col" className="px-4 py-3.5 text-right">When</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {rows.map((row) => (
-                      <tr key={row.id} data-testid={`log-row-${row.id}`} className="transition-colors hover:bg-slate-50/70">
-                        <td className="px-4 py-3.5 align-top">
-                          <div className="font-semibold text-slate-900">{row.actorName || '—'}</div>
-                          <div className="text-[11px] text-slate-400">
-                            {labelOf(KINDS, row.type)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 align-top">
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
-                            {labelOf(AUDIENCES, row.audience)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 align-top">
-                          <div className="font-bold text-slate-900">{row.title}</div>
-                          <p className="mt-0.5 max-w-2xl text-[11px] leading-relaxed text-slate-600">
-                            {row.message}
-                          </p>
-                          {row.href !== null && row.href !== '' && (
-                            <p className="mt-1 text-[11px] text-slate-400">
-                              Opens <code className="text-[11px] text-slate-500">{row.href}</code>
-                            </p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3.5 text-right align-top">
-                          <div
-                            data-testid={`log-reached-${row.id}`}
-                            className="font-bold text-slate-900"
-                          >
-                            {row.recipients.toLocaleString()}
-                          </div>
-                          <div className="text-[11px] text-slate-400">
-                            {row.recipients === 1 ? 'account' : 'accounts'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 text-right align-top text-[11px] text-slate-500">
-                          {new Date(row.createdAt).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                ariaLabel="Announcement delivery log"
+                columns={logColumns}
+                rows={rows}
+                getRowKey={(row) => row.id}
+                getRowProps={(row) => ({ 'data-testid': `log-row-${row.id}` })}
+              />
 
               <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                 <span>

@@ -54,6 +54,17 @@ export interface DataTableProps<T> {
   /** Row classes: a static string or a per-row function (e.g. selection). */
   rowClassName?: string | ((row: T) => string);
   /**
+   * Extra attributes for each body row, e.g. `data-testid` hooks a page's
+   * tests read off the `<tr>`, or `aria-selected` on selectable rows.
+   * Attributes land on the row element as given; `className` is merged with
+   * the standard row classes (and `rowClassName`), and an `onClick` here
+   * composes with `onRowClick` — both fire, neither replaces the other.
+   */
+  getRowProps?: (
+    row: T,
+    index: number,
+  ) => React.HTMLAttributes<HTMLTableRowElement> & Record<`data-${string}`, string | undefined>;
+  /**
    * When provided, the shared TablePagination footer renders below the table.
    * DataTable is presentational about paging: it forwards the flat
    * page/pageSize/total props through an adapter to TablePagination, which
@@ -89,6 +100,7 @@ export function DataTable<T>({
   emptyState,
   onRowClick,
   rowClassName,
+  getRowProps,
   pagination,
   caption,
   ariaLabel,
@@ -154,26 +166,42 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
-                <tr
-                  key={getRowKey(row)}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={cn(
-                    'hover:bg-slate-50/60 transition-colors',
-                    onRowClick && 'cursor-pointer',
-                    typeof rowClassName === 'function' ? rowClassName(row) : rowClassName,
-                  )}
-                >
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={cn('py-3 px-4', alignClass(column.align), column.className)}
-                    >
-                      {column.cell(row)}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              rows.map((row, index) => {
+                const {
+                  className: rowPropClassName,
+                  onClick: rowPropOnClick,
+                  ...rowAttributes
+                } = getRowProps?.(row, index) ?? {};
+                const handleClick =
+                  onRowClick || rowPropOnClick
+                    ? (event: React.MouseEvent<HTMLTableRowElement>) => {
+                        rowPropOnClick?.(event);
+                        onRowClick?.(row);
+                      }
+                    : undefined;
+                return (
+                  <tr
+                    key={getRowKey(row)}
+                    {...rowAttributes}
+                    onClick={handleClick}
+                    className={cn(
+                      'hover:bg-slate-50/60 transition-colors',
+                      (onRowClick || rowPropOnClick) && 'cursor-pointer',
+                      rowPropClassName,
+                      typeof rowClassName === 'function' ? rowClassName(row) : rowClassName,
+                    )}
+                  >
+                    {columns.map((column) => (
+                      <td
+                        key={column.key}
+                        className={cn('py-3 px-4', alignClass(column.align), column.className)}
+                      >
+                        {column.cell(row)}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
