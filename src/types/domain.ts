@@ -42,7 +42,6 @@ export interface Product {
   description: string;
   category: string;
   brand: string;
-  sku?: string;
   images: string[];
   price: number;
   compareAtPrice?: number;
