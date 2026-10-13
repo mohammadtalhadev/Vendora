@@ -33,7 +33,6 @@ import {
   useUserAccountStore,
   type AddressType,
   type UserSavedAddress,
-  type UserSavedPaymentMethod,
 } from '../store/user-account-store';
 import { detectCardBrand } from '../features/checkout/utils/luhn';
 import { useAuth } from '../lib/auth-context';

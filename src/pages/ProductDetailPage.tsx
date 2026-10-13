@@ -249,11 +249,12 @@ export const ProductDetailPage: React.FC = () => {
       { label: 'Warranty', value: '1 Year Manufacturer / Vendor Warranty' },
       { label: 'Shipping & Handling', value: product?.type === 'digital' ? 'Instant Download Link' : 'Tracked & Insured Courier' },
     ];
-    if (product?.sku) {
-      facts.unshift({ label: 'SKU / Model', value: product.sku });
+    const productSku = product?.sku || product?.variants?.[0]?.sku;
+    if (productSku) {
+      facts.unshift({ label: 'SKU / Model', value: productSku });
     }
     return facts;
-  }, [displayBrand, categoryLabel, product?.type, product?.sku]);
+  }, [displayBrand, categoryLabel, product?.type, product?.sku, product?.variants]);
 
   return (
     <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
