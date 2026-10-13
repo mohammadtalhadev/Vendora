@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Search, ChevronDown, Download, Wallet } from 'lucide-react';
+import { ShoppingBag, Search, Download, Wallet } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { formatPrice } from '../store/currency-store';
 import { useAdminOrderQueue } from '../features/admin/hooks/useAdminQueries';
+import type { AdminOrderRow } from '../features/admin/api/orders';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { StatusBadge } from '../components/ui/status-badge';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 
 /**
  * The queue read is the page's only source: Postgres sums the money and pages the rows,
@@ -35,28 +40,6 @@ const PAYMENT_OPTIONS: { value: string; label: string }[] = [
   { value: 'failed', label: 'Failed' },
   { value: 'refunded', label: 'Refunded' },
 ];
-
-const statusLabel = (token: string): string =>
-  STATUS_OPTIONS.find((o) => o.value === token)?.label ?? token.replace(/_/g, ' ');
-
-const statusTone = (token: string): string => {
-  switch (token) {
-    case 'delivered':
-      return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-    case 'cancelled':
-    case 'refunded':
-    case 'returned':
-      return 'bg-rose-50 text-rose-700 border border-rose-200';
-    case 'shipped':
-    case 'out_for_delivery':
-      return 'bg-purple-50 text-purple-700 border border-purple-200';
-    case 'placed':
-    case 'confirmed':
-      return 'bg-blue-50 text-blue-700 border border-blue-200';
-    default:
-      return 'bg-slate-100 text-slate-700 border border-slate-200';
-  }
-};
 
 const formatDateTime = (iso: string): string => {
   const d = new Date(iso);
@@ -122,7 +105,77 @@ export const AdminOrdersPage: React.FC = () => {
   }
 
   const rows = queue.rows;
-  const totalPages = Math.ceil(queue.total / pageSize) || 1;
+
+  const orderColumns: DataTableColumn<AdminOrderRow>[] = [
+    {
+      key: 'id',
+      header: 'Order ID',
+      className: 'font-mono font-bold text-slate-900',
+      cell: (order) => (
+        <Link
+          to={`/admin/orders/${order.id}`}
+          className="hover:text-sun-orange hover:underline transition-colors"
+        >
+          {order.id.slice(0, 8)}
+        </Link>
+      ),
+    },
+    {
+      key: 'customer',
+      header: 'Customer',
+      cell: (order) => (
+        <p className="text-[11px] text-slate-600 leading-tight break-all">
+          {order.customerEmail || '—'}
+        </p>
+      ),
+    },
+    {
+      key: 'packages',
+      header: 'Packages',
+      className: 'text-slate-600',
+      cell: (order) => (
+        <>
+          {order.packages} package{order.packages === 1 ? '' : 's'}
+        </>
+      ),
+    },
+    {
+      key: 'payment',
+      header: 'Payment',
+      cell: (order) => (
+        <>
+          <p className="font-medium text-slate-700 leading-tight">{order.paymentMethod}</p>
+          <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{order.paymentStatus}</p>
+        </>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Amount',
+      align: 'right',
+      cell: (order) => (
+        <>
+          <p className="font-semibold text-slate-900 text-xs">{formatPrice(order.gross)}</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Commission {formatPrice(order.commission)}
+          </p>
+        </>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      align: 'center',
+      cell: (order) => <StatusBadge status={order.leadStatus} />,
+    },
+    {
+      key: 'date',
+      header: 'Date',
+      align: 'right',
+      className: 'text-[11px] text-slate-500 font-medium',
+      cell: (order) => formatDateTime(order.createdAt),
+    },
+  ];
 
   const handleExportPage = () => {
     exportToCsv({
@@ -230,9 +283,8 @@ export const AdminOrdersPage: React.FC = () => {
             3. Search & Filter Bar — every control is a server-side queue param
             ===================================================================== */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
+          <div className="flex-1 max-w-md">
+            <Input
               type="text"
               aria-label="Search orders"
               value={search}
@@ -241,48 +293,57 @@ export const AdminOrdersPage: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search orders by ID, customer, payment…"
-              className="w-full h-9 pl-9 pr-3 text-xs rounded-lg border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 text-slate-800 placeholder:text-slate-400"
+              leftIcon={<Search className="h-3.5 w-3.5" aria-hidden="true" />}
+              className="h-9 rounded-lg bg-slate-50/80 text-xs text-slate-800 focus:bg-white"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label className="sr-only" htmlFor="orders-status-filter">
-              Status
-            </label>
-            <select
-              id="orders-status-filter"
+            <Select
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
+              onValueChange={(value) => {
+                setStatus(value);
                 setPage(1);
               }}
-              className="admin-select"
             >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id="orders-status-filter"
+                aria-label="Status"
+                className="h-9 w-auto text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <label className="sr-only" htmlFor="orders-payment-filter">
-              Payment
-            </label>
-            <select
-              id="orders-payment-filter"
+            <Select
               value={payment}
-              onChange={(e) => {
-                setPayment(e.target.value);
+              onValueChange={(value) => {
+                setPayment(value);
                 setPage(1);
               }}
-              className="admin-select"
             >
-              {PAYMENT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id="orders-payment-filter"
+                aria-label="Payment"
+                className="h-9 w-auto text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <button
               type="button"
@@ -300,143 +361,26 @@ export const AdminOrdersPage: React.FC = () => {
             4. Orders Data Table
             ===================================================================== */}
         <div className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table
-              className="w-full text-left text-xs"
-              aria-label="Orders queue"
-            >
-              <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th scope="col" className="py-3 px-4">Order ID</th>
-                  <th scope="col" className="py-3 px-4">Customer</th>
-                  <th scope="col" className="py-3 px-4">Packages</th>
-                  <th scope="col" className="py-3 px-4">Payment</th>
-                  <th scope="col" className="py-3 px-4 text-right">Amount</th>
-                  <th scope="col" className="py-3 px-4 text-center">Status</th>
-                  <th scope="col" className="py-3 px-4 text-right">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-xs text-slate-500">
-                      No orders match these filters.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900 text-xs">
-                        <Link
-                          to={`/admin/orders/${order.id}`}
-                          className="hover:text-sun-orange hover:underline transition-colors"
-                        >
-                          {order.id.slice(0, 8)}
-                        </Link>
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <p className="text-[11px] text-slate-600 leading-tight break-all">
-                          {order.customerEmail || '—'}
-                        </p>
-                      </td>
-
-                      <td className="py-3 px-4 text-slate-600">
-                        {order.packages} package{order.packages === 1 ? '' : 's'}
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <p className="font-medium text-slate-700 leading-tight">{order.paymentMethod}</p>
-                        <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{order.paymentStatus}</p>
-                      </td>
-
-                      <td className="py-3 px-4 text-right">
-                        <p className="font-semibold text-slate-900 text-xs">{formatPrice(order.gross)}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          Commission {formatPrice(order.commission)}
-                        </p>
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusTone(order.leadStatus)}`}
-                        >
-                          {statusLabel(order.leadStatus)}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 text-right text-[11px] text-slate-500 font-medium">
-                        {formatDateTime(order.createdAt)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Footer — driven by the queue's server-side page + total */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 p-4 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <span>
-                Rows per page:
-              </span>
-              <div className="relative">
-                <select
-                  value={pageSize}
-                  aria-label="Rows per page"
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setPage(1);
-                  }}
-                  className="appearance-none rounded border border-slate-200 bg-white pl-2 pr-6 py-1 text-xs text-slate-700 shadow-2xs cursor-pointer"
-                >
-                  <option value={12}>12</option>
-                  <option value={24}>24</option>
-                  <option value={48}>48</option>
-                </select>
-                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+          <DataTable
+            columns={orderColumns}
+            rows={rows}
+            getRowKey={(order) => order.id}
+            ariaLabel="Orders queue"
+            emptyState={
+              <div className="px-4 py-10 text-center text-xs text-slate-500">
+                No orders match these filters.
               </div>
-              <span className="ml-2">
-                Showing {rows.length === 0 ? 0 : (page - 1) * pageSize + 1}-
-                {Math.min(page * pageSize, queue.total)} of {queue.total.toLocaleString()} orders
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1 self-end sm:self-auto" role="navigation" aria-label="Pagination">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                Previous
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPage(p)}
-                  aria-current={p === page ? 'page' : undefined}
-                  className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
-                    page === p
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+            }
+            pagination={{
+              page,
+              pageSize,
+              totalItems: queue.total,
+              onPageChange: setPage,
+              onPageSizeChange: setPageSize,
+              pageSizeOptions: [12, 24, 48],
+              noun: 'orders',
+            }}
+          />
         </div>
       </div>
     </WorkspaceLayout>

@@ -7,7 +7,6 @@ import {
   Headset,
   Bike,
   Search,
-  ChevronDown,
   Download,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
@@ -16,6 +15,11 @@ import { exportToCsv } from '../lib/export-csv';
 import { formatPrice } from '../store/currency-store';
 import { useUserQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
+import type { AdminUserRow } from '../features/admin/api/users';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { StatusBadge } from '../components/ui/status-badge';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 
 /**
  * `admin_user_queue` pages accounts and aggregates the role counts in SQL, so the tiles
@@ -43,19 +47,6 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 
 const roleLabel = (token: string): string =>
   ROLE_OPTIONS.find((o) => o.value === token)?.label ?? token;
-
-const statusTone = (status: string): string => {
-  switch (status) {
-    case 'active':
-      return 'bg-slate-900 text-white';
-    case 'suspended':
-      return 'bg-rose-50 text-rose-700 border border-rose-200';
-    case 'banned':
-      return 'bg-rose-600 text-white';
-    default:
-      return 'bg-slate-100 text-slate-600 border border-slate-200';
-  }
-};
 
 const initialsFrom = (name: string): string => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -130,7 +121,6 @@ export const AdminUsersPage: React.FC = () => {
 
   const rows = queue.rows;
   const { counts } = queue;
-  const totalPages = Math.ceil(queue.total / pageSize) || 1;
   const pct = (n: number): number => (counts.all > 0 ? Math.round((n / counts.all) * 100) : 0);
 
   const toggleSelectAll = () => {
@@ -145,6 +135,126 @@ export const AdminUsersPage: React.FC = () => {
     const next: 'active' | 'suspended' = current === 'active' ? 'suspended' : 'active';
     actions.setUserStatus.mutate({ userId, status: next, reason: 'Action via admin console' });
   };
+
+  const userColumns: DataTableColumn<AdminUserRow>[] = [
+    {
+      key: 'select',
+      headerClassName: 'w-10 text-center',
+      className: 'text-center',
+      header: (
+        <input
+          type="checkbox"
+          aria-label="Select all accounts on this page"
+          checked={rows.length > 0 && selectedIds.length === rows.length}
+          onChange={toggleSelectAll}
+          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+        />
+      ),
+      cell: (user) => (
+        <input
+          type="checkbox"
+          aria-label={`Select ${user.name}`}
+          checked={selectedIds.includes(user.id)}
+          onChange={() => toggleSelectUser(user.id)}
+          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+        />
+      ),
+    },
+    {
+      key: 'user',
+      header: 'User',
+      cell: (user) => (
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-900 text-[10px] font-black text-white">
+            {initialsFrom(user.name)}
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-slate-900 text-xs truncate leading-tight">
+              {user.name}
+            </p>
+            <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
+              {user.email}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'roles',
+      header: 'Roles',
+      cell: (user) => (
+        <div className="flex flex-wrap gap-1">
+          {user.roles.length === 0 ? (
+            <span className="text-[11px] text-slate-400">—</span>
+          ) : (
+            user.roles.map((r) => (
+              <span
+                key={r}
+                className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-2xs"
+              >
+                {roleLabel(r)}
+              </span>
+            ))
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (user) => (
+        <>
+          {/* The console has always shown the raw account-status token here;
+              StatusBadge takes the tone from the shared map, label passes through. */}
+          <StatusBadge status={user.accountStatus} label={user.accountStatus} />
+          {user.accountStatusReason && (
+            <p className="text-[10px] text-slate-400 mt-1 max-w-[16rem] leading-tight">
+              {user.accountStatusReason}
+            </p>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'volume',
+      header: 'Total Volume',
+      align: 'right',
+      cell: (user) => (
+        <>
+          <p className="font-semibold text-slate-900 text-xs">{formatPrice(user.volume)}</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            {user.orders} order{user.orders === 1 ? '' : 's'}
+          </p>
+        </>
+      ),
+    },
+    {
+      key: 'joined',
+      header: 'Join Date',
+      align: 'right',
+      className: 'text-[11px] text-slate-500 font-medium',
+      cell: (user) => formatDate(user.joinedAt),
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      align: 'center',
+      cell: (user) => (
+        <button
+          type="button"
+          disabled={actions.setUserStatus.isPending}
+          onClick={() => handleToggleStatus(user.id, user.accountStatus)}
+          className={`rounded px-2.5 py-1 text-[10px] font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
+            user.accountStatus === 'active'
+              ? 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+              : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+          }`}
+        >
+          {user.accountStatus === 'active' ? 'Suspend' : 'Activate'}
+        </button>
+      ),
+    },
+  ];
 
   const handleBatchSuspend = () => {
     selectedIds.forEach((userId) =>
@@ -321,9 +431,8 @@ export const AdminUsersPage: React.FC = () => {
             4. Search & Filter Bar — every control is a server-side queue param
             ===================================================================== */}
         <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
+          <div className="flex-1 max-w-md">
+            <Input
               type="text"
               aria-label="Search users"
               value={search}
@@ -332,48 +441,57 @@ export const AdminUsersPage: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search users by name, email, or ID..."
-              className="w-full h-9 pl-9 pr-3 text-xs rounded-lg border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all text-slate-800 placeholder:text-slate-400"
+              leftIcon={<Search className="h-3.5 w-3.5" aria-hidden="true" />}
+              className="h-9 rounded-lg bg-slate-50/80 text-xs text-slate-800 focus:bg-white"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label className="sr-only" htmlFor="users-role-filter">
-              Role
-            </label>
-            <select
-              id="users-role-filter"
+            <Select
               value={role}
-              onChange={(e) => {
-                setRole(e.target.value);
+              onValueChange={(value) => {
+                setRole(value);
                 setPage(1);
               }}
-              className="admin-select"
             >
-              {ROLE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id="users-role-filter"
+                aria-label="Role"
+                className="h-9 w-auto text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <label className="sr-only" htmlFor="users-status-filter">
-              Status
-            </label>
-            <select
-              id="users-status-filter"
+            <Select
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
+              onValueChange={(value) => {
+                setStatus(value);
                 setPage(1);
               }}
-              className="admin-select"
             >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id="users-status-filter"
+                aria-label="Status"
+                className="h-9 w-auto text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {selectedIds.length > 0 && (
               <button
@@ -392,189 +510,27 @@ export const AdminUsersPage: React.FC = () => {
             5. Users Data Table
             ===================================================================== */}
         <div className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table
-              className="w-full text-left text-xs"
-              aria-label="User accounts"
-            >
-              <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th scope="col" className="py-3 px-4 w-10 text-center">
-                    <input
-                      type="checkbox"
-                      aria-label="Select all accounts on this page"
-                      checked={rows.length > 0 && selectedIds.length === rows.length}
-                      onChange={toggleSelectAll}
-                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                    />
-                  </th>
-                  <th scope="col" className="py-3 px-4">User</th>
-                  <th scope="col" className="py-3 px-4">Roles</th>
-                  <th scope="col" className="py-3 px-4">Status</th>
-                  <th scope="col" className="py-3 px-4 text-right">Total Volume</th>
-                  <th scope="col" className="py-3 px-4 text-right">Join Date</th>
-                  <th scope="col" className="py-3 px-4 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-xs text-slate-500">
-                      No accounts match these filters.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((user) => {
-                    const isSelected = selectedIds.includes(user.id);
-                    return (
-                      <tr
-                        key={user.id}
-                        className={`hover:bg-slate-50/60 transition-colors ${
-                          isSelected ? 'bg-slate-50/90' : ''
-                        }`}
-                      >
-                        <td className="py-3 px-4 text-center">
-                          <input
-                            type="checkbox"
-                            aria-label={`Select ${user.name}`}
-                            checked={isSelected}
-                            onChange={() => toggleSelectUser(user.id)}
-                            className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                          />
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-900 text-[10px] font-black text-white">
-                              {initialsFrom(user.name)}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-slate-900 text-xs truncate leading-tight">
-                                {user.name}
-                              </p>
-                              <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
-                                {user.email}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex flex-wrap gap-1">
-                            {user.roles.length === 0 ? (
-                              <span className="text-[11px] text-slate-400">—</span>
-                            ) : (
-                              user.roles.map((r) => (
-                                <span
-                                  key={r}
-                                  className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-2xs"
-                                >
-                                  {roleLabel(r)}
-                                </span>
-                              ))
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusTone(user.accountStatus)}`}>
-                            {user.accountStatus}
-                          </span>
-                          {user.accountStatusReason && (
-                            <p className="text-[10px] text-slate-400 mt-1 max-w-[16rem] leading-tight">
-                              {user.accountStatusReason}
-                            </p>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <p className="font-semibold text-slate-900 text-xs">{formatPrice(user.volume)}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            {user.orders} order{user.orders === 1 ? '' : 's'}
-                          </p>
-                        </td>
-                        <td className="py-3 px-4 text-right text-[11px] text-slate-500 font-medium">
-                          {formatDate(user.joinedAt)}
-                        </td>
-
-                        <td className="py-3 px-4 text-center">
-                          <button
-                            type="button"
-                            disabled={actions.setUserStatus.isPending}
-                            onClick={() => handleToggleStatus(user.id, user.accountStatus)}
-                            className={`rounded px-2.5 py-1 text-[10px] font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
-                              user.accountStatus === 'active'
-                                ? 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                            }`}
-                          >
-                            {user.accountStatus === 'active' ? 'Suspend' : 'Activate'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Footer — driven by the queue's server-side page + total */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 p-4 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <span>Rows per page:</span>
-              <div className="relative">
-                <select
-                  value={pageSize}
-                  aria-label="Rows per page"
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setPage(1);
-                  }}
-                  className="appearance-none rounded border border-slate-200 bg-white pl-2 pr-6 py-1 text-xs text-slate-700 shadow-2xs cursor-pointer"
-                >
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+          <DataTable
+            columns={userColumns}
+            rows={rows}
+            getRowKey={(user) => user.id}
+            ariaLabel="User accounts"
+            rowClassName={(user) => (selectedIds.includes(user.id) ? 'bg-slate-50/90' : '')}
+            emptyState={
+              <div className="px-4 py-10 text-center text-xs text-slate-500">
+                No accounts match these filters.
               </div>
-              <span className="ml-2">
-                Showing {rows.length === 0 ? 0 : (page - 1) * pageSize + 1}-
-                {Math.min(page * pageSize, queue.total)} of {queue.total.toLocaleString()} users
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1 self-end sm:self-auto" role="navigation" aria-label="Pagination">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                Previous
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPage(p)}
-                  aria-current={p === page ? 'page' : undefined}
-                  className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer ${
-                    page === p
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+            }
+            pagination={{
+              page,
+              pageSize,
+              totalItems: queue.total,
+              onPageChange: setPage,
+              onPageSizeChange: setPageSize,
+              pageSizeOptions: [20, 50, 100],
+              noun: 'users',
+            }}
+          />
         </div>
       </div>
     </WorkspaceLayout>

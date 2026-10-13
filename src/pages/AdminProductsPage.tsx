@@ -15,6 +15,10 @@ import { exportToCsv } from '../lib/export-csv';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useModerationQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
+import type { ModerationRow } from '../features/admin/api/moderation';
+import { Input } from '../components/ui/input';
+import { StatusBadge } from '../components/ui/status-badge';
+import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 
 export const AdminProductsPage: React.FC = () => {
   const [activeStatusTab, setActiveStatusTab] = useState<'all' | 'pending_review' | 'approved' | 'rejected' | 'archived'>('all');
@@ -226,156 +230,153 @@ export const AdminProductsPage: React.FC = () => {
     );
   };
 
-  const renderTable = () => {
-    if (!rows || rows.length === 0) {
-      return (
+  const productColumns: DataTableColumn<ModerationRow>[] = [
+    {
+      key: 'select',
+      headerClassName: 'w-10 text-center',
+      className: 'text-center',
+      header: (
+        <>
+          <label htmlFor="select-all-products" className="sr-only">Select all products on this page</label>
+          <input
+            id="select-all-products"
+            type="checkbox"
+            checked={rows.length > 0 && selectedIds.length === rows.length}
+            onChange={toggleSelectAll}
+            className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+          />
+        </>
+      ),
+      cell: (row) => (
+        <input
+          type="checkbox"
+          aria-label={`Select ${row.title} for bulk moderation`}
+          checked={selectedIds.includes(row.id)}
+          onChange={() => toggleSelectItem(row.id)}
+          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+        />
+      ),
+    },
+    {
+      key: 'product',
+      header: 'PRODUCT / LISTING',
+      cell: (row) => (
+        <div className="flex items-center gap-3">
+          <img
+            src={row.images?.[0] ?? ''}
+            alt={row.title}
+            className="h-10 w-10 shrink-0 rounded-lg object-cover border border-slate-200 bg-slate-50"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+          <div className="min-w-0">
+            <p className="font-bold text-slate-900 text-xs truncate leading-tight">{row.title}</p>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">
+              {row.brand || '—'} • {row.slug || row.id.slice(-8)}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'seller',
+      header: 'SELLER',
+      cell: (row) => (
+        <div>
+          <p className="font-bold text-slate-900 text-xs leading-tight">{row.storeName || 'Unknown Seller'}</p>
+          <p className="text-[10px] text-slate-400 leading-tight mt-0.5">{row.sellerId === 'vendora-platform' ? 'Platform Direct' : row.sellerStatus}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'STATUS',
+      cell: (row) => {
+        // Display text is unchanged from the hand-rolled table: flagged rows read
+        // "Re-submitted", pending rows "Pending Review", everything else the raw
+        // status token. The tone now comes from the shared StatusBadge map; this
+        // page's badge geometry (rounded-md, py-1) is preserved via className.
+        const displayStatus = row.flagged ? 'Re-submitted' : row.status === 'pending_review' ? 'Pending Review' : row.status;
+        return <StatusBadge status={row.status} label={displayStatus} className="rounded-md py-1" />;
+      },
+    },
+    {
+      key: 'price',
+      header: 'PRICE & STOCK',
+      cell: (row) => (
+        <>
+          <p className="font-bold text-slate-900 text-xs leading-tight">${row.price.toFixed(2)}</p>
+          <p className="text-[10px] text-slate-400 leading-tight mt-0.5">{row.stock} units in stock</p>
+        </>
+      ),
+    },
+    {
+      key: 'moderation',
+      header: 'MODERATION',
+      cell: (row) => (
+        <div className="flex flex-col items-end gap-1.5">
+          {row.moderatedBy && (
+            <span className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+              {row.moderatedBy}
+            </span>
+          )}
+          {row.status === 'rejected' && row.rejectionReason && (
+            <span className="text-[9px] text-rose-600" title={row.rejectionReason}>
+              Reason: {row.rejectionReason.slice(0, 40)}
+            </span>
+          )}
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold">
+            {row.status !== 'approved' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleApprove([row.id])}
+                  disabled={isMutatingModerate}
+                  className="text-emerald-700 hover:underline disabled:opacity-40"
+                >
+                  Approve
+                </button>
+                <span className="text-slate-300">•</span>
+                <button
+                  type="button"
+                  onClick={() => handleOpenRejectModal([row.id])}
+                  disabled={isMutatingModerate}
+                  className="text-rose-600 hover:underline disabled:opacity-40"
+                >
+                  Reject
+                </button>
+                <span className="text-slate-300">•</span>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => handleOpenAssignModal([row.id])}
+              disabled={isMutatingAssign}
+              className="text-slate-600 hover:underline disabled:opacity-40"
+            >
+              Assign
+            </button>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  const renderTable = () => (
+    <DataTable
+      columns={productColumns}
+      rows={rows}
+      getRowKey={(row) => row.id}
+      ariaLabel="Product moderation queue"
+      rowClassName={(row) => (selectedIds.includes(row.id) ? 'bg-slate-50/90' : '')}
+      emptyState={
         <div className="text-center py-12 text-xs text-slate-500">
           No items found in the moderation queue.
         </div>
-      );
-    }
-
-    return (
-      <div className="overflow-x-auto">
-        <table
-          className="w-full text-left text-xs"
-          aria-label="Product moderation queue"
-        >
-          <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            <tr>
-              <th scope="col" className="py-3 px-4 w-10 text-center">
-                <label htmlFor="select-all-products" className="sr-only">Select all products on this page</label>
-                <input
-                  id="select-all-products"
-                  type="checkbox"
-                  checked={rows.length > 0 && selectedIds.length === rows.length}
-                  onChange={toggleSelectAll}
-                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                />
-              </th>
-              <th scope="col" className="py-3 px-4">PRODUCT / LISTING</th>
-              <th scope="col" className="py-3 px-4">SELLER</th>
-              <th scope="col" className="py-3 px-4">STATUS</th>
-              <th scope="col" className="py-3 px-4">PRICE &amp; STOCK</th>
-              <th scope="col" className="py-3 px-4">MODERATION</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.map((row) => {
-              const isSelected = selectedIds.includes(row.id);
-              const displayStatus = row.flagged ? 'Re-submitted' : row.status === 'pending_review' ? 'Pending Review' : row.status;
-
-              return (
-                <tr key={row.id} className={`hover:bg-slate-50/60 transition-colors ${isSelected ? 'bg-slate-50/90' : ''}`}>
-                  <td className="py-3 px-4 text-center">
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${row.title} for bulk moderation`}
-                      checked={isSelected}
-                      onChange={() => toggleSelectItem(row.id)}
-                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                    />
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={row.images?.[0] ?? ''}
-                        alt={row.title}
-                        className="h-10 w-10 shrink-0 rounded-lg object-cover border border-slate-200 bg-slate-50"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="min-w-0">
-                        <p className="font-bold text-slate-900 text-xs truncate leading-tight">{row.title}</p>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5 leading-tight">
-                          {row.brand || '—'} • {row.slug || row.id.slice(-8)}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <div>
-                      <p className="font-bold text-slate-900 text-xs leading-tight">{row.storeName || 'Unknown Seller'}</p>
-                      <p className="text-[10px] text-slate-400 leading-tight mt-0.5">{row.sellerId === 'vendora-platform' ? 'Platform Direct' : row.sellerStatus}</p>
-                    </div>
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <span className={`inline-block rounded-md px-2.5 py-1 text-[10px] font-bold ${
-                      row.status === 'approved'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : row.status === 'rejected'
-                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                        : row.status === 'archived'
-                        ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
-                      {displayStatus}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <p className="font-bold text-slate-900 text-xs leading-tight">${row.price.toFixed(2)}</p>
-                    <p className="text-[10px] text-slate-400 leading-tight mt-0.5">{row.stock} units in stock</p>
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <div className="flex flex-col items-end gap-1.5">
-                      {row.moderatedBy && (
-                        <span className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                          {row.moderatedBy}
-                        </span>
-                      )}
-                      {row.status === 'rejected' && row.rejectionReason && (
-                        <span className="text-[9px] text-rose-600" title={row.rejectionReason}>
-                          Reason: {row.rejectionReason.slice(0, 40)}
-                        </span>
-                      )}
-                      <div className="flex items-center gap-1.5 text-[10px] font-semibold">
-                        {row.status !== 'approved' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleApprove([row.id])}
-                              disabled={isMutatingModerate}
-                              className="text-emerald-700 hover:underline disabled:opacity-40"
-                            >
-                              Approve
-                            </button>
-                            <span className="text-slate-300">•</span>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenRejectModal([row.id])}
-                              disabled={isMutatingModerate}
-                              className="text-rose-600 hover:underline disabled:opacity-40"
-                            >
-                              Reject
-                            </button>
-                            <span className="text-slate-300">•</span>
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAssignModal([row.id])}
-                          disabled={isMutatingAssign}
-                          className="text-slate-600 hover:underline disabled:opacity-40"
-                        >
-                          Assign
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
+      }
+    />
+  );
 
   const ModalWrapper: React.FC<{ open: boolean; onClose: () => void; title: string; description?: string; children: React.ReactNode }> = ({ open, onClose, title, description, children }) => {
     return (
@@ -533,16 +534,16 @@ export const AdminProductsPage: React.FC = () => {
         </div>
 
         <div className="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+          <div className="flex-1 min-w-[200px] max-w-xs">
             <label htmlFor="product-search" className="sr-only">Search listings</label>
-            <input
+            <Input
               id="product-search"
               type="text"
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               placeholder="Search listings..."
-              className="w-full h-8.5 pl-8 pr-10 text-xs rounded-lg border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 text-slate-800 placeholder:text-slate-400"
+              leftIcon={<Search className="h-3.5 w-3.5" aria-hidden="true" />}
+              className="h-8.5 rounded-lg bg-slate-50/80 text-xs text-slate-800 focus:bg-white"
             />
           </div>
 
