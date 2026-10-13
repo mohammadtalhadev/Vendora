@@ -8,6 +8,11 @@ import {
   ShoppingCart,
   Check,
   Star,
+  Zap,
+  Tag,
+  Gem,
+  Package,
+  type LucideIcon,
 } from 'lucide-react';
 import { useCurrency } from '../store/currency-store';
 import { useCartStore } from '../store/cart-store';
@@ -116,12 +121,12 @@ const DEALS_PRODUCTS: DealItem[] = [
 
 type DealTab = 'all' | 'flash' | 'under2k' | 'mega' | 'clearance';
 
-const DEAL_TABS: ReadonlyArray<{ id: DealTab; label: string }> = [
-  { id: 'all', label: '🔥 All Deals' },
-  { id: 'flash', label: '⚡ Flash Drops' },
-  { id: 'under2k', label: '🏷️ Under Rs. 2,000' },
-  { id: 'mega', label: '💎 Mega Savings (30%+)' },
-  { id: 'clearance', label: '📦 Clearance Vault' },
+const DEAL_TABS: ReadonlyArray<{ id: DealTab; label: string; icon: LucideIcon }> = [
+  { id: 'all', label: 'All Deals', icon: Flame },
+  { id: 'flash', label: 'Flash Drops', icon: Zap },
+  { id: 'under2k', label: 'Under Rs. 2,000', icon: Tag },
+  { id: 'mega', label: 'Mega Savings (30%+)', icon: Gem },
+  { id: 'clearance', label: 'Clearance Vault', icon: Package },
 ];
 
 export const DealsPage: React.FC = () => {
@@ -264,12 +269,13 @@ export const DealsPage: React.FC = () => {
                 aria-controls="deals-panel"
                 tabIndex={selected ? 0 : -1}
                 onClick={() => setActiveTab(tab.id)}
-                className={`rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
+                className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                   selected
                     ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
+                <tab.icon className="h-3.5 w-3.5" aria-hidden="true" />
                 {tab.label}
               </button>
             );

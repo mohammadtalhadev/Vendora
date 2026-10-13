@@ -1,5 +1,5 @@
 import React from 'react';
-import { QrCode, BellRing, ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import { QrCode, BellRing, ShieldCheck, Zap, Sparkles, Star } from 'lucide-react';
 
 export const AppPromoSection: React.FC = () => {
   return (
@@ -117,7 +117,9 @@ export const AppPromoSection: React.FC = () => {
             {/* Micro Rating Callout Card */}
             <div className="flex flex-col gap-2.5">
               <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
-                <p className="font-outfit text-2xl font-black text-amber-300">4.9 ★</p>
+                <p className="flex items-center gap-1.5 font-outfit text-2xl font-black text-amber-300">
+                  4.9 <Star className="h-6 w-6" fill="currentColor" aria-hidden="true" />
+                </p>
                 <p className="text-xs font-bold text-white">Top Rated Shopping App</p>
                 <p className="text-[10px] text-slate-300">Over 500,000+ Downloads</p>
               </div>

@@ -15,8 +15,10 @@ import {
   Store,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { supabase } from '../lib/supabase';
 import type { DemoRoleKey } from '../lib/demo-accounts';
 import { useCartStore } from '../store/cart-store';
+import { Button } from '../components/ui/button';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +36,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResetHint, setShowResetHint] = useState(false);
+  const [resetState, setResetState] = useState<'idle' | 'needs-email' | 'sending' | 'sent' | 'error'>('idle');
+  const [resetError, setResetError] = useState<string | null>(null);
   const [showDemoGrid, setShowDemoGrid] = useState(false);
   const resetHintTriggerRef = useRef<HTMLButtonElement>(null);
   const demoTriggerRef = useRef<HTMLButtonElement>(null);
@@ -78,6 +82,26 @@ export const LoginPage: React.FC = () => {
       setError(message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const target = email.trim();
+    setShowResetHint(true);
+    if (!target) {
+      setResetState('needs-email');
+      return;
+    }
+    setResetState('sending');
+    setResetError(null);
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (resetErr) {
+      setResetError(resetErr.message);
+      setResetState('error');
+    } else {
+      setResetState('sent');
     }
   };
 
@@ -365,7 +389,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       ref={resetHintTriggerRef}
-                      onClick={() => setShowResetHint((prev) => !prev)}
+                      onClick={handleForgotPassword}
                       onKeyDown={(e) => { if (e.key === 'Escape') setShowResetHint(false); }}
                       aria-expanded={showResetHint}
                       aria-controls="login-reset-hint"
@@ -381,11 +405,17 @@ export const LoginPage: React.FC = () => {
                       onKeyDown={(e) => { if (e.key === 'Escape') { setShowResetHint(false); resetHintTriggerRef.current?.focus(); } }}
                       className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200/80 dark:border-orange-800/40 text-[11px] text-slate-600 dark:text-slate-300"
                     >
-                      {import.meta.env.DEV ? (
-                        <>For demo evaluation, every test persona signs in with password <span className="font-bold text-sun-orange">demo1234</span>.</>
-                      ) : (
-                        <>If you have forgotten your password, please contact the Vendora support team to reset it.</>
+                      {resetState === 'needs-email' && (
+                        <>Enter your email address above, then choose <span className="font-bold text-sun-orange">Forgot credentials?</span> again and we will email you a secure link to set a new password.</>
                       )}
+                      {resetState === 'sending' && <>Sending your password reset link…</>}
+                      {resetState === 'sent' && (
+                        <>Password reset link sent to <span className="font-bold text-sun-orange">{email.trim()}</span>. Check your inbox and follow the link to set a new password.</>
+                      )}
+                      {resetState === 'error' && (
+                        <>We could not send the reset email{resetError ? <>: {resetError}</> : ''}. Check the address and try again.</>
+                      )}
+                      {resetState === 'idle' && <>We will email you a secure link to set a new password.</>}
                     </div>
                   )}
                   <div className="relative flex items-center">
@@ -434,14 +464,10 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 {/* Primary CTA Button */}
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="mt-2 w-full h-13 rounded-full bg-sun-orange hover:bg-sun-orange-600 active:scale-[0.99] text-white text-sm font-outfit font-bold flex items-center justify-center gap-2 shadow-[0_4px_18px_color-mix(in_srgb,var(--color-sun-orange)_32%,transparent)] transition-all cursor-pointer disabled:opacity-50"
-                >
+                <Button type="submit" variant="default" size="lg" disabled={isSubmitting} className="mt-2 w-full">
                   <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Vendora'}</span>
                   <ArrowRight className="h-4 w-4 stroke-[2.5]" />
-                </button>
+                </Button>
               </form>
 
               {/* 1-Click Demo Testing Drawer Toggle — local development only */}

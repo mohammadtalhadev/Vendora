@@ -58,6 +58,9 @@ const LoginPage = lazy(() =>
 const RegisterPage = lazy(() =>
   import('../pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
 );
+const ResetPasswordPage = lazy(() =>
+  import('../pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+);
 const ForbiddenPage = lazy(() =>
   import('../pages/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage })),
 );
@@ -381,6 +384,10 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: lazyWrap(<RegisterPage />),
+      },
+      {
+        path: 'reset-password',
+        element: lazyWrap(<ResetPasswordPage />),
       },
       {
         path: 'returns',

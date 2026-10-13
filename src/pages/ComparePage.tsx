@@ -55,7 +55,7 @@ export const ComparePage: React.FC = () => {
 
   if (items.length === 0) {
     return (
-      <div className="relative min-h-[75vh] flex items-center justify-center px-4 py-16 bg-slate-50/70 dark:bg-[#0b1120] overflow-hidden transition-colors">
+      <div className="relative min-h-[75vh] flex items-center justify-center px-4 py-16 overflow-hidden transition-colors">
         {/* Ambient background glow */}
         <div className="ambient-glow-wrapper" aria-hidden="true">
           <div className="ambient-orb-orange top-1/4 left-1/4 opacity-50" />
@@ -107,7 +107,7 @@ export const ComparePage: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
+    <div className="relative min-h-screen py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
       {/* Ambient background glow orbs */}
       <div className="ambient-glow-wrapper" aria-hidden="true">
         <div className="ambient-orb-orange -top-20 -left-20 opacity-60" />

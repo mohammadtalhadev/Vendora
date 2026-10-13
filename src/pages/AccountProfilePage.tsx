@@ -2387,7 +2387,7 @@ export const AccountProfilePage: React.FC = () => {
                   required
                   value={addressPhone}
                   onChange={(e) => setAddressPhone(e.target.value)}
-                  placeholder="e.g. +1 (555) 234-5678"
+                  placeholder="e.g. +92 300 1234567"
                   className={inputClass}
                 />
               </div>
@@ -2419,7 +2419,7 @@ export const AccountProfilePage: React.FC = () => {
                   required
                   value={addressCity}
                   onChange={(e) => setAddressCity(e.target.value)}
-                  placeholder="e.g. San Francisco"
+                  placeholder="e.g. Karachi"
                   className={inputClass}
                 />
               </div>
@@ -2433,7 +2433,7 @@ export const AccountProfilePage: React.FC = () => {
                   type="text"
                   value={addressState}
                   onChange={(e) => setAddressState(e.target.value)}
-                  placeholder="e.g. CA"
+                  placeholder="e.g. Sindh"
                   className={inputClass}
                 />
               </div>
@@ -2448,7 +2448,7 @@ export const AccountProfilePage: React.FC = () => {
                   required
                   value={addressZipCode}
                   onChange={(e) => setAddressZipCode(e.target.value)}
-                  placeholder="e.g. 94105"
+                  placeholder="e.g. 75500"
                   className={inputClass}
                 />
               </div>
@@ -2464,7 +2464,7 @@ export const AccountProfilePage: React.FC = () => {
                   type="text"
                   value={addressCountry}
                   onChange={(e) => setAddressCountry(e.target.value)}
-                  placeholder="e.g. United States"
+                  placeholder="e.g. Pakistan"
                   className={inputClass}
                 />
               </div>
@@ -2593,7 +2593,7 @@ export const AccountProfilePage: React.FC = () => {
                     maxLength={19}
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    placeholder="4242 •••• •••• 4242"
+                    placeholder="•••• •••• •••• ••••"
                     className={inputClass}
                   />
                 </div>
@@ -2646,7 +2646,7 @@ export const AccountProfilePage: React.FC = () => {
                       required
                       value={cvv}
                       onChange={(e) => setCvv(e.target.value)}
-                      placeholder="123"
+                      placeholder="•••"
                       className={inputClass}
                     />
                   </div>

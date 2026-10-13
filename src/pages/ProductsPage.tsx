@@ -18,6 +18,7 @@ import { useCartStore } from '../store/cart-store';
 import { useCurrency } from '../store/currency-store';
 import { useToast } from '../hooks/useToast';
 import { Toast } from '../components/common/Toast';
+import { Button } from '../components/ui/button';
 import { QueryState } from '../components/common/QueryState';
 import { buildPageWindow } from '../hooks/usePagination';
 import type { Product } from '../types/domain';
@@ -347,13 +348,9 @@ export const ProductsPage: React.FC = () => {
                 <span>{formatPrice(0)}</span>
                 <span>{formatPrice(PRICE_CEILING)}+</span>
               </div>
-              <button
-                type="button"
-                onClick={() => commitPriceInputs()}
-                className="w-full rounded-xl bg-slate-900 dark:bg-white py-2 text-[11px] font-bold text-white dark:text-slate-900 transition-colors hover:bg-slate-700 dark:hover:bg-slate-200 cursor-pointer"
-              >
+              <Button type="button" variant="ink" size="sm" onClick={() => commitPriceInputs()} className="w-full">
                 Apply Price Filter
-              </button>
+              </Button>
             </div>
           </aside>
 

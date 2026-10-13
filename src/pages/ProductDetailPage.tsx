@@ -27,6 +27,7 @@ import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
 import { useCurrency } from '../store/currency-store';
 import { QueryState } from '../components/common/QueryState';
+import { Button } from '../components/ui/button';
 import { PaymentIcons } from '../features/products/components/PaymentIcons';
 import { SendOfferModal } from '../features/products/components/SendOfferModal';
 import { LiveChatModal } from '../features/products/components/LiveChatModal';
@@ -257,7 +258,7 @@ export const ProductDetailPage: React.FC = () => {
   }, [displayBrand, categoryLabel, product?.type, product?.variants]);
 
   return (
-    <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
+    <div className="relative min-h-screen py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
       {/* Ambient background glow orbs */}
       <div className="ambient-glow-wrapper" aria-hidden="true">
         <div className="ambient-orb-orange -top-24 -left-24 opacity-40" />
@@ -746,14 +747,12 @@ export const ProductDetailPage: React.FC = () => {
                   {/* CTA Buttons */}
                   <div className="space-y-2 pt-1">
                     {/* Primary Solid Sun Orange Add To Cart */}
-                    <button
+                    <Button
                       type="button"
+                      variant="default"
+                      size="lg"
                       onClick={handleAddToCart}
-                      className={`flex w-full items-center justify-center gap-2 rounded-full py-3 text-xs font-bold text-white shadow-sm transition-all cursor-pointer active:scale-[0.99] ${
-                        addedAnimation
-                          ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-sun-orange hover:bg-[#EA580C] shadow-orange-glow/40'
-                      }`}
+                      className={addedAnimation ? 'w-full bg-emerald-600 hover:bg-emerald-700' : 'w-full'}
                     >
                       {addedAnimation ? (
                         <>
@@ -766,7 +765,7 @@ export const ProductDetailPage: React.FC = () => {
                           <span>Add to cart</span>
                         </>
                       )}
-                    </button>
+                    </Button>
 
                     {/* Secondary 1-Click Buy Now */}
                     <button

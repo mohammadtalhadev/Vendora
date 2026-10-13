@@ -31,6 +31,9 @@ import type { AddressType } from '../features/account/types';
 import { shippingAddressSchema, type CartItem, type ShippingAddress } from '../types/domain';
 import { validateCardLuhn, detectCardBrand } from '../features/checkout/utils/luhn';
 import type { PaymentMethod } from '../features/checkout/types';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { FormField } from '../components/ui/form-field';
 
 interface AddressOption extends ShippingAddress {
   id: string;
@@ -695,92 +698,70 @@ export const CheckoutPage: React.FC = () => {
                     className="mt-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4 space-y-3"
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label htmlFor="addr-label" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Label
-                        </label>
-                        <input
+                      <FormField label="Label" htmlFor="addr-label">
+                        <Input
                           id="addr-label"
                           type="text"
                           value={addressDraft.label}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, label: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                         />
-                      </div>
-                      <div>
-                        <label htmlFor="addr-fullName" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Full Name *
-                        </label>
-                        <input
+                      </FormField>
+                      <FormField label="Full Name" htmlFor="addr-fullName" required error={addressErrors.fullName}>
+                        <Input
                           id="addr-fullName"
                           type="text"
                           value={addressDraft.fullName}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, fullName: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
+                          hasError={!!addressErrors.fullName}
+                          aria-invalid={!!addressErrors.fullName}
                         />
-                        {addressErrors.fullName && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.fullName}</p>}
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label htmlFor="addr-street" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Street Address *
-                        </label>
-                        <input
+                      </FormField>
+                      <FormField label="Street Address" htmlFor="addr-street" required error={addressErrors.street} className="sm:col-span-2">
+                        <Input
                           id="addr-street"
                           type="text"
                           value={addressDraft.street}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, street: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
+                          hasError={!!addressErrors.street}
+                          aria-invalid={!!addressErrors.street}
                         />
-                        {addressErrors.street && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.street}</p>}
-                      </div>
-                      <div>
-                        <label htmlFor="addr-city" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          City *
-                        </label>
-                        <input
+                      </FormField>
+                      <FormField label="City" htmlFor="addr-city" required error={addressErrors.city}>
+                        <Input
                           id="addr-city"
                           type="text"
                           value={addressDraft.city}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, city: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
+                          hasError={!!addressErrors.city}
+                          aria-invalid={!!addressErrors.city}
                         />
-                        {addressErrors.city && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.city}</p>}
-                      </div>
-                      <div>
-                        <label htmlFor="addr-state" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          State *
-                        </label>
-                        <input
+                      </FormField>
+                      <FormField label="State" htmlFor="addr-state" required error={addressErrors.state}>
+                        <Input
                           id="addr-state"
                           type="text"
                           value={addressDraft.state}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, state: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
+                          hasError={!!addressErrors.state}
+                          aria-invalid={!!addressErrors.state}
                         />
-                        {addressErrors.state && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.state}</p>}
-                      </div>
-                      <div>
-                        <label htmlFor="addr-zip" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Postal Code *
-                        </label>
-                        <input
+                      </FormField>
+                      <FormField label="Postal Code" htmlFor="addr-zip" required error={addressErrors.zipCode}>
+                        <Input
                           id="addr-zip"
                           type="text"
                           value={addressDraft.zipCode}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, zipCode: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
+                          hasError={!!addressErrors.zipCode}
+                          aria-invalid={!!addressErrors.zipCode}
                         />
-                        {addressErrors.zipCode && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.zipCode}</p>}
-                      </div>
-                      <div>
-                        <label htmlFor="addr-country" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Country
-                        </label>
+                      </FormField>
+                      <FormField label="Country" htmlFor="addr-country">
                         <select
                           id="addr-country"
                           value={addressDraft.country}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, country: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
+                          className="flex h-11 w-full cursor-pointer rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink shadow-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:border-sun-orange focus-visible:ring-sun-orange/30 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
                         >
                           <option value="Pakistan">Pakistan</option>
                           <option value="United States">United States</option>
@@ -788,28 +769,22 @@ export const CheckoutPage: React.FC = () => {
                           <option value="Saudi Arabia">Saudi Arabia</option>
                           <option value="United Kingdom">United Kingdom</option>
                         </select>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label htmlFor="addr-phone" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Phone *
-                        </label>
-                        <input
+                      </FormField>
+                      <FormField label="Phone" htmlFor="addr-phone" required error={addressErrors.phone} className="sm:col-span-2">
+                        <Input
                           id="addr-phone"
                           type="tel"
                           value={addressDraft.phone}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, phone: e.target.value }))}
                           placeholder="+92 3XX XXXXXXX"
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold focus:border-sun-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
+                          hasError={!!addressErrors.phone}
+                          aria-invalid={!!addressErrors.phone}
                         />
-                        {addressErrors.phone && <p className="mt-1 text-[11px] font-medium text-rose-500">{addressErrors.phone}</p>}
-                      </div>
+                      </FormField>
                     </div>
-                    <button
-                      type="submit"
-                      className="rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
-                    >
+                    <Button type="submit" variant="ink" size="sm">
                       Save address for this order
-                    </button>
+                    </Button>
                   </form>
                 )}
               </div>
@@ -1020,14 +995,15 @@ export const CheckoutPage: React.FC = () => {
                             placeholder="Promo code"
                             className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 px-3 py-2 text-xs font-bold uppercase text-slate-800 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/40"
                           />
-                          <button
+                          <Button
                             type="button"
+                            variant="default"
+                            size="sm"
                             onClick={handleApplyVoucher}
                             disabled={voucherBusy || voucherInput.trim() === ''}
-                            className="rounded-xl bg-sun-orange text-white px-3.5 py-2 text-xs font-bold hover:bg-sun-orange-600 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange"
                           >
                             {voucherBusy ? 'Checking…' : 'Apply'}
-                          </button>
+                          </Button>
                         </div>
                       )}
                       {voucherError && (
@@ -1070,11 +1046,13 @@ export const CheckoutPage: React.FC = () => {
               )}
 
               {/* Place Order CTA */}
-              <button
+              <Button
                 type="button"
+                variant="default"
+                size="lg"
                 onClick={handlePlaceOrder}
                 disabled={placeOrder.isPending || !quote || totals.isFetching}
-                className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] py-3.5 px-4 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange focus-visible:ring-offset-2"
+                className="mt-4 w-full"
               >
                 {placeOrder.isPending ? (
                   <>
@@ -1087,7 +1065,7 @@ export const CheckoutPage: React.FC = () => {
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
-              </button>
+              </Button>
 
               <p className="mt-3 text-center text-[10px] text-slate-400 leading-normal">
                 By confirming, you agree to the{' '}
