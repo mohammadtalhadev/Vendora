@@ -6,9 +6,14 @@ import { MemoryRouter } from 'react-router-dom';
  * The catalog hooks are stubbed so the test can observe the exact query params
  * the page commits. QA C-3 regressions pinned here:
  *  (a) typing in the price inputs must not be eaten by URL-driven re-renders;
- *  (b) the values must reach the query exactly as typed (canonical PKR) and
- *      the empty-state text must quote them as typed — the old USD-base
- *      formatter rendered 10,000 as "₨ 2,769,191".
+ *  (b) inputs are denominated in the shopper's DISPLAY currency while the
+ *      query (and URL) always carries canonical PKR — in PKR the two are the
+ *      same number, and the old USD-base formatter that rendered 10,000 as
+ *      "₨ 2,769,191" must never come back;
+ *  (c) with a foreign display currency, typed amounts convert to PKR at the
+ *      store's rate on commit and the empty state quotes the typed display
+ *      values back — the live-verified residual from Batch 3, where a USD
+ *      shopper's "10000" was silently treated as ₨10,000.
  */
 const catalog = vi.hoisted(() => ({
   calls: [] as Array<Record<string, unknown>>,
@@ -97,5 +102,53 @@ describe('ProductsPage price filter', () => {
     // …while the query itself still carries the PKR values untouched.
     expect(lastParams().minPrice).toBe(27720);
     expect(lastParams().maxPrice).toBe(55440);
+  });
+
+  it('shows PKR bounds as display-currency values in the inputs when currency is USD', () => {
+    useCurrencyStore.setState({ currency: 'USD' });
+    const { container } = renderPage('/products?min=27720&max=55440');
+    const minInput = container.querySelector('#min-price') as HTMLInputElement;
+    const maxInput = container.querySelector('#max-price') as HTMLInputElement;
+
+    // The URL still stores canonical PKR; the fields show what the shopper
+    // reads in their currency: ₨27,720 = $100, ₨55,440 = $200.
+    expect(minInput.value).toBe('100');
+    expect(maxInput.value).toBe('200');
+    expect(lastParams().minPrice).toBe(27720);
+    expect(lastParams().maxPrice).toBe(55440);
+  });
+
+  it('commits display-currency input converted to canonical PKR when currency is USD', () => {
+    useCurrencyStore.setState({ currency: 'USD' });
+    const { container } = renderPage();
+    const minInput = container.querySelector('#min-price') as HTMLInputElement;
+    const maxInput = container.querySelector('#max-price') as HTMLInputElement;
+
+    fireEvent.change(minInput, { target: { value: '40' } });
+    fireEvent.change(maxInput, { target: { value: '100' } });
+    fireEvent.blur(maxInput);
+
+    // $40 / $100 at the fallback rate (units of USD per 1 PKR) land on whole
+    // rupees — asserted through the same conversion the page uses, against
+    // the exact fallback cross-rate ($1 = ₨277.20).
+    const rate = FALLBACK_RATES.USD;
+    expect(lastParams().minPrice).toBe(Math.round(40 / rate));
+    expect(lastParams().maxPrice).toBe(Math.round(100 / rate));
+    expect(lastParams().minPrice).toBe(11088);
+    expect(lastParams().maxPrice).toBe(27720);
+  });
+
+  it('quotes the typed display values in the empty state after a USD commit', () => {
+    useCurrencyStore.setState({ currency: 'USD' });
+    const { container } = renderPage();
+    const minInput = container.querySelector('#min-price') as HTMLInputElement;
+
+    fireEvent.change(minInput, { target: { value: '40' } });
+    fireEvent.blur(minInput);
+
+    // The summary quotes the $40 the shopper typed (converted back from the
+    // stored PKR bound), never the raw rupee figure or a multiplied one.
+    expect(screen.getByText(/above \$40\.00/)).toBeInTheDocument();
+    expect(screen.queryByText(/11,088|3,068,544/)).not.toBeInTheDocument();
   });
 });

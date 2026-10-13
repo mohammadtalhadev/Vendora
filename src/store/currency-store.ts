@@ -175,6 +175,24 @@ export function convertCurrencyValue(
   return amountInPKR * rate;
 }
 
+/**
+ * The inverse of convertCurrencyValue: an amount typed in a display currency
+ * becomes canonical PKR (rates are units per 1 PKR, so PKR = display / rate).
+ * Filter inputs are entered in the shopper's display currency but the catalog
+ * query — and therefore the URL — always carries PKR.
+ */
+export function convertToPKRValue(
+  amountInDisplay: number | undefined | null,
+  currency: CurrencyCode = 'USD',
+  rates: Record<CurrencyCode, number> = FALLBACK_RATES,
+): number {
+  if (amountInDisplay === undefined || amountInDisplay === null || Number.isNaN(amountInDisplay)) {
+    return 0;
+  }
+  const rate = rates[currency] || FALLBACK_RATES[currency] || 1.0;
+  return amountInDisplay / rate;
+}
+
 interface CurrencyState {
   currency: CurrencyCode;
   rates: Record<CurrencyCode, number>;
@@ -184,6 +202,7 @@ interface CurrencyState {
   fetchRates: (force?: boolean) => Promise<void>;
   formatPrice: (amountInPKR: number | undefined | null, options?: FormatPriceOptions | CurrencyCode) => string;
   convertPrice: (amountInPKR: number | undefined | null, targetCurrency?: CurrencyCode) => number;
+  convertToPKR: (amountInDisplay: number | undefined | null, sourceCurrency?: CurrencyCode) => number;
 }
 
 // 1 hour cache duration
@@ -272,6 +291,12 @@ export const useCurrencyStore = create<CurrencyState>()(
         const code = targetCurrency || state.currency;
         return convertCurrencyValue(amountInPKR, code, state.rates);
       },
+
+      convertToPKR: (amountInDisplay, sourceCurrency) => {
+        const state = get();
+        const code = sourceCurrency || state.currency;
+        return convertToPKRValue(amountInDisplay, code, state.rates);
+      },
     }),
     {
       name: 'vd:v1:currency',
@@ -308,6 +333,7 @@ export function useCurrency() {
   const fetchRates = useCurrencyStore((s) => s.fetchRates);
   const formatPrice = useCurrencyStore((s) => s.formatPrice);
   const convertPrice = useCurrencyStore((s) => s.convertPrice);
+  const convertToPKR = useCurrencyStore((s) => s.convertToPKR);
 
   return {
     currency,
@@ -318,6 +344,7 @@ export function useCurrency() {
     fetchRates,
     formatPrice,
     convertPrice,
+    convertToPKR,
     config: SUPPORTED_CURRENCIES[currency] || SUPPORTED_CURRENCIES.USD,
     currencies: Object.values(SUPPORTED_CURRENCIES),
     popularCurrencies: Object.values(SUPPORTED_CURRENCIES).filter((c) => c.popular),

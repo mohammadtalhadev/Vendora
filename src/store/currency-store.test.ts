@@ -5,6 +5,7 @@ import {
   formatPrice,
   formatCurrencyValue,
   convertCurrencyValue,
+  convertToPKRValue,
   FALLBACK_RATES,
 } from './currency-store';
 
@@ -88,6 +89,20 @@ describe('currencyStore', () => {
     // PKR is the base: converting into PKR is the identity.
     expect(useCurrencyStore.getState().convertPrice(10, 'PKR')).toBe(10);
     expect(convertCurrencyValue(82522, 'PKR', FALLBACK_RATES)).toBe(82522);
+  });
+
+  it('converts display amounts back TO PKR with convertToPKR (the convertPrice inverse)', () => {
+    useCurrencyStore.getState().setCurrency('USD');
+    // $100 at the fallback cross-rate is exactly ₨27,720 — the round trip
+    // through both helpers lands back on the starting amount.
+    expect(useCurrencyStore.getState().convertToPKR(100)).toBeCloseTo(27720, 6);
+    expect(
+      useCurrencyStore.getState().convertPrice(useCurrencyStore.getState().convertToPKR(40)),
+    ).toBeCloseTo(40, 6);
+    // PKR is the base: converting rupees to rupees is the identity.
+    expect(useCurrencyStore.getState().convertToPKR(500, 'PKR')).toBe(500);
+    expect(convertToPKRValue(27720, 'PKR', FALLBACK_RATES)).toBe(27720);
+    expect(convertToPKRValue(null, 'USD', FALLBACK_RATES)).toBe(0);
   });
 
   it('fetches PKR-based rates and adopts them', async () => {

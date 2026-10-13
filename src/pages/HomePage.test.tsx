@@ -5,13 +5,13 @@ vi.mock('../lib/supabase', async () => {
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
 });
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
-import { categoryRow, productRow, supabaseDouble } from '../test/supabase-double';
+import { categoryRow, productRow, storeRow, supabaseDouble } from '../test/supabase-double';
 
 /**
  * The homepage used to render ~115 hard-coded products; it now reads the real
@@ -222,5 +222,86 @@ describe('HomePage Component - Limited Campaign & Electronics Carousel', { timeo
       expect(screen.getAllByLabelText('Verified Badge').length).toBeGreaterThan(0);
     });
     expect(screen.getAllByText('Verified Badge').length).toBeGreaterThan(0);
+  });
+});
+
+describe('HomePage fabricated-content takedown (Batch 5, Pro-0)', { timeout: 40000 }, () => {
+  beforeEach(() => {
+    supabaseDouble.reset();
+    localStorage.clear();
+    useCartStore.getState().clearCart();
+    useWishlistStore.getState().clearWishlist();
+    productSeq = 2000;
+    seedCatalogue();
+  });
+
+  it('renders the store rail from the real vendor directory, not invented flagship partners', async () => {
+    supabaseDouble.seedVendorProfile(
+      storeRow({
+        id: 'store-alpha',
+        store_name: 'SoundWave Direct',
+        slug: 'soundwave-direct',
+        tagline: 'Studio audio, shipped from Karachi',
+        rating: 4.5,
+        review_count: 10,
+      }),
+    );
+    supabaseDouble.seedVendorProfile(
+      storeRow({
+        id: 'store-beta',
+        store_name: 'Quiet Corner Store',
+        slug: 'quiet-corner',
+        tagline: '',
+        description: 'A small neighbourhood shop.',
+        // The rating column defaults to 5.0 for unreviewed stores; with zero
+        // reviews that number is not a signal and must not be printed.
+        rating: 5.0,
+        review_count: 0,
+      }),
+    );
+
+    renderHome();
+
+    // Real stores from the directory appear, linked to their storefronts.
+    const reviewed = await screen.findByRole('link', { name: /SoundWave Direct/ });
+    expect(reviewed.getAttribute('href')).toBe('/vendors/soundwave-direct');
+    expect(within(reviewed).getByText(/4\.5 · 10 reviews/)).toBeInTheDocument();
+
+    const unreviewed = screen.getByRole('link', { name: /Quiet Corner Store/ });
+    expect(unreviewed.getAttribute('href')).toBe('/vendors/quiet-corner');
+    expect(within(unreviewed).queryByText(/reviews?/)).not.toBeInTheDocument();
+    expect(within(unreviewed).queryByText(/5\.0/)).not.toBeInTheDocument();
+
+    // The invented flagship partners and their claims are gone.
+    expect(screen.queryByText('Apple Flagship Partner')).not.toBeInTheDocument();
+    expect(screen.queryByText('Samsung Official Store')).not.toBeInTheDocument();
+    expect(screen.queryByText(/SBP Escrow Protected/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Verified Partnerships/)).not.toBeInTheDocument();
+  });
+
+  it('hides the store rail entirely when the directory is empty', async () => {
+    renderHome();
+
+    expect(await screen.findByText('Limited Campaign')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Shop by Store' })).not.toBeInTheDocument();
+  });
+
+  it('no longer renders the fabricated testimonials section', async () => {
+    renderHome();
+
+    expect(await screen.findByText('Limited Campaign')).toBeInTheDocument();
+    expect(screen.queryByText('Customer Experiences & Unboxing Stories')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Hamza Farooq/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ayesha Siddiqui/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/120k\+ Escrow Protected Orders/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/4\.92 \/ 5\.0/)).not.toBeInTheDocument();
+  });
+
+  it('no longer advertises the non-existent VENDORAMOBILE voucher', async () => {
+    renderHome();
+
+    expect(await screen.findByText('Limited Campaign')).toBeInTheDocument();
+    expect(screen.queryByText(/VENDORAMOBILE/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/10% OFF your first mobile order/)).not.toBeInTheDocument();
   });
 });

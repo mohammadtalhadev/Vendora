@@ -21,7 +21,6 @@ import {
   RecommendedShelf,
   BrandSpotlight,
   DigitalShowcase,
-  TestimonialsSection,
   AppPromoSection,
   BackToTopButton,
 } from '../features/home';
@@ -33,7 +32,7 @@ const HERO_CAROUSEL_SLIDES = [
     id: 'hero-smartphones',
     title: 'Smartphones & Flagship Tech',
     subtitle: 'Latest phones and wearables from verified sellers, with genuine warranty picks.',
-    image: '/images/emox/hero_iphone.jpg',
+    image: '/images/products/iphone_15_pro_natural.png',
     link: '/products?category=electronics',
     alt: 'Smartphones and flagship tech',
   },
@@ -41,7 +40,7 @@ const HERO_CAROUSEL_SLIDES = [
     id: 'hero-wearables',
     title: 'Smartwatches & Wearables',
     subtitle: 'Fitness, health and notifications — on your wrist.',
-    image: '/images/emox/hero_apple_watch.jpg',
+    image: '/images/products/prod_smart_watch.jpg',
     link: '/products?category=electronics',
     alt: 'Smartwatches and wearables',
   },
@@ -49,7 +48,7 @@ const HERO_CAROUSEL_SLIDES = [
     id: 'hero-tech',
     title: 'Phones, Cameras & More Tech',
     subtitle: 'Compare top brands side by side and shop the real catalogue.',
-    image: '/images/bevesi/hero_samsung_s24.jpg',
+    image: '/images/bevesi/art_elec_phones.png',
     link: '/products?category=electronics',
     alt: 'Phones, cameras and more tech',
   },
@@ -380,14 +379,18 @@ export const HomePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Right Card: Apple AirPods Pro (2nd Gen) (3 Cols, hidden on mobile) */}
+            {/* Right Card: wireless headphones photo (3 Cols, hidden on mobile).
+                This slot previously used a pre-rendered marketing banner whose
+                pixels carried a product name and a "From $249*" price claim —
+                a claim no catalogue row backs — so it now uses a clean,
+                text-free product photo like the carousel slides. */}
             <div className="relative overflow-hidden hidden md:block rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3 group lg:aspect-auto aspect-[16/9] min-h-[260px] sm:min-h-[320px]">
               <img
-                src="/images/emox/banner_airpods_pro.webp"
-                alt="Wireless noise-cancelling earbuds"
+                src="/images/products/prod_silver_headphones.jpg"
+                alt="Wireless noise-cancelling headphones"
                 className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
               />
-              <Link to="/products?category=audio-wearables" className="absolute inset-0 z-20" title="Wireless Earbuds" />
+              <Link to="/products?category=audio-wearables" className="absolute inset-0 z-20" title="Wireless Headphones" />
             </div>
           </div>
 
@@ -908,12 +911,7 @@ export const HomePage: React.FC = () => {
 
 
         {/* =========================================================================
-            6. Customer Testimonials & Verified Unboxing Reviews
-            ========================================================================= */}
-        <TestimonialsSection />
-
-        {/* =========================================================================
-            7. Mobile App Promo & Exclusive Voucher Banner
+            7. Mobile App Promo Banner
             ========================================================================= */}
         <AppPromoSection />
       </div>

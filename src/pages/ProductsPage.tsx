@@ -31,7 +31,7 @@ export const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { addItem } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
-  const { formatPrice, config: currencyConfig } = useCurrency();
+  const { formatPrice, convertPrice, convertToPKR, config: currencyConfig } = useCurrency();
   const { toast, showToast, hideToast } = useToast();
 
   // 1. Read every query input from the URL (source of truth).
@@ -90,21 +90,44 @@ export const ProductsPage: React.FC = () => {
 
   const handleResetFilters = () => updateParams({ min: null, max: null }, { resetPage: true });
 
-  // The price inputs are a local draft. The URL stays the source of truth for
-  // the result set, but writing every keystroke to the URL re-rendered the page
-  // mid-typing and ate characters (QA C-3: "100000" became "10000"). Typing
-  // edits the draft only; the draft commits to the URL on blur / Apply. The
-  // values are canonical PKR and reach the query exactly as typed — they are
-  // never FX-converted.
-  const [minInput, setMinInput] = useState(minParam);
-  const [maxInput, setMaxInput] = useState(maxParam);
-  useEffect(() => setMinInput(minParam), [minParam]);
-  useEffect(() => setMaxInput(maxParam), [maxParam]);
+  // The price inputs are a local draft, denominated in the shopper's DISPLAY
+  // currency (that is what the heading and the symbol prefix advertise). The
+  // URL stays the source of truth for the result set and always carries
+  // canonical PKR, so the draft is derived from the URL bounds through the
+  // currency store and commits back through it: display -> PKR on commit,
+  // PKR -> display on sync. Writing every keystroke to the URL re-rendered
+  // the page mid-typing and ate characters (QA C-3: "100000" became
+  // "10000"), so typing edits the draft only; the draft commits on blur /
+  // Apply. In PKR the rate is 1 and every step below is the identity, so
+  // PKR behaviour is exactly what Batch 3 shipped.
+  const toDisplayDraft = (pkr: number | undefined): string => {
+    if (pkr === undefined) return '';
+    const display = convertPrice(pkr);
+    const rounded = Number(display.toFixed(currencyConfig.decimals));
+    return Number.isFinite(rounded) ? String(rounded) : '';
+  };
+  const [minInput, setMinInput] = useState(() => toDisplayDraft(minPrice));
+  const [maxInput, setMaxInput] = useState(() => toDisplayDraft(maxPrice));
+  // Re-derive when the committed bound changes, and when the currency or its
+  // live rate moves (convertPrice / currencyConfig change identity with them).
+  useEffect(() => setMinInput(toDisplayDraft(minPrice)), [minPrice, convertPrice, currencyConfig]);
+  useEffect(() => setMaxInput(toDisplayDraft(maxPrice)), [maxPrice, convertPrice, currencyConfig]);
+
+  // The slider operates in display-currency scale too: its ceiling is the
+  // PKR ceiling converted, and its value is the max draft. Dragging sets the
+  // draft and commits (commit converts back to canonical PKR).
+  const sliderCeilingDisplay = Math.max(1, Math.round(convertPrice(PRICE_CEILING)));
+  const sliderStep = Math.max(1, Math.round(sliderCeilingDisplay / 1000));
 
   const commitPriceInputs = (min: string = minInput, max: string = maxInput) => {
+    // Draft values are display-currency amounts; the URL (and therefore the
+    // catalog query) only ever stores canonical PKR, rounded to whole rupees.
     const clean = (value: string): string | null => {
       const trimmed = value.trim();
-      return trimmed !== '' && Number.isFinite(Number(trimmed)) && Number(trimmed) >= 0 ? trimmed : null;
+      if (trimmed === '') return null;
+      const display = Number(trimmed);
+      if (!Number.isFinite(display) || display < 0) return null;
+      return String(Math.round(convertToPKR(display)));
     };
     updateParams({ min: clean(min), max: clean(max) }, { resetPage: true });
   };
@@ -306,13 +329,13 @@ export const ProductsPage: React.FC = () => {
                   />
                 </div>
               </div>
-              {/* Range slider drives the maximum bound */}
+              {/* Range slider drives the maximum bound (display-currency scale) */}
               <input
                 type="range"
                 min="0"
-                max={PRICE_CEILING}
-                step="1000"
-                value={maxInput === '' ? PRICE_CEILING : Math.min(toFinite(maxInput) ?? PRICE_CEILING, PRICE_CEILING)}
+                max={sliderCeilingDisplay}
+                step={sliderStep}
+                value={maxInput === '' ? sliderCeilingDisplay : Math.min(toFinite(maxInput) ?? sliderCeilingDisplay, sliderCeilingDisplay)}
                 onChange={(e) => {
                   setMaxInput(e.target.value);
                   commitPriceInputs(minInput, e.target.value);

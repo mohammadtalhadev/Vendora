@@ -1,15 +1,7 @@
-import React, { useState } from 'react';
-import { QrCode, Copy, Check, BellRing, ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import React from 'react';
+import { QrCode, BellRing, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 
 export const AppPromoSection: React.FC = () => {
-  const [copied, setCopied] = useState(false);
-
-  const copyCode = () => {
-    navigator.clipboard.writeText('VENDORAMOBILE');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <section className="mb-14">
       <div className="relative overflow-hidden rounded-[32px] border border-orange-200/80 bg-gradient-to-br from-[#0C1046] via-[#111A5A] to-[#1E1B4B] p-7 sm:p-10 text-white shadow-2xl">
@@ -33,7 +25,7 @@ export const AppPromoSection: React.FC = () => {
             </h2>
 
             <p className="mt-3.5 max-w-xl text-xs leading-relaxed text-slate-300 sm:text-sm">
-              Get instant push notifications for your State Bank Escrow release, real-time rider tracking, and exclusive app-only flash vouchers.
+              Get instant push notifications for your State Bank Escrow release and real-time rider tracking.
             </p>
 
             {/* Feature Bullets */}
@@ -50,32 +42,6 @@ export const AppPromoSection: React.FC = () => {
                 <Zap className="h-4 w-4 text-cyan-400" />
                 <span>One-Tap Re-Order</span>
               </div>
-            </div>
-
-            {/* Promo Code Box */}
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2.5 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-2.5">
-                <span className="text-xs font-bold text-amber-300">
-                  🎁 App Voucher: <span className="font-mono font-black text-white">VENDORAMOBILE</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={copyCode}
-                  className="cursor-pointer ml-1 inline-flex items-center gap-1 rounded-lg bg-white/20 px-2 py-1 text-[11px] font-bold text-white transition-colors hover:bg-white/30"
-                  title="Copy promo code"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-300" /> Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" /> Copy Code
-                    </>
-                  )}
-                </button>
-              </div>
-              <span className="text-xs text-slate-400">10% OFF your first mobile order</span>
             </div>
 
             {/* Store Download Buttons */}

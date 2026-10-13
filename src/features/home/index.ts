@@ -4,7 +4,6 @@ export { BestSellersRail, type BestSellersRailProps } from './components/BestSel
 export { RecommendedShelf, type RecommendedShelfProps } from './components/RecommendedShelf';
 export { BrandSpotlight } from './components/BrandSpotlight';
 export { DigitalShowcase, type DigitalShowcaseProps } from './components/DigitalShowcase';
-export { TestimonialsSection } from './components/TestimonialsSection';
 export { InspirationMosaic } from './components/InspirationMosaic';
 export { AppPromoSection } from './components/AppPromoSection';
 export { BackToTopButton } from './components/BackToTopButton';
