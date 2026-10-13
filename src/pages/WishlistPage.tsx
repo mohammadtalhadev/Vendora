@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useWishlistStore } from '../store/wishlist-store';
 import { useCartStore } from '../store/cart-store';
+import { useCurrency } from '../store/currency-store';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import type { Product } from '../types/domain';
@@ -18,6 +19,7 @@ import type { Product } from '../types/domain';
 export const WishlistPage: React.FC = () => {
   const { items, toggleWishlist, clearWishlist } = useWishlistStore();
   const { addItem } = useCartStore();
+  const { formatPrice } = useCurrency();
   const [notification, setNotification] = useState<string | null>(null);
 
   const showNotification = (message: string) => {
@@ -33,6 +35,7 @@ export const WishlistPage: React.FC = () => {
       productId: product.id,
       title: product.title,
       price: product.price,
+      compareAtPrice: product.compareAtPrice,
       maxStock: product.stock,
       image: product.images[0] || '',
       sellerId: product.sellerId,
@@ -54,6 +57,7 @@ export const WishlistPage: React.FC = () => {
         productId: product.id,
         title: product.title,
         price: product.price,
+        compareAtPrice: product.compareAtPrice,
         maxStock: product.stock,
         image: product.images[0] || '',
         sellerId: product.sellerId,
@@ -197,7 +201,7 @@ export const WishlistPage: React.FC = () => {
                   <div className="absolute top-2.5 left-2.5 flex flex-col gap-1">
                     {product.sellerType === 'platform' ? (
                       <Badge variant="vendora-platform" size="sm">
-                        Vendora Direct
+                        Vendora
                       </Badge>
                     ) : (
                       <Badge variant="vendor-verified" size="sm">
@@ -250,11 +254,11 @@ export const WishlistPage: React.FC = () => {
                     <div>
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-lg font-extrabold text-ink">
-                          ${product.price.toFixed(2)}
+                          {formatPrice(product.price)}
                         </span>
                         {hasDiscount && (
                           <span className="text-xs text-slate-400 line-through">
-                            ${product.compareAtPrice!.toFixed(2)}
+                            {formatPrice(product.compareAtPrice)}
                           </span>
                         )}
                       </div>

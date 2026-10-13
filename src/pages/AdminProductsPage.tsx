@@ -237,22 +237,27 @@ export const AdminProductsPage: React.FC = () => {
 
     return (
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table
+          className="w-full text-left text-xs"
+          aria-label="Product moderation queue"
+        >
           <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="py-3 px-4 w-10 text-center">
+              <th scope="col" className="py-3 px-4 w-10 text-center">
+                <label htmlFor="select-all-products" className="sr-only">Select all products on this page</label>
                 <input
+                  id="select-all-products"
                   type="checkbox"
                   checked={rows.length > 0 && selectedIds.length === rows.length}
                   onChange={toggleSelectAll}
                   className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
                 />
               </th>
-              <th className="py-3 px-4">PRODUCT / LISTING</th>
-              <th className="py-3 px-4">SELLER</th>
-              <th className="py-3 px-4">STATUS</th>
-              <th className="py-3 px-4">PRICE &amp; STOCK</th>
-              <th className="py-3 px-4">MODERATION</th>
+              <th scope="col" className="py-3 px-4">PRODUCT / LISTING</th>
+              <th scope="col" className="py-3 px-4">SELLER</th>
+              <th scope="col" className="py-3 px-4">STATUS</th>
+              <th scope="col" className="py-3 px-4">PRICE &amp; STOCK</th>
+              <th scope="col" className="py-3 px-4">MODERATION</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -265,6 +270,7 @@ export const AdminProductsPage: React.FC = () => {
                   <td className="py-3 px-4 text-center">
                     <input
                       type="checkbox"
+                      aria-label={`Select ${row.title} for bulk moderation`}
                       checked={isSelected}
                       onChange={() => toggleSelectItem(row.id)}
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
@@ -425,6 +431,42 @@ export const AdminProductsPage: React.FC = () => {
     setIsAssignModalOpen(false);
   };
 
+  const STATUS_TABS: Array<'all' | 'pending_review' | 'approved' | 'rejected' | 'archived'> = [
+    'all',
+    'pending_review',
+    'approved',
+    'rejected',
+    'archived',
+  ];
+
+  const handleStatusTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = STATUS_TABS.indexOf(activeStatusTab);
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % STATUS_TABS.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + STATUS_TABS.length) % STATUS_TABS.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = STATUS_TABS.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    const nextTab = STATUS_TABS[nextIndex];
+    setActiveStatusTab(nextTab);
+    setCurrentPage(1);
+    document.getElementById(`product-status-tab-${nextTab}`)?.focus();
+  };
+
   return (
     <WorkspaceLayout
       role="admin"
@@ -471,29 +513,31 @@ export const AdminProductsPage: React.FC = () => {
 
         {renderKpiCards()}
 
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200/80 pb-3 text-xs">
-          <button type="button" onClick={() => { setActiveStatusTab('all'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-all cursor-pointer ${activeStatusTab === 'all' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
-            <Layers className="h-3.5 w-3.5 text-blue-400" />
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200/80 pb-3 text-xs" role="tablist" aria-label="Product moderation status filters" onKeyDown={handleStatusTabKeyDown}>
+          <button type="button" role="tab" id="product-status-tab-all" aria-controls="product-queue-panel" aria-selected={activeStatusTab === 'all'} tabIndex={activeStatusTab === 'all' ? 0 : -1} onClick={() => { setActiveStatusTab('all'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-all cursor-pointer ${activeStatusTab === 'all' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
+            <Layers className="h-3.5 w-3.5 text-blue-400" aria-hidden="true" />
             All Products ({total})
           </button>
-          <button type="button" onClick={() => { setActiveStatusTab('pending_review'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-all cursor-pointer ${activeStatusTab === 'pending_review' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
+          <button type="button" role="tab" id="product-status-tab-pending_review" aria-controls="product-queue-panel" aria-selected={activeStatusTab === 'pending_review'} tabIndex={activeStatusTab === 'pending_review' ? 0 : -1} onClick={() => { setActiveStatusTab('pending_review'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition-all cursor-pointer ${activeStatusTab === 'pending_review' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
             Submissions Queue ({counts.pendingReview})
           </button>
-          <button type="button" onClick={() => { setActiveStatusTab('approved'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all cursor-pointer ${activeStatusTab === 'approved' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
+          <button type="button" role="tab" id="product-status-tab-approved" aria-controls="product-queue-panel" aria-selected={activeStatusTab === 'approved'} tabIndex={activeStatusTab === 'approved' ? 0 : -1} onClick={() => { setActiveStatusTab('approved'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all cursor-pointer ${activeStatusTab === 'approved' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
             Approved Catalog ({counts.approved})
           </button>
-          <button type="button" onClick={() => { setActiveStatusTab('rejected'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all cursor-pointer ${activeStatusTab === 'rejected' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
+          <button type="button" role="tab" id="product-status-tab-rejected" aria-controls="product-queue-panel" aria-selected={activeStatusTab === 'rejected'} tabIndex={activeStatusTab === 'rejected' ? 0 : -1} onClick={() => { setActiveStatusTab('rejected'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all cursor-pointer ${activeStatusTab === 'rejected' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
             Rejected ({counts.rejected})
           </button>
-          <button type="button" onClick={() => { setActiveStatusTab('archived'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all cursor-pointer ${activeStatusTab === 'archived' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
+          <button type="button" role="tab" id="product-status-tab-archived" aria-controls="product-queue-panel" aria-selected={activeStatusTab === 'archived'} tabIndex={activeStatusTab === 'archived' ? 0 : -1} onClick={() => { setActiveStatusTab('archived'); setCurrentPage(1); }} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-all cursor-pointer ${activeStatusTab === 'archived' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'}`}>
             Archived ({counts.archived})
           </button>
         </div>
 
         <div className="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+            <label htmlFor="product-search" className="sr-only">Search listings</label>
             <input
+              id="product-search"
               type="text"
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
@@ -541,11 +585,16 @@ export const AdminProductsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
+        <div
+          className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden"
+          role="tabpanel"
+          id="product-queue-panel"
+          aria-labelledby={`product-status-tab-${activeStatusTab}`}
+        >
           {queueLoading ? (
-            <div className="text-center py-12 text-xs text-slate-500">Reading the moderation queue…</div>
+            <div role="status" aria-live="polite" className="text-center py-12 text-xs text-slate-500">Reading the moderation queue…</div>
           ) : queueError ? (
-            <div className="text-center py-12 text-xs text-slate-700">
+            <div role="alert" aria-live="assertive" className="text-center py-12 text-xs text-slate-700">
               <div className="font-bold mb-2">Failed to load queue.</div>
               <button type="button" onClick={() => refetchQueue()} className="text-slate-900 underline">Retry</button>
             </div>
@@ -583,8 +632,8 @@ export const AdminProductsPage: React.FC = () => {
         >
           <div className="space-y-4 pt-2 text-xs">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Primary Rejection Reason *</label>
-              <select value={rejectReasonCategory} onChange={(e) => setRejectReasonCategory(e.target.value)} className="w-full admin-select h-10">
+              <label htmlFor="reject-reason-category" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Primary Rejection Reason *</label>
+              <select id="reject-reason-category" value={rejectReasonCategory} onChange={(e) => setRejectReasonCategory(e.target.value)} className="w-full admin-select h-10">
                 <option value="Violates Catalog Trademark & IP Policy">Violates Catalog Trademark & IP Policy</option>
                 <option value="Misleading Listing Title or Unsubstantiated Claims">Misleading Listing Title or Unsubstantiated Claims</option>
                 <option value="Low Resolution or Watermarked Product Images">Low Resolution or Watermarked Product Images</option>
@@ -595,8 +644,8 @@ export const AdminProductsPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Corrective Guidance & Seller Notes</label>
-              <textarea rows={3} value={customRejectNote} onChange={(e) => setCustomRejectNote(e.target.value)} placeholder="Explain exactly what the merchant must correct to obtain catalog approval..." className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 resize-none" />
+              <label htmlFor="reject-custom-note" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Corrective Guidance &amp; Seller Notes</label>
+              <textarea id="reject-custom-note" rows={3} value={customRejectNote} onChange={(e) => setCustomRejectNote(e.target.value)} placeholder="Explain exactly what the merchant must correct to obtain catalog approval..." className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 resize-none" />
             </div>
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button type="button" onClick={() => setIsRejectModalOpen(false)} className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
@@ -614,8 +663,8 @@ export const AdminProductsPage: React.FC = () => {
         >
           <div className="space-y-4 pt-2 text-xs">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Select Moderator Specialist</label>
-              <select value={selectedModerator} onChange={(e) => setSelectedModerator(e.target.value)} className="w-full admin-select h-10">
+              <label htmlFor="assign-moderator" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Select Moderator Specialist</label>
+              <select id="assign-moderator" value={selectedModerator} onChange={(e) => setSelectedModerator(e.target.value)} className="w-full admin-select h-10">
                 <option value="">Choose moderator...</option>
                 <option value="usr_sarah_jenkins">Sarah Jenkins (Senior Compliance Lead)</option>
                 <option value="usr_alex_rivera">Alex Rivera (Catalog & Trademark Specialist)</option>
@@ -624,8 +673,8 @@ export const AdminProductsPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Internal Instructions (Optional)</label>
-              <input type="text" value={assignNote} onChange={(e) => setAssignNote(e.target.value)} placeholder="e.g. Check trademark documentation for audio gear..." className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" />
+              <label htmlFor="assign-note" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Internal Instructions (Optional)</label>
+              <input id="assign-note" type="text" value={assignNote} onChange={(e) => setAssignNote(e.target.value)} placeholder="e.g. Check trademark documentation for audio gear..." className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" />
             </div>
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button type="button" onClick={() => setIsAssignModalOpen(false)} className="px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>

@@ -9,7 +9,8 @@ export type ButtonVariant =
   | 'outline'
   | 'ghost'
   | 'secondary'
-  | 'destructive';
+  | 'destructive'
+  | 'ink';
 
 export type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
 
@@ -21,17 +22,19 @@ export interface ButtonVariantOptions {
 
 const variantStyles: Record<ButtonVariant, string> = {
   default:
-    'bg-ink text-white hover:bg-ink/90 active:scale-[0.98] shadow-sm',
+    'bg-sun-orange text-white hover:bg-[#EA6C13] shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
   'orange-cta':
     'bg-sun-orange text-white hover:bg-[#EA6C13] shadow-md hover:shadow-orange-glow active:scale-[0.98] font-semibold',
+  ink:
+    'bg-ink dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-ink/90 dark:hover:bg-white active:scale-[0.98] shadow-sm',
   'glass-pill':
-    'bg-white/75 hover:bg-white/95 text-ink border border-white/60 backdrop-blur-[16px] shadow-glass-pill hover:shadow-glass active:scale-[0.98] supports-[not(backdrop-filter:blur(0))]:bg-white',
+    'bg-white/75 dark:bg-slate-800/80 hover:bg-white/95 dark:hover:bg-slate-800 text-ink dark:text-slate-100 border border-white/60 dark:border-slate-700 backdrop-blur-[16px] shadow-glass-pill hover:shadow-glass active:scale-[0.98] supports-[not(backdrop-filter:blur(0))]:bg-white',
   outline:
-    'border border-slate-200 bg-white/70 hover:bg-white text-ink active:scale-[0.98] shadow-xs',
+    'border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-ink dark:text-slate-200 active:scale-[0.98] shadow-xs',
   ghost:
-    'hover:bg-slate-100/80 hover:text-ink text-slate-700 active:scale-[0.98]',
+    'hover:bg-slate-100/80 dark:hover:bg-slate-800 hover:text-ink dark:hover:text-slate-100 text-slate-700 dark:text-slate-300 active:scale-[0.98]',
   secondary:
-    'bg-slate-100 hover:bg-slate-200 text-ink active:scale-[0.98]',
+    'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-ink dark:text-slate-100 active:scale-[0.98]',
   destructive:
     'bg-coral text-white hover:bg-coral/90 active:scale-[0.98] shadow-sm',
 };

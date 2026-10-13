@@ -232,10 +232,11 @@ export const AdminNotificationsPage = () => {
           {broadcast.isSuccess && (
             <div
               role="status"
+              aria-live="polite"
               data-testid="broadcast-result"
               className="mt-4 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800"
             >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
               <span>
                 Reached {accounts(broadcast.data ?? 0)}
                 {broadcast.data === 0
@@ -248,10 +249,11 @@ export const AdminNotificationsPage = () => {
           {broadcast.isError && (
             <div
               role="alert"
+              aria-live="assertive"
               data-testid="broadcast-error"
               className="mt-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"
             >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
               <span>{reason(broadcast.error, 'The announcement could not be sent.')}</span>
             </div>
           )}
@@ -283,8 +285,12 @@ export const AdminNotificationsPage = () => {
           </div>
 
           {log.isPending ? (
-            <div className="flex items-center gap-3 px-5 py-8 text-sm text-slate-700">
-              <ScrollText className="h-4 w-4" />
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center gap-3 px-5 py-8 text-sm text-slate-700"
+            >
+              <ScrollText className="h-4 w-4" aria-hidden="true" />
               Reading the announcement log…
             </div>
           ) : log.isError ? (
@@ -309,7 +315,7 @@ export const AdminNotificationsPage = () => {
           ) : total === 0 ? (
             <div className="px-5 py-12 text-center">
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                <Megaphone className="h-6 w-6 stroke-[1.5]" />
+                <Megaphone className="h-6 w-6 stroke-[1.5]" aria-hidden="true" />
               </div>
               <h3 className="text-sm font-bold text-slate-900">No announcements sent yet</h3>
               <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
@@ -325,14 +331,17 @@ export const AdminNotificationsPage = () => {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table
+                  className="w-full text-left text-xs"
+                  aria-label="Announcement delivery log"
+                >
                   <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th className="px-4 py-3.5">Sent by</th>
-                      <th className="px-4 py-3.5">Audience</th>
-                      <th className="px-4 py-3.5">Announcement</th>
-                      <th className="px-4 py-3.5 text-right">Reached</th>
-                      <th className="px-4 py-3.5 text-right">When</th>
+                      <th scope="col" className="px-4 py-3.5">Sent by</th>
+                      <th scope="col" className="px-4 py-3.5">Audience</th>
+                      <th scope="col" className="px-4 py-3.5">Announcement</th>
+                      <th scope="col" className="px-4 py-3.5 text-right">Reached</th>
+                      <th scope="col" className="px-4 py-3.5 text-right">When</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -393,8 +402,9 @@ export const AdminNotificationsPage = () => {
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     className="cursor-pointer rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                     title="Previous page"
+                    aria-label="Previous page"
                   >
-                    <ChevronLeft className="h-3.5 w-3.5" />
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -403,8 +413,9 @@ export const AdminNotificationsPage = () => {
                     onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                     className="cursor-pointer rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                     title="Next page"
+                    aria-label="Next page"
                   >
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 </span>
               </div>

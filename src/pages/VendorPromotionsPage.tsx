@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Tag,
   Plus,
@@ -23,6 +23,7 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { exportToCsv } from '../lib/export-csv';
+import { useCurrency } from '../store/currency-store';
 import {
   useCreatePromotion,
   useDeletePromotion,
@@ -31,17 +32,8 @@ import {
   type VendorPromotion,
 } from '../features/vendor/hooks/useVendorPromotions';
 
-const money = (value: number) =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-/** `promotions.discount_value` read according to `discount_type`. */
-const discountLabel = (promo: VendorPromotion) =>
-  promo.discountType === 'percentage'
-    ? `${promo.discountValue}% off`
-    : `${money(promo.discountValue)} off`;
 
 type PromoStatus = 'live' | 'scheduled' | 'exhausted' | 'expired' | 'off';
 
@@ -75,6 +67,9 @@ const STATUS_TEXT: Record<PromoStatus, string> = {
 
 type Tab = 'all' | 'live' | 'scheduled' | 'exhausted' | 'off';
 
+/** The tab order, shared by the tablist markup and its arrow-key handler. */
+const PROMO_TABS: Tab[] = ['all', 'live', 'scheduled', 'exhausted', 'off'];
+
 function isoFromLocalInput(value: string): string | null {
   if (!value) return null;
   const parsed = new Date(value);
@@ -86,6 +81,15 @@ export const VendorPromotionsPage: React.FC = () => {
   const create = useCreatePromotion();
   const setActive = useSetPromotionActive();
   const remove = useDeletePromotion();
+  // Amounts are stored in USD on `promotions`; every one of them is rendered through
+  // formatPrice so the page never hard-codes a currency symbol.
+  const { formatPrice } = useCurrency();
+
+  const money = (value: number) => formatPrice(value);
+
+  /** `promotions.discount_value` read according to `discount_type`. */
+  const discountLabel = (promo: VendorPromotion) =>
+    promo.discountType === 'percentage' ? `${promo.discountValue}% off` : `${money(promo.discountValue)} off`;
 
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -94,6 +98,9 @@ export const VendorPromotionsPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  // Deleting a coupon is irreversible, so the row waits here until the seller confirms.
+  const [deleteTarget, setDeleteTarget] = useState<VendorPromotion | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [formTitle, setFormTitle] = useState('');
   const [formCode, setFormCode] = useState('');
@@ -109,7 +116,7 @@ export const VendorPromotionsPage: React.FC = () => {
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4500);
+    window.setTimeout(() => setToastMessage(null), 4500);
   };
 
   const rows = useMemo(() => promotions.data ?? [], [promotions.data]);
@@ -132,10 +139,49 @@ export const VendorPromotionsPage: React.FC = () => {
 
   const topRedeemed = [...rows].sort((a, b) => b.usageCount - a.usageCount).slice(0, 3);
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard?.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
+  const handleCopyCode = async (code: string) => {
+    setFormError(null);
+    try {
+      if (!navigator.clipboard) throw new Error('This browser blocks clipboard writes, so the code was not copied.');
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      window.setTimeout(() => setCopiedCode(null), 2000);
+    } catch (err) {
+      // The tick icon only appears once the write actually landed.
+      setFormError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  /** Park the campaign and open the confirm step; no query reaches the database yet. */
+  const askDelete = (promo: VendorPromotion) => {
+    setFormError(null);
+    setToastMessage(null);
+    setDeleteError(null);
+    setDeleteTarget(promo);
+  };
+
+  const closeDelete = () => {
+    if (remove.isPending) return;
+    setDeleteTarget(null);
+    setDeleteError(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    try {
+      // Real server write: `deletePromotion` issues a Supabase DELETE on `promotions` scoped by
+      // vendor_id and throws when the row count coming back is zero.
+      await remove.mutateAsync(deleteTarget.id);
+      showToast(
+        `Deleted ${deleteTarget.code}. Its ${deleteTarget.usageCount} recorded redemption(s) went with the row; orders it cheapened keep their booked totals.`,
+      );
+      setDeleteTarget(null);
+    } catch (err) {
+      // Queries refetch only after a successful delete, so the campaign stays in the table and the
+      // server's reason is shown instead of a "Deleted" toast.
+      setDeleteError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const handleToggle = async (promo: VendorPromotion) => {
@@ -150,16 +196,6 @@ export const VendorPromotionsPage: React.FC = () => {
           ? `${next.code} is switchable on again - checkout will accept it while it is inside its window.`
           : `${next.code} is off. Buyers typing it now get "Invalid or expired coupon code".`,
       );
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const handleDelete = async (promo: VendorPromotion) => {
-    setFormError(null);
-    try {
-      await remove.mutateAsync(promo.id);
-      showToast(`Deleted ${promo.code}. Its redemption count went with the row; orders it cheapened keep their booked totals.`);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : String(err));
     }
@@ -202,6 +238,10 @@ export const VendorPromotionsPage: React.FC = () => {
   };
 
   const handleExportCsv = () => {
+    if (filtered.length === 0) {
+      setFormError('Nothing to export - this filter has no campaigns, so no file was written.');
+      return;
+    }
     const data = filtered.map((p) => ({
       code: p.code,
       title: p.title,
@@ -217,19 +257,52 @@ export const VendorPromotionsPage: React.FC = () => {
       status: statusOf(p, now),
       active: p.active ? 'yes' : 'no',
     }));
-    exportToCsv(`vendor-promotions-${new Date().toISOString().split('T')[0]}.csv`, data, {
-      code: 'Code',
-      title: 'Campaign',
-      discount: 'Discount',
-      minimumOrder: 'Minimum order',
-      maxDiscount: 'Max discount',
-      usageCount: 'Redemptions',
-      usageLimit: 'Usage cap',
-      window: 'Window',
-      status: 'Status',
-      active: 'Switched on',
-    });
-    showToast('Campaigns exported to CSV');
+    try {
+      exportToCsv(`vendor-promotions-${new Date().toISOString().split('T')[0]}.csv`, data, {
+        code: 'Code',
+        title: 'Campaign',
+        discount: 'Discount',
+        minimumOrder: 'Minimum order',
+        maxDiscount: 'Max discount',
+        usageCount: 'Redemptions',
+        usageLimit: 'Usage cap',
+        window: 'Window',
+        status: 'Status',
+        active: 'Switched on',
+      });
+      // A local browser download, not a server action - so the wording says exactly that.
+      showToast(`Wrote ${data.length} campaign row(s) to a CSV file on this device.`);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  /** Roving focus for the tablist: the tabs are one stop in the tab order, arrows move it. */
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const moveTabFocus = (index: number) => {
+    const next = PROMO_TABS[(index + PROMO_TABS.length) % PROMO_TABS.length];
+    setActiveTab(next);
+    tabListRef.current
+      ?.querySelector<HTMLButtonElement>(`#promo-tab-${next}`)
+      ?.focus();
+  };
+
+  const onTabListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const index = PROMO_TABS.indexOf(activeTab);
+    if (index === -1) return;
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      moveTabFocus(index + 1);
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      moveTabFocus(index - 1);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      moveTabFocus(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      moveTabFocus(PROMO_TABS.length - 1);
+    }
   };
 
   return (
@@ -253,35 +326,45 @@ export const VendorPromotionsPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2.5">
             <button
+              type="button"
               onClick={() => setIsScheduleOpen(true)}
               className="inline-flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 sm:self-auto"
             >
-              <Calendar className="h-4 w-4 text-slate-500" />
+              <Calendar className="h-4 w-4 text-slate-500" aria-hidden="true" />
               Campaign windows
             </button>
             <button
+              type="button"
               onClick={() => {
                 setFormError(null);
                 setIsCreateOpen(true);
               }}
               className="inline-flex items-center gap-2 self-start rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-slate-800 sm:self-auto"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               New coupon code
             </button>
           </div>
         </div>
 
         {toastMessage && (
-          <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}
 
         {formError && (
-          <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
             <span>{formError}</span>
           </div>
         )}
@@ -339,11 +422,23 @@ export const VendorPromotionsPage: React.FC = () => {
         {/* ── Tabs + search ───────────────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" data-lenis-prevent>
-              {(['all', 'live', 'scheduled', 'exhausted', 'off'] as Tab[]).map((tab) => (
+            <div
+              ref={tabListRef}
+              role="tablist"
+              aria-label="Filter campaigns by status"
+              onKeyDown={onTabListKeyDown}
+              className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0"
+              data-lenis-prevent
+            >
+              {PROMO_TABS.map((tab) => (
                 <button
                   key={tab}
+                  id={`promo-tab-${tab}`}
                   type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  aria-controls="promo-campaigns-panel"
+                  tabIndex={activeTab === tab ? 0 : -1}
                   onClick={() => setActiveTab(tab)}
                   className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
                     activeTab === tab ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
@@ -366,14 +461,18 @@ export const VendorPromotionsPage: React.FC = () => {
               onClick={handleExportCsv}
               className="inline-flex items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 sm:self-auto"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="h-3.5 w-3.5" aria-hidden="true" />
               Export CSV
             </button>
           </div>
 
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <label htmlFor="promo-search" className="sr-only">
+              Filter campaigns by code or title
+            </label>
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             <input
+              id="promo-search"
               type="text"
               placeholder="Filter by code or campaign title"
               value={searchQuery}
@@ -384,17 +483,23 @@ export const VendorPromotionsPage: React.FC = () => {
         </div>
 
         {/* ── Table ───────────────────────────────────────────────── */}
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+        <div
+          id="promo-campaigns-panel"
+          role="tabpanel"
+          aria-labelledby={`promo-tab-${activeTab}`}
+          tabIndex={-1}
+          className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs"
+        >
           {promotions.isError && (
-            <div className="flex items-start gap-2 p-5 text-xs text-rose-700">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div role="alert" aria-live="assertive" className="flex items-start gap-2 p-5 text-xs text-rose-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{(promotions.error as Error).message}</span>
             </div>
           )}
 
           {!promotions.isError && rows.length === 0 && (
             <div className="space-y-2 p-8 text-center">
-              <Tag className="mx-auto h-8 w-8 text-slate-300" />
+              <Tag className="mx-auto h-8 w-8 text-slate-300" aria-hidden="true" />
               <div className="text-sm font-bold text-slate-900">No coupon codes yet</div>
               <p className="mx-auto max-w-xl text-xs text-slate-500">
                 Create one and it is immediately readable by checkout. Codes are unique across the
@@ -411,16 +516,16 @@ export const VendorPromotionsPage: React.FC = () => {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs" aria-label="Coupon campaigns on this store">
                   <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th className="px-4 py-3">CODE &amp; CAMPAIGN</th>
-                      <th className="px-4 py-3">DISCOUNT</th>
-                      <th className="px-4 py-3">MINIMUM / CAP</th>
-                      <th className="px-4 py-3">WINDOW</th>
-                      <th className="px-4 py-3">REDEMPTIONS</th>
-                      <th className="px-4 py-3">STATUS</th>
-                      <th className="px-4 py-3 text-right">ACTIONS</th>
+                      <th scope="col" className="px-4 py-3">CODE &amp; CAMPAIGN</th>
+                      <th scope="col" className="px-4 py-3">DISCOUNT</th>
+                      <th scope="col" className="px-4 py-3">MINIMUM / CAP</th>
+                      <th scope="col" className="px-4 py-3">WINDOW</th>
+                      <th scope="col" className="px-4 py-3">REDEMPTIONS</th>
+                      <th scope="col" className="px-4 py-3">STATUS</th>
+                      <th scope="col" className="px-4 py-3 text-right">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -441,14 +546,19 @@ export const VendorPromotionsPage: React.FC = () => {
                               </span>
                               <button
                                 type="button"
-                                onClick={() => handleCopyCode(promo.code)}
-                                className="text-slate-400 hover:text-slate-700"
+                                onClick={() => void handleCopyCode(promo.code)}
+                                className="rounded text-slate-400 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-900"
+                                aria-label={
+                                  copiedCode === promo.code
+                                    ? `${promo.code} copied to the clipboard`
+                                    : `Copy ${promo.code} to the clipboard`
+                                }
                                 title="Copy code"
                               >
                                 {copiedCode === promo.code ? (
-                                  <Check className="h-3 w-3 text-emerald-600" />
+                                  <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                                 ) : (
-                                  <Copy className="h-3 w-3" />
+                                  <Copy className="h-3 w-3" aria-hidden="true" />
                                 )}
                               </button>
                             </div>
@@ -509,7 +619,7 @@ export const VendorPromotionsPage: React.FC = () => {
                             <span
                               className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[status]}`}
                             >
-                              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
                               {STATUS_TEXT[status]}
                             </span>
                           </td>
@@ -518,27 +628,29 @@ export const VendorPromotionsPage: React.FC = () => {
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => handleToggle(promo)}
+                                onClick={() => void handleToggle(promo)}
                                 disabled={setActive.isPending}
+                                aria-label={`${promo.active ? 'Switch off' : 'Switch on'} ${promo.code}`}
                                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                               >
                                 {promo.active ? (
                                   <>
-                                    <Pause className="h-3 w-3" /> Switch off
+                                    <Pause className="h-3 w-3" aria-hidden="true" /> Switch off
                                   </>
                                 ) : (
                                   <>
-                                    <Play className="h-3 w-3" /> Switch on
+                                    <Play className="h-3 w-3" aria-hidden="true" /> Switch on
                                   </>
                                 )}
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDelete(promo)}
+                                onClick={() => askDelete(promo)}
                                 disabled={remove.isPending}
+                                aria-label={`Delete ${promo.code}`}
                                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
                               >
-                                <Trash2 className="h-3 w-3" /> Delete
+                                <Trash2 className="h-3 w-3" aria-hidden="true" /> Delete
                               </button>
                             </div>
                           </td>
@@ -563,7 +675,7 @@ export const VendorPromotionsPage: React.FC = () => {
           <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-5">
             <div>
               <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4 text-slate-700" />
+                <Tag className="h-4 w-4 text-slate-700" aria-hidden="true" />
                 <h2 className="text-base font-bold text-slate-900">Most redeemed codes</h2>
               </div>
               <p className="mt-1 text-xs text-slate-500">
@@ -663,20 +775,24 @@ export const VendorPromotionsPage: React.FC = () => {
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Tag className="h-5 w-5 text-slate-700" />
+                <Tag className="h-5 w-5 text-slate-700" aria-hidden="true" />
                 New coupon code
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 These are the columns on <code className="font-mono">promotions</code>. Anything you
-                leave blank keeps its database default.
+                leave blank keeps its database default. Amounts are stored in USD and shown in your
+                selected display currency.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3.5 py-2 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">Campaign title</label>
+                  <label htmlFor="promo-title" className="mb-1 block font-bold text-slate-700">
+                    Campaign title
+                  </label>
                   <input
+                    id="promo-title"
                     type="text"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
@@ -685,8 +801,11 @@ export const VendorPromotionsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">Code (unique, uppercase)</label>
+                  <label htmlFor="promo-code" className="mb-1 block font-bold text-slate-700">
+                    Code (unique, uppercase)
+                  </label>
                   <input
+                    id="promo-code"
                     type="text"
                     value={formCode}
                     onChange={(e) => setFormCode(e.target.value.toUpperCase())}
@@ -697,8 +816,11 @@ export const VendorPromotionsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">Description for your own log</label>
+                <label htmlFor="promo-description" className="mb-1 block font-bold text-slate-700">
+                  Description for your own log
+                </label>
                 <input
+                  id="promo-description"
                   type="text"
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
@@ -709,8 +831,11 @@ export const VendorPromotionsPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">Discount type</label>
+                  <label htmlFor="promo-discount-type" className="mb-1 block font-bold text-slate-700">
+                    Discount type
+                  </label>
                   <select
+                    id="promo-discount-type"
                     value={formDiscountType}
                     onChange={(e) => setFormDiscountType(e.target.value as 'percentage' | 'fixed')}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
@@ -720,10 +845,11 @@ export const VendorPromotionsPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">
-                    {formDiscountType === 'percentage' ? 'Percent' : 'Amount ($)'}
+                  <label htmlFor="promo-discount-value" className="mb-1 block font-bold text-slate-700">
+                    {formDiscountType === 'percentage' ? 'Percent' : 'Amount off (USD)'}
                   </label>
                   <input
+                    id="promo-discount-value"
                     type="number"
                     min="0"
                     step="0.01"
@@ -736,8 +862,11 @@ export const VendorPromotionsPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">Minimum order ($)</label>
+                  <label htmlFor="promo-min-order" className="mb-1 block font-bold text-slate-700">
+                    Minimum order (USD)
+                  </label>
                   <input
+                    id="promo-min-order"
                     type="number"
                     min="0"
                     step="0.01"
@@ -747,8 +876,11 @@ export const VendorPromotionsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">Max discount (optional)</label>
+                  <label htmlFor="promo-max-discount" className="mb-1 block font-bold text-slate-700">
+                    Max discount in USD (optional)
+                  </label>
                   <input
+                    id="promo-max-discount"
                     type="number"
                     min="0"
                     step="0.01"
@@ -762,8 +894,11 @@ export const VendorPromotionsPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">Usage cap</label>
+                  <label htmlFor="promo-usage-limit" className="mb-1 block font-bold text-slate-700">
+                    Usage cap
+                  </label>
                   <input
+                    id="promo-usage-limit"
                     type="number"
                     min="0"
                     step="1"
@@ -773,8 +908,11 @@ export const VendorPromotionsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-bold text-slate-700">Opens</label>
+                  <label htmlFor="promo-starts" className="mb-1 block font-bold text-slate-700">
+                    Opens
+                  </label>
                   <input
+                    id="promo-starts"
                     type="datetime-local"
                     value={formStarts}
                     onChange={(e) => setFormStarts(e.target.value)}
@@ -784,8 +922,11 @@ export const VendorPromotionsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">Closes</label>
+                <label htmlFor="promo-closes" className="mb-1 block font-bold text-slate-700">
+                  Closes
+                </label>
                 <input
+                  id="promo-closes"
                   type="datetime-local"
                   value={formEnds}
                   onChange={(e) => setFormEnds(e.target.value)}
@@ -808,6 +949,16 @@ export const VendorPromotionsPage: React.FC = () => {
                 </span>
               </label>
 
+              {formError && (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-800"
+                >
+                  {formError}
+                </div>
+              )}
+
               <div className="flex justify-end gap-2.5 pt-1">
                 <button
                   type="button"
@@ -818,7 +969,7 @@ export const VendorPromotionsPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={handleCreate}
+                  onClick={() => void handleCreate()}
                   disabled={create.isPending}
                   className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
@@ -834,7 +985,7 @@ export const VendorPromotionsPage: React.FC = () => {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-slate-700" />
+                <Calendar className="h-5 w-5 text-slate-700" aria-hidden="true" />
                 Campaign windows
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
@@ -874,6 +1025,78 @@ export const VendorPromotionsPage: React.FC = () => {
                 className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
               >
                 Close
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ── Confirm step: deleting a coupon is irreversible ─────────── */}
+        <Dialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) closeDelete();
+          }}
+        >
+          <DialogContent
+            className="sm:max-w-md"
+            onEscapeKeyDown={(event) => {
+              if (remove.isPending) event.preventDefault();
+            }}
+            onPointerDownOutside={(event) => {
+              if (remove.isPending) event.preventDefault();
+            }}
+            onInteractOutside={(event) => {
+              if (remove.isPending) event.preventDefault();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+                <Trash2 className="h-5 w-5 text-rose-600" aria-hidden="true" />
+                Delete this coupon code?
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                {deleteTarget ? (
+                  <>
+                    1 campaign will be removed: <code className="font-mono font-bold">{deleteTarget.code}</code>{' '}
+                    <span className="text-slate-700">({deleteTarget.title || 'Untitled campaign'}, {discountLabel(deleteTarget)})</span>.
+                    Its <strong className="text-slate-800">{deleteTarget.usageCount}</strong> recorded redemption(s) of a{' '}
+                    {deleteTarget.usageLimit.toLocaleString()} cap go with the row. This is a real{' '}
+                    <code className="font-mono">DELETE</code> on <code className="font-mono">promotions</code> and it cannot
+                    be undone; from that moment checkout answers the code with “Invalid or expired coupon code”. Orders it
+                    already cheapened keep the totals they were booked with.
+                  </>
+                ) : (
+                  'Nothing has been deleted yet.'
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            {deleteError && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-800"
+              >
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5 border-t border-slate-100 pt-3">
+              <button
+                type="button"
+                onClick={closeDelete}
+                disabled={remove.isPending}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDelete()}
+                disabled={remove.isPending || !deleteTarget}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                {remove.isPending ? 'Deleting…' : 'Delete permanently'}
               </button>
             </div>
           </DialogContent>

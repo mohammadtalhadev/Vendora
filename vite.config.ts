@@ -80,11 +80,25 @@ function apiDevMiddleware() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), apiDevMiddleware()],
+  server: {
+    watch: {
+      ignored: [
+        '**/scratch/**',
+        '**/.git/**',
+        '**/.kilo/**',
+        '**/coverage/**',
+        '**/temp/**',
+        '**/*.log',
+      ],
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/.kilo/**', '**/.git/**'],
     testTimeout: 20000,
+    pool: 'threads',
+    maxWorkers: 3,
   },
 });

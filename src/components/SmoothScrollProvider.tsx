@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 
 interface SmoothScrollContextType {
   lenis: Lenis | null;
@@ -20,6 +21,7 @@ interface SmoothScrollProviderProps {
 }
 
 export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ children }) => {
+  const [lenisInstance, setLenisInstance] = useState<Lenis | null>(null);
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
@@ -30,26 +32,22 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
     }
 
     const lenis = new Lenis({
-      duration: 0.7, // Snappy & immediate response without floaty input lag
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      autoRaf: true,
+      lerp: 0.1, // True responsive linear damping: silky smooth, zero floaty input lag
       smoothWheel: true,
-      syncTouch: false, // Keep native 120Hz touch/trackpad momentum without lag
+      syncTouch: false, // Keep native 120Hz trackpad/touch momentum without lag
       touchMultiplier: 1,
       wheelMultiplier: 1,
+      overscroll: true,
     });
-    lenisRef.current = lenis;
 
-    let rafId: number;
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    }
-    rafId = requestAnimationFrame(raf);
+    lenisRef.current = lenis;
+    setLenisInstance(lenis);
 
     return () => {
-      cancelAnimationFrame(rafId);
       lenis.destroy();
       lenisRef.current = null;
+      setLenisInstance(null);
     };
   }, []);
 
@@ -62,7 +60,7 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
   };
 
   return (
-    <SmoothScrollContext.Provider value={{ lenis: lenisRef.current, pauseScroll, resumeScroll }}>
+    <SmoothScrollContext.Provider value={{ lenis: lenisInstance, pauseScroll, resumeScroll }}>
       {children}
     </SmoothScrollContext.Provider>
   );

@@ -216,6 +216,19 @@ export const NotificationsPage: React.FC = () => {
     setPage(1);
   };
 
+  /** Roving focus across the tablist: Arrow/Home/End move focus, Enter/Space activate. */
+  const handleTabListKeyDown = (event: React.KeyboardEvent, index: number) => {
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % TABS.length;
+    else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + TABS.length) % TABS.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = TABS.length - 1;
+    if (nextIndex !== null) {
+      event.preventDefault();
+      document.getElementById(`tab-${TABS[nextIndex].id}`)?.focus();
+    }
+  };
+
   const pageCount = Math.max(Math.ceil(total / PAGE_SIZE), 1);
 
   return (
@@ -335,16 +348,26 @@ export const NotificationsPage: React.FC = () => {
           </div>
 
           {/* Filter Pill Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {TABS.map((tab) => {
+          <div
+            role="tablist"
+            aria-label="Notification categories"
+            aria-orientation="horizontal"
+            className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none"
+          >
+            {TABS.map((tab, index) => {
               const isActive = activeCategory === tab.id;
               const count = countOf(tab.id);
               return (
                 <button
                   key={tab.id}
                   type="button"
+                  role="tab"
+                  id={`tab-${tab.id}`}
                   onClick={() => selectTab(tab.id)}
-                  aria-pressed={isActive}
+                  onKeyDown={(event) => handleTabListKeyDown(event, index)}
+                  aria-selected={isActive}
+                  aria-controls="notifications-panel"
+                  tabIndex={isActive ? 0 : -1}
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shrink-0 cursor-pointer',
                     isActive
@@ -370,6 +393,7 @@ export const NotificationsPage: React.FC = () => {
         </div>
 
         {/* Notifications Feed */}
+        <div role="tabpanel" id="notifications-panel" aria-labelledby={`tab-${activeCategory}`} tabIndex={0}>
         {!userId ? (
           /* A notice is addressed to an account, so an anonymous visitor has none to read. */
           <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white py-16 px-6 text-center shadow-xs">
@@ -634,6 +658,7 @@ export const NotificationsPage: React.FC = () => {
               <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs sm:flex-row">
                 <p
                   data-testid="pager-summary"
+                  aria-live="polite"
                   className="text-[11px] font-semibold text-slate-500"
                 >
                   Showing {rows.length} of {total} {activeCategory === 'all' ? 'notices' : `${activeLabel.toLowerCase()} notices`}
@@ -665,6 +690,7 @@ export const NotificationsPage: React.FC = () => {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );

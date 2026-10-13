@@ -208,7 +208,7 @@ export const VendorEarningsPage: React.FC = () => {
 
         {loadError && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-rose-600" />
+            <AlertCircle className="h-4 w-4 text-rose-600" aria-hidden="true" />
             <span>{loadError instanceof Error ? loadError.message : String(loadError)}</span>
             <button
               type="button"
@@ -286,7 +286,7 @@ export const VendorEarningsPage: React.FC = () => {
               to="/vendor/payouts"
               className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-slate-900 hover:underline"
             >
-              Request a payout <ArrowRight className="h-3.5 w-3.5" />
+              Request a payout <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -523,7 +523,7 @@ export const VendorEarningsPage: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                 <input
                   type="text"
                   placeholder="Filter by package id..."
@@ -591,7 +591,7 @@ export const VendorEarningsPage: React.FC = () => {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
                   title="Export filtered records"
                 >
-                  <Download className="h-3.5 w-3.5" />
+                  <Download className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Export CSV</span>
                 </button>
               </div>
@@ -781,7 +781,7 @@ export const VendorEarningsPage: React.FC = () => {
         {/* ── Toast ─────────────────────────────────────────────── */}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}

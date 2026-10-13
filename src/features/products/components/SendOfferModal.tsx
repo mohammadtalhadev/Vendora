@@ -51,14 +51,14 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
             <h3 className="mt-4 text-xl font-bold text-slate-900">Offer Submitted!</h3>
             <p className="mt-2 text-xs text-slate-600 max-w-xs">
               Your offer of <span className="font-bold text-slate-900">${offerPrice}</span> was sent to{' '}
-              <span className="font-bold text-blue-600">{sellerName}</span>. You will receive an email response shortly.
+              <span className="font-bold text-[#FF7A1A]">{sellerName}</span>. You will receive an email response shortly.
             </p>
           </div>
         ) : (
           <div>
-            <div className="flex items-center gap-2 text-blue-600">
-              <Tag className="h-5 w-5" />
-              <span className="text-xs font-bold uppercase tracking-wider">Make an Offer</span>
+            <div className="flex items-center gap-2 text-[#FF7A1A]">
+              <Tag className="h-5 w-5 text-[#FF7A1A]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[#FF7A1A]">Make an Offer</span>
             </div>
 
             <h3 className="mt-2 text-xl font-extrabold text-slate-900">Send Price Offer</h3>
@@ -69,7 +69,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                 <span className="text-[11px] text-slate-500">Current Listing Price</span>
                 <p className="text-sm font-bold text-slate-700">${currentPrice.toFixed(2)}</p>
               </div>
-              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-600">
+              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-[#FF7A1A] ring-1 ring-orange-200/70">
                 Seller: {sellerName}
               </span>
             </div>
@@ -92,7 +92,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                     required
                     value={offerPrice}
                     onChange={(e) => setOfferPrice(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-8 pr-4 text-sm font-bold text-slate-800 shadow-xs focus:border-blue-600 focus:outline-hidden focus:ring-1 focus:ring-blue-600"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-8 pr-4 text-sm font-bold text-slate-800 shadow-xs focus:border-[#FF7A1A] focus:outline-hidden focus:ring-2 focus:ring-[#FF7A1A]/20"
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
@@ -110,7 +110,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="e.g. Ready to purchase immediately if offer is accepted..."
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-800 shadow-xs focus:border-blue-600 focus:outline-hidden focus:ring-1 focus:ring-blue-600 placeholder:text-slate-400"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-800 shadow-xs focus:border-[#FF7A1A] focus:outline-hidden focus:ring-2 focus:ring-[#FF7A1A]/20 placeholder:text-slate-400"
                 />
               </div>
 
@@ -118,13 +118,13 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF8C38] hover:from-[#EA6C13] hover:to-[#FF7A1A] py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                 >
                   Submit Offer
                 </button>

@@ -14,6 +14,7 @@ import { TEST_CARD_PRESETS, findTestCardByNumber } from '../utils/test-cards';
 import { validateCardLuhn, detectCardBrand, validateExpiry, maskCardNumber } from '../utils/luhn';
 import { useCartStore } from '../../../store/cart-store';
 import { useAuthStore } from '../../../store/auth-store';
+import { useCurrency } from '../../../store/currency-store';
 import { useCheckoutDraftStore } from '../store/checkout-draft';
 import { useCheckoutTotals, usePlaceOrder } from '../hooks/useCheckout';
 import { Button } from '../../../components/ui/button';
@@ -138,8 +139,9 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
   const dynamicShippingTotal = quote?.shippingTotal;
   const grandTotal = quote?.grandTotal;
   const expressFee = quote?.expressFee;
+  const { formatPrice } = useCurrency();
 
-  const price = (value: number | undefined) => (value === undefined ? '—' : `$${value.toFixed(2)}`);
+  const price = (value: number | undefined) => formatPrice(value);
 
   // Handle saved address radio selection
   const handleSelectSavedAddress = (id: string) => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   RefreshCcw,
@@ -31,6 +31,7 @@ import { useVendorDashboard } from '../features/vendor/hooks/useVendorDashboard'
 import { useVendorLive } from '../features/vendor/hooks/useLive';
 import { useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
 import { useShippingSettings } from '../features/vendor/hooks/useVendorStore';
+import { useCurrency } from '../store/currency-store';
 
 /** The picker's labels mapped onto the months of history the earnings RPC should read. */
 const RANGE_MONTHS: Record<'30D' | '3M' | 'YTD', number> = {
@@ -49,8 +50,93 @@ const monthLabel = (month: string) => {
     : date.toLocaleDateString('en-US', { month: 'short' });
 };
 
+/** The seven buckets `vendor_dashboard` counts. They are what the stage tiles show. */
+const STAGE_KEYS = [
+  'placed',
+  'confirmed',
+  'packed',
+  'inTransit',
+  'delivered',
+  'returns',
+  'cancelled',
+] as const;
+type StageKey = (typeof STAGE_KEYS)[number];
+
+/**
+ * The same partition the RPC's `count(*) filter (where status in (...))` clauses apply, written
+ * out over the whole `sub_order_status` enum. The `Record` makes the compiler list every status,
+ * so a status cannot be forgotten by accident: the two that map to `null` are the ones no bucket
+ * of `vendor_dashboard` counts, and a package sitting in either one is reported rather than
+ * silently left out of the sum.
+ */
+const STAGE_OF_STATUS: Record<SubOrderStatus, StageKey | null> = {
+  placed: 'placed',
+  confirmed: 'confirmed',
+  packed: 'packed',
+  ready_for_pickup: 'packed',
+  shipped: 'inTransit',
+  out_for_delivery: 'inTransit',
+  delivered: 'delivered',
+  available: 'delivered',
+  return_requested: 'returns',
+  return_approved: 'returns',
+  returned: 'returns',
+  cancelled: 'cancelled',
+  refunded: 'cancelled',
+  return_rejected: 'cancelled',
+  // No bucket of the dashboard counts these two, so they are named, not absorbed.
+  paid: null,
+  delivery_failed: null,
+};
+
+const emptyStageCounts = (): Record<StageKey, number> => ({
+  placed: 0,
+  confirmed: 0,
+  packed: 0,
+  inTransit: 0,
+  delivered: 0,
+  returns: 0,
+  cancelled: 0,
+});
+
+/**
+ * Partitions the packages this page actually holds into the one source's buckets: a row lands in
+ * exactly one bucket or in `outside`, never two, and `bucketed + outside` is the row count.
+ */
+function partitionStages(rows: readonly { status: SubOrderStatus }[]) {
+  const counts = emptyStageCounts();
+  const outside = new Map<SubOrderStatus, number>();
+  let bucketed = 0;
+  for (const row of rows) {
+    const key = STAGE_OF_STATUS[row.status];
+    if (key) {
+      counts[key] += 1;
+      bucketed += 1;
+    } else {
+      outside.set(row.status, (outside.get(row.status) ?? 0) + 1);
+    }
+  }
+  return { counts, outside, bucketed, rows: rows.length };
+}
+
+/** What the dashboard RPC is asked to count as low stock (`vendor_dashboard(p_low_stock)`). */
+const LOW_STOCK_AT = 5;
+
+/** What the dashboard's own queue table shows: the newest rows of the store's packages. */
+const RECENT_ROWS = 5;
+
+/**
+ * The four stages the queue lets a seller move on. Any other recorded status is still shown -
+ * named from the row itself - rather than left as a blank cell that looks like no status at all.
+ */
+const isSellerActionStage = (status: SubOrderStatus) =>
+  status === 'placed' || status === 'confirmed' || status === 'packed' || status === 'ready_for_pickup';
+
 export const VendorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  // Every money figure on this page goes through the currency store, so the workspace follows
+  // the buyer-facing currency instead of printing a fixed-dollar string.
+  const { formatPrice } = useCurrency();
   const {
     vendorId,
     activeProfile,
@@ -67,7 +153,7 @@ export const VendorDashboardPage: React.FC = () => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [salesTimeRange, setSalesTimeRange] = useState<'30D' | '3M' | 'YTD'>('3M');
   const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ kind: 'ok' | 'bad'; message: string } | null>(null);
 
   const dashboard = useVendorDashboard();
   useVendorLive();
@@ -75,22 +161,83 @@ export const VendorDashboardPage: React.FC = () => {
   const shipping = useShippingSettings();
   const tiles = dashboard.data;
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+  // One toast at a time, and no timer setting state on a page that has already unmounted.
+  const toastTimer = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    },
+    [],
+  );
+
+  /** A failure never wears a success's icon: the kind decides the colour and the glyph. */
+  const pushToast = (kind: 'ok' | 'bad', message: string) => {
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    setToast({ kind, message });
+    toastTimer.current = window.setTimeout(() => {
+      toastTimer.current = null;
+      setToast(null);
+    }, 3500);
   };
+  const showToast = (message: string) => pushToast('ok', message);
+  const showFailure = (message: string) => pushToast('bad', message);
 
   const handleRefresh = async () => {
     await refresh();
-    showToast('Store metrics, queues and earnings re-read from the database.');
+    // `refetch()` resolves even when the query it ran ended in failure, so this reports that the
+    // sync ran and lets the failure block below say whether anything came back.
+    showToast('Sync ran - the tiles show what the reads returned.');
   };
 
   // Stage counts come from the same RPC that counts the payout, so the cards and the
-  // ledger can never disagree about what is still to do.
-  const placedCount = tiles?.stages.placed ?? 0;
-  const confirmedCount = tiles?.stages.confirmed ?? 0;
-  const packedCount = tiles?.stages.packed ?? 0;
-  const readyCount = orders.filter((o) => o.status === 'ready_for_pickup').length + packedCount;
+  // ledger can never disagree about what is still to do. Each bucket is a `status` filter of
+  // its own in `vendor_dashboard`, and they are disjoint:
+  //   packed  = status in ('packed','ready_for_pickup')
+  //   inTransit = shipped, out_for_delivery · delivered = delivered, available
+  //   returns = return_requested, return_approved, returned · cancelled = cancelled, refunded,
+  //             return_rejected
+  // Nothing here adds the page's own rows on top of a bucket, because that would count the same
+  // package twice and the tiles would no longer sum to the order count.
+  const stages = tiles?.stages ?? null;
+  const placedCount = stages?.placed ?? 0;
+  const confirmedCount = stages?.confirmed ?? 0;
+  const readyCount = stages?.packed ?? 0;
+
+  /** Every bucket of the one source, added once: this is the total the tiles must equal. */
+  const stageTotal = stages
+    ? stages.placed +
+      stages.confirmed +
+      stages.packed +
+      stages.inTransit +
+      stages.delivered +
+      stages.returns +
+      stages.cancelled
+    : 0;
+
+  /**
+   * The same partition run over the packages this page is holding - the check the tiles are
+   * measured against. A row is counted once, in exactly one bucket, or lands in `outside` as a
+   * status the dashboard has no bucket for.
+   */
+  const packageStages = useMemo(() => partitionStages(orders), [orders]);
+  const uncoveredStatuses = Array.from(packageStages.outside.entries());
+  /** Buckets the stage read and this queue disagree on: two queries at two moments. */
+  const bucketDiff = stages
+    ? STAGE_KEYS.filter((key) => stages[key] !== packageStages.counts[key])
+    : [];
+  const stagesProveTotal =
+    stages !== null &&
+    uncoveredStatuses.length === 0 &&
+    bucketDiff.length === 0 &&
+    stageTotal === packageStages.rows;
+
+  /**
+   * The three queue tiles are shares of the stage buckets, so their denominator is the sum of
+   * those buckets - never a number the page makes up.
+   */
+  const sharePct = (value: number) => (stageTotal > 0 ? Math.round((value / stageTotal) * 100) : 0);
+  const shareWidth = (value: number) =>
+    stageTotal > 0 ? Math.min(100, (value / stageTotal) * 100) : 0;
 
   const liveListings = tiles?.catalog.approved ?? 0;
 
@@ -112,20 +259,31 @@ export const VendorDashboardPage: React.FC = () => {
   const trend = (value: number | null) =>
     value === null ? null : `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}%`;
 
-  // SVG points across a 900x200 box, scaled to the biggest month in the window.
+  // SVG points across a 900x200 box, scaled to the biggest month in the window. With nothing
+  // settled there is no ratio to take, so the series is empty and each chart prints its own
+  // "nothing settled" state instead of a line plotted from a zero division.
   const seriesPoints = (pick: (m: (typeof months)[number]) => number) =>
-    months
-      .map((m, i) => {
-        const x = months.length === 1 ? 450 : (i / (months.length - 1)) * 890 + 5;
-        const y = 190 - (pick(m) / maxMonthGross) * 170;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
+    maxMonthGross > 0
+      ? months
+          .map((m, i) => {
+            const x = months.length === 1 ? 450 : (i / (months.length - 1)) * 890 + 5;
+            const y = 190 - (pick(m) / maxMonthGross) * 170;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+          })
+          .join(' ')
+      : '';
   const grossPoints = seriesPoints((m) => m.gross);
   const netPoints = seriesPoints((m) => m.net);
 
-  // Dynamic low stock items from the store's own catalog tile
-  const lowStockProducts = useMemo(() => products.filter((p) => (p.stock ?? 0) <= 5), [products]);
+  // Dynamic low stock items, split the same way the store aggregate splits them: `low` is above
+  // zero and at or below the threshold the dashboard RPC was asked to count at, `sold out` is at
+  // zero. `products.stock` is `not null check (stock >= 0)`, so those two sets are exactly the
+  // `stock <= threshold` rows - which is why the tile and this list can be compared directly.
+  const restockProducts = useMemo(() => products.filter((p) => p.stock <= LOW_STOCK_AT), [products]);
+  const lowStockProducts = useMemo(() => restockProducts.filter((p) => p.stock > 0), [restockProducts]);
+  const soldOutListings = restockProducts.length - lowStockProducts.length;
+  /** The aggregate this page's tile reads, against the catalog rows it lists. */
+  const aggregateLowStock = tiles?.catalog.lowStock ?? 0;
 
   const physicalSales = tiles?.kpis.physicalSales ?? 0;
   const digitalSales = tiles?.kpis.digitalSales ?? 0;
@@ -180,7 +338,7 @@ export const VendorDashboardPage: React.FC = () => {
         badge: isCancelled ? (
           <span className="text-xs font-bold text-rose-600">no payout</span>
         ) : (
-          <span className="text-xs font-bold text-emerald-600">${ord.netPayout.toFixed(2)} net</span>
+          <span className="text-xs font-bold text-emerald-600">{formatPrice(ord.netPayout)} net</span>
         ),
       });
     });
@@ -199,7 +357,8 @@ export const VendorDashboardPage: React.FC = () => {
     });
 
     return list.slice(0, 4);
-  }, [orders, products]);
+    // `formatPrice` reads the active currency; a stale closure would print last month's symbol.
+  }, [orders, products, formatPrice]);
 
   const handleAdvanceStatus = async (subOrderId: string, currentStatus: SubOrderStatus) => {
     let nextStatus: SubOrderStatus | null = null;
@@ -221,7 +380,7 @@ export const VendorDashboardPage: React.FC = () => {
         await advanceOrderStatus(subOrderId, nextStatus, 'Vendor', actionLabel);
         showToast(`Package #${subOrderId.slice(0, 8)} is now ${nextStatus.replace(/_/g, ' ')}.`);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : 'Could not update this package.');
+        showFailure(err instanceof Error ? err.message : 'Could not update this package.');
       }
     }
   };
@@ -239,15 +398,15 @@ export const VendorDashboardPage: React.FC = () => {
     exportToCsv({
       filename: `vendora_vendor_operational_report_${new Date().toISOString().slice(0, 10)}.csv`,
       data: [
-        { metric: 'Gross Sales', value: kpis.grossSales, detail: 'Booked from settled sub-orders' },
+        { metric: 'Gross Sales', value: formatPrice(kpis.grossSalesNum), detail: 'Booked from settled sub-orders' },
         {
           metric: 'Commission Deducted',
-          value: kpis.commissionDeducted,
+          value: formatPrice(kpis.commissionDeductedNum),
           detail: commissionPct ? `${commissionPct}% of gross booked` : 'no gross booked',
         },
         {
           metric: 'Net Payout',
-          value: kpis.netPayout,
+          value: formatPrice(kpis.netPayoutNum),
           detail: `payout schedule: ${activeProfile?.payoutSchedule ?? 'not set'}`,
         },
         { metric: 'Packages Awaiting Confirmation', value: `${kpis.pendingOrders}`, detail: 'placed stage' },
@@ -277,14 +436,16 @@ export const VendorDashboardPage: React.FC = () => {
         {/* ── Test Accessibility Invariants (Hidden from vision, available for Vitest) ── */}
         <div className="sr-only" aria-hidden="false">
           <div>Gross Sales</div>
-          <div>{kpis.grossSales}</div>
+          <div>{formatPrice(kpis.grossSalesNum)}</div>
           <div>Platform Commission Deducted</div>
-          <div>{kpis.commissionDeducted}</div>
+          <div>{formatPrice(kpis.commissionDeductedNum)}</div>
           <div>Net Payout</div>
-          <div>{kpis.netPayout}</div>
+          <div>{formatPrice(kpis.netPayoutNum)}</div>
           <div>{kpis.pendingOrders}</div>
           <div>Low Stock</div>
           <div>{kpis.lowStockCount}</div>
+          <div>Total packages by stage</div>
+          <div>{stageTotal}</div>
           <Link to="/vendor/orders">Manage Orders</Link>
           <Link to="/vendor/inventory">Inventory</Link>
           <Link to={`/vendors/${vendorId}`}>Public Storefront</Link>
@@ -309,16 +470,22 @@ export const VendorDashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
+                aria-expanded={isTimeRangeOpen}
+                aria-haspopup="true"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                <Calendar className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                 <span>
                   {salesTimeRange === '30D' ? 'Last 30 days' : salesTimeRange === '3M' ? 'Last 3 months' : 'Year to date'}
                 </span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
               </button>
               {isTimeRangeOpen && (
-                <div className="absolute right-0 top-full mt-1 z-30 w-36 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1 shadow-lg animate-in fade-in zoom-in-95">
+                <div
+                  role="group"
+                  aria-label="Sales timeframe"
+                  className="absolute right-0 top-full mt-1 z-30 w-36 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1 shadow-lg animate-in fade-in zoom-in-95"
+                >
                   {[
                     { id: '30D', label: 'Last 30 days' },
                     { id: '3M', label: 'Last 3 months' },
@@ -327,6 +494,7 @@ export const VendorDashboardPage: React.FC = () => {
                     <button
                       key={p.id}
                       type="button"
+                      aria-pressed={salesTimeRange === p.id}
                       onClick={() => {
                         setSalesTimeRange(p.id as '30D' | '3M' | 'YTD');
                         setIsTimeRangeOpen(false);
@@ -345,36 +513,47 @@ export const VendorDashboardPage: React.FC = () => {
               )}
             </div>
 
-            {/* Sync Live Database Button */}
+            {/* Refresh Metrics Button */}
             <button
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
+              aria-label="Sync store metrics, queues and earnings"
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Synchronize store metrics and orders"
             >
-              <RefreshCcw className={`h-3.5 w-3.5 text-slate-400 ${isRefreshing ? 'animate-spin text-[#FF7A1A]' : ''}`} />
+              <RefreshCcw className={`h-3.5 w-3.5 text-slate-400 ${isRefreshing ? 'animate-spin text-[#FF7A1A]' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline">Sync</span>
             </button>
 
             {/* Primary Add New Product Button */}
             <button
               type="button"
-              aria-label="+ Add New Product"
               onClick={() => setIsProductModalOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              <Plus className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden="true" />
               <span>Add Product</span>
             </button>
           </div>
         </div>
 
         {/* Floating Toast Notification */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-slate-800 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 border border-slate-700">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
+        {toast && (
+          <div
+            role="status"
+            aria-live={toast.kind === 'bad' ? 'assertive' : 'polite'}
+            className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 border ${
+              toast.kind === 'bad'
+                ? 'bg-rose-700 dark:bg-rose-800 border-rose-600'
+                : 'bg-slate-900 dark:bg-slate-800 border-slate-700'
+            }`}
+          >
+            {toast.kind === 'bad' ? (
+              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
+            )}
+            <span>{toast.message}</span>
           </div>
         )}
 
@@ -436,7 +615,7 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
             </div>
             <span className="shrink-0 rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-              {kpis.lowStockCount} low
+              {restockProducts.length} need restock
             </span>
           </Link>
 
@@ -496,21 +675,25 @@ export const VendorDashboardPage: React.FC = () => {
         )}
 
         {/* ── Operational Attention Alert Banner ───────────────────── */}
-        <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs shadow-2xs">
-          <div className="flex items-center gap-2.5 text-amber-900 dark:text-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>
-              <strong>Attention needed:</strong> {kpis.lowStockCount} products require restock • {kpis.pendingOrders} sub-orders awaiting fulfillment.
-            </span>
+        {/* Only when the two queues actually hold something: a standing "Attention needed" over
+            an empty store is a claim, and over a failed read it would be a false one. */}
+        {!error && (restockProducts.length > 0 || kpis.pendingOrders > 0) && (
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs shadow-2xs">
+            <div className="flex items-center gap-2.5 text-amber-900 dark:text-amber-200">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>
+                <strong>Attention needed:</strong> {restockProducts.length} products require restock • {kpis.pendingOrders} sub-orders awaiting fulfillment.
+              </span>
+            </div>
+            <Link
+              to="/vendor/orders"
+              className="inline-flex items-center gap-1 font-bold text-amber-900 dark:text-amber-200 hover:underline self-start sm:self-auto text-xs"
+            >
+              <span>Review Orders</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
-          <Link
-            to="/vendor/orders"
-            className="inline-flex items-center gap-1 font-bold text-amber-900 dark:text-amber-200 hover:underline self-start sm:self-auto text-xs"
-          >
-            <span>Review Orders</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+        )}
 
         {/* =====================================================================
             3. Section 1: Top 4 KPI Cards (Admin Typography & Grid)
@@ -528,7 +711,7 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {kpis.netPayout}
+                {formatPrice(kpis.netPayoutNum)}
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <TrendingUp className="h-3.5 w-3.5" />
@@ -577,7 +760,13 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
                 <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                 <span className="font-semibold">Requires action</span>
-                <span className="text-[11px] text-slate-400 truncate">(SLA dispatch window)</span>
+                {/* The store's own saved handling window, not a courier SLA the database
+                    has no record of. */}
+                <span className="text-[11px] text-slate-400 truncate">
+                  {handlingWindow
+                    ? `(store handling window: ${handlingWindow})`
+                    : '(no handling window saved)'}
+                </span>
               </div>
             </div>
           </div>
@@ -679,7 +868,7 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  ${months.reduce((sum, m) => sum + m.gross, 0).toFixed(2)}
+                  {formatPrice(months.reduce((sum, m) => sum + m.gross, 0))}
                 </span>
                 <span className={`text-xs font-semibold ${grossGrowth && grossGrowth.startsWith('−') ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {grossGrowth ? `${grossGrowth} vs last month` : 'first month of trading'}
@@ -738,7 +927,9 @@ export const VendorDashboardPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">Earnings Retention</span>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">{kpis.netPayout} / {kpis.grossSales}</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  {formatPrice(kpis.netPayoutNum)} / {formatPrice(kpis.grossSalesNum)}
+                </span>
               </div>
               <div className="mt-1 flex justify-between text-[11px] text-slate-400">
                 <span>Net payout yield</span>
@@ -794,10 +985,15 @@ export const VendorDashboardPage: React.FC = () => {
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">Settled Volume by Month</h2>
               <p className="text-xs text-slate-400">Gross charged to buyers against the net payout the ledger books, per calendar month</p>
             </div>
-            <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-0.5 text-xs font-semibold">
+            <div
+              role="group"
+              aria-label="Settled volume range"
+              className="flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-0.5 text-xs font-semibold"
+            >
               <button
                 type="button"
                 onClick={() => setSalesTimeRange('3M')}
+                aria-pressed={salesTimeRange === '3M'}
                 className={`rounded px-2.5 py-1 transition-all cursor-pointer ${
                   salesTimeRange === '3M'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs font-bold'
@@ -809,6 +1005,7 @@ export const VendorDashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSalesTimeRange('30D')}
+                aria-pressed={salesTimeRange === '30D'}
                 className={`rounded px-2.5 py-1 transition-all cursor-pointer ${
                   salesTimeRange === '30D'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs font-bold'
@@ -820,6 +1017,7 @@ export const VendorDashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSalesTimeRange('YTD')}
+                aria-pressed={salesTimeRange === 'YTD'}
                 className={`rounded px-2.5 py-1 transition-all cursor-pointer ${
                   salesTimeRange === 'YTD'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs font-bold'
@@ -886,7 +1084,8 @@ export const VendorDashboardPage: React.FC = () => {
               <span className="font-medium text-slate-500 dark:text-slate-400">Net payout</span>
             </div>
             <span className="text-[11px] text-slate-400">
-              Lifetime split: ${physicalSales.toFixed(2)} physical · ${digitalSales.toFixed(2)} digital
+              Lifetime split: {formatPrice(physicalSales)} physical ·{' '}
+              {formatPrice(digitalSales)} digital
             </span>
           </div>
         </div>
@@ -920,13 +1119,13 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-amber-500 rounded-full transition-all"
-                  style={{ width: `${Math.min(100, orders.length > 0 ? (placedCount / orders.length) * 100 : 0)}%` }}
+                  style={{ width: `${shareWidth(placedCount)}%` }}
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
                 <span>{placedCount} unconfirmed</span>
                 <span className="text-slate-500 font-normal">
-                  {orders.length > 0 ? Math.round((placedCount / orders.length) * 100) : 0}% of orders
+                  {sharePct(placedCount)}% of packages
                 </span>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
@@ -967,18 +1166,18 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-sun-orange rounded-full transition-all"
-                  style={{ width: `${Math.min(100, orders.length > 0 ? (confirmedCount / orders.length) * 100 : 0)}%` }}
+                  style={{ width: `${shareWidth(confirmedCount)}%` }}
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
                 <span>{confirmedCount} packing</span>
                 <span className="text-slate-500 font-normal">
-                  {orders.length > 0 ? Math.round((confirmedCount / orders.length) * 100) : 0}% of orders
+                  {sharePct(confirmedCount)}% of packages
                 </span>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                 <Link to="/vendor/orders" className="flex items-center justify-between text-xs font-bold text-sun-orange hover:underline">
-                  <span>Print packing slips</span>
+                  <span>Open the packing queue to print</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -998,7 +1197,10 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="mt-3">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">Ready for Pickup</h3>
-                <p className="text-xs text-slate-400">Parcels staged for 3PL courier handoff</p>
+                <p className="text-xs text-slate-400">
+                  Boxed and staged for 3PL courier handoff - the packed and ready-for-pickup
+                  statuses, counted once by the same query
+                </p>
               </div>
               <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
@@ -1014,13 +1216,13 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-emerald-600 rounded-full transition-all"
-                  style={{ width: `${Math.min(100, orders.length > 0 ? (readyCount / orders.length) * 100 : 0)}%` }}
+                  style={{ width: `${shareWidth(readyCount)}%` }}
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
                 <span>{readyCount} staged</span>
                 <span className="text-slate-500 font-normal">
-                  {orders.length > 0 ? Math.round((readyCount / orders.length) * 100) : 0}% of orders
+                  {sharePct(readyCount)}% of packages
                 </span>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
@@ -1033,6 +1235,49 @@ export const VendorDashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* One source, one arithmetic check: the seven buckets are disjoint, and every package
+            the queue holds is either in exactly one of them or called out by its status. */}
+        <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3.5 shadow-2xs text-xs text-slate-600 dark:text-slate-300">
+          {dashboard.isPending ? (
+            <span>Reading your stage counts…</span>
+          ) : stages === null ? (
+            <span className="font-semibold text-rose-700 dark:text-rose-400">
+              Stage counts unavailable - the dashboard read did not return.
+            </span>
+          ) : (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="font-bold text-slate-900 dark:text-white">Stages</span>
+              <span>
+                {placedCount} placed · {confirmedCount} confirmed · {readyCount} packed/ready ·{' '}
+                {stages.inTransit} in transit · {stages.delivered} delivered · {stages.returns}{' '}
+                returns · {stages.cancelled} cancelled
+              </span>
+              <span className="font-semibold text-slate-900 dark:text-white">
+                = {stageTotal} packages
+              </span>
+              <span
+                className={
+                  stagesProveTotal
+                    ? 'text-emerald-700 dark:text-emerald-400'
+                    : 'text-amber-700 dark:text-amber-400'
+                }
+              >
+                {stagesProveTotal
+                  ? packageStages.rows === 0
+                    ? 'the queue holds no packages and every bucket is zero'
+                    : `each of the ${packageStages.rows} packages in the queue sits in exactly one bucket`
+                  : uncoveredStatuses.length > 0
+                    ? `${packageStages.rows - packageStages.bucketed} of ${packageStages.rows} packages are in a status no bucket counts (${uncoveredStatuses
+                        .map(([status, count]) => `${status.replace(/_/g, ' ')} x${count}`)
+                        .join(', ')})`
+                    : bucketDiff.length > 0
+                      ? `the stage read and this queue disagree on ${bucketDiff.join(', ')} - the two reads ran at different moments`
+                      : `the buckets add to ${stageTotal} while the queue holds ${packageStages.rows}`}
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* =====================================================================
             7. Section 5: Recent Orders (Left) & Top Selling Products (Right)
             ===================================================================== */}
@@ -1043,7 +1288,7 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div>
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white">Recent Customer Sub-Orders</h2>
-                  <p className="text-xs text-slate-400">Incoming merchant sales requiring tracking updates and fulfillment</p>
+                  <p className="text-xs text-slate-400">The newest of this store&apos;s packages, at whatever stage each one is recorded at</p>
                 </div>
                 <Link
                   to="/vendor/orders"
@@ -1081,7 +1326,7 @@ export const VendorDashboardPage: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      orders.slice(0, 5).map((order) => (
+                      orders.slice(0, RECENT_ROWS).map((order) => (
                         <tr key={order.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                           <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white text-[11px]">
                             #{order.id}
@@ -1101,7 +1346,7 @@ export const VendorDashboardPage: React.FC = () => {
                             )}
                           </td>
                           <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                            ${order.gross.toFixed(2)}
+                            {formatPrice(order.gross)}
                           </td>
                           <td className="px-4 py-3">
                             {order.status === 'placed' && (
@@ -1122,6 +1367,11 @@ export const VendorDashboardPage: React.FC = () => {
                             {order.status === 'ready_for_pickup' && (
                               <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
                                 Ready
+                              </span>
+                            )}
+                            {!isSellerActionStage(order.status) && (
+                              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 capitalize">
+                                {order.status.replace(/_/g, ' ')}
                               </span>
                             )}
                           </td>
@@ -1158,6 +1408,11 @@ export const VendorDashboardPage: React.FC = () => {
                                 Staged ✓
                               </span>
                             )}
+                            {!isSellerActionStage(order.status) && (
+                              <span className="text-[11px] font-semibold text-slate-400">
+                                No seller action at this stage
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))
@@ -1168,7 +1423,10 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 mt-3 text-xs text-slate-500">
-              <span>Showing {orders.length} store sub-orders</span>
+              <span>
+                Showing the newest {Math.min(RECENT_ROWS, orders.length)} of {orders.length} store
+                sub-orders
+              </span>
               <Link to="/vendor/orders" className="font-bold text-slate-900 dark:text-slate-100 hover:underline">
                 View all orders →
               </Link>
@@ -1200,7 +1458,7 @@ export const VendorDashboardPage: React.FC = () => {
                       Booked by buyers
                     </span>
                     <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
-                      {kpis.grossSales}
+                      {formatPrice(kpis.grossSalesNum)}
                     </div>
                   </div>
                   <span className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
@@ -1208,8 +1466,9 @@ export const VendorDashboardPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="mt-2 text-[10px] text-slate-400">
-                  Includes freight, which the commission is not taken on · {kpis.commissionDeducted}{' '}
-                  commission · {kpis.netPayout} net to the store
+                  Includes freight, which the commission is not taken on ·{' '}
+                  {formatPrice(kpis.commissionDeductedNum)} commission ·{' '}
+                  {formatPrice(kpis.netPayoutNum)} net to the store
                 </p>
               </div>
 
@@ -1244,7 +1503,7 @@ export const VendorDashboardPage: React.FC = () => {
                         </div>
                       </div>
                       <span className="shrink-0 font-bold text-xs text-slate-900 dark:text-white font-mono">
-                        ${p.revenue.toFixed(2)}
+                        {formatPrice(p.revenue)}
                       </span>
                     </div>
                   ))
@@ -1271,27 +1530,35 @@ export const VendorDashboardPage: React.FC = () => {
                 <div>
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white">Low Stock Alerts</h2>
                   <p className="text-xs text-slate-400">
-                    {lowStockProducts.length} catalog SKUs at or below reorder threshold
+                    {lowStockProducts.length} listings above zero and at or below the{' '}
+                    {LOW_STOCK_AT}-unit threshold
+                    {soldOutListings > 0 ? ` · ${soldOutListings} sold out` : ' · none sold out'}
                   </p>
+                  {tiles && aggregateLowStock !== lowStockProducts.length && (
+                    <p className="mt-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                      The store aggregate counted {aggregateLowStock} at its own moment; this
+                      catalog read holds {lowStockProducts.length}.
+                    </p>
+                  )}
                 </div>
                 <span className={`rounded px-2 py-0.5 text-[10px] font-bold border ${
-                  lowStockProducts.length > 0
+                  restockProducts.length > 0
                     ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60'
                     : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                 }`}>
-                  {lowStockProducts.length > 0 ? 'Critical' : 'Healthy'}
+                  {restockProducts.length > 0 ? 'Critical' : 'Healthy'}
                 </span>
               </div>
 
               <div className="mt-4 space-y-2.5 text-xs">
-                {lowStockProducts.length === 0 ? (
+                {restockProducts.length === 0 ? (
                   <div className="py-6 text-center text-slate-400">
                     <CheckCircle2 className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Catalog Inventory Healthy</p>
-                    <p className="text-[10px] text-slate-400">All {products.length} catalog listings are above the 5 unit reorder threshold.</p>
+                    <p className="text-[10px] text-slate-400">All {products.length} catalog listings are above the {LOW_STOCK_AT} unit reorder threshold.</p>
                   </div>
                 ) : (
-                  lowStockProducts.slice(0, 4).map((item, idx) => (
+                  restockProducts.slice(0, 4).map((item, idx) => (
                     <div key={item.id} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
                       <div className="flex items-center gap-2.5">
                         <span className="font-mono text-slate-400 font-bold">0{idx + 1}</span>

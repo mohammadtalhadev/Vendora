@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Search,
   ShoppingCart,
@@ -7,8 +7,6 @@ import {
   User,
   Shield,
   ChevronDown,
-  ChevronRight,
-  X,
   Menu,
   ArrowLeftRight,
   LayoutGrid,
@@ -17,18 +15,24 @@ import {
   Headphones,
   LogOut,
 } from 'lucide-react';
-import { useAuthStore, DEMO_ACCOUNTS } from '../../store/auth-store';
+import { useAuthStore, type DemoRoleKey } from '../../store/auth-store';
+import { useAuth } from '../../lib/auth-context';
 import { useCartStore, useCartCalculations } from '../../store/cart-store';
 import { useWishlistStore } from '../../store/wishlist-store';
 import { useCompareStore } from '../../store/compare-store';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { useSearchSuggestions } from '../../features/catalog/hooks/useProducts';
+import { useSearchSuggestions, useCategories } from '../../features/catalog/hooks/useProducts';
+import { formatPrice } from '../../store/currency-store';
+import { CartDrawer } from '../../features/cart/components/CartDrawer';
 import { MegaMenu } from './MegaMenu';
 import { NotificationDropdown } from '../common/NotificationDropdown';
+import { CurrencySelector } from '../common/CurrencySelector';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loginAsDemoRole, logout } = useAuthStore();
+  const location = useLocation();
+  const { user } = useAuthStore();
+  const { signInAsDemo, signOut } = useAuth();
   const { mergeGuestCartIntoUser } = useCartStore();
   const { itemCount } = useCartCalculations();
   const { items: wishlistItems } = useWishlistStore();
@@ -39,23 +43,92 @@ export const Navbar: React.FC = () => {
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchCategory, setSearchCategory] = useState('All');
+  // Store the real seeded slug (never a display label) so `?category=` filters resolve.
+  const [searchCategorySlug, setSearchCategorySlug] = useState('');
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const debouncedSearch = useDebouncedValue(searchTerm, 250);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: suggestionsData } = useSearchSuggestions(debouncedSearch);
+  const { data: categoriesData } = useCategories();
+  const categories = categoriesData?.categories ?? [];
+  const suggestions = suggestionsData?.suggestions ?? [];
+  const showSuggestions = isSearchOpen && suggestions.length > 0;
+  const searchCategoryLabel =
+    searchCategorySlug === ''
+      ? 'All'
+      : categories.find((c) => c.slug === searchCategorySlug)?.name ?? 'All';
+
+  // Keep the input + category picker in sync with the URL (?q=&category=) so a
+  // refresh or Back button restores the active query.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(params.get('q') ?? '');
+    setSearchCategorySlug(params.get('category') ?? '');
+  }, [location.search]);
+
+  // Derive the highlighted suggestion so a shrunk list can never leave a stale index.
+  const activeSuggestion = activeSuggestionIndex >= 0 ? suggestions[activeSuggestionIndex] ?? null : null;
 
   // All Categories mega-dropdown state
   const [isAllCategoriesOpen, setIsAllCategoriesOpen] = useState(false);
   const allCategoriesRef = useRef<HTMLDivElement>(null);
+  const allCategoriesTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // Escape closes the mega menu and returns focus to its trigger button.
+  useEffect(() => {
+    if (!isAllCategoriesOpen) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsAllCategoriesOpen(false);
+        allCategoriesTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isAllCategoriesOpen]);
 
   // Role Switcher modal/dropdown state
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
+  const [personaError, setPersonaError] = useState<string | null>(null);
   const roleMenuRef = useRef<HTMLDivElement>(null);
 
   // Mobile drawer state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Frosted pill elevation + utility strip collapse on scroll
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Expandable mobile search overlay
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [mobileSearchTerm, setMobileSearchTerm] = useState('');
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isMobileSearchOpen) {
+      mobileSearchInputRef.current?.focus();
+    }
+  }, [isMobileSearchOpen]);
+
+  useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const next = window.scrollY > 16;
+          setIsScrolled((prev) => (prev === next ? prev : next));
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -88,35 +161,96 @@ export const Navbar: React.FC = () => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
     setIsSearchOpen(false);
-    const catQuery = searchCategory !== 'All' ? `&category=${encodeURIComponent(searchCategory.toLowerCase())}` : '';
+    setActiveSuggestionIndex(-1);
+    // Posts the real seeded slug (e.g. "audio-wearables"), never a display label.
+    const catQuery = searchCategorySlug ? `&category=${encodeURIComponent(searchCategorySlug)}` : '';
     navigate(`/products?q=${encodeURIComponent(searchTerm.trim())}${catQuery}`);
   };
 
-  const handleRoleSelect = (roleKey: 'customer' | 'newuser' | 'vendor' | 'admin' | 'support' | 'rider') => {
-    loginAsDemoRole(roleKey);
-    const selectedUser = DEMO_ACCOUNTS[roleKey];
-    if (selectedUser) {
-      mergeGuestCartIntoUser(selectedUser.id);
+  const activateSuggestion = (index: number) => {
+    const s = suggestions[index];
+    if (!s) return;
+    setIsSearchOpen(false);
+    setActiveSuggestionIndex(-1);
+    if (s.type === 'category') {
+      const match = categories.find((c) => c.id === s.id) ?? categories.find((c) => c.name === s.title);
+      // Navigate with a real slug when we can resolve one; otherwise fall back
+      // to an honest text search instead of an id the catalog can't resolve.
+      if (match) {
+        navigate(`/products?category=${encodeURIComponent(match.slug)}`);
+      } else {
+        navigate(`/products?q=${encodeURIComponent(s.title)}`);
+      }
+    } else {
+      navigate(`/products/${s.id}`);
     }
-    setIsRoleMenuOpen(false);
-    if (roleKey === 'admin') {
-      navigate('/admin');
-    } else if (roleKey === 'vendor') {
-      navigate('/vendor');
-    } else if (roleKey === 'rider') {
-      navigate('/rider');
-    } else if (roleKey === 'support') {
-      navigate('/support');
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setIsSearchOpen(false);
+      setActiveSuggestionIndex(-1);
+      return;
+    }
+    if (!showSuggestions) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestionIndex((i) => (i + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestionIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === 'Enter' && activeSuggestion) {
+      e.preventDefault();
+      activateSuggestion(activeSuggestionIndex);
+    }
+  };
+
+  const handleMobileSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mobileSearchTerm.trim()) return;
+    setIsMobileSearchOpen(false);
+    navigate(`/products?q=${encodeURIComponent(mobileSearchTerm.trim())}`);
+  };
+
+  const handleRoleSelect = async (roleKey: DemoRoleKey) => {
+    setPersonaError(null);
+    try {
+      const signedIn = await signInAsDemo(roleKey);
+      mergeGuestCartIntoUser(signedIn.id);
+      setIsRoleMenuOpen(false);
+      if (roleKey === 'admin') {
+        navigate('/admin');
+      } else if (roleKey === 'vendor') {
+        navigate('/vendor');
+      } else if (roleKey === 'rider') {
+        navigate('/rider');
+      } else if (roleKey === 'support') {
+        navigate('/support');
+      }
+    } catch (error) {
+      setPersonaError(error instanceof Error ? error.message : 'Could not sign in as that persona.');
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } finally {
+      setIsRoleMenuOpen(false);
     }
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-xs text-slate-800 transition-all">
-      {/* =========================================================================
-          1. Top Utility Micro-Bar
-          ========================================================================= */}
-      <div className="border-b border-slate-100 bg-slate-50/90 py-1.5 text-[11px] text-slate-500 font-medium">
-        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full pt-2 sm:pt-3">
+      <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
+        {/* =========================================================================
+            0. Slim Utility Strip (collapses on scroll)
+            ========================================================================= */}
+        <div
+          className={`header-utility-strip mx-auto flex w-full items-center justify-between px-4 py-1.5 text-[11px] text-slate-500 font-medium ${
+            isScrolled ? 'is-collapsed' : ''
+          }`}
+        >
           {/* Left links */}
           <div className="flex items-center gap-4 sm:gap-6">
             <Link to="/faq" className="hover:text-[#FF7A1A] transition-colors">
@@ -135,258 +269,274 @@ export const Navbar: React.FC = () => {
 
           {/* Right Utility Links */}
           <div className="flex items-center gap-3 sm:gap-5">
-            <Link to="/orders" className="hidden sm:inline hover:text-[#FF7A1A] transition-colors">
+            <Link to="/track-order" className="hidden sm:inline hover:text-[#FF7A1A] transition-colors">
               Order Tracking
             </Link>
             <span className="hidden sm:inline text-slate-300">|</span>
-            <span className="hidden sm:inline text-slate-600 hover:text-[#FF7A1A] cursor-pointer transition-colors">
-              English ▾
-            </span>
-            <span className="hidden sm:inline text-slate-700 font-semibold hover:text-[#FF7A1A] cursor-pointer transition-colors">
-              USD ▾
-            </span>
+            <CurrencySelector variant="topbar" className="hidden sm:inline-block" />
           </div>
         </div>
-      </div>
 
-      {/* =========================================================================
-          2. Main Header Bar (Logo, All Categories, Search Bar, Quick Actions)
-          ========================================================================= */}
-      <div className="w-full">
-        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:gap-6 sm:px-6 lg:px-8">
-          {/* Left: Brand Logo & All Categories Button */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-            {/* Mobile Hamburger Drawer Button */}
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-              aria-label="Toggle menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-
-            {/* Logo: Orange Gradient Badge + "Vendora" in bold navy with orange dot */}
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF7A1A] to-[#FF9233] text-white shadow-sm font-black text-sm tracking-tighter">
-                V
-              </div>
-              <span className="font-outfit text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 leading-none group-hover:text-[#FF7A1A] transition-colors">
-                Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] ml-0.5" />
-              </span>
-            </Link>
-
-            {/* "All Categories" Button with Full Mega Menu */}
-            <div className="relative hidden md:block" ref={allCategoriesRef}>
+        {/* =========================================================================
+            1. Floating Frosted Pill — Brand, All Categories, Search, Quick Actions
+            ========================================================================= */}
+        <div className={`header-pill-shell ${isScrolled ? 'is-scrolled' : ''}`}>
+          <div className="flex w-full items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5">
+            {/* Left: Brand Logo & All Categories Button */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Mobile Hamburger Drawer Button */}
               <button
                 type="button"
-                onClick={() => setIsAllCategoriesOpen(!isAllCategoriesOpen)}
-                className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs sm:text-[13px] font-bold shadow-2xs transition-all cursor-pointer backdrop-blur-xs ${
-                  isAllCategoriesOpen
-                    ? 'border-[#FF7A1A] bg-orange-50 text-[#FF7A1A] shadow-xs'
-                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-[#FF7A1A]/40 hover:text-[#FF7A1A]'
-                }`}
-                aria-expanded={isAllCategoriesOpen}
-                aria-haspopup="true"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:bg-white/80 hover:shadow-sm transition-all"
+                aria-label="Toggle menu"
               >
-                <LayoutGrid className="h-4 w-4" />
-                <span>All Categories</span>
-                <ChevronDown
-                  className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
-                    isAllCategoriesOpen ? 'rotate-180 text-[#FF7A1A]' : ''
-                  }`}
-                />
+                <Menu className="h-5 w-5" />
               </button>
 
-              {/* Mega Dropdown Menu */}
-              <MegaMenu
-                isOpen={isAllCategoriesOpen}
-                onClose={() => setIsAllCategoriesOpen(false)}
-              />
-            </div>
-          </div>
+              {/* Logo: "Vendora" in bold navy with interactive dot */}
+              <Link to="/" className="flex items-center group pl-1 sm:pl-2">
+                <span className="font-outfit text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 leading-none group-hover:text-[#FF7A1A] transition-colors">
+                  Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] group-hover:bg-slate-900 ml-0.5 transition-colors" />
+                </span>
+              </Link>
 
-          {/* Center: Search Capsule with Category Selector & Orange Submit Button */}
-          <div className="relative flex-1 max-w-2xl lg:max-w-3xl" ref={searchContainerRef}>
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-              <div className="flex w-full items-center rounded-xl bg-slate-50/80 shadow-xs overflow-hidden h-11 sm:h-12 border-2 border-slate-200 transition-all focus-within:border-[#FF7A1A] focus-within:bg-white">
-                {/* Category Dropdown Pill */}
-                <div className="relative shrink-0 hidden sm:block h-full">
-                  <button
-                    type="button"
-                    onClick={() => setIsCategoryPickerOpen(!isCategoryPickerOpen)}
-                    className="flex h-full items-center gap-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
-                  >
-                    <span>{searchCategory}</span>
-                    <ChevronDown className="h-3 w-3 text-slate-400" />
-                  </button>
-
-                  {isCategoryPickerOpen && (
-                    <div className="absolute left-0 top-12 z-50 w-52 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-in fade-in text-slate-800">
-                      {[
-                        'All',
-                        'Electronics',
-                        'Audio & Wearables',
-                        'Cameras & Photo',
-                        'Fashion',
-                        'Shoes',
-                        'Bags & Luggage',
-                        'Jewelry & Watches',
-                        'Beauty & Personal Care',
-                        'Home & Kitchen',
-                        'Kids & Baby',
-                        'Sports & Outdoors',
-                        'Digital Products',
-                      ].map((cat) => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => {
-                            setSearchCategory(cat);
-                            setIsCategoryPickerOpen(false);
-                          }}
-                          className="flex w-full rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Divider Line */}
-                <div className="hidden sm:block h-6 w-px bg-slate-200 shrink-0" />
-
-                {/* Search Text Input */}
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setIsSearchOpen(true);
-                  }}
-                  onFocus={() => setIsSearchOpen(true)}
-                  placeholder="Search everything at vendora online and in store..."
-                  className="w-full bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden px-3.5"
-                />
-
-                {/* Orange Search Button */}
+              {/* "All Categories" Button with Full Mega Menu */}
+              <div className="relative hidden md:block" ref={allCategoriesRef}>
                 <button
-                  type="submit"
-                  className="flex h-full w-11 sm:w-12 shrink-0 items-center justify-center bg-[#FF7A1A] hover:bg-[#EA580C] text-white shadow-2xs transition-all active:scale-95 cursor-pointer"
-                  title="Search"
+                  ref={allCategoriesTriggerRef}
+                  type="button"
+                  onClick={() => setIsAllCategoriesOpen(!isAllCategoriesOpen)}
+                  className={`flex items-center gap-2 rounded-full px-3.5 py-2.5 text-xs sm:text-[13px] font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
+                    isAllCategoriesOpen
+                      ? 'bg-[#FF7A1A] text-white shadow-md shadow-orange-500/25'
+                      : 'bg-slate-900/5 text-slate-700 hover:bg-[#FF7A1A]/10 hover:text-[#FF7A1A]'
+                  }`}
+                  aria-expanded={isAllCategoriesOpen}
+                  aria-haspopup="true"
+                  aria-controls="all-categories-menu"
                 >
-                  <Search className="h-5 w-5 stroke-[2.5]" />
+                  <LayoutGrid className="h-4 w-4" />
+                  <span>All Categories</span>
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform duration-200 ${
+                      isAllCategoriesOpen ? 'rotate-180' : ''
+                    }`}
+                  />
                 </button>
-              </div>
-            </form>
 
-            {/* Autocomplete Suggestions Dropdown */}
-            {isSearchOpen && (suggestionsData?.suggestions?.length ?? 0) > 0 && (
-              <div className="absolute left-0 top-14 z-50 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl animate-in fade-in text-slate-800">
-                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Search Suggestions
-                </div>
-                {suggestionsData?.suggestions.map((s) => (
-                  <button
-                    key={`${s.type}-${s.id}`}
-                    type="button"
-                    onClick={() => {
-                      setIsSearchOpen(false);
-                      if (s.type === 'category') {
-                        navigate(`/products?category=${s.id}`);
-                      } else {
-                        navigate(`/products/${s.id}`);
-                      }
-                    }}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-orange-50 hover:text-[#FF7A1A] cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          s.type === 'category'
-                            ? 'bg-orange-50 text-[#FF7A1A]'
-                            : 'bg-amber-50 text-amber-700'
-                        }`}
+                {/* Mega Dropdown Menu */}
+                <MegaMenu
+                  isOpen={isAllCategoriesOpen}
+                  onClose={() => setIsAllCategoriesOpen(false)}
+                />
+              </div>
+            </div>
+
+            {/* Center: Frosted Search Capsule with Category Selector & Orange Submit Button */}
+            <div className="relative flex-1 max-w-2xl lg:max-w-3xl hidden sm:block" ref={searchContainerRef}>
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+                <div className="flex w-full items-center rounded-full bg-white/75 shadow-inner overflow-hidden h-11 sm:h-12 border border-white/80 transition-all focus-within:border-[#FF7A1A]/60 focus-within:bg-white/95 focus-within:shadow-md">
+                  {/* Category Dropdown Pill — backed by the real seeded categories */}
+                  <div className="relative shrink-0 hidden sm:block h-full">
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryPickerOpen(!isCategoryPickerOpen)}
+                      className="flex h-full items-center gap-1.5 px-4 bg-transparent hover:bg-slate-900/5 text-xs font-semibold text-slate-700 cursor-pointer transition-colors rounded-l-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                      aria-expanded={isCategoryPickerOpen}
+                      aria-controls="navbar-search-category-picker"
+                    >
+                      <span>{searchCategoryLabel}</span>
+                      <ChevronDown className="h-3 w-3 text-slate-400" />
+                    </button>
+
+                    {isCategoryPickerOpen && (
+                      <div
+                        id="navbar-search-category-picker"
+                        className="absolute left-2 top-13 z-50 w-52 max-h-80 overflow-y-auto rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-1.5 shadow-2xl animate-in fade-in text-slate-800"
                       >
-                        {s.type}
-                      </span>
-                      <span className="font-medium text-slate-800 text-xs sm:text-sm">{s.title}</span>
-                    </div>
-                    {s.price !== undefined && (
-                      <span className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                        ${s.price.toFixed(2)}
-                      </span>
+                        {[{ id: 'all', name: 'All', slug: '' }, ...categories].map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setSearchCategorySlug(cat.slug);
+                              setIsCategoryPickerOpen(false);
+                              searchInputRef.current?.focus();
+                            }}
+                            className="flex w-full rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
                     )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+                  </div>
 
-          {/* Right Action Items: Wishlist, Exchange, Account, Cart */}
-          <div className="flex items-center gap-3 sm:gap-5 shrink-0">
-            {/* Wishlist with 2-line label */}
-            <Link
-              to="/wishlist"
-              className="flex items-center gap-2 text-slate-700 hover:text-[#FF7A1A] transition-colors shrink-0 group"
-              title="Wishlist"
-            >
-              <div className="relative flex items-center justify-center">
-                <Heart className="h-6 w-6 text-slate-700 transition-transform group-hover:scale-110 group-hover:text-[#FF7A1A]" />
+                  {/* Divider Line */}
+                  <div className="hidden sm:block h-6 w-px bg-slate-900/10 shrink-0" />
+
+                  {/* Search Text Input */}
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    role="combobox"
+                    aria-label="Search Vendora products and categories"
+                    aria-expanded={showSuggestions}
+                    aria-controls="navbar-search-suggestions"
+                    aria-autocomplete="list"
+                    aria-activedescendant={
+                      showSuggestions && activeSuggestion
+                        ? `navbar-search-opt-${activeSuggestionIndex}`
+                        : undefined
+                    }
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setIsSearchOpen(true);
+                    }}
+                    onFocus={() => setIsSearchOpen(true)}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder="Search everything at vendora online and in store..."
+                    className="w-full bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden px-4"
+                  />
+
+                  {/* Orange Search Button */}
+                  <button
+                    type="submit"
+                    className="flex h-full w-12 sm:w-14 shrink-0 items-center justify-center bg-[#FF7A1A] hover:bg-[#EA580C] text-white m-1 rounded-full transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                    title="Search"
+                    aria-label="Search"
+                  >
+                    <Search className="h-5 w-5 stroke-[2.5]" />
+                  </button>
+                </div>
+              </form>
+
+              {/* Autocomplete Suggestions Dropdown (keyboard-operable) */}
+              {showSuggestions && (
+                <div
+                  id="navbar-search-suggestions"
+                  role="listbox"
+                  aria-label="Search suggestions"
+                  className="absolute left-0 top-14 z-50 w-full overflow-hidden rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-2 shadow-2xl animate-in fade-in text-slate-800"
+                >
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Search Suggestions
+                  </div>
+                  {suggestions.map((s, index) => (
+                    <button
+                      key={`${s.type}-${s.id}`}
+                      id={`navbar-search-opt-${index}`}
+                      role="option"
+                      aria-selected={index === activeSuggestionIndex}
+                      type="button"
+                      onClick={() => activateSuggestion(index)}
+                      onMouseEnter={() => setActiveSuggestionIndex(index)}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
+                        index === activeSuggestionIndex ? 'bg-orange-50 text-[#FF7A1A]' : 'text-slate-700 hover:bg-orange-50 hover:text-[#FF7A1A]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            s.type === 'category'
+                              ? 'bg-orange-50 text-[#FF7A1A]'
+                              : 'bg-amber-50 text-amber-700'
+                          }`}
+                        >
+                          {s.type}
+                        </span>
+                        <span className="font-medium text-slate-800 text-xs sm:text-sm">{s.title}</span>
+                      </div>
+                      {s.price !== undefined && (
+                        <span className="font-extrabold text-slate-900 text-xs sm:text-sm">
+                          {formatPrice(s.price)}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Action Items: Mobile Search, Wishlist, Exchange, Account, Cart */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {/* Mobile search toggle — opens the frosted search overlay below the pill */}
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchOpen((v) => !v)}
+                className={`sm:hidden flex h-10 w-10 items-center justify-center rounded-full transition-all shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
+                  isMobileSearchOpen
+                    ? 'bg-orange-50 text-[#FF7A1A] shadow-xs'
+                    : 'text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-[#FF7A1A]'
+                }`}
+                title="Search products"
+                aria-expanded={isMobileSearchOpen}
+                aria-label="Search products"
+              >
+                <Search className="h-5 w-5" />
+              </button>
+
+              {/* Wishlist */}
+              <Link
+                to="/wishlist"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-[#FF7A1A] transition-all group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                title="Wishlist"
+                aria-label="Wishlist"
+              >
+                <Heart className="h-5 w-5 transition-transform group-hover:scale-110" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#E11D48] text-[9px] font-bold text-white shadow-xs">
+                  <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#E11D48] text-[9px] font-bold text-white shadow-xs">
                     {wishlistCount}
                   </span>
                 )}
-              </div>
-              <div className="hidden xl:flex flex-col text-left leading-tight">
-                <span className="text-[10px] text-slate-400 font-normal">Reorder</span>
-                <span className="text-xs font-bold text-slate-800 group-hover:text-[#FF7A1A] transition-colors">Wishlist</span>
-              </div>
-            </Link>
+              </Link>
 
-            {/* In-App Notification Center Dropdown */}
-            <NotificationDropdown />
+              {/* In-App Notification Center Dropdown */}
+              <NotificationDropdown triggerClassName="relative hidden sm:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer focus:outline-hidden" />
 
-            {/* Compare / Exchange Icon */}
-            <Link
-              to="/compare"
-              className="relative hidden lg:flex items-center text-slate-700 hover:text-[#FF7A1A] transition-colors p-1"
-              title="Compare Products"
-            >
-              <ArrowLeftRight className="h-5 w-5 text-slate-600 group-hover:text-[#FF7A1A]" />
-              {compareCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white shadow-xs">
-                  {compareCount}
-                </span>
-              )}
-            </Link>
-
-            {/* Sign In / Account with Profile Dropdown */}
-            <div className="relative" ref={roleMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-                className="flex items-center gap-2 text-slate-700 hover:text-[#FF7A1A] transition-colors cursor-pointer shrink-0 group"
-                aria-expanded={isRoleMenuOpen}
+              {/* Compare / Exchange Icon */}
+              <Link
+                to="/compare"
+                className="relative hidden lg:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                title="Compare Products"
+                aria-label="Compare Products"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 group-hover:bg-orange-50 group-hover:text-[#FF7A1A] text-slate-700 transition-colors">
-                  <User className="h-5 w-5" />
-                </div>
-                <div className="hidden xl:flex flex-col text-left leading-tight">
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    {user ? 'Welcome,' : 'Sign In'}
+                <ArrowLeftRight className="h-5 w-5" />
+                {compareCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white shadow-xs">
+                    {compareCount}
                   </span>
-                  <span className="text-xs font-bold text-slate-900 group-hover:text-[#FF7A1A] flex items-center gap-1 transition-colors">
-                    {user ? user.name.split(' ')[0] : 'Account'}
-                    <ChevronDown className="h-3 w-3 text-slate-400" />
-                  </span>
-                </div>
-              </button>
+                )}
+              </Link>
 
-              {isRoleMenuOpen && (
-                <div className="absolute right-0 top-11 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800">
+              {/* Sign In / Account with Profile Dropdown */}
+              <div className="relative" ref={roleMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
+                  className="flex items-center gap-2 rounded-full pl-1.5 pr-2 sm:pr-3 py-1.5 text-slate-700 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+                  aria-expanded={isRoleMenuOpen}
+                  aria-controls="navbar-account-menu"
+                  aria-label="Account and personas menu"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/5 group-hover:bg-[#FF7A1A]/10 group-hover:text-[#FF7A1A] text-slate-700 transition-colors">
+                    <User className="h-4.5 w-4.5" />
+                  </div>
+                  <div className="hidden xl:flex flex-col text-left leading-tight">
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      {user ? 'Welcome,' : 'Sign In'}
+                    </span>
+                    <span className="text-xs font-bold text-slate-900 group-hover:text-[#FF7A1A] flex items-center gap-1 transition-colors">
+                      {user ? user.name.split(' ')[0] : 'Account'}
+                      <ChevronDown className="h-3 w-3 text-slate-400" />
+                    </span>
+                  </div>
+                </button>
+
+                {isRoleMenuOpen && (
+                  <div id="navbar-account-menu" className="absolute right-0 top-13 z-50 w-72 rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800">
                   {/* Account Header with Role Badge inside dropdown */}
                   {user ? (
                     <div className="border-b border-slate-100 pb-3 mb-2">
@@ -530,10 +680,7 @@ export const Navbar: React.FC = () => {
                     <div className="border-t border-slate-100 pt-2 mb-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          logout();
-                          setIsRoleMenuOpen(false);
-                        }}
+                        onClick={() => void handleSignOut()}
                         className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       >
                         <span className="flex items-center gap-1.5">
@@ -560,153 +707,158 @@ export const Navbar: React.FC = () => {
                           { key: 'support', label: 'Support' },
                           { key: 'rider', label: 'Rider' },
                         ] as const
-                      ).map(({ key, label }) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => handleRoleSelect(key)}
-                          className={`rounded-lg px-2 py-1 text-center text-[11px] font-medium transition-colors hover:bg-slate-100 cursor-pointer ${
-                            user?.roles.includes(key as any) ? 'bg-orange-50 font-bold text-[#FF7A1A]' : 'text-slate-600'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                      ).map(({ key, label }) => {
+                        const roleKeys: readonly string[] = user?.roles ?? [];
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => void handleRoleSelect(key)}
+                            className={`rounded-lg px-2 py-1 text-center text-[11px] font-medium transition-colors hover:bg-slate-100 cursor-pointer ${
+                              roleKeys.includes(key) ? 'bg-orange-50 font-bold text-[#FF7A1A]' : 'text-slate-600'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
+                    {personaError && (
+                      <p className="mt-2 rounded-lg bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700">
+                        {personaError}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
             {/* Cart with Orange Count Badge */}
-            <Link
-              to="/cart"
-              className="relative flex items-center justify-center p-1 text-slate-800 hover:text-[#FF7A1A] transition-colors shrink-0 group"
+            <button
+              type="button"
+              onClick={() => setIsCartOpen(true)}
+              className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-800 hover:text-[#FF7A1A] hover:bg-white/80 hover:shadow-sm transition-all shrink-0 group"
               title="Shopping Cart"
+              aria-label="Open shopping cart"
             >
-              <ShoppingCart className="h-6 w-6 text-slate-800 group-hover:text-[#FF7A1A] transition-transform group-hover:scale-110" />
-              <span className="absolute -top-1 -right-1.5 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF7A1A] text-[10px] font-extrabold text-white shadow-xs">
-                {itemCount}
-              </span>
-            </Link>
+              <ShoppingCart className="h-5 w-5 transition-transform group-hover:scale-110" />
+              {itemCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#FF7A1A] px-0.5 text-[10px] font-extrabold text-white shadow-xs">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+          </div>
           </div>
         </div>
+
+        {/* =========================================================================
+            1A. Expandable Mobile Search Overlay (frosted glass)
+            ========================================================================= */}
+        {isMobileSearchOpen && (
+          <form
+            onSubmit={handleMobileSearchSubmit}
+            className="header-pill-shell mt-2 flex items-center gap-2 px-3 py-2 sm:hidden animate-in fade-in slide-in-from-top-1"
+          >
+            <input
+              ref={mobileSearchInputRef}
+              type="text"
+              aria-label="Search products"
+              value={mobileSearchTerm}
+              onChange={(e) => setMobileSearchTerm(e.target.value)}
+              placeholder="Search products, brands and more..."
+              className="w-full bg-white/80 rounded-full border border-white/80 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-[#FF7A1A]/60 focus:bg-white transition-all"
+            />
+            <button
+              type="submit"
+              className="flex h-10 w-11 shrink-0 items-center justify-center rounded-full bg-[#FF7A1A] hover:bg-[#EA580C] text-white transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60"
+              title="Search"
+              aria-label="Search"
+            >
+              <Search className="h-4.5 w-4.5 stroke-[2.5]" />
+            </button>
+          </form>
+        )}
+
+
+        {/* =========================================================================
+            3. Mobile Menu Drawer
+            ========================================================================= */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden mt-2 rounded-3xl border border-white/70 bg-white/85 backdrop-blur-xl px-4 py-4 text-slate-800 shadow-2xl animate-in slide-in-from-top-2">
+            <div className="space-y-1 text-sm font-semibold">
+              <Link
+                to="/"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Home
+              </Link>
+              <Link
+                to="/products"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Shop Catalog
+              </Link>
+              <Link
+                to="/products?category=electronics"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Electronics
+              </Link>
+              <Link
+                to="/products?category=home-kitchen"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Home &amp; Furniture
+              </Link>
+              <Link
+                to="/track-order"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Order Tracking
+              </Link>
+              <Link
+                to="/notifications"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Notifications
+              </Link>
+              <Link
+                to="/about"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                About Vendora
+              </Link>
+              <Link
+                to="/blog"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Blog
+              </Link>
+              <Link
+                to="/contact"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-full px-4 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
+              >
+                Contact Us
+              </Link>
+              <div className="pt-2 border-t border-slate-200/60">
+                <CurrencySelector variant="mobile" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* =========================================================================
-          3. Bottom Sub-Bar: Announcement & Main Links
-          ========================================================================= */}
-      <div className="w-full border-t border-slate-200/80 bg-white text-slate-700 text-xs font-semibold">
-        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-4 py-2.5 sm:px-6 lg:px-8">
-          {/* Left Announcement Pill */}
-          <div className="flex items-center gap-2 text-xs font-normal">
-            <span className="text-slate-500">Your order is at your door in</span>
-            <strong className="text-slate-900 font-extrabold">2 hours with fast shipping.</strong>
-            <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
-          </div>
-
-          {/* Center Navigation Links */}
-          <div className="hidden lg:flex items-center gap-6 xl:gap-8">
-            <Link to="/" className="flex items-center gap-1 text-slate-900 hover:text-[#FF7A1A] transition-colors font-bold">
-              <span>Home</span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
-            </Link>
-            <Link to="/products" className="flex items-center gap-1 text-slate-900 hover:text-[#FF7A1A] transition-colors font-bold">
-              <span>Shop</span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
-            </Link>
-            <Link to="/products?category=electronics" className="text-slate-600 hover:text-[#FF7A1A] transition-colors">
-              Electronics
-            </Link>
-            <Link to="/products?category=home-kitchen" className="text-slate-600 hover:text-[#FF7A1A] transition-colors">
-              Home &amp; Furniture
-            </Link>
-            <Link to="/contact" className="text-slate-600 hover:text-[#FF7A1A] transition-colors">
-              Contact
-            </Link>
-            <Link to="/about" className="text-slate-600 hover:text-[#FF7A1A] transition-colors">
-              Blog
-            </Link>
-          </div>
-
-          {/* Right Action: Today's Deal with Orange Accent */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Link
-              to="/products"
-              className="flex items-center gap-1 font-extrabold text-[#FF7A1A] hover:text-[#EA580C] transition-colors cursor-pointer"
-            >
-              <span>Today's Deal</span>
-              <ChevronDown className="h-3.5 w-3.5 text-[#FF7A1A]" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* =========================================================================
-          4. Mobile Menu Drawer
-          ========================================================================= */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-4 text-slate-800 animate-in slide-in-from-top-2">
-          <div className="space-y-1 text-sm font-semibold">
-            <Link
-              to="/"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              to="/products"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              Shop Catalog
-            </Link>
-            <Link
-              to="/products?category=electronics"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              Electronics
-            </Link>
-            <Link
-              to="/products?category=home-kitchen"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              Home &amp; Furniture
-            </Link>
-            <Link
-              to="/orders"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              Order Tracking
-            </Link>
-            <Link
-              to="/notifications"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              Notifications
-            </Link>
-            <Link
-              to="/about"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              About &amp; Blog
-            </Link>
-            <Link
-              to="/contact"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-slate-800 hover:bg-orange-50 hover:text-[#FF7A1A] transition-colors"
-            >
-              Contact Us
-            </Link>
-          </div>
-        </div>
-      )}
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </header>
   );
 };

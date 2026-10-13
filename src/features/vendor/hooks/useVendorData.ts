@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { Product, SubOrderStatus, VendorProfile } from '../../../types/domain';
+import { useCurrency } from '../../../store/currency-store';
 import { useVendorDashboard } from './useVendorDashboard';
 import {
   useCreateVendorProduct,
@@ -23,9 +24,6 @@ export interface VendorKpiMetrics {
   lowStockCount: number;
 }
 
-const currency = (value: number) =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-
 /**
  * The workspace's shared read model, built from the vendor API. It exists so pages that
  * still ask for one object keep working while they are rewired onto the individual hooks;
@@ -36,6 +34,7 @@ const currency = (value: number) =>
  * by `current_vendor_id()`, so a picker could only have relabelled the same data.
  */
 export function useVendorData() {
+  const { formatPrice, currency } = useCurrency();
   const store = useVendorStore();
   const dashboard = useVendorDashboard();
   const products = useVendorProducts();
@@ -58,20 +57,23 @@ export function useVendorData() {
    * Everything the tiles report is computed by `vendor_dashboard`. `pendingOrders` is the
    * count still sitting at `placed`, and `lowStockCount` the catalog tile the same RPC
    * already counted at the store's own threshold.
+   *
+   * `formatPrice` owns the symbol, the rate and the decimal count; `currency` is passed
+   * explicitly only so this memo re-keys when the app's display currency changes.
    */
   const kpis: VendorKpiMetrics = useMemo(() => {
     const data = dashboard.data;
     return {
-      grossSales: currency(data?.kpis.grossBooked ?? 0),
+      grossSales: formatPrice(data?.kpis.grossBooked ?? 0, { currency }),
       grossSalesNum: data?.kpis.grossBooked ?? 0,
-      commissionDeducted: currency(data?.kpis.commission ?? 0),
+      commissionDeducted: formatPrice(data?.kpis.commission ?? 0, { currency }),
       commissionDeductedNum: data?.kpis.commission ?? 0,
-      netPayout: currency(data?.kpis.netPayout ?? 0),
+      netPayout: formatPrice(data?.kpis.netPayout ?? 0, { currency }),
       netPayoutNum: data?.kpis.netPayout ?? 0,
       pendingOrders: data?.stages.placed ?? 0,
       lowStockCount: data?.catalog.lowStock ?? 0,
     };
-  }, [dashboard.data]);
+  }, [dashboard.data, formatPrice, currency]);
 
   const refresh = useCallback(async () => {
     await Promise.all([

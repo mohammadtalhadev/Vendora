@@ -252,7 +252,7 @@ export const VendorOrdersPage: React.FC = () => {
               onClick={handleBulkFulfill}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Package className="h-4 w-4 stroke-[2.5]" />
+              <Package className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
               Bulk Fulfill ({orders.filter((o) => o.status === 'placed').length})
             </button>
           </div>
@@ -264,7 +264,7 @@ export const VendorOrdersPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>All Orders</span>
-              <FileText className="h-4 w-4 text-slate-400" />
+              <FileText className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">{orders.length}</span>
@@ -282,7 +282,7 @@ export const VendorOrdersPage: React.FC = () => {
                 <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                 <span>To Pack</span>
               </div>
-              <Package className="h-4 w-4 text-amber-500" />
+              <Package className="h-4 w-4 text-amber-500" aria-hidden="true" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">
@@ -301,7 +301,7 @@ export const VendorOrdersPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>Ready for Pickup</span>
-              <Truck className="h-4 w-4 text-blue-500" />
+              <Truck className="h-4 w-4 text-blue-500" aria-hidden="true" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">
@@ -317,7 +317,7 @@ export const VendorOrdersPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>Shipped &amp; In Transit</span>
-              <Truck className="h-4 w-4 text-slate-400" />
+              <Truck className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">
@@ -400,7 +400,7 @@ export const VendorOrdersPage: React.FC = () => {
         {/* Filter Controls Bar */}
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             <input
               type="text"
               value={searchQuery}
@@ -424,7 +424,7 @@ export const VendorOrdersPage: React.FC = () => {
                 <option value="7">Booked in last 7 days</option>
                 <option value="30">Booked in last 30 days</option>
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             </div>
 
             <div className="relative">
@@ -444,7 +444,7 @@ export const VendorOrdersPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             </div>
 
             <div className="relative">
@@ -460,7 +460,7 @@ export const VendorOrdersPage: React.FC = () => {
                 <option value="card">Paid by card</option>
                 <option value="cod">Cash on delivery</option>
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             </div>
 
             {(ageFilter !== 'all' ||
@@ -480,7 +480,7 @@ export const VendorOrdersPage: React.FC = () => {
                 }}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition-colors cursor-pointer"
               >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
+                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
                 Clear filters
               </button>
             )}
@@ -500,7 +500,7 @@ export const VendorOrdersPage: React.FC = () => {
                 onClick={() => window.print()}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 font-semibold text-slate-200 hover:bg-slate-700 cursor-pointer"
               >
-                <Printer className="h-3.5 w-3.5" />
+                <Printer className="h-3.5 w-3.5" aria-hidden="true" />
                 Print this page ({selectedOrderIds.length})
               </button>
               <button
@@ -523,7 +523,7 @@ export const VendorOrdersPage: React.FC = () => {
                 onClick={() => setSelectedOrderIds([])}
                 className="p-1 text-slate-400 hover:text-white"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -579,7 +579,7 @@ export const VendorOrdersPage: React.FC = () => {
                           className="flex items-center gap-1.5 font-bold text-slate-900 hover:text-[#EA6C13] transition-colors"
                         >
                           <span>{order.id}</span>
-                          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
+                          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                         </Link>
                         <div className="text-[11px] text-slate-400">
                           {new Date(order.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -600,7 +600,7 @@ export const VendorOrdersPage: React.FC = () => {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2.5">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                            <Package className="h-4 w-4" />
+                            <Package className="h-4 w-4" aria-hidden="true" />
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900 truncate max-w-xs">
@@ -617,7 +617,7 @@ export const VendorOrdersPage: React.FC = () => {
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-slate-900">${(order.subtotal + order.shippingFee).toFixed(2)}</div>
                         <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
-                          <Check className="h-3 w-3" />
+                          <Check className="h-3 w-3" aria-hidden="true" />
                           <span>
                             {order.paymentMethod === 'cod'
                               ? 'Cash on delivery'
@@ -754,7 +754,7 @@ export const VendorOrdersPage: React.FC = () => {
         {/* ── Floating Toast Notification ───────────────────────────── */}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}

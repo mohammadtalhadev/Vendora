@@ -98,8 +98,11 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   const errorBanner = dashboard.isError && (
-    <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
-      <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+    <div
+      role="alert"
+      className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2"
+    >
+      <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
       <span>{dashboard.error.message}</span>
       <button
         type="button"
@@ -169,8 +172,12 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* Floating Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2"
+          >
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}

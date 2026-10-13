@@ -1,0 +1,208 @@
+/**
+ * Vendora Homepage Panel Theme
+ * Public-facing marketing homepage with hero sections, product showcases
+ * Optimized for conversion, visual impact, and brand storytelling
+ */
+
+/* Homepage-specific theme variables */
+:root {
+  --panel-bg: #F8FAFC;
+  --panel-surface: #FFFFFF;
+  --panel-surface-hover: #F1F5F9;
+  --panel-border: #E2E8F0;
+  --panel-text: #0F172A;
+  --panel-text-muted: #64748B;
+  --panel-primary: #FF7A1A;
+  --panel-primary-hover: #EA6C13;
+  --panel-primary-light: #FFF7ED;
+  --panel-accent: #00B8C8;
+  --panel-sidebar-bg: rgba(255, 255, 255, 0.8);
+  --panel-header-bg: rgba(255, 255, 255, 0.9);
+  --panel-card-bg: rgba(255, 255, 255, 0.95);
+  --panel-glass-border: rgba(255, 255, 255, 0.6);
+  --panel-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  --panel-radius: 1.25rem;
+}
+
+/* Dark mode for Homepage */
+html.dark {
+  --panel-bg: #0B1120;
+  --panel-surface: #111827;
+  --panel-surface-hover: #1F2937;
+  --panel-border: #273449;
+  --panel-text: #F8FAFC;
+  --panel-text-muted: #94A3B8;
+  --panel-primary: #FF7A1A;
+  --panel-primary-hover: #FF9233;
+  --panel-primary-light: #7C2D12;
+  --panel-accent: #22D3EE;
+  --panel-sidebar-bg: rgba(17, 24, 39, 0.9);
+  --panel-header-bg: rgba(15, 23, 42, 0.95);
+  --panel-card-bg: rgba(17, 24, 39, 0.95);
+  --panel-glass-border: rgba(255, 255, 255, 0.08);
+  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+}
+
+/* Homepage-specific component overrides */
+.homepage-hero {
+  background: linear-gradient(135deg, var(--panel-primary-light) 0%, var(--panel-accent) 100%);
+}
+
+.homepage-hero h1 {
+  background: linear-gradient(135deg, var(--panel-primary) 0%, var(--panel-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.homepage-section {
+  background-color: var(--panel-surface);
+  border-color: var(--panel-border);
+}
+
+.homepage-card {
+  background-color: var(--panel-card-bg);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.homepage-card:hover {
+  box-shadow: 0 12px 36px 0 rgba(15, 23, 42, 0.12);
+  transform: translateY(-2px);
+}
+
+.homepage-btn-primary {
+  background-color: var(--panel-primary);
+  color: white;
+  border-radius: 9999px;
+  font-weight: 700;
+  box-shadow: 0 4px 14px 0 rgba(255, 122, 26, 0.28);
+}
+
+.homepage-btn-primary:hover {
+  background-color: var(--panel-primary-hover);
+  box-shadow: 0 6px 20px 0 rgba(255, 122, 26, 0.38);
+}
+
+.homepage-btn-secondary {
+  background-color: var(--panel-surface);
+  color: var(--panel-text);
+  border: 1px solid var(--panel-border);
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.homepage-btn-secondary:hover {
+  background-color: var(--panel-surface-hover);
+  border-color: var(--panel-primary);
+  color: var(--panel-primary);
+}
+
+html.dark .homepage-btn-secondary {
+  background-color: var(--panel-surface);
+  border-color: var(--panel-border);
+  color: var(--panel-text);
+}
+
+html.dark .homepage-btn-secondary:hover {
+  background-color: var(--panel-surface-hover);
+  border-color: var(--panel-primary);
+  color: var(--panel-primary);
+}
+
+/* Category grid */
+.homepage-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .homepage-category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .homepage-category-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.homepage-category-item {
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+  border: 1px solid var(--panel-glass-border);
+  background: var(--panel-card-bg);
+  transition: all 0.2s ease;
+}
+
+.homepage-category-item:hover {
+  transform: scale(1.02);
+  box-shadow: var(--panel-shadow);
+}
+
+/* Product carousel */
+.homepage-carousel {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.homepage-carousel-item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Trust badges strip */
+.homepage-trust-strip {
+  background: linear-gradient(90deg, 
+    var(--panel-primary-light) 0%, 
+    #ECFEFF 50%, 
+    #FEFCE8 100%);
+  border-top: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+html.dark .homepage-trust-strip {
+  background: linear-gradient(90deg, 
+    #7C2D12 0%, 
+    #0B1120 50%, 
+    #713F12 100%);
+  border-color: #273449;
+}
+
+/* Newsletter section */
+.homepage-newsletter {
+  background: var(--panel-primary);
+  background: linear-gradient(135deg, var(--panel-primary) 0%, #EA6C13 100%);
+}
+
+.homepage-newsletter input {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.homepage-newsletter input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.homepage-newsletter input:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: white;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 122, 26, 0.3);
+}
+
+/* Footer */
+.homepage-footer {
+  background-color: var(--panel-surface);
+  border-top: 1px solid var(--panel-border);
+}
+
+html.dark .homepage-footer {
+  background-color: #0B1120;
+  border-color: #273449;
+}

@@ -289,7 +289,7 @@ export const VendorProductsPage: React.FC = () => {
               onClick={handleExportCsv}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
             >
-              <Download className="h-4 w-4 text-slate-500" />
+              <Download className="h-4 w-4 text-slate-500" aria-hidden="true" />
               Export CSV
             </button>
             <button
@@ -307,7 +307,7 @@ export const VendorProductsPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs shadow-xs">
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               </div>
               <span className="text-slate-700">
                 <strong>{countApproved} live</strong> of {countAll} listings ·{' '}
@@ -317,7 +317,7 @@ export const VendorProductsPage: React.FC = () => {
             </div>
             {(countLowStock > 0 || countOutOfStock > 0) && (
               <span className="flex items-center gap-1.5 text-amber-700 font-semibold self-end sm:self-auto">
-                <AlertTriangle className="h-3.5 w-3.5" />
+                <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
                 {countLowStock} low, {countOutOfStock} sold out
               </span>
             )}
@@ -326,7 +326,7 @@ export const VendorProductsPage: React.FC = () => {
 
         {actionError && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-semibold text-rose-800 flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
             <span>{actionError}</span>
             <button
               type="button"
@@ -334,14 +334,14 @@ export const VendorProductsPage: React.FC = () => {
               className="ml-auto text-rose-500 hover:text-rose-700"
               aria-label="Dismiss"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
         )}
 
         {loadError && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-rose-600" />
+            <AlertCircle className="h-4 w-4 text-rose-600" aria-hidden="true" />
             <span>{loadError instanceof Error ? loadError.message : String(loadError)}</span>
             <button
               type="button"
@@ -359,7 +359,7 @@ export const VendorProductsPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>TOTAL LISTINGS</span>
-              <Box className="h-4 w-4 text-slate-400" />
+              <Box className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">{countAll}</span>
@@ -374,7 +374,7 @@ export const VendorProductsPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>APPROVED LISTINGS</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">{countApproved}</span>
@@ -389,7 +389,7 @@ export const VendorProductsPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>LOW / OUT OF STOCK</span>
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span className="text-3xl font-extrabold text-slate-900">
@@ -456,7 +456,7 @@ export const VendorProductsPage: React.FC = () => {
         {/* Filter Controls Bar */}
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             <input
               type="text"
               value={searchQuery}
@@ -478,7 +478,7 @@ export const VendorProductsPage: React.FC = () => {
                   <option key={c}>{c}</option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             </div>
 
             <div className="flex items-center gap-2 border-l border-slate-200 pl-2">
@@ -490,7 +490,7 @@ export const VendorProductsPage: React.FC = () => {
                 onClick={() => void handleBatchSubmit()}
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
               >
-                <Send className="h-3.5 w-3.5" />
+                <Send className="h-3.5 w-3.5" aria-hidden="true" />
                 Submit {selectedSubmittable > 0 ? selectedSubmittable : ''} to review
               </button>
             </div>
@@ -524,7 +524,7 @@ export const VendorProductsPage: React.FC = () => {
                 {isLoading && (
                   <tr>
                     <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
-                      <Box className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" />
+                      <Box className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" aria-hidden="true" />
                       <p className="font-semibold text-slate-700">Reading your catalog…</p>
                     </td>
                   </tr>
@@ -532,7 +532,7 @@ export const VendorProductsPage: React.FC = () => {
                 {!isLoading && paginatedRows.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
-                      <Box className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                      <Box className="h-8 w-8 mx-auto text-slate-300 mb-2" aria-hidden="true" />
                       <p className="font-semibold text-slate-700">
                         {countAll === 0 ? 'No listings yet' : 'Nothing matches these filters'}
                       </p>
@@ -573,7 +573,7 @@ export const VendorProductsPage: React.FC = () => {
                             />
                           ) : (
                             <div className="h-10 w-10 shrink-0 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
-                              <Box className="h-4 w-4 text-slate-300" />
+                              <Box className="h-4 w-4 text-slate-300" aria-hidden="true" />
                             </div>
                           )}
                           <div className="min-w-0 max-w-sm">
@@ -695,7 +695,7 @@ export const VendorProductsPage: React.FC = () => {
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                             title="Edit listing"
                           >
-                            <Edit2 className="h-3.5 w-3.5" />
+                            <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
                           </button>
                           {canSubmit && (
                             <button
@@ -704,7 +704,7 @@ export const VendorProductsPage: React.FC = () => {
                               className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer disabled:opacity-40"
                               title="Send this listing to moderation"
                             >
-                              <Send className="h-3 w-3" />
+                              <Send className="h-3 w-3" aria-hidden="true" />
                               Submit
                             </button>
                           )}
@@ -715,7 +715,7 @@ export const VendorProductsPage: React.FC = () => {
                               className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer disabled:opacity-40"
                               title="Pull this submission back to draft"
                             >
-                              <RotateCcw className="h-3 w-3" />
+                              <RotateCcw className="h-3 w-3" aria-hidden="true" />
                               Withdraw
                             </button>
                           )}

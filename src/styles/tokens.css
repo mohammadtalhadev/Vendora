@@ -46,15 +46,19 @@
   --glass-blur: 16px;
   --glass-blur-sm: 8px;
   --glass-blur-lg: 24px;
+  --glass-blur-xl: 32px;
 
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-bg-subtle: rgba(255, 255, 255, 0.45);
   --glass-bg-hover: rgba(255, 255, 255, 0.88);
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-border-subtle: rgba(255, 255, 255, 0.25);
+  --glass-border-strong: rgba(255, 255, 255, 0.7);
   --glass-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.08);
   --glass-shadow-pill: 0 4px 16px 0 rgba(0, 0, 0, 0.06);
   --glass-shadow-hover: 0 12px 36px 0 rgba(15, 23, 42, 0.12);
+  --glass-shadow-lg: 0 20px 48px 0 rgba(15, 23, 42, 0.1);
   --glass-overlay: rgba(15, 23, 42, 0.45);
 
   /* Solid Fallbacks (For non-supporting devices or high performance surfaces) */
@@ -66,11 +70,22 @@
   /* Geometry & Radii */
   --radius-pill: 9999px;
   --radius-card: 1.25rem;
+  --radius-card-lg: 1.5rem;
   --radius-modal: 1.5rem;
+
+  /* ==========================================================================
+     3. Color Tokens for Glass Surfaces
+     ========================================================================== */
+  --glass-orange-bg: rgba(255, 122, 26, 0.15);
+  --glass-orange-border: rgba(255, 122, 26, 0.3);
+  --glass-aqua-bg: rgba(0, 184, 200, 0.12);
+  --glass-aqua-border: rgba(0, 184, 200, 0.25);
+  --glass-slate-bg: rgba(15, 23, 42, 0.05);
+  --glass-slate-border: rgba(15, 23, 42, 0.1);
 }
 
 /* ==========================================================================
-   3. Glass Recipes with Solid Fallbacks
+   4. Glass Recipes with Solid Fallbacks
    ========================================================================== */
 
 /* Universal Glass Surface */
@@ -81,6 +96,26 @@
   backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
+}
+
+/* Stronger Glass Surface (for cards) */
+.glass-surface-strong {
+  background: var(--surface-solid);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+/* Subtle Glass Surface (for overlays) */
+.glass-surface-subtle {
+  background: var(--surface-solid);
+  background: var(--glass-bg-subtle);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow: var(--glass-shadow-pill);
 }
 
 /* Glass Pill Variant (strictly rounded-full) */
@@ -97,6 +132,40 @@
 
 .glass-pill:hover {
   background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Glass Pill - Orange Accent */
+.glass-pill-orange {
+  background: var(--surface-solid);
+  background: var(--glass-orange-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-orange-border);
+  box-shadow: var(--glass-shadow-pill);
+  border-radius: var(--radius-pill);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-pill-orange:hover {
+  background: rgba(255, 122, 26, 0.25);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Glass Pill - Aqua Accent */
+.glass-pill-aqua {
+  background: var(--surface-solid);
+  background: var(--glass-aqua-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-aqua-border);
+  box-shadow: var(--glass-shadow-pill);
+  border-radius: var(--radius-pill);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-pill-aqua:hover {
+  background: rgba(0, 184, 200, 0.2);
   box-shadow: var(--glass-shadow-hover);
 }
 
@@ -123,10 +192,52 @@
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
 }
 
+/* Glass Card - Enhanced for product cards */
+.glass-card {
+  background: var(--surface-solid);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: var(--glass-bg-strong);
+  box-shadow: var(--glass-shadow-lg);
+  transform: translateY(-4px);
+}
+
+/* Glass Card with subtle border */
+.glass-card-subtle {
+  background: var(--surface-solid);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-subtle:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+  transform: translateY(-2px);
+}
+
 /* Fallback for environments lacking backdrop-filter support */
 @supports not ((-webkit-backdrop-filter: blur(16px)) or (backdrop-filter: blur(16px))) {
   .glass-surface,
-  .glass-pill {
+  .glass-surface-strong,
+  .glass-surface-subtle,
+  .glass-pill,
+  .glass-pill-orange,
+  .glass-pill-aqua,
+  .glass-card,
+  .glass-card-subtle {
     background: #FFFFFF !important;
     border-color: #E2E8F0 !important;
   }
@@ -136,7 +247,7 @@
 }
 
 /* ==========================================================================
-   4. Skeleton Shimmer Keyframes & Animation
+   5. Skeleton Shimmer Keyframes & Animation
    ========================================================================== */
 @keyframes vendora-shimmer {
   0% {
@@ -164,5 +275,328 @@
   .skeleton-shimmer {
     animation: none !important;
     background: #F1F5F9 !important;
+  }
+}
+
+/* ==========================================================================
+   6. Utility Classes for Glassmorphism Effects
+   ========================================================================== */
+
+/* Ambient glow orbs for background depth — GPU composited with zero scroll repaint penalty */
+.glow-orb {
+  border-radius: 50%;
+  filter: blur(50px);
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  contain: strict;
+  backface-visibility: hidden;
+}
+
+.glow-orb-orange {
+  background: radial-gradient(circle at center, rgba(255, 122, 26, 0.15) 0%, transparent 70%);
+}
+
+.glow-orb-aqua {
+  background: radial-gradient(circle at center, rgba(0, 184, 200, 0.12) 0%, transparent 70%);
+}
+
+.glow-orb-indigo {
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+}
+
+.glow-orb-rose {
+  background: radial-gradient(circle at center, rgba(244, 63, 94, 0.1) 0%, transparent 70%);
+}
+
+.glow-orb-emerald {
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+}
+
+/* Glassmorphic button variants */
+.btn-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--glass-shadow-pill);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-glass:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+  transform: scale(1.02);
+}
+
+.btn-glass:active {
+  transform: scale(0.98);
+}
+
+/* Glassmorphic input */
+.input-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  transition: all 0.2s ease;
+}
+
+.input-glass:focus {
+  background: var(--glass-bg-strong);
+  border-color: var(--color-sun-orange);
+  box-shadow: 0 0 0 3px var(--color-sun-orange-muted);
+  outline: none;
+}
+
+/* Navigation glass bar */
+.nav-glass {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur-xl));
+  backdrop-filter: blur(var(--glass-blur-xl));
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+/* Section glass container */
+.section-glass {
+  background: var(--glass-bg-subtle);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-card-lg);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Hero glass overlay - transparent with no backdrop blur to keep hero banners crisp */
+.hero-glass-overlay {
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Countdown pill glass */
+.countdown-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--glass-shadow-pill);
+}
+
+/* Category icon glass */
+.category-icon-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  box-shadow: var(--glass-shadow-pill);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-icon-glass:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+  transform: scale(1.05);
+}
+
+/* Brand store card glass */
+.brand-store-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow-pill);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-store-glass:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow);
+  transform: translateY(-2px);
+  border-color: var(--glass-orange-border);
+}
+
+/* Tab pill glass */
+.tab-pill-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--glass-shadow-pill);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tab-pill-glass:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.tab-pill-glass.active {
+  background: var(--glass-orange-bg);
+  border-color: var(--glass-orange-border);
+  color: var(--color-sun-orange);
+  font-weight: 600;
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Scroll arrow glass */
+.scroll-arrow-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  box-shadow: var(--glass-shadow-pill);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-arrow-glass:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+  transform: scale(1.05);
+}
+
+/* ==========================================================================
+   7. Premium Floating Pill Header System
+   ========================================================================== */
+
+/* Floating frosted-glass pill shell for the storefront header */
+.header-pill-shell {
+  position: relative;
+  background: var(--surface-near-solid);
+  background: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 40px -8px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition:
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Intensified elevation once the page is scrolled */
+.header-pill-shell.is-scrolled {
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.05),
+    0 20px 52px -12px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Inner navigation link pills (second floating row) */
+.header-pill-nav {
+  position: relative;
+  background: var(--surface-near-solid);
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 8px 28px -10px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header-pill-nav.is-scrolled {
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.04),
+    0 12px 36px -10px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+/* Nav links inside the pill — pill-on-pill hover */
+.header-nav-link {
+  border-radius: var(--radius-pill);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header-nav-link:hover {
+  background: var(--color-sun-orange-muted);
+  color: var(--color-sun-orange);
+}
+
+/* Slim utility strip above the pills */
+.header-utility-strip {
+  transition:
+    opacity 0.3s ease,
+    max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    margin 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 40px;
+  overflow: visible;
+  position: relative;
+  z-index: 55;
+}
+
+.header-utility-strip.is-collapsed {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Frosted caption chip floating on imagery */
+.glass-caption-chip {
+  background: var(--surface-near-solid);
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 10px 30px -8px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* Frosted caption panel (multi-line, e.g. hero overlay) */
+.glass-caption-panel {
+  background: var(--surface-near-solid);
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--radius-card-lg);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.05),
+    0 16px 44px -10px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Brand strip floating in a frosted rail */
+.glass-brand-rail {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--glass-shadow-pill);
+}
+
+/* Fallback for environments lacking backdrop-filter support */
+@supports not ((-webkit-backdrop-filter: blur(16px)) or (backdrop-filter: blur(16px))) {
+  .header-pill-shell,
+  .header-pill-nav,
+  .glass-caption-chip,
+  .glass-caption-panel {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
   }
 }

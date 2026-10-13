@@ -7,6 +7,8 @@ export interface ProductQueryParams {
   category?: string;
   type?: ProductType;
   seller?: 'platform' | 'vendor';
+  /** One store's shelf, for a public storefront page. */
+  sellerId?: string;
   minPrice?: number;
   maxPrice?: number;
   sort?: string;
@@ -78,6 +80,7 @@ export async function fetchProducts(
   if (params.q?.trim()) query = query.textSearch('search_vector', params.q.trim(), { type: 'plain' });
   if (categoryIds) query = query.in('category_id', categoryIds);
   if (sellerIds) query = query.in('seller_id', sellerIds);
+  if (params.sellerId) query = query.eq('seller_id', params.sellerId);
   if (params.type) query = query.eq('type', params.type);
   if (params.minPrice !== undefined) query = query.gte('price', params.minPrice);
   if (params.maxPrice !== undefined) query = query.lte('price', params.maxPrice);

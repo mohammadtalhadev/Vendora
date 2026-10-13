@@ -238,7 +238,7 @@ export const VendorPayoutsPage: React.FC = () => {
               onClick={() => setIsBankModalOpen(true)}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
             >
-              <Building2 className="h-4 w-4 text-slate-500" />
+              <Building2 className="h-4 w-4 text-slate-500" aria-hidden="true" />
               Add Deposit Account
             </button>
             <button
@@ -246,15 +246,19 @@ export const VendorPayoutsPage: React.FC = () => {
               disabled={available <= 0}
               className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Zap className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <Zap className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
               Request a Payout
             </button>
           </div>
         </div>
 
         {loadError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-rose-600" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2"
+          >
+            <AlertCircle className="h-4 w-4 text-rose-600" aria-hidden="true" />
             <span>{loadError instanceof Error ? loadError.message : String(loadError)}</span>
             <button
               type="button"
@@ -271,9 +275,13 @@ export const VendorPayoutsPage: React.FC = () => {
         )}
 
         {receipt && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          >
             <div className="flex items-start gap-2.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <div className="font-bold">Payout {receipt.reference} booked</div>
                 <div className="text-emerald-800/80 mt-0.5">
@@ -288,7 +296,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 onClick={() => handleCopyRef(receipt.reference)}
                 className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1 font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer"
               >
-                {copiedRef === receipt.reference ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copiedRef === receipt.reference ? <Check className="h-3 w-3" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
                 Copy reference
               </button>
               <button
@@ -345,7 +353,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 {wallet ? money(wallet.reserve) : '—'}
               </div>
               <div className="mt-2 flex items-start gap-1.5 text-xs text-slate-500">
-                <Lock className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <Lock className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
                   {profile
                     ? `${reservePct?.toFixed(1)}% of your lifetime net, set in Store Settings`
@@ -384,7 +392,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 {profile ? profile.payoutSchedule || 'Not set' : '—'}
               </div>
               <div className="mt-2 flex items-start gap-1.5 text-xs text-slate-600 font-medium">
-                <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
                   {defaultAccount
                     ? `${defaultAccount.bankName} (•••• ${defaultAccount.maskedAccount})`
@@ -421,7 +429,7 @@ export const VendorPayoutsPage: React.FC = () => {
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-start gap-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                    <Clock className="h-5 w-5" />
+                    <Clock className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
                     <div className="text-sm font-bold text-slate-900">
@@ -482,7 +490,11 @@ export const VendorPayoutsPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <label htmlFor="payout-period-filter" className="sr-only">
+                    Filter payouts by period
+                  </label>
                   <select
+                    id="payout-period-filter"
                     value={timeFilter}
                     onChange={(e) => { setTimeFilter(e.target.value as 'all' | '30d' | '90d' | 'ytd'); setCurrentPage(1); }}
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
@@ -493,7 +505,11 @@ export const VendorPayoutsPage: React.FC = () => {
                     <option value="ytd">Year to Date</option>
                   </select>
 
+                  <label htmlFor="payout-status-filter" className="sr-only">
+                    Filter payouts by status
+                  </label>
                   <select
+                    id="payout-status-filter"
                     value={statusFilter}
                     onChange={(e) => { setStatusFilter(e.target.value as 'all' | 'processing' | 'completed' | 'failed'); setCurrentPage(1); }}
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
@@ -508,30 +524,31 @@ export const VendorPayoutsPage: React.FC = () => {
                     onClick={handleExportCsv}
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-2xs cursor-pointer"
                     title="Export payout history"
+                    aria-label="Export payout history"
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <Download className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs" aria-label="Payout history">
                   <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th className="px-4 py-3">REQUESTED</th>
-                      <th className="px-4 py-3">REFERENCE</th>
-                      <th className="px-4 py-3">RAIL</th>
-                      <th className="px-4 py-3">AMOUNT</th>
-                      <th className="px-4 py-3">FEE</th>
-                      <th className="px-4 py-3">DEPOSIT</th>
-                      <th className="px-4 py-3 text-right">STATUS</th>
+                      <th scope="col" className="px-4 py-3">REQUESTED</th>
+                      <th scope="col" className="px-4 py-3">REFERENCE</th>
+                      <th scope="col" className="px-4 py-3">RAIL</th>
+                      <th scope="col" className="px-4 py-3">AMOUNT</th>
+                      <th scope="col" className="px-4 py-3">FEE</th>
+                      <th scope="col" className="px-4 py-3">DEPOSIT</th>
+                      <th scope="col" className="px-4 py-3 text-right">STATUS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {isLoading && (
                       <tr>
                         <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
-                          <p className="font-semibold text-slate-700">Reading your payouts…</p>
+                          <p role="status" aria-live="polite" className="font-semibold text-slate-700">Reading your payouts…</p>
                         </td>
                       </tr>
                     )}
@@ -568,9 +585,9 @@ export const VendorPayoutsPage: React.FC = () => {
                           >
                             <span>{row.reference ?? row.id.slice(0, 8)}</span>
                             {copiedRef === (row.reference ?? row.id) ? (
-                              <Check className="h-3 w-3 text-emerald-600" />
+                              <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                             ) : (
-                              <Copy className="h-3 w-3 text-slate-400" />
+                              <Copy className="h-3 w-3 text-slate-400" aria-hidden="true" />
                             )}
                           </button>
                         </td>
@@ -583,7 +600,7 @@ export const VendorPayoutsPage: React.FC = () => {
                         <td className="px-4 py-3.5 text-right">
                           {row.status === 'processing' && (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
-                              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" aria-hidden="true" />
                               Processing
                             </span>
                           )}
@@ -646,19 +663,25 @@ export const VendorPayoutsPage: React.FC = () => {
               </div>
 
               {bankError && (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-[11px] font-semibold text-rose-800 flex items-start gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" />
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-[11px] font-semibold text-rose-800 flex items-start gap-2"
+                >
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" aria-hidden="true" />
                   <span>{bankError}</span>
                 </div>
               )}
 
               <div className="space-y-3">
                 {banks.isPending && (
-                  <p className="text-xs text-slate-400">Reading your accounts…</p>
+                  <p role="status" aria-live="polite" className="text-xs text-slate-400">
+                    Reading your accounts…
+                  </p>
                 )}
                 {!banks.isPending && accounts.length === 0 && (
                   <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center">
-                    <Building2 className="h-5 w-5 mx-auto text-slate-300 mb-2" />
+                    <Building2 className="h-5 w-5 mx-auto text-slate-300 mb-2" aria-hidden="true" />
                     <p className="text-xs font-bold text-slate-700">No deposit account yet</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       Add one so a payout has somewhere to be sent.
@@ -676,7 +699,7 @@ export const VendorPayoutsPage: React.FC = () => {
                   >
                     <div className="flex items-start gap-2.5">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs shrink-0">
-                        <Building2 className="h-4 w-4" />
+                        <Building2 className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -704,7 +727,7 @@ export const VendorPayoutsPage: React.FC = () => {
                       </span>
                       {acc.isDefault ? (
                         <span className="font-semibold text-emerald-600 inline-flex items-center gap-1">
-                          <Star className="h-3 w-3" /> Used for payouts
+                          <Star className="h-3 w-3" aria-hidden="true" /> Used for payouts
                         </span>
                       ) : (
                         <div className="flex items-center gap-3">
@@ -720,7 +743,7 @@ export const VendorPayoutsPage: React.FC = () => {
                             className="inline-flex items-center gap-1 text-rose-600 hover:text-rose-800 font-bold cursor-pointer disabled:opacity-40"
                             title="Remove this account"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" aria-hidden="true" />
                             Remove
                           </button>
                         </div>
@@ -784,7 +807,7 @@ export const VendorPayoutsPage: React.FC = () => {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 flex items-start gap-2.5 text-xs text-slate-500">
-                <Info className="h-4 w-4 text-slate-600 shrink-0 mt-0.5" />
+                <Info className="h-4 w-4 text-slate-600 shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-[11px] leading-relaxed">
                   Changing the reserve rate or the payout label is a Store Settings write. No
                   deposit network, FDIC coverage or tax form is wired into this build, so nothing
@@ -800,7 +823,7 @@ export const VendorPayoutsPage: React.FC = () => {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Zap className="h-5 w-5 fill-amber-500 text-amber-500" />
+                <Zap className="h-5 w-5 fill-amber-500 text-amber-500" aria-hidden="true" />
                 Request a Payout
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
@@ -879,14 +902,18 @@ export const VendorPayoutsPage: React.FC = () => {
               </div>
 
               {payoutError && (
-                <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-[11px] text-rose-800 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-[11px] text-rose-800 flex items-start gap-2"
+                >
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
                   <span>{payoutError}</span>
                 </div>
               )}
 
               <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-800 flex items-start gap-2">
-                <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" aria-hidden="true" />
                 <span>
                   Booking this writes a <code>payouts</code> row and an audit entry. No banking
                   integration exists in this build, so it stays <em>processing</em> — funds do not
@@ -920,7 +947,7 @@ export const VendorPayoutsPage: React.FC = () => {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-slate-700" />
+                <Building2 className="h-5 w-5 text-slate-700" aria-hidden="true" />
                 Add Deposit Account
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
@@ -1014,8 +1041,12 @@ export const VendorPayoutsPage: React.FC = () => {
               </div>
 
               {bankError && (
-                <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-[11px] text-rose-800 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-[11px] text-rose-800 flex items-start gap-2"
+                >
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
                   <span>{bankError}</span>
                 </div>
               )}
@@ -1042,8 +1073,12 @@ export const VendorPayoutsPage: React.FC = () => {
 
         {/* ── Toast ─────────────────────────────────────────────── */}
         {toastMessage && (
-          <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xl flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-xl flex items-center gap-2"
+          >
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}

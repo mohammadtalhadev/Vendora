@@ -1,324 +1,214 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Truck,
-  Bike,
-  AlertTriangle,
-} from 'lucide-react';
+import React from 'react';
+import { Truck, Bike, Phone, AlertTriangle } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
-import { supabaseLogistics } from '../lib/supabase-service';
+import { formatPrice } from '../store/currency-store';
+import { useLogisticsBoard } from '../features/admin/hooks/useAdminQueries';
+import type { LogisticsQueueRow } from '../features/admin/api/logistics';
 
-interface FleetRider {
-  id: string;
-  name: string;
-  phone: string;
-  vehicle: 'Motorcycle' | 'Cargo Van' | 'Bicycle';
-  isOnline: boolean;
-  activeDeliveriesCount: number;
-  completedToday: number;
-  onTimeRate: number;
-}
+const STATUS_TONE: Record<string, string> = {
+  delivered: 'bg-emerald-100 text-emerald-700',
+  in_transit: 'bg-orange-100 text-[#FF7A1A]',
+  shipped: 'bg-orange-100 text-[#FF7A1A]',
+  available: 'bg-emerald-100 text-emerald-700',
+  busy: 'bg-blue-100 text-blue-700',
+  offline: 'bg-slate-200 text-slate-600',
+  failed: 'bg-rose-100 text-rose-700',
+};
 
-interface ActiveDelivery {
-  id: string;
-  subOrderId: string;
-  vendorName: string;
-  pickupAddress: string;
-  customerName: string;
-  dropoffAddress: string;
-  assignedRiderId?: string;
-  assignedRiderName?: string;
-  status: 'assigned' | 'in_transit' | 'exception_delayed';
-  etaMinutes: number;
-}
+const statusClass = (status: string): string =>
+  STATUS_TONE[status.toLowerCase()] ?? 'bg-slate-100 text-slate-600';
 
-const SEED_RIDERS: FleetRider[] = [
-  { id: 'rider-1', name: 'Sam Express', phone: '+1 (555) 019-8821', vehicle: 'Motorcycle', isOnline: true, activeDeliveriesCount: 2, completedToday: 8, onTimeRate: 98.5 },
-  { id: 'rider-2', name: 'Carlos Mendez', phone: '+1 (555) 019-3329', vehicle: 'Cargo Van', isOnline: true, activeDeliveriesCount: 3, completedToday: 11, onTimeRate: 97.2 },
-  { id: 'rider-3', name: 'Maya Lin', phone: '+1 (555) 019-4410', vehicle: 'Bicycle', isOnline: true, activeDeliveriesCount: 1, completedToday: 6, onTimeRate: 100 },
-  { id: 'rider-4', name: 'Tariq Al-Mansoor', phone: '+1 (555) 019-5512', vehicle: 'Motorcycle', isOnline: false, activeDeliveriesCount: 0, completedToday: 4, onTimeRate: 95.8 },
-];
+const prettyStatus = (status: string): string =>
+  status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-const SEED_ACTIVE_DELIVERIES: ActiveDelivery[] = [
-  {
-    id: 'del-101',
-    subOrderId: 'SUB-98421-A',
-    vendorName: 'Apex Audio & Gear',
-    pickupAddress: '120 Industrial Pkwy, San Leandro, CA',
-    customerName: 'Sarah Customer',
-    dropoffAddress: '742 Evergreen Terrace, Springfield, OR',
-    assignedRiderId: 'rider-1',
-    assignedRiderName: 'Sam Express',
-    status: 'in_transit',
-    etaMinutes: 18,
-  },
-  {
-    id: 'del-102',
-    subOrderId: 'SUB-98422-B',
-    vendorName: 'Matrix Apparel Hub',
-    pickupAddress: '400 Fashion Blvd, Suite 12, Oakland, CA',
-    customerName: 'Michael Chang',
-    dropoffAddress: '1200 Lake Shore Dr, San Francisco, CA',
-    assignedRiderId: 'rider-2',
-    assignedRiderName: 'Carlos Mendez',
-    status: 'assigned',
-    etaMinutes: 35,
-  },
-  {
-    id: 'del-103',
-    subOrderId: 'SUB-98419-C',
-    vendorName: 'TechCraft Devices',
-    pickupAddress: '88 Mission Bay, San Francisco, CA',
-    customerName: 'Jessica Taylor',
-    dropoffAddress: '55 Castro St, San Francisco, CA',
-    assignedRiderId: 'rider-1',
-    assignedRiderName: 'Sam Express',
-    status: 'exception_delayed',
-    etaMinutes: 52,
-  },
-];
+const formatDate = (value: string | null): string => {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+};
+
+const destinationOf = (row: LogisticsQueueRow): string => {
+  const { address } = row;
+  if (!address) return 'No shipping address';
+  return [address.city, address.state].filter(Boolean).join(', ') || address.country || 'Address on file';
+};
 
 export const AdminLogisticsPage: React.FC = () => {
-  const [riders, setRiders] = useState<FleetRider[]>(SEED_RIDERS);
-  const [deliveries, setDeliveries] = useState<ActiveDelivery[]>(SEED_ACTIVE_DELIVERIES);
-  const [reassignModalDel, setReassignModalDel] = useState<ActiveDelivery | null>(null);
-  const [selectedNewRider, setSelectedNewRider] = useState('rider-1');
+  const { data: board, isPending, isError, error, refetch } = useLogisticsBoard();
 
-  useEffect(() => {
-    let isMounted = true;
-    Promise.all([supabaseLogistics.getRiders(), supabaseLogistics.getDeliveries()]).then(([dbRiders, dbDels]) => {
-      if (!isMounted) return;
-      if (dbRiders && dbRiders.length > 0) {
-        setRiders(dbRiders as any);
-        if (dbRiders[0]) setSelectedNewRider(dbRiders[0].id);
-      }
-      if (dbDels && dbDels.length > 0) {
-        const mapped: ActiveDelivery[] = dbDels.map((d: any) => ({
-          id: d.id,
-          subOrderId: d.sub_order_id,
-          vendorName: d.pickup_details?.seller_name || 'Vendor Hub',
-          pickupAddress: 'Local Fulfillment Center',
-          customerName: d.dropoff_details?.customer_email || 'Customer',
-          dropoffAddress: typeof d.dropoff_details?.shipping_address === 'object'
-            ? `${d.dropoff_details.shipping_address.street || ''}, ${d.dropoff_details.shipping_address.city || ''}`
-            : 'Delivery Address',
-          assignedRiderId: d.rider_id || undefined,
-          assignedRiderName: d.rider_id ? 'Assigned Rider' : undefined,
-          status: (d.status === 'in_transit' ? 'in_transit' : d.status === 'assigned' ? 'assigned' : 'exception_delayed') as any,
-          etaMinutes: 25,
-        }));
-        setDeliveries((prev) => {
-          const ids = new Set(mapped.map((m) => m.id));
-          return [...mapped, ...prev.filter((p) => !ids.has(p.id))];
-        });
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const handleReassign = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reassignModalDel) return;
-
-    supabaseLogistics.assignRider(reassignModalDel.id, selectedNewRider).catch((err) => {
-      console.warn('[Supabase] Failed to persist rider assignment:', err);
-    });
-
-    const riderObj = riders.find((r) => r.id === selectedNewRider);
-    setDeliveries((prev) =>
-      prev.map((d) =>
-        d.id === reassignModalDel.id
-          ? {
-              ...d,
-              assignedRiderId: selectedNewRider,
-              assignedRiderName: riderObj?.name || 'Assigned Rider',
-              status: 'assigned',
-            }
-          : d,
-      ),
+  if (isPending) {
+    return (
+      <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Fleet Logistics" sidebar={<AdminNav />}>
+        <div className="flex items-center gap-3 text-sm text-slate-700">
+          <Truck className="h-4 w-4" />
+          Reading the dispatch board…
+        </div>
+      </WorkspaceLayout>
     );
-    setReassignModalDel(null);
-  };
+  }
 
-  const onlineCount = SEED_RIDERS.filter((r) => r.isOnline).length;
+  if (isError || !board) {
+    return (
+      <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Fleet Logistics" sidebar={<AdminNav />}>
+        <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          <div className="font-semibold mb-1">Failed to load the dispatch board</div>
+          <div className="mb-3 text-xs">
+            {error instanceof Error ? error.message : 'The fleet and delivery rows could not be read.'}
+          </div>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="inline-flex items-center rounded bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      </WorkspaceLayout>
+    );
+  }
+
+  const riderName = new Map(board.fleet.map((rider) => [rider.id, rider.name] as const));
+  const { counts } = board;
 
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Fleet Logistics" sidebar={<AdminNav />}>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
-            Logistics & Fleet Dispatch Console
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Real-time delivery fleet monitoring, live parcel queues, courier SLA tracking, and exception re-assignment.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
+              Logistics &amp; Fleet Dispatch Console
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Registered couriers and the delivery queue, read from <code className="font-mono">rider_delivery_board</code> on every refresh.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
+          >
+            <Bike className="h-3.5 w-3.5 text-[#FF7A1A]" />
+            <span>Refresh Board</span>
+          </button>
         </div>
 
-        {/* 4 Stats Cards */}
+        {/* Stats — each tile is a count produced by the board read, not a demo total. */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Riders</span>
-            <div className="text-xl font-black text-slate-900 mt-1">{onlineCount} Online</div>
-            <span className="text-[11px] text-emerald-600 font-bold">{SEED_RIDERS.length} total registered fleet</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Riders Available</span>
+            <div className="text-xl font-black text-slate-900 mt-1">{counts.ridersAvailable}</div>
+            <span className="text-[11px] text-emerald-600 font-bold">of {board.fleet.length} registered riders</span>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Awaiting Pickup</span>
+            <div className="text-xl font-black text-slate-900 mt-1">{counts.awaitingPickup}</div>
+            <span className="text-[11px] text-blue-600 font-bold">Packages not yet dispatched</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In-Transit Parcels</span>
-            <div className="text-xl font-black text-slate-900 mt-1">{deliveries.length} Packages</div>
-            <span className="text-[11px] text-blue-600 font-bold">Local courier dispatch</span>
+            <div className="text-xl font-black text-slate-900 mt-1">{counts.inTransit}</div>
+            <span className="text-[11px] text-slate-500 font-bold">{counts.delivered} delivered</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fleet On-Time Rate</span>
-            <div className="text-xl font-black text-slate-900 mt-1">98.1%</div>
-            <span className="text-[11px] text-emerald-600 font-bold">Target: &gt; 95% SLA</span>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Exceptions / Delays</span>
-            <div className="text-xl font-black text-rose-600 mt-1">1 Flagged</div>
-            <span className="text-[11px] text-rose-600 font-bold">Requires courier re-assignment</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Failed / Exceptions</span>
+            <div className="text-xl font-black text-rose-600 mt-1">{counts.failed}</div>
+            <span className="text-[11px] text-rose-600 font-bold">Deliveries that did not complete</span>
           </div>
         </div>
 
-        {/* Fleet Riders List */}
+        {/* Fleet roster — only the columns the board returns. */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Bike className="h-4 w-4 text-[#FF7A1A]" />
-            Registered Delivery Couriers & Shift Status
+            Registered Delivery Couriers
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            {SEED_RIDERS.map((r) => (
-              <div key={r.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900">{r.name}</span>
-                  <span className={`h-2 w-2 rounded-full ${r.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+          {board.fleet.length === 0 ? (
+            <p className="text-xs text-slate-400 py-6 text-center">No riders are registered on the platform yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {board.fleet.map((rider) => (
+                <div key={rider.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-slate-900 truncate">{rider.name}</span>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${statusClass(rider.status)}`}>
+                      {prettyStatus(rider.status)}
+                    </span>
+                  </div>
+                  <div className="text-slate-500 text-[11px] space-y-0.5">
+                    <p>Vehicle: <strong className="text-slate-800">{rider.vehicle}</strong></p>
+                    <p className="flex items-center gap-1"><Phone className="h-3 w-3 text-slate-400" />{rider.phone || '—'}</p>
+                    <p>Active: <strong className="text-slate-800">{rider.active}</strong> · Completed: <strong className="text-slate-800">{rider.completed}</strong></p>
+                  </div>
                 </div>
-                <div className="text-slate-500 text-[11px] space-y-0.5">
-                  <p>Vehicle: <strong>{r.vehicle}</strong></p>
-                  <p>Shift: <strong className={r.isOnline ? 'text-emerald-700' : 'text-slate-500'}>{r.isOnline ? 'On Duty' : 'Offline'}</strong></p>
-                  <p>On-Time SLA: <strong className="text-slate-800">{r.onTimeRate}%</strong></p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Active Deliveries Queue Table */}
+        {/* Delivery queue */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4 text-xs">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Truck className="h-4 w-4 text-[#FF7A1A]" />
-            Live Active Dispatch Queue
+            Active Dispatch Queue
           </h3>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                <tr>
-                  <th className="p-3">Sub-Order</th>
-                  <th className="p-3">Vendor Origin</th>
-                  <th className="p-3">Destination Customer</th>
-                  <th className="p-3">Assigned Courier</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">ETA</th>
-                  <th className="p-3 text-right">Dispatch Control</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {deliveries.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/50">
-                    <td className="p-3 font-mono font-bold text-slate-900">{d.subOrderId}</td>
-                    <td className="p-3">
-                      <span className="font-bold text-slate-800 block">{d.vendorName}</span>
-                      <span className="text-slate-400 text-[11px] truncate block max-w-xs">{d.pickupAddress}</span>
-                    </td>
-                    <td className="p-3">
-                      <span className="font-bold text-slate-800 block">{d.customerName}</span>
-                      <span className="text-slate-400 text-[11px] truncate block max-w-xs">{d.dropoffAddress}</span>
-                    </td>
-                    <td className="p-3 font-medium text-slate-800">{d.assignedRiderName}</td>
-                    <td className="p-3">
-                      {d.status === 'in_transit' && (
-                        <span className="rounded-full bg-orange-100 text-[#FF7A1A] px-2.5 py-0.5 text-[10px] font-bold">
-                          In Transit
-                        </span>
-                      )}
-                      {d.status === 'assigned' && (
-                        <span className="rounded-full bg-purple-100 text-purple-700 px-2.5 py-0.5 text-[10px] font-bold">
-                          Assigned
-                        </span>
-                      )}
-                      {d.status === 'exception_delayed' && (
-                        <span className="rounded-full bg-rose-100 text-rose-700 px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1 w-fit">
-                          <AlertTriangle className="h-3 w-3" />
-                          SLA Delayed
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 font-bold text-slate-900">{d.etaMinutes} mins</td>
-                    <td className="p-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setReassignModalDel(d)}
-                        className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
-                      >
-                        Re-assign Rider
-                      </button>
-                    </td>
+          {board.queue.length === 0 ? (
+            <p className="text-slate-400 py-8 text-center">No packages are moving right now.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
+                  <tr>
+                    <th className="p-3">Package</th>
+                    <th className="p-3">Vendor Origin</th>
+                    <th className="p-3">Destination</th>
+                    <th className="p-3">Assigned Courier</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Delivered</th>
+                    <th className="p-3 text-right">Gross</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Modal: Re-assign Rider */}
-        {reassignModalDel && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95 text-xs">
-              <h3 className="text-base font-bold text-slate-900 mb-1">Re-assign Delivery Courier</h3>
-              <p className="text-slate-500 mb-4">
-                Re-assigning parcel <strong className="font-mono">{reassignModalDel.subOrderId}</strong> from {reassignModalDel.assignedRiderName}.
-              </p>
-
-              <form onSubmit={handleReassign} className="space-y-4">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Select Available Courier</label>
-                  <select
-                    value={selectedNewRider}
-                    onChange={(e) => setSelectedNewRider(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
-                  >
-                    {SEED_RIDERS.filter((r) => r.isOnline).map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} ({r.vehicle}) • {r.activeDeliveriesCount} active deliveries
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setReassignModalDel(null)}
-                    className="rounded-full border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-full bg-sun-orange px-5 py-2 font-bold text-white shadow-sm hover:shadow-orange-glow hover:bg-sun-orange-600 cursor-pointer text-xs"
-                  >
-                    Confirm Re-assignment
-                  </button>
-                </div>
-              </form>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {board.queue.map((row) => (
+                    <tr key={row.id} className="hover:bg-slate-50/50">
+                      <td className="p-3">
+                        <span className="font-mono font-bold text-slate-900">{row.id}</span>
+                        <span className="text-slate-400 text-[11px] block">{prettyStatus(row.type)}</span>
+                      </td>
+                      <td className="p-3">
+                        <span className="font-bold text-slate-800 block">{row.storeName}</span>
+                        {(row.carrierName || row.trackingNumber) && (
+                          <span className="text-slate-400 text-[11px] truncate block max-w-xs">
+                            {row.carrierName ?? ''}
+                            {row.carrierName && row.trackingNumber ? ' · ' : ''}
+                            {row.trackingNumber ?? ''}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-slate-600">{destinationOf(row)}</td>
+                      <td className="p-3 font-medium text-slate-800">
+                        {row.riderId ? riderName.get(row.riderId) ?? 'Unknown rider' : 'Unassigned'}
+                      </td>
+                      <td className="p-3">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${statusClass(row.status)}`}>
+                          {row.status.toLowerCase() === 'failed' && <AlertTriangle className="h-3 w-3" />}
+                          {prettyStatus(row.status)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-slate-600">{formatDate(row.delivery?.deliveredAt ?? null)}</td>
+                      <td className="p-3 text-right font-bold text-slate-900">{formatPrice(row.gross)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </WorkspaceLayout>
   );

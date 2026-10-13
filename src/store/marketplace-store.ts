@@ -1,8 +1,18 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Product, SubOrder, SubOrderStatus, Dispute } from '../types/domain';
+import type { Product, Category, SubOrder, SubOrderStatus, Dispute, DisputeMessage } from '../types/domain';
 import { SEED_PRODUCTS } from '../mocks/seed/catalog';
 import { mockDb } from '../mocks/db';
+import {
+  supabaseAdmin,
+  supabaseCatalog,
+  supabaseOrders,
+  supabaseDisputes,
+  supabasePayouts,
+  supabaseVendors,
+  supabaseUsers,
+} from '../lib/supabase-service';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export interface MarketplaceVendor {
   id: string;
@@ -230,6 +240,7 @@ export interface CategoryFeeOverride {
 
 interface MarketplaceState {
   products: Product[];
+  categories: Category[];
   vendors: MarketplaceVendor[];
   subOrders: SubOrder[];
   disputes: Dispute[];
@@ -258,21 +269,36 @@ interface MarketplaceState {
   advanceSubOrderStatus: (id: string, nextStatus: SubOrderStatus, actor?: string, note?: string) => void;
   bulkAdvanceOrders: (ids: string[], nextStatus: SubOrderStatus) => void;
   refundOrder: (id: string, reason?: string) => void;
+  addSubOrders: (newOrders: SubOrder[]) => void;
 
   // Vendor Actions
   updateVendorKyc: (id: string, status: 'Verified' | 'Pending Review' | 'Investigation') => void;
   updateVendorTier: (id: string, tier: 'Tier 1 Elite' | 'Tier 2 Verified' | 'Tier 3 Standard') => void;
   updateVendorStatus: (id: string, status: 'active' | 'suspended') => void;
+  updateVendorCommission: (id: string, rate: number) => void;
   onboardVendor: (vendor: Omit<MarketplaceVendor, 'id' | 'revenue' | 'revenueFormatted' | 'trend' | 'trendType' | 'rating' | 'reviewCount' | 'joinedDate'>) => void;
 
+  // Database Synchronization Actions & State
+  isDatabaseSynced: boolean;
+  isSyncing: boolean;
+  lastSyncTime: string | null;
+  syncError: string | null;
+  syncWithDatabase: () => Promise<void>;
+
   // Dispute Actions
+  addDispute: (dispute: Dispute) => void;
   resolveDispute: (id: string, resolution: string) => void;
+  denyDispute: (id: string, reason?: string) => void;
+  addDisputeMessage: (disputeId: string, message: DisputeMessage) => void;
   escalateDispute: (id: string) => void;
 
-  // Commission Actions
+  // Commission & Category Actions
   updateGlobalCommissionRate: (rate: number) => void;
   addCategoryOverride: (override: Omit<CategoryFeeOverride, 'id'>) => void;
   updateCategoryOverride: (id: string, rate: string, fixedFee?: string) => void;
+  addCategory: (category: Category) => void;
+  updateCategory: (id: string, updates: Partial<Category>) => void;
+  deleteCategory: (id: string) => void;
 
   // Return Actions
   approveReturn: (rmaId: string, refundAmount?: number) => void;
@@ -321,124 +347,224 @@ interface MarketplaceState {
 
 const INITIAL_VENDORS_DATA: MarketplaceVendor[] = [
   {
-    id: 'vendor-tech-1',
-    storeName: 'SoundWave Direct',
-    category: 'AUDIO & SOUND',
-    subdomain: 'soundwave.vendora.shop',
-    ownerName: 'Marcus Vance',
+    id: 'vendor-apple',
+    storeName: 'Apple Official Store',
+    category: 'CONSUMER TECH',
+    subdomain: 'apple.vendora.market',
+    ownerName: 'Tim Cook (Apple Retail)',
     countryCode: 'US',
-    email: 'marcus@soundwavedirect.com',
+    email: 'partnerships@apple.com',
     kycStatus: 'Verified',
     performanceTier: 'Tier 1 Elite',
-    revenue: 34820,
-    revenueFormatted: '$34,820',
-    trend: '+14%',
+    revenue: 148200,
+    revenueFormatted: '$148,200',
+    trend: '+24%',
     trendType: 'positive',
     status: 'active',
-    commissionRate: 0.07,
-    rating: 4.9,
-    reviewCount: 382,
+    commissionRate: 0.05,
+    rating: 4.98,
+    reviewCount: 4820,
+    joinedDate: '01 Jan 2025',
+  },
+  {
+    id: 'vendor-samsung',
+    storeName: 'Samsung Flagship Store',
+    category: 'CONSUMER TECH',
+    subdomain: 'samsung.vendora.market',
+    ownerName: 'JH Han (Samsung Electronics)',
+    countryCode: 'KR',
+    email: 'b2b@samsung.com',
+    kycStatus: 'Verified',
+    performanceTier: 'Tier 1 Elite',
+    revenue: 98500,
+    revenueFormatted: '$98,500',
+    trend: '+16%',
+    trendType: 'positive',
+    status: 'active',
+    commissionRate: 0.06,
+    rating: 4.92,
+    reviewCount: 3150,
+    joinedDate: '10 Jan 2025',
+  },
+  {
+    id: 'vendor-ronin',
+    storeName: 'Ronin Official Store',
+    category: 'SMART GADGETS',
+    subdomain: 'ronin.vendora.market',
+    ownerName: 'Malik Zeeshan',
+    countryCode: 'PK',
+    email: 'support@ronin.pk',
+    kycStatus: 'Verified',
+    performanceTier: 'Tier 2 Verified',
+    revenue: 42100,
+    revenueFormatted: '$42,100',
+    trend: '+31%',
+    trendType: 'positive',
+    status: 'active',
+    commissionRate: 0.08,
+    rating: 4.88,
+    reviewCount: 1940,
     joinedDate: '15 Jan 2025',
   },
   {
-    id: 'vendor-design-1',
-    storeName: 'StudioCraft Assets',
-    category: 'DIGITAL LICENSES',
-    subdomain: 'studiocraft.vendora.shop',
-    ownerName: 'Elena Rostova',
-    countryCode: 'FR',
-    email: 'elena@studiocraft.design',
+    id: 'vendor-sony',
+    storeName: 'Sony Official Store',
+    category: 'AUDIO & CAMERAS',
+    subdomain: 'sony.vendora.market',
+    ownerName: 'Kenichiro Yoshida',
+    countryCode: 'JP',
+    email: 'pro@sony.com',
     kycStatus: 'Verified',
     performanceTier: 'Tier 1 Elite',
-    revenue: 41290,
-    revenueFormatted: '$41,290',
-    trend: '+18%',
+    revenue: 84300,
+    revenueFormatted: '$84,300',
+    trend: '+12%',
     trendType: 'positive',
     status: 'active',
-    commissionRate: 0.15,
-    rating: 4.95,
-    reviewCount: 890,
-    joinedDate: '01 Feb 2025',
+    commissionRate: 0.06,
+    rating: 4.91,
+    reviewCount: 2840,
+    joinedDate: '18 Jan 2025',
   },
   {
-    id: 'v-3',
-    storeName: 'Nexus Tech Hub',
-    category: 'HARDWARE',
-    subdomain: 'nexustech.vendora.shop',
-    ownerName: 'Tariq Mansour',
-    countryCode: 'AE',
-    email: 'tariq@nexusglobal.ae',
-    kycStatus: 'Pending Review',
-    performanceTier: 'Tier 3 Standard',
-    revenue: 18920,
-    revenueFormatted: '$18,920',
-    trend: 'In escrow',
-    trendType: 'neutral',
-    status: 'active',
-    commissionRate: 0.10,
-    rating: 4.7,
-    reviewCount: 140,
-    joinedDate: '12 Mar 2025',
-  },
-  {
-    id: 'v-4',
-    storeName: 'Urban Nomad Living',
-    category: 'HOME & LIVING',
-    subdomain: 'urbannomad.vendora.shop',
-    ownerName: 'Chloe Davenport',
-    countryCode: 'UK',
-    email: 'chloe@urbannomad.co.uk',
+    id: 'vendor-nike',
+    storeName: 'Nike Flagship Store',
+    category: 'ATHLETIC & SPORT',
+    subdomain: 'nike.vendora.market',
+    ownerName: 'John Donahoe',
+    countryCode: 'US',
+    email: 'retail@nike.com',
     kycStatus: 'Verified',
     performanceTier: 'Tier 1 Elite',
-    revenue: 72810,
-    revenueFormatted: '$72,810',
+    revenue: 112000,
+    revenueFormatted: '$112,000',
+    trend: '+19%',
+    trendType: 'positive',
+    status: 'active',
+    commissionRate: 0.07,
+    rating: 4.95,
+    reviewCount: 6240,
+    joinedDate: '20 Jan 2025',
+  },
+  {
+    id: 'vendor-adidas',
+    storeName: 'Adidas Official Store',
+    category: 'ATHLETIC & FOOTWEAR',
+    subdomain: 'adidas.vendora.market',
+    ownerName: 'Bjørn Gulden',
+    countryCode: 'DE',
+    email: 'partner@adidas.com',
+    kycStatus: 'Verified',
+    performanceTier: 'Tier 1 Elite',
+    revenue: 76400,
+    revenueFormatted: '$76,400',
+    trend: '+15%',
+    trendType: 'positive',
+    status: 'active',
+    commissionRate: 0.07,
+    rating: 4.90,
+    reviewCount: 4120,
+    joinedDate: '22 Jan 2025',
+  },
+  {
+    id: 'vendor-khaadi',
+    storeName: 'Khaadi Retail Store',
+    category: 'LUXURY APPAREL',
+    subdomain: 'khaadi.vendora.market',
+    ownerName: 'Shamoon Sultan',
+    countryCode: 'PK',
+    email: 'customercare@khaadi.com',
+    kycStatus: 'Verified',
+    performanceTier: 'Tier 1 Elite',
+    revenue: 64200,
+    revenueFormatted: '$64,200',
+    trend: '+28%',
+    trendType: 'positive',
+    status: 'active',
+    commissionRate: 0.09,
+    rating: 4.94,
+    reviewCount: 3780,
+    joinedDate: '25 Jan 2025',
+  },
+  {
+    id: 'vendor-jdot',
+    storeName: 'J. Junaid Jamshed',
+    category: 'HERITAGE FASHION',
+    subdomain: 'jdot.vendora.market',
+    ownerName: 'Babur Junaid Jamshed',
+    countryCode: 'PK',
+    email: 'eshop@junaidjamshed.com',
+    kycStatus: 'Verified',
+    performanceTier: 'Tier 1 Elite',
+    revenue: 58900,
+    revenueFormatted: '$58,900',
     trend: '+22%',
     trendType: 'positive',
     status: 'active',
-    commissionRate: 0.10,
-    rating: 4.9,
-    reviewCount: 620,
-    joinedDate: '20 Nov 2024',
+    commissionRate: 0.08,
+    rating: 4.91,
+    reviewCount: 2960,
+    joinedDate: '28 Jan 2025',
   },
   {
-    id: 'v-5',
-    storeName: 'Artisan Kitchen',
-    category: 'COOKWARE',
-    subdomain: 'artisankitchen.vendora.shop',
-    ownerName: 'Marco Bellini',
-    countryCode: 'IT',
-    email: 'marco@bellini-kitchen.it',
+    id: 'vendor-national',
+    storeName: 'National Foods Official',
+    category: 'CULINARY & HERITAGE',
+    subdomain: 'nationalfoods.vendora.market',
+    ownerName: 'Abrar Hasan',
+    countryCode: 'PK',
+    email: 'exports@nfoods.com',
     kycStatus: 'Verified',
-    performanceTier: 'Tier 2 Verified',
-    revenue: 34500,
-    revenueFormatted: '$34,500',
-    trend: '+5%',
+    performanceTier: 'Tier 1 Elite',
+    revenue: 48600,
+    revenueFormatted: '$48,600',
+    trend: '+18%',
     trendType: 'positive',
     status: 'active',
-    commissionRate: 0.10,
-    rating: 4.8,
-    reviewCount: 510,
-    joinedDate: '05 Jan 2025',
+    commissionRate: 0.07,
+    rating: 4.96,
+    reviewCount: 5890,
+    joinedDate: '01 Feb 2025',
   },
   {
-    id: 'v-6',
-    storeName: 'Apex Tech',
-    category: 'FLAGGED',
-    subdomain: 'apextech-direct.vendora.shop',
-    ownerName: 'Arthur Pendelton',
+    id: 'vendor-shan',
+    storeName: 'Shan Foods Global',
+    category: 'CULINARY RECIPES',
+    subdomain: 'shanfoods.vendora.market',
+    ownerName: 'Sikandar Sultan',
+    countryCode: 'PK',
+    email: 'global@shanfoods.com',
+    kycStatus: 'Verified',
+    performanceTier: 'Tier 1 Elite',
+    revenue: 52400,
+    revenueFormatted: '$52,400',
+    trend: '+20%',
+    trendType: 'positive',
+    status: 'active',
+    commissionRate: 0.07,
+    rating: 4.93,
+    reviewCount: 4610,
+    joinedDate: '05 Feb 2025',
+  },
+  {
+    id: 'vendor-theordinary',
+    storeName: 'The Ordinary Skincare',
+    category: 'CLINICAL SKINCARE',
+    subdomain: 'theordinary.vendora.market',
+    ownerName: 'Nicola Kilner',
     countryCode: 'CA',
-    email: 'art@apexsupplies.ca',
-    kycStatus: 'Investigation',
-    performanceTier: 'Tier 3 Standard',
-    revenue: 8210,
-    revenueFormatted: '$8,210',
-    trend: 'Payouts Frozen',
-    trendType: 'frozen',
-    status: 'suspended',
-    commissionRate: 0.10,
-    rating: 3.4,
-    reviewCount: 88,
-    joinedDate: '28 Dec 2024',
+    email: 'support@deciem.com',
+    kycStatus: 'Verified',
+    performanceTier: 'Tier 1 Elite',
+    revenue: 39500,
+    revenueFormatted: '$39,500',
+    trend: '+25%',
+    trendType: 'positive',
+    status: 'active',
+    commissionRate: 0.08,
+    rating: 4.93,
+    reviewCount: 4120,
+    joinedDate: '10 Feb 2025',
   },
 ];
 
@@ -672,7 +798,7 @@ const INITIAL_SUB_ORDERS_DATA: SubOrder[] = [
     id: 'sub-ord-2006',
     orderGroupId: 'ord-grp-2006',
     sellerId: 'platform',
-    sellerName: 'Vendora Direct',
+    sellerName: 'Vendora',
     sellerType: 'platform',
     type: 'physical',
     items: [
@@ -685,7 +811,7 @@ const INITIAL_SUB_ORDERS_DATA: SubOrder[] = [
         maxStock: 45,
         image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
         sellerId: 'platform',
-        sellerName: 'Vendora Direct',
+        sellerName: 'Vendora',
         sellerType: 'platform',
         type: 'physical',
       },
@@ -1355,6 +1481,7 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         },
       ],
       categoryOverrides: INITIAL_CATEGORY_OVERRIDES,
+      categories: mockDb.categories || [],
       globalCommissionRate: 0.10,
       returns: INITIAL_RETURNS_DATA,
       promotions: INITIAL_PROMOTIONS_DATA,
@@ -1374,6 +1501,11 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         if (!mockDb.products.some((p) => p.id === newProduct.id)) {
           mockDb.products.unshift(newProduct);
         }
+        if (isSupabaseConfigured) {
+          supabaseCatalog.createProduct(newProduct).catch((err) => {
+            console.warn('[Supabase] Background createProduct error:', err);
+          });
+        }
       },
 
       updateProduct: (id, updates) => {
@@ -1384,6 +1516,11 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         if (idx >= 0) {
           mockDb.products[idx] = { ...mockDb.products[idx], ...updates };
         }
+        if (isSupabaseConfigured) {
+          supabaseCatalog.updateProduct(id, updates).catch((err) => {
+            console.warn('[Supabase] Background updateProduct error:', err);
+          });
+        }
       },
 
       deleteProduct: (id) => {
@@ -1391,6 +1528,11 @@ export const useMarketplaceStore = create<MarketplaceState>()(
           products: state.products.filter((p) => p.id !== id),
         }));
         mockDb.products = mockDb.products.filter((p) => p.id !== id);
+        if (isSupabaseConfigured) {
+          supabaseCatalog.deleteProduct(id).catch((err) => {
+            console.warn('[Supabase] Background deleteProduct error:', err);
+          });
+        }
       },
 
       moderateProduct: (id, status, reason) => {
@@ -1399,6 +1541,11 @@ export const useMarketplaceStore = create<MarketplaceState>()(
             p.id === id ? { ...p, status, rejectionReason: reason } : p
           ),
         }));
+        if (isSupabaseConfigured) {
+          supabaseAdmin.moderateProduct(id, status, reason).catch((err) => {
+            console.warn('[Supabase] Background moderateProduct error:', err);
+          });
+        }
         const idx = mockDb.products.findIndex((p) => p.id === id);
         if (idx >= 0) {
           mockDb.products[idx].status = status;
@@ -1412,6 +1559,11 @@ export const useMarketplaceStore = create<MarketplaceState>()(
             ids.includes(p.id) ? { ...p, status } : p
           ),
         }));
+        if (isSupabaseConfigured) {
+          ids.forEach((id) => {
+            supabaseAdmin.moderateProduct(id, status).catch(console.warn);
+          });
+        }
         for (const id of ids) {
           const idx = mockDb.products.findIndex((p) => p.id === id);
           if (idx >= 0) mockDb.products[idx].status = status;
@@ -1445,6 +1597,11 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         } catch {
           // Ignore if missing in mockDb
         }
+        if (isSupabaseConfigured) {
+          supabaseOrders.updateSubOrderStatus(id, nextStatus, note).catch((err) => {
+            console.warn('[Supabase] Background updateSubOrderStatus error:', err);
+          });
+        }
       },
 
       bulkAdvanceOrders: (ids, nextStatus) => {
@@ -1468,10 +1625,30 @@ export const useMarketplaceStore = create<MarketplaceState>()(
             return so;
           }),
         }));
+        if (isSupabaseConfigured) {
+          ids.forEach((id) => {
+            supabaseOrders.updateSubOrderStatus(id, nextStatus).catch(console.warn);
+          });
+        }
       },
 
       refundOrder: (id, reason) => {
         get().advanceSubOrderStatus(id, 'refunded', 'Admin', reason || 'Refund issued');
+      },
+
+      addSubOrders: (newOrders) => {
+        set((state) => {
+          const existingIds = new Set(state.subOrders.map((o) => o.id));
+          const toAdd = newOrders.filter((o) => !existingIds.has(o.id));
+          return {
+            subOrders: [...toAdd, ...state.subOrders],
+          };
+        });
+        for (const o of newOrders) {
+          if (!mockDb.subOrders.some((so) => so.id === o.id)) {
+            mockDb.subOrders.unshift(o);
+          }
+        }
       },
 
       // --- Vendor Actions ---
@@ -1491,6 +1668,22 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         set((state) => ({
           vendors: state.vendors.map((v) => (v.id === id ? { ...v, status } : v)),
         }));
+        if (isSupabaseConfigured) {
+          supabaseAdmin.updateVendorStatus(id, status).catch((err) => {
+            console.warn('[Supabase] Background updateVendorStatus error:', err);
+          });
+        }
+      },
+
+      updateVendorCommission: (id, rate) => {
+        set((state) => ({
+          vendors: state.vendors.map((v) => (v.id === id ? { ...v, commissionRate: rate } : v)),
+        }));
+        if (isSupabaseConfigured) {
+          supabaseAdmin.updateVendorCommission(id, rate).catch((err) => {
+            console.warn('[Supabase] Background updateVendorCommission error:', err);
+          });
+        }
       },
 
       onboardVendor: (vendorData) => {
@@ -1507,9 +1700,180 @@ export const useMarketplaceStore = create<MarketplaceState>()(
           joinedDate: 'Just now',
         };
         set((state) => ({ vendors: [newVendor, ...state.vendors] }));
+        if (isSupabaseConfigured) {
+          supabaseVendors
+            .createVendor({
+              id,
+              storeName: newVendor.storeName,
+              slug: newVendor.storeName
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, '-')
+                .replace(/-+/g, '-'),
+              commissionRateOverride: newVendor.commissionRate,
+            })
+            .catch((err) => {
+              console.warn('[Supabase] Failed to persist new vendor to DB:', err);
+            });
+        }
+      },
+
+      // Database Synchronization Actions & State
+      isDatabaseSynced: false,
+      isSyncing: false,
+      lastSyncTime: null,
+      syncError: null,
+
+      syncWithDatabase: async () => {
+        if (!isSupabaseConfigured) {
+          try {
+            const currentSubOrders = get().subOrders;
+            const existingIds = new Set(currentSubOrders.map((so) => so.id));
+            const missingFromStore = mockDb.subOrders.filter((so) => !existingIds.has(so.id));
+            if (missingFromStore.length > 0) {
+              set({
+                subOrders: [...missingFromStore, ...currentSubOrders],
+                isDatabaseSynced: true,
+                lastSyncTime: new Date().toLocaleTimeString(),
+              });
+            } else {
+              set({
+                isDatabaseSynced: true,
+                lastSyncTime: new Date().toLocaleTimeString(),
+              });
+            }
+          } catch (err: any) {
+            set({ syncError: err?.message || 'Local sync failed' });
+          }
+          return;
+        }
+
+        set({ isSyncing: true, syncError: null });
+        try {
+          const syncData = await supabaseAdmin.getSyncData();
+          const updates: Partial<MarketplaceState> = {
+            isDatabaseSynced: true,
+            isSyncing: false,
+            lastSyncTime: new Date().toLocaleTimeString(),
+          };
+
+          if (syncData.products && syncData.products.length > 0) {
+            updates.products = syncData.products;
+            mockDb.products = syncData.products;
+          }
+
+          if (syncData.vendors && syncData.vendors.length > 0) {
+            updates.vendors = syncData.vendors.map((v) => {
+              const existing = get().vendors.find((item) => item.id === v.id);
+              return {
+                id: v.id,
+                storeName: v.storeName,
+                category: existing?.category || 'BRAND STORE',
+                subdomain: v.subdomain,
+                ownerName: existing?.ownerName || v.storeName,
+                countryCode: existing?.countryCode || 'US',
+                email: existing?.email || `support@${v.slug}.com`,
+                kycStatus: existing?.kycStatus || 'Verified',
+                performanceTier: existing?.performanceTier || 'Tier 1 Elite',
+                revenue: existing?.revenue || 45000,
+                revenueFormatted: existing?.revenueFormatted || '$45,000',
+                trend: existing?.trend || '+15%',
+                trendType: existing?.trendType || 'positive',
+                status: v.status || 'active',
+                commissionRate: v.commissionRateOverride || v.commissionRate || 0.08,
+                rating: v.rating || 4.9,
+                reviewCount: v.reviewCount || 100,
+                joinedDate: existing?.joinedDate || 'Jan 2025',
+              };
+            });
+          }
+
+          if (syncData.categories && syncData.categories.length > 0) {
+            updates.categories = syncData.categories;
+            mockDb.categories = syncData.categories;
+            updates.categoryOverrides = syncData.categories.map((c) => ({
+              id: c.id,
+              categoryName: c.name,
+              subtext: `${c.name} Category Fee`,
+              baseTierFee: '10.0%',
+              categoryOverride: c.commissionRateOverride
+                ? `${(c.commissionRateOverride * 100).toFixed(1)}%`
+                : '10.0%',
+              fixedOrderFee: '$0.30',
+              merchantsCount: (updates.vendors || get().vendors).length,
+              status: 'Active' as const,
+            }));
+          }
+
+          if (syncData.orders && syncData.orders.length > 0) {
+            mockDb.orderGroups = syncData.orders;
+          }
+
+          if (syncData.subOrders && syncData.subOrders.length > 0) {
+            const incomingIds = new Set(syncData.subOrders.map((so) => so.id));
+            const localOnly = get().subOrders.filter((so) => !incomingIds.has(so.id));
+            updates.subOrders = [...syncData.subOrders, ...localOnly];
+            mockDb.subOrders = [...syncData.subOrders, ...mockDb.subOrders.filter((so) => !incomingIds.has(so.id))];
+          }
+
+          if (syncData.promotions && syncData.promotions.length > 0) {
+            const mappedPromos: MarketplacePromotion[] = syncData.promotions.map((p: any) => ({
+              id: p.id,
+              name: p.title || p.code,
+              code: p.code,
+              typeValue: p.discount_type === 'percentage' ? `${p.discount_value}% Off` : `$${p.discount_value} Off`,
+              discountType: p.discount_type === 'percentage' ? 'percentage' : 'fixed',
+              discountAmount: Number(p.discount_value),
+              minOrder: p.minimum_order ? `Min order $${p.minimum_order}` : 'Storewide',
+              scope: 'Storewide',
+              scopeIcon: 'storewide',
+              window: 'Active Ongoing',
+              windowSubtext: 'Live in store',
+              redemptionsCurrent: p.usage_count || 0,
+              redemptionsMax: p.usage_limit || 'unlimited',
+              salesAttributed: (p.usage_count || 0) * 45,
+              ordersAttributed: p.usage_count || 0,
+              status: p.active ? 'active' : 'expired',
+              isEnabled: Boolean(p.active),
+            }));
+            const incomingPromoIds = new Set(mappedPromos.map((m) => m.id));
+            const localPromoOnly = get().promotions.filter((p) => !incomingPromoIds.has(p.id));
+            updates.promotions = [...mappedPromos, ...localPromoOnly];
+          }
+
+          if (syncData.disputes && syncData.disputes.length > 0) {
+            const incomingDispIds = new Set(syncData.disputes.map((d) => d.id));
+            const localDispOnly = get().disputes.filter((d) => !incomingDispIds.has(d.id));
+            updates.disputes = [...syncData.disputes, ...localDispOnly];
+            mockDb.disputes = [...syncData.disputes, ...mockDb.disputes.filter((d) => !incomingDispIds.has(d.id))];
+          }
+
+          if (syncData.payouts && syncData.payouts.length > 0) {
+            const incomingPayIds = new Set(syncData.payouts.map((p: any) => p.id));
+            const localPayOnly = get().payouts.filter((p) => !incomingPayIds.has(p.id));
+            updates.payouts = [...syncData.payouts, ...localPayOnly];
+          }
+
+          set(updates);
+        } catch (err: any) {
+          set({ isSyncing: false, syncError: err?.message || 'Sync failed' });
+        }
       },
 
       // --- Dispute Actions ---
+      addDispute: (dispute) => {
+        set((state) => ({
+          disputes: [dispute, ...state.disputes.filter((d) => d.id !== dispute.id)],
+        }));
+        if (!mockDb.disputes.some((d) => d.id === dispute.id)) {
+          mockDb.disputes.unshift(dispute);
+        }
+        if (isSupabaseConfigured) {
+          supabaseDisputes.createDispute(dispute).catch((err) => {
+            console.warn('[Supabase] Background createDispute error:', err);
+          });
+        }
+      },
+
       resolveDispute: (id, resolution) => {
         set((state) => ({
           disputes: state.disputes.map((d) =>
@@ -1522,9 +1886,61 @@ export const useMarketplaceStore = create<MarketplaceState>()(
               : d
           ),
         }));
+        if (isSupabaseConfigured) {
+          supabaseDisputes.resolveDispute(id, resolution).catch((err) => {
+            console.warn('[Supabase] Background resolveDispute error:', err);
+          });
+        }
         const dispute = get().disputes.find((d) => d.id === id);
         if (dispute) {
           get().refundOrder(dispute.subOrderId, resolution);
+        }
+      },
+
+      denyDispute: (id, reason) => {
+        const resolution = reason || 'Dispute claim denied following policy review.';
+        set((state) => ({
+          disputes: state.disputes.map((d) =>
+            d.id === id ? { ...d, status: 'resolved_denied', resolutionNote: resolution } : d
+          ),
+        }));
+        try {
+          mockDb.updateDisputeStatus(id, 'resolved_denied', resolution);
+        } catch {
+          // ignore
+        }
+        if (isSupabaseConfigured) {
+          supabaseDisputes.resolveDispute(id, resolution).catch((err) => {
+            console.warn('[Supabase] Background denyDispute error:', err);
+          });
+        }
+      },
+
+      addDisputeMessage: (disputeId, message) => {
+        set((state) => ({
+          disputes: state.disputes.map((d) =>
+            d.id === disputeId
+              ? {
+                  ...d,
+                  messages: d.messages.some((m) => m.id === message.id)
+                    ? d.messages
+                    : [...d.messages, message],
+                }
+              : d
+          ),
+        }));
+        try {
+          const dispute = mockDb.disputes.find((d) => d.id === disputeId);
+          if (dispute && !dispute.messages.some((m) => m.id === message.id)) {
+            mockDb.addDisputeMessage(disputeId, message);
+          }
+        } catch {
+          // ignore
+        }
+        if (isSupabaseConfigured) {
+          supabaseDisputes.addDisputeMessage(disputeId, message).catch((err: any) => {
+            console.warn('[Supabase] Background addDisputeMessage error:', err);
+          });
         }
       },
 
@@ -1536,7 +1952,7 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         }));
       },
 
-      // --- Commission Actions ---
+      // --- Commission & Category Actions ---
       updateGlobalCommissionRate: (rate) => {
         set({ globalCommissionRate: rate });
         mockDb.commissionConfig.globalDefaultRate = rate;
@@ -1563,8 +1979,67 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         }));
       },
 
+      addCategory: (newCategory) => {
+        set((state) => {
+          const exists = state.categories.some((c) => c.id === newCategory.id || c.slug === newCategory.slug);
+          if (exists) return state;
+          const newOverride: CategoryFeeOverride = {
+            id: newCategory.id,
+            categoryName: newCategory.name,
+            subtext: `${newCategory.name} Category Fee`,
+            baseTierFee: '10.0%',
+            categoryOverride: newCategory.commissionRateOverride
+              ? `${(newCategory.commissionRateOverride * 100).toFixed(1)}%`
+              : '10.0%',
+            fixedOrderFee: '$0.30',
+            merchantsCount: state.vendors.length,
+            status: 'Active',
+          };
+          return {
+            categories: [newCategory, ...state.categories],
+            categoryOverrides: [newOverride, ...state.categoryOverrides],
+          };
+        });
+        if (!mockDb.categories.some((c) => c.id === newCategory.id)) {
+          mockDb.categories.unshift(newCategory);
+        }
+        if (isSupabaseConfigured) {
+          supabaseCatalog.createCategory(newCategory).catch((err) => {
+            console.warn('[Supabase] Background createCategory error:', err);
+          });
+        }
+      },
+
+      updateCategory: (id, updates) => {
+        set((state) => ({
+          categories: state.categories.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        }));
+        const idx = mockDb.categories.findIndex((c) => c.id === id);
+        if (idx >= 0) {
+          mockDb.categories[idx] = { ...mockDb.categories[idx], ...updates };
+        }
+        if (isSupabaseConfigured) {
+          supabaseCatalog.updateCategory(id, updates).catch((err) => {
+            console.warn('[Supabase] Background updateCategory error:', err);
+          });
+        }
+      },
+
+      deleteCategory: (id) => {
+        set((state) => ({
+          categories: state.categories.filter((c) => c.id !== id),
+        }));
+        mockDb.categories = mockDb.categories.filter((c) => c.id !== id);
+        if (isSupabaseConfigured) {
+          supabaseCatalog.deleteCategory(id).catch((err) => {
+            console.warn('[Supabase] Background deleteCategory error:', err);
+          });
+        }
+      },
+
       // --- Return Actions ---
       approveReturn: (rmaId, refundAmount) => {
+        const item = get().returns.find((r) => r.rmaId === rmaId);
         set((state) => ({
           returns: state.returns.map((r) =>
             r.rmaId === rmaId
@@ -1577,6 +2052,14 @@ export const useMarketplaceStore = create<MarketplaceState>()(
               : r
           ),
         }));
+        if (item && item.orderNumber) {
+          const matched = get().subOrders.find(
+            (so) => so.id === item.orderNumber || so.orderGroupId === item.orderNumber
+          );
+          if (matched) {
+            get().advanceSubOrderStatus(matched.id, 'refunded', 'Vendor', `Return ${rmaId} approved and refunded`);
+          }
+        }
       },
 
       rejectReturn: (rmaId, reason) => {
@@ -1636,6 +2119,11 @@ export const useMarketplaceStore = create<MarketplaceState>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ payouts: [newPayout, ...state.payouts] }));
+        if (isSupabaseConfigured) {
+          supabasePayouts.requestInstantPayout('vendor-apple', amount, destination).catch((err) => {
+            console.warn('[Supabase] Failed to persist payout to DB:', err);
+          });
+        }
       },
 
       addBankAccount: (bank) => {
@@ -1719,12 +2207,23 @@ export const useMarketplaceStore = create<MarketplaceState>()(
         set((state) => ({
           users: state.users.map((u) => (u.id === id ? { ...u, status } : u)),
         }));
+        if (isSupabaseConfigured) {
+          supabaseUsers.updateUserStatus(id, status === 'Active' ? 'approved' : 'suspended').catch(console.warn);
+        }
       },
 
       updateUserRole: (id, role) => {
         set((state) => ({
           users: state.users.map((u) => (u.id === id ? { ...u, role } : u)),
         }));
+        if (isSupabaseConfigured) {
+          const roles = role.toLowerCase().includes('admin')
+            ? ['admin']
+            : role.toLowerCase().includes('vendor')
+            ? ['vendor']
+            : ['customer'];
+          supabaseUsers.updateUserRoles(id, roles).catch(console.warn);
+        }
       },
 
       addUser: (userData) => {
@@ -1744,6 +2243,17 @@ export const useMarketplaceStore = create<MarketplaceState>()(
           joinDate: 'Today',
         };
         set((state) => ({ users: [newUser, ...state.users] }));
+        if (isSupabaseConfigured) {
+          supabaseUsers
+            .createUser({
+              id,
+              name: newUser.name,
+              email: newUser.email,
+              role: newUser.role,
+              status: newUser.status,
+            })
+            .catch(console.warn);
+        }
       },
 
       // --- Report Actions ---

@@ -144,6 +144,8 @@ export type PhysicalSubOrderStatus =
   | 'delivery_failed'
   | 'return_requested'
   | 'return_approved'
+  | 'return_rejected'
+  | 'returned'
   | 'refunded';
 
 export type DigitalSubOrderStatus =

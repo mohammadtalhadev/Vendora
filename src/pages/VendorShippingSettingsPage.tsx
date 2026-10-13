@@ -14,6 +14,7 @@ import {
   useSaveShippingSettings,
   useShippingSettings,
 } from '../features/vendor/hooks/useVendorStore';
+import { useCurrency } from '../store/currency-store';
 import type { VendorShippingSettings } from '../features/vendor/api/shipping';
 
 const SLA_LABEL: Record<string, string> = {
@@ -54,9 +55,6 @@ const BLANK_FORM: FormState = {
   slaWindow: '48h',
 };
 
-const money = (value: number) =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 const amount = (value: string) => {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
@@ -83,6 +81,11 @@ function formOf(settings: VendorShippingSettings): FormState {
 export const VendorShippingSettingsPage: React.FC = () => {
   const settingsQuery = useShippingSettings();
   const saveSettings = useSaveShippingSettings();
+  // Freight numbers are stored in USD on this row; the panel restates them through
+  // formatPrice so the page never hand-writes a currency symbol.
+  const { formatPrice, config } = useCurrency();
+
+  const money = (value: number) => formatPrice(value);
 
   const [form, setForm] = useState<FormState>(BLANK_FORM);
   const [banner, setBanner] = useState<string | null>(null);
@@ -152,7 +155,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
               disabled={!settingsQuery.data}
               className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Revert to saved
             </button>
             <button
@@ -161,32 +164,48 @@ export const VendorShippingSettingsPage: React.FC = () => {
               disabled={saveSettings.isPending || settingsQuery.isLoading}
               className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Save className="h-3.5 w-3.5" />
+              <Save className="h-3.5 w-3.5" aria-hidden="true" />
               {saveSettings.isPending ? 'Saving…' : 'Save settings'}
             </button>
           </div>
         </div>
 
         {settingsQuery.isLoading && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-xs">
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-xs"
+          >
             Loading your saved settings…
           </div>
         )}
         {settingsQuery.error && (
-          <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700">
-            <AlertTriangle className="h-4 w-4" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700"
+          >
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             {(settingsQuery.error as Error).message}
           </div>
         )}
         {banner && (
-          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800"
+          >
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             {banner}
           </div>
         )}
         {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700">
-            <AlertTriangle className="h-4 w-4" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700"
+          >
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             {error}
           </div>
         )}
@@ -199,7 +218,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
           >
             <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Truck className="h-4 w-4 text-[#FF7A1A]" />
+                <Truck className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
                 <h2 className="text-sm font-bold text-slate-900">
                   Freight rates your store records
                 </h2>
@@ -274,7 +293,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
                   />
                   {form.freeShippingEnabled && (
                     <span className="flex items-center gap-1 font-bold text-slate-900">
-                      <span>$</span>
+                      <span>{config.symbol}</span>
                       <input
                         type="number"
                         min="0"
@@ -292,7 +311,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Building className="h-4 w-4 text-[#FF7A1A]" />
+                <Building className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
                 <div>
                   <h2 className="text-sm font-bold text-slate-900">Pickup origin</h2>
                   <span className="text-[11px] text-slate-400">
@@ -415,7 +434,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Clock className="h-4 w-4 text-[#FF7A1A]" />
+                <Clock className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
                 <h2 className="text-sm font-bold text-slate-900">Handling window</h2>
               </div>
 

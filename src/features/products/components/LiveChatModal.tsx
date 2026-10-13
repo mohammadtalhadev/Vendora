@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Send, Store, ShieldCheck } from 'lucide-react';
+import { supabaseChat } from '../../../lib/supabase-service';
 
 interface LiveChatModalProps {
   isOpen: boolean;
@@ -45,6 +46,16 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
 
+    const convId = `store_${sellerName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    supabaseChat.sendMessage({
+      id: userMsg.id,
+      conversationId: convId,
+      senderId: 'buyer-portal',
+      senderName: 'Customer',
+      senderRole: 'customer',
+      text,
+    }).catch(console.warn);
+
     // Simulated auto-reply after 1 second
     setTimeout(() => {
       const replyMsg: ChatMessage = {
@@ -54,6 +65,15 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
         timestamp: 'Just now',
       };
       setMessages((prev) => [...prev, replyMsg]);
+
+      supabaseChat.sendMessage({
+        id: replyMsg.id,
+        conversationId: convId,
+        senderId: 'vendor-store',
+        senderName: sellerName,
+        senderRole: 'vendor',
+        text: replyMsg.text,
+      }).catch(console.warn);
     }, 1000);
   };
 
@@ -69,13 +89,13 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-[#FF7A1A]">
               <Store className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm text-slate-900">{sellerName}</span>
-                <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200/60">
                   <ShieldCheck className="h-3 w-3" />
                   Verified
                 </span>
@@ -106,7 +126,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               <div
                 className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
                   m.sender === 'user'
-                    ? 'rounded-br-xs bg-blue-600 text-white'
+                    ? 'rounded-br-xs bg-[#FF7A1A] text-white'
                     : 'rounded-bl-xs bg-slate-100 text-slate-800'
                 }`}
               >
@@ -124,7 +144,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               key={idx}
               type="button"
               onClick={() => handleSend(prompt)}
-              className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+              className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-orange-300 hover:text-[#FF7A1A] transition-colors"
             >
               {prompt}
             </button>
@@ -145,12 +165,12 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Type your question..."
-              className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-blue-600"
+              className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 focus:border-[#FF7A1A] focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-[#FF7A1A]"
             />
             <button
               type="submit"
               disabled={!inputText.trim()}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-xs hover:bg-blue-700 disabled:opacity-40 transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FF7A1A] text-white shadow-xs hover:bg-[#EA6C13] disabled:opacity-40 transition-colors cursor-pointer"
             >
               <Send className="h-4 w-4" />
             </button>

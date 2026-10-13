@@ -1,6 +1,13 @@
 import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RootLayout } from '../components/layout/RootLayout';
+import { PublicLayout, AdminLayout, VendorLayout, RiderLayout, SupportLayout } from '../components/layout/PanelLayout';
+import { 
+  AdminOnlyRoute, 
+  VendorOnlyRoute, 
+  SupportOnlyRoute, 
+  RiderOnlyRoute, 
+} from '../components/auth/ProtectedRoute';
 
 // Core Immediate Landing Pages
 import { HomePage } from '../pages/HomePage';
@@ -53,6 +60,54 @@ const RegisterPage = lazy(() =>
 );
 const ForbiddenPage = lazy(() =>
   import('../pages/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage })),
+);
+const ReturnsPage = lazy(() =>
+  import('../pages/ReturnsPage').then((m) => ({ default: m.ReturnsPage })),
+);
+const ShippingPolicyPage = lazy(() =>
+  import('../pages/ShippingPolicyPage').then((m) => ({ default: m.ShippingPolicyPage })),
+);
+const RefundPolicyPage = lazy(() =>
+  import('../pages/RefundPolicyPage').then((m) => ({ default: m.RefundPolicyPage })),
+);
+const PrivacyPolicyPage = lazy(() =>
+  import('../pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })),
+);
+const TermsPage = lazy(() =>
+  import('../pages/TermsPage').then((m) => ({ default: m.TermsPage })),
+);
+const AboutPage = lazy(() =>
+  import('../pages/AboutPage').then((m) => ({ default: m.AboutPage })),
+);
+const AffiliatePage = lazy(() =>
+  import('../pages/AffiliatePage').then((m) => ({ default: m.AffiliatePage })),
+);
+const FAQPage = lazy(() =>
+  import('../pages/FAQPage').then((m) => ({ default: m.FAQPage })),
+);
+const ContactPage = lazy(() =>
+  import('../pages/ContactPage').then((m) => ({ default: m.ContactPage })),
+);
+const TrackOrderPage = lazy(() =>
+  import('../pages/TrackOrderPage').then((m) => ({ default: m.TrackOrderPage })),
+);
+const SellOnVendoraPage = lazy(() =>
+  import('../pages/SellOnVendoraPage').then((m) => ({ default: m.SellOnVendoraPage })),
+);
+const BrandsPage = lazy(() =>
+  import('../pages/BrandsPage').then((m) => ({ default: m.BrandsPage })),
+);
+const DealsPage = lazy(() =>
+  import('../pages/DealsPage').then((m) => ({ default: m.DealsPage })),
+);
+const CareersPage = lazy(() =>
+  import('../pages/CareersPage').then((m) => ({ default: m.CareersPage })),
+);
+const BlogPage = lazy(() =>
+  import('../pages/BlogPage').then((m) => ({ default: m.BlogPage })),
+);
+const CategorySlugRedirect = lazy(() =>
+  import('../pages/CategorySlugRedirect').then((m) => ({ default: m.CategorySlugRedirect })),
 );
 
 // Vendor Workspace Lazy Pages
@@ -201,7 +256,11 @@ const lazyWrap = (element: React.ReactNode) => (
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <RootLayout />,
+    element: (
+      <PublicLayout>
+        <RootLayout />
+      </PublicLayout>
+    ),
     children: [
       {
         index: true,
@@ -217,6 +276,14 @@ export const router = createBrowserRouter([
       },
       {
         path: 'vendors/:vendorId',
+        element: lazyWrap(<VendorStorefrontPage />),
+      },
+      {
+        path: 'stores/:vendorId',
+        element: lazyWrap(<VendorStorefrontPage />),
+      },
+      {
+        path: 'store/:vendorId',
         element: lazyWrap(<VendorStorefrontPage />),
       },
       {
@@ -240,6 +307,22 @@ export const router = createBrowserRouter([
         element: lazyWrap(<InvoicePage />),
       },
       {
+        path: 'track',
+        element: lazyWrap(<TrackOrderPage />),
+      },
+      {
+        path: 'track-order',
+        element: lazyWrap(<TrackOrderPage />),
+      },
+      {
+        path: 'track-order/:trackingNumber',
+        element: lazyWrap(<TrackOrderPage />),
+      },
+      {
+        path: 'order-tracking',
+        element: lazyWrap(<TrackOrderPage />),
+      },
+      {
         path: 'downloads',
         element: lazyWrap(<DownloadsPage />),
       },
@@ -260,6 +343,18 @@ export const router = createBrowserRouter([
         element: lazyWrap(<BecomeSellerPage />),
       },
       {
+        path: 'sell',
+        element: lazyWrap(<SellOnVendoraPage />),
+      },
+      {
+        path: 'sell-on-vendora',
+        element: lazyWrap(<SellOnVendoraPage />),
+      },
+      {
+        path: 'merchants',
+        element: lazyWrap(<SellOnVendoraPage />),
+      },
+      {
         path: 'account/profile',
         element: lazyWrap(<AccountProfilePage />),
       },
@@ -276,12 +371,132 @@ export const router = createBrowserRouter([
         element: lazyWrap(<CustomerDisputesPage />),
       },
       {
+        path: 'customer/messages',
+        element: lazyWrap(<VendorMessagesPage />),
+      },
+      {
         path: 'login',
         element: lazyWrap(<LoginPage />),
       },
       {
         path: 'register',
         element: lazyWrap(<RegisterPage />),
+      },
+      {
+        path: 'returns',
+        element: lazyWrap(<ReturnsPage />),
+      },
+      {
+        path: 'returns-replacements',
+        element: lazyWrap(<ReturnsPage />),
+      },
+      {
+        path: 'shipping',
+        element: lazyWrap(<ShippingPolicyPage />),
+      },
+      {
+        path: 'shipping-rates',
+        element: lazyWrap(<ShippingPolicyPage />),
+      },
+      {
+        path: 'shipping-policy',
+        element: lazyWrap(<ShippingPolicyPage />),
+      },
+      {
+        path: 'refund-policy',
+        element: lazyWrap(<RefundPolicyPage />),
+      },
+      {
+        path: 'refunds',
+        element: lazyWrap(<RefundPolicyPage />),
+      },
+      {
+        path: 'privacy',
+        element: lazyWrap(<PrivacyPolicyPage />),
+      },
+      {
+        path: 'terms',
+        element: lazyWrap(<TermsPage />),
+      },
+      {
+        path: 'legal',
+        element: lazyWrap(<TermsPage />),
+      },
+      {
+        path: 'about',
+        element: lazyWrap(<AboutPage />),
+      },
+      {
+        path: 'about-us',
+        element: lazyWrap(<AboutPage />),
+      },
+      {
+        path: 'affiliates',
+        element: lazyWrap(<AffiliatePage />),
+      },
+      {
+        path: 'creator-program',
+        element: lazyWrap(<AffiliatePage />),
+      },
+      {
+        path: 'faq',
+        element: lazyWrap(<FAQPage />),
+      },
+      {
+        path: 'help',
+        element: lazyWrap(<FAQPage />),
+      },
+      {
+        path: 'contact',
+        element: lazyWrap(<ContactPage />),
+      },
+      {
+        path: 'contact-us',
+        element: lazyWrap(<ContactPage />),
+      },
+      {
+        path: 'brands',
+        element: lazyWrap(<BrandsPage />),
+      },
+      {
+        path: 'brand-stores',
+        element: lazyWrap(<BrandsPage />),
+      },
+      {
+        path: 'deals',
+        element: lazyWrap(<DealsPage />),
+      },
+      {
+        path: 'flash-deals',
+        element: lazyWrap(<DealsPage />),
+      },
+      {
+        path: 'careers',
+        element: lazyWrap(<CareersPage />),
+      },
+      {
+        path: 'jobs',
+        element: lazyWrap(<CareersPage />),
+      },
+      {
+        path: 'blog',
+        element: lazyWrap(<BlogPage />),
+      },
+      {
+        path: 'journal',
+        element: lazyWrap(<BlogPage />),
+      },
+      {
+        path: 'search',
+        element: <ProductsPage />,
+      },
+      {
+        path: 'categories/:slug',
+        element: lazyWrap(<CategorySlugRedirect />),
+      },
+      {
+        path: 'category/:slug',
+        element: lazyWrap(<CategorySlugRedirect />),
       },
       {
         path: '403',
@@ -307,6 +522,11 @@ export const router = createBrowserRouter([
   // Vendor Workspace Routes
   {
     path: '/vendor',
+    element: (
+      <VendorOnlyRoute>
+        <VendorLayout />
+      </VendorOnlyRoute>
+    ),
     children: [
       {
         index: true,
@@ -361,6 +581,10 @@ export const router = createBrowserRouter([
         element: lazyWrap(<VendorMessagesPage />),
       },
       {
+        path: 'messages/:threadId',
+        element: lazyWrap(<VendorMessagesPage />),
+      },
+      {
         path: 'reviews',
         element: lazyWrap(<VendorReviewsPage />),
       },
@@ -401,6 +625,11 @@ export const router = createBrowserRouter([
   // Admin Workspace Routes (Catmin Design System)
   {
     path: '/admin',
+    element: (
+      <AdminOnlyRoute>
+        <AdminLayout />
+      </AdminOnlyRoute>
+    ),
     children: [
       {
         index: true,
@@ -503,19 +732,47 @@ export const router = createBrowserRouter([
   // Rider Workspace Routes
   {
     path: '/rider',
-    element: lazyWrap(<RiderDashboardPage />),
-  },
-  {
-    path: '/rider/deliveries/:id',
-    element: lazyWrap(<RiderDashboardPage />),
+    element: (
+      <RiderOnlyRoute>
+        <RiderLayout />
+      </RiderOnlyRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: lazyWrap(<RiderDashboardPage />),
+      },
+      {
+        path: 'deliveries',
+        element: lazyWrap(<RiderDashboardPage />),
+      },
+      {
+        path: 'deliveries/:id',
+        element: lazyWrap(<RiderDashboardPage />),
+      },
+    ],
   },
   // Support Workspace Routes
   {
     path: '/support',
-    element: lazyWrap(<SupportDashboardPage />),
-  },
-  {
-    path: '/support/disputes/:id',
-    element: lazyWrap(<SupportDashboardPage />),
+    element: (
+      <SupportOnlyRoute>
+        <SupportLayout />
+      </SupportOnlyRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: lazyWrap(<SupportDashboardPage />),
+      },
+      {
+        path: 'disputes',
+        element: lazyWrap(<SupportDashboardPage />),
+      },
+      {
+        path: 'disputes/:id',
+        element: lazyWrap(<SupportDashboardPage />),
+      },
+    ],
   },
 ]);

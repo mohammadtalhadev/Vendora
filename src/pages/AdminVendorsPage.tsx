@@ -10,8 +10,10 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { useVendorQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
+import { useCurrency } from '../store/currency-store';
 
 export const AdminVendorsPage: React.FC = () => {
+  const { formatPrice } = useCurrency();
   const [status, setStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState<number>(1);
@@ -274,12 +276,12 @@ export const AdminVendorsPage: React.FC = () => {
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">
               <span data-testid="volume-gross" className="text-3xl font-extrabold text-slate-900">
-                ${queue.volume.gross.toLocaleString()}
+                {formatPrice(queue.volume.gross)}
               </span>
             </div>
             <p className="mt-1 text-xs text-slate-500 font-medium">
-              Commission <strong className="text-slate-800">${queue.volume.commission.toLocaleString()}</strong> ·
-              paid to sellers <strong className="text-slate-800">${queue.volume.net.toLocaleString()}</strong>
+              Commission <strong className="text-slate-800">{formatPrice(queue.volume.commission)}</strong> ·
+              paid to sellers <strong className="text-slate-800">{formatPrice(queue.volume.net)}</strong>
             </p>
             <p className="mt-2 text-[11px] text-slate-400">
               Summed in Postgres over packages that were not cancelled — not the page this screen is showing.
@@ -289,9 +291,14 @@ export const AdminVendorsPage: React.FC = () => {
 
         {/* Tab Filters Bar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="inline-flex items-center rounded-xl bg-slate-100/90 p-1 text-xs font-bold text-slate-600">
+          <div
+            role="group"
+            aria-label="Merchant status filters"
+            className="inline-flex items-center rounded-xl bg-slate-100/90 p-1 text-xs font-bold text-slate-600"
+          >
             <button
               onClick={() => { setStatus('all'); setPage(1); }}
+              aria-pressed={status === 'all'}
               className={`flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all ${
                 status === 'all'
                   ? 'bg-white text-slate-900 shadow-xs'
@@ -305,6 +312,7 @@ export const AdminVendorsPage: React.FC = () => {
             </button>
             <button
               onClick={() => { setStatus('active'); setPage(1); }}
+              aria-pressed={status === 'active'}
               className={`flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all ${
                 status === 'active'
                   ? 'bg-white text-slate-900 shadow-xs'
@@ -316,6 +324,7 @@ export const AdminVendorsPage: React.FC = () => {
             </button>
             <button
               onClick={() => { setStatus('pending'); setPage(1); }}
+              aria-pressed={status === 'pending'}
               className={`flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all ${
                 status === 'pending'
                   ? 'bg-white text-slate-900 shadow-xs'
@@ -329,6 +338,7 @@ export const AdminVendorsPage: React.FC = () => {
             </button>
             <button
               onClick={() => { setStatus('suspended'); setPage(1); }}
+              aria-pressed={status === 'suspended'}
               className={`flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all ${
                 status === 'suspended'
                   ? 'bg-white text-slate-900 shadow-xs'
@@ -354,8 +364,12 @@ export const AdminVendorsPage: React.FC = () => {
         {/* Filter Controls Row */}
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200/90 bg-white p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
           <div className="relative flex-1">
+            <label htmlFor="vendor-search" className="sr-only">
+              Search merchants
+            </label>
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
+              id="vendor-search"
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -365,7 +379,11 @@ export const AdminVendorsPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="vendor-status-select" className="sr-only">
+              Filter by status
+            </label>
             <select
+              id="vendor-status-select"
               value={status}
               onChange={(e) => { setStatus(e.target.value); setPage(1); }}
               className="admin-select text-xs font-medium text-slate-700"
@@ -376,7 +394,11 @@ export const AdminVendorsPage: React.FC = () => {
               <option value="suspended">Suspended</option>
             </select>
 
+            <label htmlFor="vendor-page-size" className="sr-only">
+              Rows per page
+            </label>
             <select
+              id="vendor-page-size"
               value={pageSize.toString()}
               onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
               className="admin-select text-xs font-medium text-slate-700"
@@ -391,15 +413,18 @@ export const AdminVendorsPage: React.FC = () => {
         {/* Vendors Data Table */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table
+              className="w-full text-left text-xs"
+              aria-label="Vendor and merchant directory"
+            >
               <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th className="px-4 py-3.5">VENDOR / STORE</th>
-                  <th className="px-4 py-3.5">OWNER / CONTACT</th>
-                  <th className="px-4 py-3.5">KYC STATUS</th>
-                  <th className="px-4 py-3.5">PERFORMANCE TIER</th>
-                  <th className="px-4 py-3.5 text-right">REVENUE (30D GMV)</th>
-                  <th className="px-4 py-3.5 text-center">ACTIONS</th>
+                  <th scope="col" className="px-4 py-3.5">VENDOR / STORE</th>
+                  <th scope="col" className="px-4 py-3.5">OWNER / CONTACT</th>
+                  <th scope="col" className="px-4 py-3.5">KYC STATUS</th>
+                  <th scope="col" className="px-4 py-3.5">PERFORMANCE TIER</th>
+                  <th scope="col" className="px-4 py-3.5 text-right">REVENUE (30D GMV)</th>
+                  <th scope="col" className="px-4 py-3.5 text-center">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -490,12 +515,12 @@ export const AdminVendorsPage: React.FC = () => {
 
                       {/* Revenue (30D GMV) */}
                       <td className="px-4 py-3.5 text-right">
-                        <div className="font-bold text-slate-900">${vendor.gross.toLocaleString()}</div>
+                        <div className="font-bold text-slate-900">{formatPrice(vendor.gross)}</div>
                         <div className="text-[11px] text-slate-400">
-                          Commission: ${vendor.commission.toLocaleString()}
+                          Commission: {formatPrice(vendor.commission)}
                         </div>
                         <div className="text-[11px] font-semibold text-emerald-600">
-                          Net: ${vendor.net.toLocaleString()}
+                          Net: {formatPrice(vendor.net)}
                         </div>
                       </td>
 
@@ -538,8 +563,9 @@ export const AdminVendorsPage: React.FC = () => {
                 of <strong>{queue.total}</strong> merchant records
               </span>
               <div className="flex items-center gap-1.5">
-                <span>Rows per page:</span>
+                <label htmlFor="vendor-rows-per-page">Rows per page:</label>
                 <select
+                  id="vendor-rows-per-page"
                   value={pageSize}
                   onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
                   className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 focus:outline-hidden cursor-pointer"
@@ -551,12 +577,13 @@ export const AdminVendorsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 self-end sm:self-auto">
+            <div className="flex items-center gap-1 self-end sm:self-auto" role="group" aria-label="Pagination">
               <button
                 type="button"
                 onClick={() => setPage(1)}
                 disabled={page === 1}
                 className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                aria-label="First Page"
                 title="First Page"
               >
                 |&lt;
@@ -566,6 +593,7 @@ export const AdminVendorsPage: React.FC = () => {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                aria-label="Previous Page"
                 title="Previous Page"
               >
                 &lt;
@@ -575,6 +603,8 @@ export const AdminVendorsPage: React.FC = () => {
                   key={p}
                   type="button"
                   onClick={() => setPage(p)}
+                  aria-label={`Page ${p}`}
+                  aria-current={page === p ? 'page' : undefined}
                   className={`flex h-7 min-w-7 px-1.5 items-center justify-center rounded text-xs font-bold transition-colors cursor-pointer ${
                     page === p
                       ? 'bg-slate-900 text-white'
@@ -589,6 +619,7 @@ export const AdminVendorsPage: React.FC = () => {
                 onClick={() => setPage((p) => Math.min(Math.ceil(queue.total / pageSize), p + 1))}
                 disabled={page >= Math.ceil(queue.total / pageSize) || Math.ceil(queue.total / pageSize) === 0}
                 className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                aria-label="Next Page"
                 title="Next Page"
               >
                 &gt;
@@ -598,6 +629,7 @@ export const AdminVendorsPage: React.FC = () => {
                 onClick={() => setPage(Math.ceil(queue.total / pageSize))}
                 disabled={page >= Math.ceil(queue.total / pageSize) || Math.ceil(queue.total / pageSize) === 0}
                 className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                aria-label="Last Page"
                 title="Last Page"
               >
                 &gt;|

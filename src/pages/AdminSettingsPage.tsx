@@ -159,6 +159,70 @@ export const AdminSettingsPage: React.FC = () => {
     setIsGatewayModalOpen(true);
   };
 
+  const SETTINGS_TABS: Array<'general' | 'payouts' | 'policies' | 'tax' | 'api'> = [
+    'general',
+    'payouts',
+    'policies',
+    'tax',
+    'api',
+  ];
+
+  const handleSettingsTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = SETTINGS_TABS.indexOf(activeTab);
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % SETTINGS_TABS.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + SETTINGS_TABS.length) % SETTINGS_TABS.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = SETTINGS_TABS.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    const nextTab = SETTINGS_TABS[nextIndex];
+    setActiveTab(nextTab);
+    document.getElementById(`admin-settings-tab-${nextTab}`)?.focus();
+  };
+
+  const GATEWAY_MODES: Array<'live' | 'test'> = ['live', 'test'];
+
+  const handleGatewayModeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = GATEWAY_MODES.indexOf(gatewayMode);
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % GATEWAY_MODES.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + GATEWAY_MODES.length) % GATEWAY_MODES.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = GATEWAY_MODES.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    const nextMode = GATEWAY_MODES[nextIndex];
+    setGatewayMode(nextMode);
+    document.getElementById(`admin-gateway-mode-${nextMode}`)?.focus();
+  };
+
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Platform Settings" sidebar={<AdminNav />}>
       <div className="space-y-6">
@@ -189,7 +253,7 @@ export const AdminSettingsPage: React.FC = () => {
               }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+              <RotateCcw className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
               Discard Changes
             </button>
             <button
@@ -197,24 +261,38 @@ export const AdminSettingsPage: React.FC = () => {
               onClick={handleSave}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Check className="h-4 w-4 stroke-[2.5]" />
-              <span>{saveSuccess ? 'Saved Successfully!' : 'Save Configuration'}</span>
+              <Check className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
+              <span aria-live="polite">{saveSuccess ? 'Saved Successfully!' : 'Save Configuration'}</span>
             </button>
           </div>
         </div>
 
         {/* Feedback message for rotated credentials */}
         {rotateMessage && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-600" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2"
+          >
+            <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             <span>{rotateMessage}</span>
           </div>
         )}
 
         {/* Navigation Tabs Bar */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-px text-xs font-semibold text-slate-600">
+        <div
+          role="tablist"
+          aria-label="Platform settings sections"
+          onKeyDown={handleSettingsTabKeyDown}
+          className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-px text-xs font-semibold text-slate-600"
+        >
           <button
             type="button"
+            role="tab"
+            id="admin-settings-tab-general"
+            aria-controls="admin-settings-panel-general"
+            aria-selected={activeTab === 'general'}
+            tabIndex={activeTab === 'general' ? 0 : -1}
             onClick={() => setActiveTab('general')}
             className={`inline-flex items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 transition-colors cursor-pointer ${
               activeTab === 'general'
@@ -222,11 +300,16 @@ export const AdminSettingsPage: React.FC = () => {
                 : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Store className="h-4 w-4" />
+            <Store className="h-4 w-4" aria-hidden="true" />
             <span>General &amp; Marketplace</span>
           </button>
           <button
             type="button"
+            role="tab"
+            id="admin-settings-tab-payouts"
+            aria-controls="admin-settings-panel-payouts"
+            aria-selected={activeTab === 'payouts'}
+            tabIndex={activeTab === 'payouts' ? 0 : -1}
             onClick={() => setActiveTab('payouts')}
             className={`inline-flex items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 transition-colors cursor-pointer ${
               activeTab === 'payouts'
@@ -234,11 +317,16 @@ export const AdminSettingsPage: React.FC = () => {
                 : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            <CreditCard className="h-4 w-4" />
+            <CreditCard className="h-4 w-4" aria-hidden="true" />
             <span>Payouts &amp; Gateways</span>
           </button>
           <button
             type="button"
+            role="tab"
+            id="admin-settings-tab-policies"
+            aria-controls="admin-settings-panel-policies"
+            aria-selected={activeTab === 'policies'}
+            tabIndex={activeTab === 'policies' ? 0 : -1}
             onClick={() => setActiveTab('policies')}
             className={`inline-flex items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 transition-colors cursor-pointer ${
               activeTab === 'policies'
@@ -246,11 +334,16 @@ export const AdminSettingsPage: React.FC = () => {
                 : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Scale className="h-4 w-4" />
+            <Scale className="h-4 w-4" aria-hidden="true" />
             <span>Vendor Policies &amp; SLAs</span>
           </button>
           <button
             type="button"
+            role="tab"
+            id="admin-settings-tab-tax"
+            aria-controls="admin-settings-panel-tax"
+            aria-selected={activeTab === 'tax'}
+            tabIndex={activeTab === 'tax' ? 0 : -1}
             onClick={() => setActiveTab('tax')}
             className={`inline-flex items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 transition-colors cursor-pointer ${
               activeTab === 'tax'
@@ -258,11 +351,16 @@ export const AdminSettingsPage: React.FC = () => {
                 : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Receipt className="h-4 w-4" />
+            <Receipt className="h-4 w-4" aria-hidden="true" />
             <span>Tax &amp; Compliance</span>
           </button>
           <button
             type="button"
+            role="tab"
+            id="admin-settings-tab-api"
+            aria-controls="admin-settings-panel-api"
+            aria-selected={activeTab === 'api'}
+            tabIndex={activeTab === 'api' ? 0 : -1}
             onClick={() => setActiveTab('api')}
             className={`inline-flex items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 transition-colors cursor-pointer ${
               activeTab === 'api'
@@ -270,7 +368,7 @@ export const AdminSettingsPage: React.FC = () => {
                 : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Code className="h-4 w-4" />
+            <Code className="h-4 w-4" aria-hidden="true" />
             <span>API &amp; Webhooks</span>
           </button>
         </div>
@@ -281,7 +379,12 @@ export const AdminSettingsPage: React.FC = () => {
           <div className="lg:col-span-8 space-y-6">
             {/* TAB: GENERAL */}
             {activeTab === 'general' && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div
+                role="tabpanel"
+                id="admin-settings-panel-general"
+                aria-labelledby="admin-settings-tab-general"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
@@ -310,8 +413,9 @@ export const AdminSettingsPage: React.FC = () => {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
                   {/* Platform Name */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">Platform Name</label>
+                    <label htmlFor="admin-settings-platform-name" className="block text-xs font-bold text-slate-700">Platform Name</label>
                     <input
+                      id="admin-settings-platform-name"
                       type="text"
                       value={platformName}
                       onChange={(e) => setPlatformName(e.target.value)}
@@ -321,10 +425,11 @@ export const AdminSettingsPage: React.FC = () => {
 
                   {/* Support Email */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-support-email" className="block text-xs font-bold text-slate-700">
                       Support Contact Email
                     </label>
                     <input
+                      id="admin-settings-support-email"
                       type="email"
                       value={supportEmail}
                       onChange={(e) => setSupportEmail(e.target.value)}
@@ -334,11 +439,12 @@ export const AdminSettingsPage: React.FC = () => {
 
                   {/* Default Currency */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-currency" className="block text-xs font-bold text-slate-700">
                       Default Currency &amp; Regional Settlement
                     </label>
                     <div className="relative mt-1.5">
                       <select
+                        id="admin-settings-currency"
                         value={currency}
                         onChange={(e) => setCurrency(e.target.value)}
                         className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-xs font-medium text-slate-900 focus:border-slate-900 focus:outline-hidden"
@@ -349,7 +455,7 @@ export const AdminSettingsPage: React.FC = () => {
                         <option>CAD ($) - Canadian Dollar</option>
                         <option>AED (د.إ) - UAE Dirham</option>
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                     </div>
                   </div>
 
@@ -389,7 +495,7 @@ export const AdminSettingsPage: React.FC = () => {
                       <Globe className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-xs">
+                      <h3 id="admin-settings-multicurrency-label" className="font-bold text-slate-900 text-xs">
                         Multi-Currency Dynamic Conversion
                       </h3>
                       <p className="text-[11px] text-slate-500">
@@ -399,6 +505,9 @@ export const AdminSettingsPage: React.FC = () => {
                   </div>
                   <button
                     type="button"
+                    role="switch"
+                    aria-checked={multiCurrency}
+                    aria-labelledby="admin-settings-multicurrency-label"
                     onClick={() => setMultiCurrency(!multiCurrency)}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                       multiCurrency ? 'bg-slate-900' : 'bg-slate-200'
@@ -408,6 +517,7 @@ export const AdminSettingsPage: React.FC = () => {
                       className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                         multiCurrency ? 'translate-x-4' : 'translate-x-0'
                       }`}
+                      aria-hidden="true"
                     />
                   </button>
                 </div>
@@ -416,7 +526,12 @@ export const AdminSettingsPage: React.FC = () => {
 
             {/* TAB: PAYOUTS */}
             {activeTab === 'payouts' && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div
+                role="tabpanel"
+                id="admin-settings-panel-payouts"
+                aria-labelledby="admin-settings-tab-payouts"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
@@ -432,11 +547,12 @@ export const AdminSettingsPage: React.FC = () => {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
                   {/* Automated Payout Schedule */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-payout-schedule" className="block text-xs font-bold text-slate-700">
                       Automated Payout Schedule
                     </label>
                     <div className="relative mt-1.5">
                       <select
+                        id="admin-settings-payout-schedule"
                         value={payoutSchedule}
                         onChange={(e) => setPayoutSchedule(e.target.value)}
                         className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-xs font-medium text-slate-900 focus:border-slate-900 focus:outline-hidden"
@@ -446,20 +562,21 @@ export const AdminSettingsPage: React.FC = () => {
                         <option>Monthly (1st of month)</option>
                         <option>Daily automatic sweep</option>
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                     </div>
                   </div>
 
                   {/* Minimum Payout Floor */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-min-payout" className="block text-xs font-bold text-slate-700">
                       Minimum Payout Floor
                     </label>
                     <div className="relative mt-1.5">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400" aria-hidden="true">
                         $
                       </span>
                       <input
+                        id="admin-settings-min-payout"
                         type="text"
                         value={minPayoutFloor}
                         onChange={(e) => setMinPayoutFloor(e.target.value)}
@@ -470,11 +587,12 @@ export const AdminSettingsPage: React.FC = () => {
 
                   {/* Reserve Retention Window */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-reserve-days" className="block text-xs font-bold text-slate-700">
                       Reserve Retention Window
                     </label>
                     <div className="relative mt-1.5">
                       <input
+                        id="admin-settings-reserve-days"
                         type="text"
                         value={reserveRetentionDays}
                         onChange={(e) => setReserveRetentionDays(e.target.value)}
@@ -602,7 +720,12 @@ export const AdminSettingsPage: React.FC = () => {
 
             {/* TAB: POLICIES */}
             {activeTab === 'policies' && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div
+                role="tabpanel"
+                id="admin-settings-panel-policies"
+                aria-labelledby="admin-settings-tab-policies"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
@@ -618,11 +741,12 @@ export const AdminSettingsPage: React.FC = () => {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
                   {/* Fulfillment SLA Ceiling */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-sla-ceiling" className="block text-xs font-bold text-slate-700">
                       Fulfillment SLA Ceiling
                     </label>
                     <div className="relative mt-1.5">
                       <input
+                        id="admin-settings-sla-ceiling"
                         type="text"
                         value={slaCeiling}
                         onChange={(e) => setSlaCeiling(e.target.value)}
@@ -639,11 +763,12 @@ export const AdminSettingsPage: React.FC = () => {
 
                   {/* Return & Refund Window */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-refund-window" className="block text-xs font-bold text-slate-700">
                       Return &amp; Refund Window
                     </label>
                     <div className="relative mt-1.5">
                       <input
+                        id="admin-settings-refund-window"
                         type="text"
                         value={refundWindowDays}
                         onChange={(e) => setRefundWindowDays(e.target.value)}
@@ -660,11 +785,12 @@ export const AdminSettingsPage: React.FC = () => {
 
                   {/* Catalog AI Moderation */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label htmlFor="admin-settings-ai-moderation" className="block text-xs font-bold text-slate-700">
                       Catalog AI Moderation
                     </label>
                     <div className="relative mt-1.5">
                       <select
+                        id="admin-settings-ai-moderation"
                         value={aiModerationMode}
                         onChange={(e) => setAiModerationMode(e.target.value)}
                         className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-xs font-medium text-slate-900 focus:border-slate-900 focus:outline-hidden"
@@ -673,7 +799,7 @@ export const AdminSettingsPage: React.FC = () => {
                         <option>Strict (Manual Review)</option>
                         <option>Permissive (Post-Publish Scan)</option>
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                     </div>
                     <p className="mt-1 text-[11px] text-slate-400">
                       Analyzes listing copies, brand rights, &amp; images.
@@ -688,7 +814,7 @@ export const AdminSettingsPage: React.FC = () => {
                       <AlertTriangle className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-xs">
+                      <h3 id="admin-settings-autorefund-label" className="font-bold text-slate-900 text-xs">
                         Dispute Escalation Auto-Refund
                       </h3>
                       <p className="text-[11px] text-slate-500">
@@ -698,6 +824,9 @@ export const AdminSettingsPage: React.FC = () => {
                   </div>
                   <button
                     type="button"
+                    role="switch"
+                    aria-checked={autoRefundOnDispute}
+                    aria-labelledby="admin-settings-autorefund-label"
                     onClick={() => setAutoRefundOnDispute(!autoRefundOnDispute)}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                       autoRefundOnDispute ? 'bg-slate-900' : 'bg-slate-200'
@@ -707,6 +836,7 @@ export const AdminSettingsPage: React.FC = () => {
                       className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                         autoRefundOnDispute ? 'translate-x-4' : 'translate-x-0'
                       }`}
+                      aria-hidden="true"
                     />
                   </button>
                 </div>
@@ -715,7 +845,12 @@ export const AdminSettingsPage: React.FC = () => {
 
             {/* TAB: TAX & COMPLIANCE */}
             {activeTab === 'tax' && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div
+                role="tabpanel"
+                id="admin-settings-panel-tax"
+                aria-labelledby="admin-settings-tab-tax"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
@@ -730,9 +865,10 @@ export const AdminSettingsPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">Tax Calculation Service</label>
+                    <label htmlFor="admin-settings-tax-engine" className="block text-xs font-bold text-slate-700">Tax Calculation Service</label>
                     <div className="relative mt-1.5">
                       <select
+                        id="admin-settings-tax-engine"
                         value={taxEngine}
                         onChange={(e) => setTaxEngine(e.target.value)}
                         className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-xs font-medium text-slate-900 focus:outline-hidden"
@@ -742,15 +878,16 @@ export const AdminSettingsPage: React.FC = () => {
                         <option>TaxJar SmartCalcs</option>
                         <option>Manual Jurisdiction Rates</option>
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">IRS 1099-K Filing Threshold</label>
+                    <label htmlFor="admin-settings-irs-threshold" className="block text-xs font-bold text-slate-700">IRS 1099-K Filing Threshold</label>
                     <div className="relative mt-1.5">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400" aria-hidden="true">$</span>
                       <input
+                        id="admin-settings-irs-threshold"
                         type="text"
                         value={irsThreshold}
                         onChange={(e) => setIrsThreshold(e.target.value)}
@@ -763,11 +900,14 @@ export const AdminSettingsPage: React.FC = () => {
                 <div className="space-y-3 pt-2">
                   <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 flex items-center justify-between gap-4">
                     <div>
-                      <h3 className="font-bold text-slate-900 text-xs">Marketplace Facilitator Remittance</h3>
+                      <h3 id="admin-settings-nexus-label" className="font-bold text-slate-900 text-xs">Marketplace Facilitator Remittance</h3>
                       <p className="text-[11px] text-slate-500">Automatically collect and file state sales tax on behalf of sellers in all US facilitator states.</p>
                     </div>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={taxNexusReporting}
+                      aria-labelledby="admin-settings-nexus-label"
                       onClick={() => setTaxNexusReporting(!taxNexusReporting)}
                       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
                         taxNexusReporting ? 'bg-slate-900' : 'bg-slate-200'
@@ -775,17 +915,20 @@ export const AdminSettingsPage: React.FC = () => {
                     >
                       <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition ${
                         taxNexusReporting ? 'translate-x-4' : 'translate-x-0'
-                      }`} />
+                      }`} aria-hidden="true" />
                     </button>
                   </div>
 
                   <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 flex items-center justify-between gap-4">
                     <div>
-                      <h3 className="font-bold text-slate-900 text-xs">EU / UK VAT Reverse Charge Mechanism</h3>
+                      <h3 id="admin-settings-vat-label" className="font-bold text-slate-900 text-xs">EU / UK VAT Reverse Charge Mechanism</h3>
                       <p className="text-[11px] text-slate-500">Enable zero-rating for verified B2B VIES cross-border sales across EU member states.</p>
                     </div>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={vatReverseCharge}
+                      aria-labelledby="admin-settings-vat-label"
                       onClick={() => setVatReverseCharge(!vatReverseCharge)}
                       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
                         vatReverseCharge ? 'bg-slate-900' : 'bg-slate-200'
@@ -793,7 +936,7 @@ export const AdminSettingsPage: React.FC = () => {
                     >
                       <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition ${
                         vatReverseCharge ? 'translate-x-4' : 'translate-x-0'
-                      }`} />
+                      }`} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -802,7 +945,12 @@ export const AdminSettingsPage: React.FC = () => {
 
             {/* TAB: API & WEBHOOKS */}
             {activeTab === 'api' && (
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div
+                role="tabpanel"
+                id="admin-settings-panel-api"
+                aria-labelledby="admin-settings-tab-api"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
@@ -817,8 +965,9 @@ export const AdminSettingsPage: React.FC = () => {
 
                 <div className="space-y-4 pt-2">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700">Primary Outbound Webhook URL</label>
+                    <label htmlFor="admin-settings-webhook-url" className="block text-xs font-bold text-slate-700">Primary Outbound Webhook URL</label>
                     <input
+                      id="admin-settings-webhook-url"
                       type="text"
                       value={webhookEndpoint}
                       onChange={(e) => setWebhookEndpoint(e.target.value)}
@@ -828,8 +977,9 @@ export const AdminSettingsPage: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700">Public API Rate Limit</label>
+                      <label htmlFor="admin-settings-rate-limit" className="block text-xs font-bold text-slate-700">Public API Rate Limit</label>
                       <select
+                        id="admin-settings-rate-limit"
                         value={apiRateLimit}
                         onChange={(e) => setApiRateLimit(e.target.value)}
                         className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-hidden"
@@ -842,8 +992,9 @@ export const AdminSettingsPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700">Webhook Retry Policy</label>
+                      <label htmlFor="admin-settings-retry-policy" className="block text-xs font-bold text-slate-700">Webhook Retry Policy</label>
                       <select
+                        id="admin-settings-retry-policy"
                         value={webhookRetries}
                         onChange={(e) => setWebhookRetries(e.target.value)}
                         className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-hidden"
@@ -887,11 +1038,12 @@ export const AdminSettingsPage: React.FC = () => {
 
                 {/* Setting 2: Inactivity Session Timeout */}
                 <div className="pt-3">
-                  <label className="block font-bold text-slate-900">
+                  <label htmlFor="admin-settings-session-timeout" className="block font-bold text-slate-900">
                     Inactivity Session Timeout
                   </label>
                   <div className="relative mt-1.5">
                     <select
+                      id="admin-settings-session-timeout"
                       value={sessionTimeout}
                       onChange={(e) => setSessionTimeout(e.target.value)}
                       className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-1.5 pr-8 text-xs font-medium text-slate-900 focus:outline-hidden"
@@ -901,20 +1053,23 @@ export const AdminSettingsPage: React.FC = () => {
                       <option>60 minutes</option>
                       <option>4 hours</option>
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                   </div>
                 </div>
 
                 {/* Setting 3: Admin IP Whitelisting */}
                 <div className="pt-3 flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-bold text-slate-900">Admin IP Whitelisting</div>
+                    <div id="admin-settings-ip-allowlist-label" className="font-bold text-slate-900">Admin IP Whitelisting</div>
                     <div className="text-[11px] text-slate-500 mt-0.5">
                       Restrict access to corporate VPN CIDR
                     </div>
                   </div>
                   <button
                     type="button"
+                    role="switch"
+                    aria-checked={ipWhitelisting}
+                    aria-labelledby="admin-settings-ip-allowlist-label"
                     onClick={() => setIpWhitelisting(!ipWhitelisting)}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                       ipWhitelisting ? 'bg-slate-900' : 'bg-slate-200'
@@ -924,6 +1079,7 @@ export const AdminSettingsPage: React.FC = () => {
                       className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                         ipWhitelisting ? 'translate-x-4' : 'translate-x-0'
                       }`}
+                      aria-hidden="true"
                     />
                   </button>
                 </div>
@@ -960,11 +1116,12 @@ export const AdminSettingsPage: React.FC = () => {
                       onClick={() => copyToClipboard(webhookSecret, 'whsec')}
                       className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
                       title="Copy Secret"
+                      aria-label="Copy live webhook secret"
                     >
                       {copiedKey === 'whsec' ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
                       ) : (
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                       )}
                     </button>
                   </div>
@@ -981,7 +1138,7 @@ export const AdminSettingsPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-slate-800 text-[11px]">
+                    <span id="admin-api-token-value" className="font-mono text-slate-800 text-[11px]">
                       {revealedToken ? adminApiToken : `${adminApiToken.substring(0, 11)}••••••••`}
                     </span>
                     <div className="flex items-center gap-1">
@@ -990,19 +1147,23 @@ export const AdminSettingsPage: React.FC = () => {
                         onClick={() => setRevealedToken(!revealedToken)}
                         className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
                         title={revealedToken ? 'Hide Token' : 'Reveal Token'}
+                        aria-label={revealedToken ? 'Hide admin API core token' : 'Reveal admin API core token'}
+                        aria-expanded={revealedToken}
+                        aria-controls="admin-api-token-value"
                       >
-                        <Eye className="h-3.5 w-3.5" />
+                        <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(adminApiToken, 'apiToken')}
                         className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
                         title="Copy Token"
+                        aria-label="Copy admin API core token"
                       >
                         {copiedKey === 'apiToken' ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
                         ) : (
-                          <Copy className="h-3.5 w-3.5" />
+                          <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                         )}
                       </button>
                     </div>
@@ -1015,7 +1176,7 @@ export const AdminSettingsPage: React.FC = () => {
                   onClick={() => setIsRotateConfirmOpen(true)}
                   className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <RotateCw className="h-3.5 w-3.5 text-slate-500" />
+                  <RotateCw className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                   Rotate Credentials
                 </button>
               </div>
@@ -1060,10 +1221,19 @@ export const AdminSettingsPage: React.FC = () => {
 
             <div className="space-y-4 pt-2 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Environment Mode</label>
-                <div className="flex items-center gap-2">
+                <span id="admin-gateway-mode-label" className="block font-bold text-slate-700 mb-1">Environment Mode</span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="admin-gateway-mode-label"
+                  onKeyDown={handleGatewayModeKeyDown}
+                  className="flex items-center gap-2"
+                >
                   <button
                     type="button"
+                    id="admin-gateway-mode-live"
+                    role="radio"
+                    aria-checked={gatewayMode === 'live'}
+                    tabIndex={gatewayMode === 'live' ? 0 : -1}
                     onClick={() => setGatewayMode('live')}
                     className={`flex-1 rounded-lg py-1.5 font-bold border ${
                       gatewayMode === 'live' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'
@@ -1073,6 +1243,10 @@ export const AdminSettingsPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
+                    id="admin-gateway-mode-test"
+                    role="radio"
+                    aria-checked={gatewayMode === 'test'}
+                    tabIndex={gatewayMode === 'test' ? 0 : -1}
                     onClick={() => setGatewayMode('test')}
                     className={`flex-1 rounded-lg py-1.5 font-bold border ${
                       gatewayMode === 'test' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'
@@ -1084,8 +1258,9 @@ export const AdminSettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Secret API Key</label>
+                <label htmlFor="admin-gateway-api-key" className="block font-bold text-slate-700 mb-1">Secret API Key</label>
                 <input
+                  id="admin-gateway-api-key"
                   type="password"
                   value={gatewayApiKey}
                   onChange={(e) => setGatewayApiKey(e.target.value)}
@@ -1094,8 +1269,9 @@ export const AdminSettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Webhook Signing Secret</label>
+                <label htmlFor="admin-gateway-webhook-secret" className="block font-bold text-slate-700 mb-1">Webhook Signing Secret</label>
                 <input
+                  id="admin-gateway-webhook-secret"
                   type="password"
                   defaultValue="whsec_prod_rail_998124b89"
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs font-mono focus:outline-none focus:border-slate-900"
@@ -1163,7 +1339,7 @@ export const AdminSettingsPage: React.FC = () => {
           <DialogContent className="max-w-md bg-white p-6 rounded-2xl shadow-xl">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold text-rose-700 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
+                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
                 Rotate Production Credentials?
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">

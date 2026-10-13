@@ -282,7 +282,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
         >
           <div className="flex flex-col">
             <span className="font-outfit text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-[#FF7A1A] transition-colors">
-              Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-all duration-300 group-hover:scale-125" />
+              Vendora<span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-all duration-300 group-hover:scale-125" aria-hidden="true" />
             </span>
             <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-wider mt-1 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
               Seller Hub
@@ -303,7 +303,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
         <div className="relative rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-3 shadow-xs">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 font-black text-[#FF7A1A] border border-orange-100 dark:border-orange-900/40 text-xs uppercase">
-              <Store className="h-4 w-4" />
+              <Store className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
@@ -323,7 +323,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
               className="inline-flex items-center gap-1 font-semibold text-[#EA6C13] dark:text-[#FF7A1A] hover:underline"
             >
               <span>Public Storefront</span>
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
             </NavLink>
           </div>
         </div>
@@ -357,6 +357,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <Icon
+                        aria-hidden="true"
                         className={cn(
                           'h-4 w-4 shrink-0 transition-colors',
                           active
@@ -397,7 +398,7 @@ export const VendorNav: React.FC<VendorNavProps> = ({
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800 text-[#FF7A1A] shadow-xs group-hover:scale-105 transition-transform">
-              <UserCheck className="h-4 w-4" />
+              <UserCheck className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
@@ -416,9 +417,9 @@ export const VendorNav: React.FC<VendorNavProps> = ({
               title="Sign out"
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-            <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400" />
+            <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
           </div>
         </Link>
       </div>

@@ -431,7 +431,7 @@ export const SEED_DISPUTES: Dispute[] = [
     customerName: 'Sarah Customer',
     customerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
     vendorId: 'platform',
-    vendorName: 'Vendora Direct',
+    vendorName: 'Vendora',
     reason: 'Return Rejected - Wrong color received',
     status: 'resolved_refund',
     urgency: 'standard',

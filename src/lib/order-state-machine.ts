@@ -11,17 +11,20 @@ export const PHYSICAL_TRANSITIONS: Record<PhysicalSubOrderStatus, PhysicalSubOrd
   out_for_delivery: ['delivered', 'delivery_failed'],
   delivery_failed: ['out_for_delivery', 'cancelled'], // Retry delivery or return
   delivered: ['return_requested'],
-  return_requested: ['return_approved'],
-  return_approved: ['refunded'],
+  return_requested: ['return_approved', 'return_rejected'],
+  return_approved: ['returned', 'refunded'],
+  returned: ['refunded'],
+  return_rejected: [],
   cancelled: [],
   refunded: [],
 };
 
 // Valid transitions for digital assets
 export const DIGITAL_TRANSITIONS: Record<DigitalSubOrderStatus, DigitalSubOrderStatus[]> = {
-  placed: ['paid'],
-  paid: ['available'],
+  placed: ['paid', 'available', 'cancelled'],
+  paid: ['available', 'refunded'],
   available: ['refunded'],
+  cancelled: [],
   refunded: [],
 };
 
@@ -44,9 +47,14 @@ export const TRANSITION_PERMISSIONS: Partial<Record<string, TransitionRule>> = {
   'packed->cancelled': { allowedRoles: ['admin', 'vendor'], description: 'Cancel packed order' },
   'delivered->return_requested': { allowedRoles: ['customer', 'admin'], description: 'Customer requests return' },
   'return_requested->return_approved': { allowedRoles: ['vendor', 'admin'], description: 'Vendor approves return' },
+  'return_requested->return_rejected': { allowedRoles: ['vendor', 'admin'], description: 'Vendor declines return' },
+  'return_approved->returned': { allowedRoles: ['vendor', 'admin'], description: 'Vendor confirms the return arrived and restocks' },
+  'returned->refunded': { allowedRoles: ['admin'], description: 'Admin authorizes refund after the return' },
   'return_approved->refunded': { allowedRoles: ['admin'], description: 'Admin authorizes refund' },
-  'placed->paid': { allowedRoles: ['customer', 'admin'], description: 'Payment successful' },
+  'placed->paid': { allowedRoles: ['customer', 'admin', 'vendor'], description: 'Payment successful' },
+  'placed->available': { allowedRoles: ['admin', 'vendor'], description: 'License key unlocked immediately' },
   'paid->available': { allowedRoles: ['admin', 'vendor'], description: 'License key unlocked' },
+  'paid->refunded': { allowedRoles: ['admin'], description: 'Admin refunds paid digital order' },
   'available->refunded': { allowedRoles: ['admin'], description: 'Admin refunds digital license' },
 };
 

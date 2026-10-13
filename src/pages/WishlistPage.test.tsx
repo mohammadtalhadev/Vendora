@@ -18,7 +18,7 @@ const mockProduct: Product = {
   compareAtPrice: 299.99,
   type: 'physical',
   sellerId: 'platform',
-  sellerName: 'Vendora Direct',
+  sellerName: 'Vendora',
   sellerType: 'platform',
   variants: [],
   stock: 25,
@@ -60,7 +60,7 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
     expect(screen.getByText('Saved Wishlist')).toBeInTheDocument();
     expect(screen.getByText('Vendora Pulse Pro ANC Headphones')).toBeInTheDocument();
     expect(screen.getByText('$249.99')).toBeInTheDocument();
-    expect(screen.getByText('Vendora Direct')).toBeInTheDocument();
+    expect(screen.getByText('Vendora')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Move to Cart/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Remove/i })).toBeInTheDocument();
   });

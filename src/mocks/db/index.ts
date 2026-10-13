@@ -11,6 +11,7 @@ import type {
   ShippingAddress,
   SubOrderStatus,
   UserRole,
+  ModerationStatus,
 } from '../../types/domain';
 import { SEED_CATEGORIES, SEED_PRODUCTS, SEED_VENDORS } from '../seed/catalog';
 import { SEED_SUB_ORDERS, SEED_ORDER_GROUPS, SEED_DISPUTES } from '../seed/operations';
@@ -154,6 +155,7 @@ export class MockDatabase {
     paymentMethod: 'card' | 'cod';
     paymentBrand?: string;
     last4?: string;
+    deliveryOptions?: Record<string, 'standard' | 'express'>;
   }): { orderGroup: OrderGroup; createdSubOrders: SubOrder[] } {
     const orderGroupId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -173,32 +175,61 @@ export class MockDatabase {
       const firstItem = items[0];
       const hasPhysical = items.some((i) => i.type === 'physical');
       const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-      const shippingFee = hasPhysical ? (subtotal >= 100 ? 0 : 8.5) : 0;
 
-      // Lookup product category for commission
-      const productObj = this.products.find((p) => p.id === firstItem.productId);
-      const categoryId = productObj?.category || 'general';
+      // Calculate shipping based on customer delivery option selection
+      const deliveryOption = params.deliveryOptions?.[sellerId] || 'standard';
+      const shippingFee = hasPhysical
+        ? deliveryOption === 'express'
+          ? 18.0
+          : subtotal >= 100
+            ? 0
+            : 8.5
+        : 0;
 
-      const commission = this.calculateCommission(sellerId, categoryId, subtotal);
+      // Calculate commission per item (accounting for multiple product categories)
+      let totalCommissionAmount = 0;
+      for (const item of items) {
+        const productObj = this.products.find((p) => p.id === item.productId);
+        const categoryId = productObj?.category || 'general';
+        const itemSubtotal = item.price * item.quantity;
+        const itemComm = this.calculateCommission(sellerId, categoryId, itemSubtotal);
+        totalCommissionAmount += itemComm.amount;
+      }
+      totalCommissionAmount = Math.round(totalCommissionAmount * 100) / 100;
+      const isPlatform =
+        sellerId === 'platform' ||
+        firstItem.sellerType === 'platform' ||
+        firstItem.sellerId === 'platform' ||
+        firstItem.sellerName?.toLowerCase() === 'vendora';
 
-      const initialStatus: SubOrderStatus = hasPhysical ? 'placed' : 'paid';
+      const effectiveSellerId = isPlatform ? 'platform' : sellerId;
+      const effectiveSellerName = isPlatform ? 'Vendora' : (firstItem.sellerName || 'Marketplace Vendor');
+      const effectiveSellerType = isPlatform ? 'platform' : (firstItem.sellerType || 'vendor');
+
+      const netPayout = isPlatform ? 0 : Math.round((subtotal - totalCommissionAmount) * 100) / 100;
+      const effectiveRate = isPlatform ? 1.0 : (subtotal > 0 ? Math.round((totalCommissionAmount / subtotal) * 1000) / 1000 : 0);
+      const commissionAmount = isPlatform ? subtotal : totalCommissionAmount;
+
+      const initialStatus: SubOrderStatus = 'placed';
 
       const subOrder: SubOrder = {
         id: subOrderId,
         orderGroupId,
-        sellerId,
-        sellerName: firstItem.sellerName,
-        sellerType: firstItem.sellerType,
+        sellerId: effectiveSellerId,
+        sellerName: effectiveSellerName,
+        sellerType: effectiveSellerType,
         type: hasPhysical ? 'physical' : 'digital',
         items: [...items],
         subtotal,
         shippingFee,
-        commissionRate: commission.rate,
-        commissionAmount: commission.amount,
-        netPayout: commission.netPayout,
+        deliveryOption: hasPhysical ? deliveryOption : undefined,
+        commissionRate: effectiveRate,
+        commissionAmount,
+        netPayout,
         status: initialStatus,
         deliveryCode: hasPhysical ? Math.floor(1000 + Math.random() * 9000).toString() : undefined,
         licenseKey: !hasPhysical ? `VEN-LIC-${Date.now().toString(36).toUpperCase()}` : undefined,
+        shippingAddress: params.shippingAddress,
         history: [
           {
             status: initialStatus,
@@ -211,7 +242,7 @@ export class MockDatabase {
       };
 
       createdSubOrders.push(subOrder);
-      this.subOrders.push(subOrder);
+      this.subOrders.unshift(subOrder);
     }
 
     const orderGroup: OrderGroup = {
@@ -228,7 +259,7 @@ export class MockDatabase {
       createdAt: new Date().toISOString(),
     };
 
-    this.orderGroups.push(orderGroup);
+    this.orderGroups.unshift(orderGroup);
 
     // Save to persistent localStorage
     saveToStorage('orders', this.orderGroups);
@@ -369,6 +400,57 @@ export class MockDatabase {
 
     saveToStorage('disputes', this.disputes);
     return dispute;
+  }
+
+  public createDispute(params: Partial<Dispute>): Dispute {
+    const newDispute: Dispute = {
+      id: params.id || `DSP-${Math.floor(100 + Math.random() * 900)}`,
+      subOrderId: params.subOrderId || '',
+      orderGroupId: params.orderGroupId || '',
+      customerId: params.customerId || 'guest',
+      customerName: params.customerName || 'Customer',
+      vendorId: params.vendorId || 'platform',
+      vendorName: params.vendorName || 'Platform Vendor',
+      reason: params.reason || 'General Issue',
+      status: params.status || 'open',
+      urgency: params.urgency || 'standard',
+      createdAt: new Date().toISOString(),
+      messages: params.messages || [],
+    };
+    this.disputes.unshift(newDispute);
+    saveToStorage('disputes', this.disputes);
+    return newDispute;
+  }
+
+  public moderateProduct(
+    productId: string,
+    status: ModerationStatus,
+    rejectionReason?: string,
+  ): Product {
+    const product = this.products.find((p) => p.id === productId);
+    if (!product) {
+      throw new Error(`Product ${productId} not found`);
+    }
+    product.status = status;
+    if (rejectionReason) {
+      product.rejectionReason = rejectionReason;
+    }
+    saveToStorage('products', this.products);
+    return product;
+  }
+
+  public updateVendorStatus(
+    vendorId: string,
+    status: 'active' | 'suspended',
+    _rejectionReason?: string,
+  ): VendorProfile {
+    const vendor = this.vendors.find((v) => v.id === vendorId);
+    if (!vendor) {
+      throw new Error(`Vendor ${vendorId} not found`);
+    }
+    vendor.status = status;
+    saveToStorage('vendors', this.vendors);
+    return vendor;
   }
 }
 

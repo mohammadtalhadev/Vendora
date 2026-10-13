@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
+  ArrowLeft,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -10,6 +12,7 @@ import {
   MapPin,
   Navigation,
   Package,
+  PackageSearch,
   Phone,
   RotateCcw,
   ShieldCheck,
@@ -26,10 +29,8 @@ import {
 import { useRiderActions, useRiderBoard } from '../features/rider/hooks/useRider';
 import { useRiderLive } from '../features/rider/hooks/useLive';
 import type { RiderAvailability, RiderDrop } from '../features/rider/api/board';
+import { useCurrency } from '../store/currency-store';
 import { cn } from '../lib/utils';
-
-/** The parcel's value as the order booked it - the only money figure a rider is given. */
-const money = (value: number) => `$${value.toFixed(2)}`;
 
 /** `rider_availability` in Postgres; anything else the row holds is shown as offline. */
 const AVAILABILITY: RiderAvailability[] = ['available', 'busy', 'offline'];
@@ -85,13 +86,29 @@ const ON_THE_WAY_STATUSES = ['picked_up', 'in_transit', 'failed'];
 interface DropCardProps {
   drop: RiderDrop;
   busy: boolean;
+  /**
+   * Set on the board route, where the card is one row of a list: it is the row's link to
+   * `/rider/deliveries/:id`. On the detail route the card *is* the detail view, so the page
+   * leaves it unset rather than render a link to the page already open.
+   */
+  openHref?: string | null;
   onCollect: (drop: RiderDrop) => void;
   onOnTheWay: (drop: RiderDrop) => void;
   onDeliver: (drop: RiderDrop) => void;
   onReport: (drop: RiderDrop) => void;
 }
 
-const DropCard: React.FC<DropCardProps> = ({ drop, busy, onCollect, onOnTheWay, onDeliver, onReport }) => {
+const DropCard: React.FC<DropCardProps> = ({
+  drop,
+  busy,
+  openHref = null,
+  onCollect,
+  onOnTheWay,
+  onDeliver,
+  onReport,
+}) => {
+  // The parcel's value as the order booked it - the only money figure a rider is given.
+  const { formatPrice } = useCurrency();
   const region = [drop.address.city, drop.address.state].filter(Boolean).join(', ');
   const locality = [region, drop.address.zipCode].filter(Boolean).join(' ');
   const placedAt = stamp(drop.assignedAt);
@@ -115,15 +132,29 @@ const DropCard: React.FC<DropCardProps> = ({ drop, busy, onCollect, onOnTheWay, 
             </div>
           </div>
         </div>
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold',
-            meta.tone
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold',
+              meta.tone
+            )}
+          >
+            <Package className="h-3.5 w-3.5" />
+            {meta.label}
+          </span>
+          {openHref && (
+            <Link
+              to={openHref}
+              data-testid="btn-open-drop"
+              aria-label={`Open parcel ${shortId(drop.subOrderId)} as its own page`}
+              title="Open parcel on its own page"
+              className="inline-flex min-h-[32px] items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900"
+            >
+              <span>Open</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
           )}
-        >
-          <Package className="h-3.5 w-3.5" />
-          {meta.label}
-        </span>
+        </div>
       </div>
 
       <div className="space-y-3.5 p-4">
@@ -175,7 +206,7 @@ const DropCard: React.FC<DropCardProps> = ({ drop, busy, onCollect, onOnTheWay, 
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
               Value of parcel
             </span>
-            <div className="font-mono text-base font-black text-slate-900">{money(drop.gross)}</div>
+            <div className="font-mono text-base font-black text-slate-900">{formatPrice(drop.gross)}</div>
           </div>
           <div className="space-y-1 text-right text-[11px] font-medium text-slate-500">
             {placedAt && (
@@ -350,6 +381,9 @@ const BoardError: React.FC<{ message: string; retrying: boolean; onRetry: () => 
 );
 
 export const RiderDashboardPage: React.FC = () => {
+  // `/rider/deliveries/:id` is served by this same component, so the route param decides
+  // whether the screen is the board or one parcel on it.
+  const { id: deliveryId } = useParams<{ id: string }>();
   useRiderLive();
   const board = useRiderBoard();
   const actions = useRiderActions();
@@ -362,6 +396,16 @@ export const RiderDashboardPage: React.FC = () => {
   const rider = board.data?.rider ?? null;
   const drops = board.data?.drops ?? [];
   const counts = board.data?.counts ?? null;
+
+  /**
+   * `rider_board` is the only read dispatch offers a rider, and it returns the parcels assigned
+   * to this account. A detail screen is therefore one row of that read, matched on the delivery
+   * id or the package id in the URL; a row it does not contain is reported as not found rather
+   * than shown as an empty card.
+   */
+  const detailDrop = deliveryId
+    ? drops.find((drop) => drop.id === deliveryId || drop.subOrderId === deliveryId) ?? null
+    : null;
 
   const readError =
     board.isError && board.error instanceof Error
@@ -488,7 +532,7 @@ export const RiderDashboardPage: React.FC = () => {
               </div>
             )}
             {/* Counts: what the board itself reports back - parcels, never money. */}
-            {counts && (
+            {counts && !deliveryId && (
               <section aria-label="Your load on the board" className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
@@ -572,7 +616,99 @@ export const RiderDashboardPage: React.FC = () => {
               </div>
             )}
 
-            {drops.length === 0 ? (
+            {deliveryId ? (
+              detailDrop ? (
+                <section aria-label={`Parcel ${shortId(detailDrop.subOrderId)} detail`} className="space-y-3">
+                  <Link
+                    to="/rider/deliveries"
+                    data-testid="btn-back-to-board"
+                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <span>Back to the board</span>
+                  </Link>
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/90 bg-white px-4 py-2.5 shadow-2xs">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                      One parcel, from your board
+                    </span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[11px] font-bold text-slate-500">
+                        delivery {shortId(detailDrop.id)} · package {shortId(detailDrop.subOrderId)}
+                      </span>
+                      <button
+                        type="button"
+                        data-testid="btn-refresh-detail"
+                        disabled={board.isFetching}
+                        onClick={() => void board.refetch()}
+                        title="Re-read the dispatch board behind this parcel"
+                        className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {board.isFetching ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-3 w-3" />
+                        )}
+                        <span>Re-read</span>
+                      </button>
+                    </span>
+                  </div>
+                  <DropCard
+                    drop={detailDrop}
+                    busy={busy}
+                    onCollect={requestCollect}
+                    onOnTheWay={requestOnTheWay}
+                    onDeliver={(target) => setHandoverId(target.id)}
+                    onReport={(target) => setReportId(target.id)}
+                  />
+                </section>
+              ) : (
+                <section
+                  role="alert"
+                  data-testid="drop-not-found"
+                  className="space-y-3 rounded-3xl border-2 border-slate-300 bg-white p-6 shadow-xs"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                      <PackageSearch className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-black text-slate-900">
+                        That parcel is not on your board
+                      </p>
+                      <p className="mt-1 text-xs font-medium text-slate-600">
+                        Dispatch assigns parcels to riders; the board read only returns rows already
+                        given to you, and <code className="font-mono">{deliveryId}</code> is not one
+                        of them. It may have been reassigned, or the link may be a delivery another
+                        rider is holding.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      data-testid="btn-retry-drop"
+                      disabled={board.isFetching}
+                      onClick={() => void board.refetch()}
+                      className="inline-flex min-h-[40px] items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-slate-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {board.isFetching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4" />
+                      )}
+                      <span>Re-read the board</span>
+                    </button>
+                    <Link
+                      to="/rider"
+                      className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50"
+                    >
+                      <span>Open my board</span>
+                      <ArrowLeft className="h-4 w-4 rotate-180" />
+                    </Link>
+                  </div>
+                </section>
+              )
+            ) : drops.length === 0 ? (
               <div
                 data-testid="board-empty"
                 className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs"
@@ -605,6 +741,7 @@ export const RiderDashboardPage: React.FC = () => {
                           key={drop.id}
                           drop={drop}
                           busy={busy}
+                          openHref={`/rider/deliveries/${drop.id}`}
                           onCollect={requestCollect}
                           onOnTheWay={requestOnTheWay}
                           onDeliver={(target) => setHandoverId(target.id)}
@@ -635,6 +772,7 @@ export const RiderDashboardPage: React.FC = () => {
                           key={drop.id}
                           drop={drop}
                           busy={busy}
+                          openHref={`/rider/deliveries/${drop.id}`}
                           onCollect={requestCollect}
                           onOnTheWay={requestOnTheWay}
                           onDeliver={(target) => setHandoverId(target.id)}

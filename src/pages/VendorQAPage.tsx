@@ -131,7 +131,7 @@ export const VendorQAPage: React.FC = () => {
         )}
         {error && (
           <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
             {error}
           </div>
         )}
@@ -155,7 +155,7 @@ export const VendorQAPage: React.FC = () => {
           </div>
 
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
             <input
               type="text"
               value={searchQuery}
@@ -170,7 +170,7 @@ export const VendorQAPage: React.FC = () => {
           <p className="text-xs text-slate-500">Loading your questions…</p>
         ) : questions.isError ? (
           <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
             {(questions.error as Error).message}
           </div>
         ) : visible.length === 0 ? (
@@ -207,7 +207,7 @@ export const VendorQAPage: React.FC = () => {
                         {item.productTitle || 'Listing removed from the catalog'}
                       </Link>
                       <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
-                        <User className="h-3 w-3 text-slate-400" />
+                        <User className="h-3 w-3 text-slate-400" aria-hidden="true" />
                         {item.customerName || 'A buyer'}
                       </span>
                     </div>
@@ -231,12 +231,12 @@ export const VendorQAPage: React.FC = () => {
                       {item.answer &&
                         (item.published ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-                            <Eye className="h-3 w-3" />
+                            <Eye className="h-3 w-3" aria-hidden="true" />
                             Live
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-                            <EyeOff className="h-3 w-3" />
+                            <EyeOff className="h-3 w-3" aria-hidden="true" />
                             Hidden
                           </span>
                         ))}
@@ -299,7 +299,7 @@ export const VendorQAPage: React.FC = () => {
                           }}
                           className="flex items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline cursor-pointer"
                         >
-                          <Edit2 className="h-3 w-3" />
+                          <Edit2 className="h-3 w-3" aria-hidden="true" />
                           Edit Answer
                         </button>
                         <button
@@ -308,7 +308,7 @@ export const VendorQAPage: React.FC = () => {
                           disabled={setPublished.isPending}
                           className="flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-slate-800 disabled:opacity-50 cursor-pointer"
                         >
-                          {item.published ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          {item.published ? <EyeOff className="h-3 w-3" aria-hidden="true" /> : <Eye className="h-3 w-3" aria-hidden="true" />}
                           {item.published ? 'Hide from listing' : 'Publish again'}
                         </button>
                       </div>
@@ -337,7 +337,7 @@ export const VendorQAPage: React.FC = () => {
                         disabled={answerQuestion.isPending || !replyText.trim()}
                         className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-[#FF7A1A] hover:bg-[#EA580C] text-white rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                       >
-                        <Send className="h-3.5 w-3.5" />
+                        <Send className="h-3.5 w-3.5" aria-hidden="true" />
                         Submit Answer
                       </button>
                     </div>
@@ -352,7 +352,7 @@ export const VendorQAPage: React.FC = () => {
                       }}
                       className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-[#FF7A1A] hover:bg-[#EA580C] text-white rounded-xl shadow-sm transition-all cursor-pointer"
                     >
-                      <MessageSquare className="h-3.5 w-3.5" />
+                      <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
                       Compose Answer
                     </button>
                   </div>

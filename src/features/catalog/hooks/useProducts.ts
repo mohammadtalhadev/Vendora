@@ -16,10 +16,12 @@ export const catalogKeys = {
   suggestions: (q: string) => ['catalog', 'suggestions', q] as const,
 };
 
-export function useProducts(params: ProductQueryParams = {}) {
+/** `enabled` lets a caller wait for a dependency (a store id resolved from a slug) before asking. */
+export function useProducts(params: ProductQueryParams = {}, enabled = true) {
   return useQuery({
     queryKey: catalogKeys.products(params),
     queryFn: ({ signal }) => fetchProducts(params, signal),
+    enabled,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }

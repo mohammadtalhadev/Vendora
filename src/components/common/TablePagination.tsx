@@ -13,8 +13,7 @@ interface TablePaginationProps<T> {
 }
 
 /**
- * Shared, fully functional table pagination footer.
- * Replaces the static "Previous / 1 / 2 / 3 / 855 / Next" mockups.
+ * Shared, fully functional table pagination footer component.
  */
 export function TablePagination<T>({
   pagination,

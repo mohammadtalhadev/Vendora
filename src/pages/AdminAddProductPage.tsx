@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   Upload,
   UploadCloud,
-  DollarSign,
   Globe,
   Image as ImageIcon,
   Check,
@@ -28,11 +27,13 @@ import { Input } from '../components/ui/input';
 import type { Product, ProductType, Variant } from '../types/domain';
 import { mockDb } from '../mocks/db';
 import { useMarketplaceStore } from '../store/marketplace-store';
+import { useCurrency } from '../store/currency-store';
 import { supabaseStorage } from '../lib/supabase-service';
 import { cn } from '../lib/utils';
 
 export const AdminAddProductPage: React.FC = () => {
   const navigate = useNavigate();
+  const { formatPrice } = useCurrency();
 
   // Basic Information
   const [title, setTitle] = useState('');
@@ -251,7 +252,7 @@ export const AdminAddProductPage: React.FC = () => {
     }
 
     if (isNaN(priceNum) || priceNum <= 0) {
-      setErrorMessage('Please specify a valid product selling price greater than $0.');
+      setErrorMessage('Please specify a valid product selling price greater than zero.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -422,12 +423,13 @@ export const AdminAddProductPage: React.FC = () => {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-800">
+                  <label htmlFor="product-title" className="text-xs font-bold text-slate-800">
                     Product Title <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[10px] text-slate-400">{title.length}/120 characters</span>
                 </div>
                 <Input
+                  id="product-title"
                   value={title}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   placeholder="e.g. Vendora Studio Series ANC Wireless Flagship Headphones"
@@ -436,7 +438,7 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                <label htmlFor="product-slug" className="block text-xs font-bold text-slate-800 mb-1.5">
                   Product Slug &amp; Permalink
                 </label>
                 <div className="flex rounded-xl border border-slate-200 bg-slate-50/80 overflow-hidden text-xs">
@@ -444,6 +446,7 @@ export const AdminAddProductPage: React.FC = () => {
                     vendora.shop/products/
                   </span>
                   <input
+                    id="product-slug"
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
@@ -455,10 +458,11 @@ export const AdminAddProductPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label htmlFor="product-category" className="block text-xs font-bold text-slate-800 mb-1.5">
                     Category Taxonomy <span className="text-rose-500">*</span>
                   </label>
                   <select
+                    id="product-category"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full admin-select h-10"
@@ -473,10 +477,11 @@ export const AdminAddProductPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label htmlFor="product-brand" className="block text-xs font-bold text-slate-800 mb-1.5">
                     Brand Name
                   </label>
                   <Input
+                    id="product-brand"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     placeholder="Vendora"
@@ -486,10 +491,11 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                <label htmlFor="product-headline" className="block text-xs font-bold text-slate-800 mb-1.5">
                   Marketing Headline / Summary
                 </label>
                 <Input
+                  id="product-headline"
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
                   placeholder="Official 1P flagship release with extended manufacturer warranty"
@@ -498,10 +504,11 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                <label htmlFor="product-description" className="block text-xs font-bold text-slate-800 mb-1.5">
                   Full Detailed Description
                 </label>
                 <textarea
+                  id="product-description"
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -526,7 +533,11 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div className="flex gap-2">
+                <label htmlFor="new-image-url" className="sr-only">
+                  New image URL
+                </label>
                 <Input
+                  id="new-image-url"
                   value={newImageUrl}
                   onChange={(e) => setNewImageUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/... or paste image CDN URL"
@@ -578,6 +589,7 @@ export const AdminAddProductPage: React.FC = () => {
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
                         className="rounded-lg bg-rose-600/90 p-1.5 text-white hover:bg-rose-700"
+                        aria-label={`Delete image ${idx + 1}`}
                         title="Delete image"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -613,7 +625,7 @@ export const AdminAddProductPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                    <DollarSign className="h-4 w-4" />
+                    <Tag className="h-4 w-4" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Pricing &amp; Margins</h3>
                 </div>
@@ -621,54 +633,48 @@ export const AdminAddProductPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Selling Price ($) <span className="text-rose-500">*</span>
+                  <label htmlFor="product-price" className="block text-xs font-bold text-slate-800 mb-1.5">
+                    Selling Price <span className="text-rose-500">*</span>
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      placeholder="199.00"
-                      className="rounded-xl text-xs py-2.5 pl-7 border-slate-200 focus:border-slate-900 font-semibold"
-                    />
-                  </div>
+                  <Input
+                    id="product-price"
+                    type="number"
+                    step="0.01"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="199.00"
+                    className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900 font-semibold"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Compare-at Price ($)
+                  <label htmlFor="product-compare-at-price" className="block text-xs font-bold text-slate-800 mb-1.5">
+                    Compare-at Price
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={compareAtPrice}
-                      onChange={(e) => setCompareAtPrice(e.target.value)}
-                      placeholder="249.00"
-                      className="rounded-xl text-xs py-2.5 pl-7 border-slate-200 focus:border-slate-900"
-                    />
-                  </div>
+                  <Input
+                    id="product-compare-at-price"
+                    type="number"
+                    step="0.01"
+                    value={compareAtPrice}
+                    onChange={(e) => setCompareAtPrice(e.target.value)}
+                    placeholder="249.00"
+                    className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Unit Procurement Cost ($)
+                  <label htmlFor="product-unit-cost" className="block text-xs font-bold text-slate-800 mb-1.5">
+                    Unit Procurement Cost
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={costPerItem}
-                      onChange={(e) => setCostPerItem(e.target.value)}
-                      placeholder="85.00"
-                      className="rounded-xl text-xs py-2.5 pl-7 border-slate-200 focus:border-slate-900"
-                    />
-                  </div>
+                  <Input
+                    id="product-unit-cost"
+                    type="number"
+                    step="0.01"
+                    value={costPerItem}
+                    onChange={(e) => setCostPerItem(e.target.value)}
+                    placeholder="85.00"
+                    className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
+                  />
                 </div>
               </div>
 
@@ -677,7 +683,7 @@ export const AdminAddProductPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div>
                     <span className="text-slate-500 font-medium">Estimated Gross Profit: </span>
-                    <strong className="text-emerald-700 font-bold">${grossProfit.toFixed(2)}</strong>
+                    <strong className="text-emerald-700 font-bold">{formatPrice(grossProfit)}</strong>
                   </div>
                   <span className="text-slate-300">|</span>
                   <div>
@@ -721,10 +727,11 @@ export const AdminAddProductPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label htmlFor="product-sku" className="block text-xs font-bold text-slate-800 mb-1.5">
                     SKU (Stock Keeping Unit) <span className="text-rose-500">*</span>
                   </label>
                   <Input
+                    id="product-sku"
                     value={sku}
                     onChange={(e) => setSku(e.target.value)}
                     placeholder="VEN-1P-1001"
@@ -733,10 +740,11 @@ export const AdminAddProductPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label htmlFor="product-barcode" className="block text-xs font-bold text-slate-800 mb-1.5">
                     Barcode (ISBN, UPC, GTIN)
                   </label>
                   <Input
+                    id="product-barcode"
                     value={barcode}
                     onChange={(e) => setBarcode(e.target.value)}
                     placeholder="840992817201"
@@ -747,10 +755,11 @@ export const AdminAddProductPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label htmlFor="physical-stock" className="block text-xs font-bold text-slate-800 mb-1.5">
                     Physical Stock Units <span className="text-rose-500">*</span>
                   </label>
                   <Input
+                    id="physical-stock"
                     type="number"
                     min="0"
                     value={stock}
@@ -761,10 +770,11 @@ export const AdminAddProductPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label htmlFor="low-stock-threshold" className="block text-xs font-bold text-slate-800 mb-1.5">
                     Low Stock Alert Ceiling
                   </label>
                   <Input
+                    id="low-stock-threshold"
                     type="number"
                     min="0"
                     value={lowStockThreshold}
@@ -810,13 +820,16 @@ export const AdminAddProductPage: React.FC = () => {
                 <div className="space-y-4 pt-1">
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                     <div className="sm:col-span-4">
-                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                      <label htmlFor="variant-option-name" className="block text-xs font-bold text-slate-800 mb-1">
                         Option Name
                       </label>
                       <div className="relative" ref={optionDropdownRef}>
                         <button
+                          id="variant-option-name"
                           type="button"
                           onClick={() => setIsOptionDropdownOpen(!isOptionDropdownOpen)}
+                          aria-haspopup="listbox"
+                          aria-expanded={isOptionDropdownOpen}
                           className="w-full flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer h-9 text-left"
                         >
                           <span className="truncate">
@@ -851,6 +864,7 @@ export const AdminAddProductPage: React.FC = () => {
                                 <button
                                   key={opt.value}
                                   type="button"
+                                  aria-pressed={isSelected}
                                   onClick={() => {
                                     setOptionName(opt.value);
                                     if (opt.defaultValues) setOptionValues(opt.defaultValues);
@@ -873,10 +887,11 @@ export const AdminAddProductPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="sm:col-span-6">
-                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                      <label htmlFor="variant-option-values" className="block text-xs font-bold text-slate-800 mb-1">
                         Values (comma separated)
                       </label>
                       <Input
+                        id="variant-option-values"
                         value={optionValues}
                         onChange={(e) => setOptionValues(e.target.value)}
                         placeholder="Midnight Black, Space Silver, Alpine White"
@@ -902,7 +917,7 @@ export const AdminAddProductPage: React.FC = () => {
                           <tr>
                             <th className="py-2.5 px-3">Variant</th>
                             <th className="py-2.5 px-3">SKU</th>
-                            <th className="py-2.5 px-3">Price ($)</th>
+                            <th className="py-2.5 px-3">Price</th>
                             <th className="py-2.5 px-3">Stock Units</th>
                             <th className="py-2.5 px-3 text-right">Action</th>
                           </tr>
@@ -916,6 +931,7 @@ export const AdminAddProductPage: React.FC = () => {
                                 <input
                                   type="number"
                                   step="0.01"
+                                  aria-label={`Price for ${v.name}`}
                                   value={v.price}
                                   onChange={(e) => {
                                     const val = parseFloat(e.target.value) || 0;
@@ -929,6 +945,7 @@ export const AdminAddProductPage: React.FC = () => {
                               <td className="py-2.5 px-3">
                                 <input
                                   type="number"
+                                  aria-label={`Stock units for ${v.name}`}
                                   value={v.stock}
                                   onChange={(e) => {
                                     const val = parseInt(e.target.value, 10) || 0;
@@ -943,6 +960,8 @@ export const AdminAddProductPage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveVariant(v.id)}
+                                  aria-label={`Remove variant ${v.name}`}
+                                  title="Remove variant"
                                   className="text-slate-400 hover:text-rose-600"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -977,6 +996,7 @@ export const AdminAddProductPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setProductType('physical')}
+                  aria-pressed={productType === 'physical'}
                   className={cn(
                     'flex flex-col items-start rounded-xl border p-3.5 text-left transition-all',
                     productType === 'physical'
@@ -991,6 +1011,7 @@ export const AdminAddProductPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setProductType('digital')}
+                  aria-pressed={productType === 'digital'}
                   className={cn(
                     'flex flex-col items-start rounded-xl border p-3.5 text-left transition-all',
                     productType === 'digital'
@@ -1006,10 +1027,11 @@ export const AdminAddProductPage: React.FC = () => {
               {productType === 'physical' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                    <label htmlFor="parcel-weight" className="block text-xs font-bold text-slate-800 mb-1">
                       Parcel Weight (kg)
                     </label>
                     <Input
+                      id="parcel-weight"
                       type="number"
                       step="0.01"
                       value={weightKg}
@@ -1019,10 +1041,11 @@ export const AdminAddProductPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      Shipping Fee ($)
+                    <label htmlFor="shipping-fee" className="block text-xs font-bold text-slate-800 mb-1">
+                      Shipping Fee
                     </label>
                     <Input
+                      id="shipping-fee"
                       type="number"
                       step="0.01"
                       disabled={freeShipping}
@@ -1047,10 +1070,11 @@ export const AdminAddProductPage: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                    <label htmlFor="digital-license-type" className="block text-xs font-bold text-slate-800 mb-1">
                       Digital License Type
                     </label>
                     <select
+                      id="digital-license-type"
                       value={licenseType}
                       onChange={(e) => setLicenseType(e.target.value)}
                       className="w-full admin-select h-9"
@@ -1065,10 +1089,11 @@ export const AdminAddProductPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                    <label htmlFor="protected-asset-url" className="block text-xs font-bold text-slate-800 mb-1">
                       Protected Asset URL
                     </label>
                     <Input
+                      id="protected-asset-url"
                       value={downloadUrl}
                       onChange={(e) => setDownloadUrl(e.target.value)}
                       placeholder="/downloads/vendora-suite.zip"
@@ -1154,10 +1179,11 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label htmlFor="seo-title" className="block text-[11px] font-bold text-slate-700 mb-1">
                   SEO Meta Title Override
                 </label>
                 <Input
+                  id="seo-title"
                   value={seoTitle}
                   onChange={(e) => setSeoTitle(e.target.value)}
                   placeholder={title || 'Product Title'}
@@ -1166,10 +1192,11 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label htmlFor="seo-description" className="block text-[11px] font-bold text-slate-700 mb-1">
                   SEO Meta Description
                 </label>
                 <textarea
+                  id="seo-description"
                   rows={2}
                   value={seoDescription}
                   onChange={(e) => setSeoDescription(e.target.value)}
@@ -1187,10 +1214,11 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label htmlFor="primary-collection" className="block text-[11px] font-bold text-slate-700 mb-1">
                   Primary Collection
                 </label>
                 <select
+                  id="primary-collection"
                   value={collection}
                   onChange={(e) => setCollection(e.target.value)}
                   className="w-full admin-select h-9 text-xs"
@@ -1203,11 +1231,12 @@ export const AdminAddProductPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label htmlFor="new-product-tag" className="block text-[11px] font-bold text-slate-700 mb-1">
                   Product Tags
                 </label>
                 <div className="flex gap-1.5 mb-2">
                   <Input
+                    id="new-product-tag"
                     value={newTagInput}
                     onChange={(e) => setNewTagInput(e.target.value)}
                     onKeyDown={handleAddTag}
@@ -1234,6 +1263,8 @@ export const AdminAddProductPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(t)}
+                        aria-label={`Remove tag ${t}`}
+                        title={`Remove tag ${t}`}
                         className="text-slate-400 hover:text-rose-600"
                       >
                         ×

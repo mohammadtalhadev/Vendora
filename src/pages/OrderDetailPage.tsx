@@ -5,6 +5,7 @@ import { deriveOrderGroupStatus } from '../lib/order-state-machine';
 import type { OrderGroupDerivedStatus } from '../lib/order-state-machine';
 import { useOrderDetail, useUpdateSubOrderStatus, useIssueDeliveryCode } from '../features/orders/hooks/useOrders';
 import { TrackingTimeline } from '../features/orders/components/TrackingTimeline';
+import { useCurrency } from '../store/currency-store';
 import { QueryState } from '../components/common/QueryState';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -113,6 +114,7 @@ export const OrderDetailPage: React.FC = () => {
             : { label: 'Settlement not recorded', variant: 'secondary' };
 
   // Financial calculations
+  const { formatPrice } = useCurrency();
   const itemsSubtotal = subOrders.reduce((sum, so) => sum + so.subtotal, 0);
   const totalShipping = subOrders.reduce((sum, so) => sum + so.shippingFee, 0);
   const grandTotal = itemsSubtotal + totalShipping;
@@ -199,8 +201,16 @@ export const OrderDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6">
-      {/* 1. Breadcrumb & Back Link */}
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-[#FF7A1A]/20 selection:text-[#FF7A1A] text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-16">
+      {/* Radiant ambient glow orbs (Matching Homepage) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div className="absolute -top-36 -left-28 w-[680px] h-[680px] rounded-full bg-gradient-to-tr from-[#FED7AA]/65 via-[#FFEDD5]/70 to-[#FED7AA]/40 blur-[130px] dark:from-[#FF7A1A]/10 dark:via-[#FED7AA]/5 pointer-events-none" />
+        <div className="absolute top-1/3 -right-32 w-[650px] h-[650px] rounded-full bg-gradient-to-bl from-[#CFFAFE]/70 via-[#F1F5F9]/80 to-[#FFEDD5]/50 blur-[140px] dark:from-[#00B8C8]/10 dark:via-transparent pointer-events-none" />
+        <div className="absolute -bottom-40 left-1/4 w-[620px] h-[620px] rounded-full bg-gradient-to-tr from-[#FFEDD5]/70 via-[#CFFAFE]/50 to-[#F1F5F9] blur-[130px] dark:from-[#FF7A1A]/5 pointer-events-none" />
+      </div>
+
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6">
+        {/* 1. Breadcrumb & Back Link */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
           <Link
@@ -278,7 +288,7 @@ export const OrderDetailPage: React.FC = () => {
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                       Subtotal
                     </span>
-                    <p className="font-bold text-slate-900">${itemsSubtotal.toFixed(2)}</p>
+                    <p className="font-bold text-slate-900">{formatPrice(itemsSubtotal)}</p>
                   </div>
                   <div className="h-8 w-px bg-slate-200" />
                   <div>
@@ -286,7 +296,7 @@ export const OrderDetailPage: React.FC = () => {
                       Shipping
                     </span>
                     <p className="font-bold text-slate-900">
-                      {totalShipping > 0 ? `$${totalShipping.toFixed(2)}` : 'FREE'}
+                      {totalShipping > 0 ? formatPrice(totalShipping) : 'FREE'}
                     </p>
                   </div>
                   <div className="h-8 w-px bg-slate-200" />
@@ -295,7 +305,7 @@ export const OrderDetailPage: React.FC = () => {
                       Grand Total
                     </span>
                     <p className="text-base font-extrabold text-[#EA6C13]">
-                      ${grandTotal.toFixed(2)}
+                      {formatPrice(grandTotal)}
                     </p>
                   </div>
                 </div>
@@ -505,7 +515,7 @@ export const OrderDetailPage: React.FC = () => {
                         </Button>
 
                         {issuedCode?.subOrderId === subOrder.id ? (
-                          <p className="text-xs text-slate-600">
+                          <p role="status" className="text-xs text-slate-600">
                             New code:{' '}
                             <span className="font-mono text-sm font-black text-slate-900">{issuedCode.code}</span>{' '}
                             <span className="text-slate-400">Read it now — the old code no longer works.</span>
@@ -518,6 +528,7 @@ export const OrderDetailPage: React.FC = () => {
 
                         {issueCodeMutation.isError && issueCodeMutation.variables === subOrder.id && (
                           <p
+                            role="alert"
                             className="w-full text-[11px] font-semibold text-rose-700"
                             data-testid={`reissue-code-error-${subOrder.id}`}
                           >
@@ -550,12 +561,12 @@ export const OrderDetailPage: React.FC = () => {
                                     {item.title}
                                   </h5>
                                   <p className="text-[11px] text-slate-500">
-                                    Qty: <strong>{item.quantity}</strong> × ${item.price.toFixed(2)}
+                                    Qty: <strong>{item.quantity}</strong> × {formatPrice(item.price)}
                                   </p>
                                 </div>
                               </div>
                               <span className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                                ${(item.price * item.quantity).toFixed(2)}
+                                {formatPrice(item.price * item.quantity)}
                               </span>
                             </div>
                           ))}
@@ -568,13 +579,13 @@ export const OrderDetailPage: React.FC = () => {
                           Package Subtotal ({subOrder.items.length} items) + Shipping:
                         </span>
                         <span className="font-bold text-slate-900">
-                          ${subOrder.subtotal.toFixed(2)} +{' '}
+                          {formatPrice(subOrder.subtotal)} +{' '}
                           {subOrder.shippingFee > 0
-                            ? `$${subOrder.shippingFee.toFixed(2)}`
+                            ? formatPrice(subOrder.shippingFee)
                             : 'FREE'}{' '}
                           ={' '}
                           <strong className="text-slate-900">
-                            ${(subOrder.subtotal + subOrder.shippingFee).toFixed(2)}
+                            {formatPrice(subOrder.subtotal + subOrder.shippingFee)}
                           </strong>
                         </span>
                       </div>
@@ -608,8 +619,9 @@ export const OrderDetailPage: React.FC = () => {
           </DialogHeader>
 
           <div className="space-y-3 py-2 text-xs">
-            <label className="block font-semibold text-slate-700">Reason for cancellation</label>
+            <label htmlFor="cancel-reason" className="block font-semibold text-slate-700">Reason for cancellation</label>
             <select
+              id="cancel-reason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-[#FF7A1A] focus:outline-none"
@@ -662,10 +674,11 @@ export const OrderDetailPage: React.FC = () => {
 
           <div className="space-y-4 py-2 text-xs">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label htmlFor="return-reason" className="block font-semibold text-slate-700 mb-1">
                 Reason for return
               </label>
               <select
+                id="return-reason"
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
                 className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-[#FF7A1A] focus:outline-none"
@@ -684,10 +697,11 @@ export const OrderDetailPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label htmlFor="return-notes" className="block font-semibold text-slate-700 mb-1">
                 Additional details / description
               </label>
               <textarea
+                id="return-notes"
                 value={returnNotes}
                 onChange={(e) => setReturnNotes(e.target.value)}
                 placeholder="Provide photos or serial number details if applicable..."
@@ -715,6 +729,7 @@ export const OrderDetailPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };

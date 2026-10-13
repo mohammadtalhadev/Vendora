@@ -41,7 +41,7 @@ describe('Mock Database & Split-Order Engine', () => {
         maxStock: 10,
         image: '/img.jpg',
         sellerId: 'platform',
-        sellerName: 'Vendora Direct',
+        sellerName: 'Vendora',
         sellerType: 'platform',
         type: 'physical',
       },

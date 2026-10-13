@@ -477,22 +477,50 @@ describe('AccordionCheckout Component', () => {
       const Wrapper = createTestWrapper();
       render(<CheckoutPage />, { wrapper: Wrapper });
 
+      // The page states the cart's real state and hands the customer back to the catalog;
+      // it does not price or book anything while there is nothing to check out.
       expect(screen.getByText(/Your Cart is Empty/i)).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Explore Products/i })).toBeInTheDocument();
+      const browse = screen.getByRole('link', { name: /Browse products/i });
+      expect(browse).toHaveAttribute('href', '/products');
+      expect(screen.queryByRole('button', { name: /Place Order/i })).not.toBeInTheDocument();
     });
 
     it('renders distraction-free header and sidebar with cart items when items exist', async () => {
       const Wrapper = createTestWrapper();
       render(<CheckoutPage />, { wrapper: Wrapper });
 
-      expect(screen.getByText(/256-Bit SSL Encrypted Checkout/i)).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Return to Cart/i })).toBeInTheDocument();
-      expect(screen.getByText(/Order Summary \(2 items\)/i)).toBeInTheDocument();
-      expect(screen.getByTestId('step-1-header')).toBeInTheDocument();
+      // No invented trust badge: the page makes no security claim the backend cannot back up.
+      expect(screen.queryByText(/256-Bit SSL/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/secure payment gateway/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /Your Cart/i })).toBeInTheDocument();
 
-      // $150 + $35 + $8.50 shipping, all of it quoted by the server.
-      await waitFor(() => expect(screen.getByText(/Total to pay/i)).toBeInTheDocument());
-      expect(screen.getByText(/\$193\.50/)).toBeInTheDocument();
+      // The header still links back to the cart the lines came from.
+      expect(screen.getByRole('link', { name: 'Cart' })).toBeInTheDocument();
+
+      // The packages are the stored cart, grouped by the seller that ships them.
+      expect(screen.getByText('Vendora Studio Headphones')).toBeInTheDocument();
+      expect(screen.getByText('Audiophile Cable')).toBeInTheDocument();
+      expect(screen.getByText('SoundWave Audio')).toBeInTheDocument();
+
+      // Sidebar: the summary tile counts the real lines, not a seeded number.
+      expect(screen.getByText('Order Summary')).toBeInTheDocument();
+      expect(screen.getByText('2 Items')).toBeInTheDocument();
+
+      // $150 + $35 + $8.50 shipping - only once checkout_quote has answered.
+      await waitFor(() => expect(screen.getByText('Total Payable')).toBeInTheDocument());
+      expect(screen.getByText('$193.50', { selector: 'span' })).toBeInTheDocument();
+
+      // The CTA is the real one and it books through `place_order`, not a timer.
+      const placeOrderButton = screen.getByRole('button', { name: /Place Order/i });
+      await waitFor(() => expect(placeOrderButton).toBeEnabled());
+
+      fireEvent.click(screen.getByRole('radio', { name: /Cash on Delivery/i }));
+      fireEvent.click(placeOrderButton);
+
+      await waitFor(() => expect(checkoutApi.placeOrder).toHaveBeenCalledTimes(1));
+      expect(checkoutApi.placeOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentMethod: 'cod', couponCode: null }),
+      );
     });
   });
 });

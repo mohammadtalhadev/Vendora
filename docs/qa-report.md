@@ -128,7 +128,7 @@ flowchart LR
   },
   "platform": {
     "sellerId": "platform",
-    "sellerName": "Vendora Direct",
+    "sellerName": "Vendora",
     "item": "Vendora Signature USB-C Braided Cable (Sun Orange)",
     "price": 45.00,
     "qty": 1,
@@ -141,11 +141,11 @@ flowchart LR
 
 | Step # | User Action | Test Input / Parameter | Expected System Behavior | Verification Point |
 | :---: | :--- | :--- | :--- | :--- |
-| **2.1** | View Cart page | Navigate to `/cart` | Cart displays 3 distinct seller groups: (1) Aurora Artisan Tech, (2) Zenith Studio Gear, (3) Vendora Direct. | Each group renders its own subtotal, fulfillment note, and estimated shipping fee. |
+| **2.1** | View Cart page | Navigate to `/cart` | Cart displays 3 distinct seller groups: (1) Aurora Artisan Tech, (2) Zenith Studio Gear, (3) Vendora. | Each group renders its own subtotal, fulfillment note, and estimated shipping fee. |
 | **2.2** | Verify derived totals | Inspect Order Summary summary sidebar | Item Count: 4; Subtotal: $284.97; Shipping: $14.98; Grand Total: $299.95. | Verified totals are computed dynamically via memoized selectors, never stored as raw mutable cart state. |
 | **2.3** | Initiate checkout | Click "Proceed to Checkout" | Navigates to `/checkout`. Renders single-page 4-step accordion interface: (1) Shipping Address, (2) Delivery Options, (3) Payment, (4) Review & Place. | Current step is open; future steps are collapsed; completed steps display summary checks. |
 | **2.4** | Step 1: Shipping Address | Select default address or submit: `742 Evergreen Terrace, Springfield, OR 97477` | Form validated via Zod schema (`shippingAddressSchema`). Valid input advances accordion to Step 2. | Invalid fields (e.g., zip < 4 chars) display inline error messages without page jump. |
-| **2.5** | Step 2: Delivery Options | Select Standard or Express per vendor group | Aurora: Standard ($5.99); Zenith: Standard ($4.99); Vendora Direct: Standard ($4.00). Total shipping $14.98. | Changes to delivery options immediately update the sticky checkout order summary. |
+| **2.5** | Step 2: Delivery Options | Select Standard or Express per vendor group | Aurora: Standard ($5.99); Zenith: Standard ($4.99); Vendora: Standard ($4.00). Total shipping $14.98. | Changes to delivery options immediately update the sticky checkout order summary. |
 | **2.6** | Step 3: Payment Method | Select "Credit / Debit Card". Enter card details: `4242 4242 4242 4242`, Exp: `12/28`, CVV: `123` | Form validates card number against Luhn algorithm (`cardPaymentSchema`). | Entering invalid test card failing Luhn checksum triggers "Card failed Luhn checksum validation". |
 | **2.7** | Verify card masking security rule | Inspect application memory, network payload, and storage | Mock API request payload and persisted order store only `brand: "Visa"` and `last4: "4242"`. Full 16-digit PAN and CVV are purged. | Zero persistence invariant verified. No card number or CVV in `localStorage` or server entities. |
 | **2.8** | Step 4: Review and Place Order | Review summary, click "Place Order" ($299.95) | Submit button disables immediately to prevent double-submission. Stock re-validation executes before order commitment. | Loading spinner displays. Mutation is idempotent. |

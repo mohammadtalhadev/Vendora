@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -9,15 +9,12 @@ import {
   User as UserIcon,
   Search,
   Bell,
-  Globe,
   Moon,
   Sun,
   LogOut,
   Plus,
-  ExternalLink,
   CheckCircle2,
   Edit3,
-  Calendar,
   ChevronDown,
   ChevronRight,
   Download,
@@ -25,15 +22,14 @@ import {
   Tag,
   Image,
   HelpCircle,
-  AlertCircle,
-  Clock,
   ShieldAlert,
-  Scale,
   Settings,
   Inbox,
-  Headphones,
+  Boxes,
+  BellOff,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth-store';
+import { useAuth } from '../../lib/auth-context';
 import type { UserRole } from '../../types/domain';
 import { cn } from '../../lib/utils';
 import {
@@ -43,6 +39,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../../components/ui/dialog';
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type Notification,
+  type NotificationKind,
+} from '../../features/notifications/api/notifications';
 
 export interface WorkspaceLayoutProps {
   /** Explicit role override; defaults to primary user role or 'vendor' */
@@ -94,94 +97,138 @@ const ROLE_BADGE_STYLES: Record<string, { bg: string; text: string; border: stri
   },
 };
 
-const GLOBAL_SEARCH_INDEX = [
+type WorkspaceScreen = {
+  title: string;
+  path: string;
+  group: string;
+  desc: string;
+};
+
+/**
+ * The palette only offers screens the signed-in role can actually open: `/admin/*` sits behind
+ * `AdminOnlyRoute` and `/vendor/*` behind `VendorOnlyRoute`, so an entry a role cannot reach is a
+ * dead control and stays out of the index. Every path here is a route `src/app/router.tsx` serves.
+ */
+const ADMIN_SCREENS: WorkspaceScreen[] = [
   { title: 'Dashboard', path: '/admin', group: 'Navigation', desc: 'Marketplace KPIs and real-time overview' },
   { title: 'Product Moderation', path: '/admin/products', group: 'Catalog', desc: 'Submissions queue and approvals' },
   { title: 'Add Product', path: '/admin/add-product', group: 'Catalog', desc: 'Create and publish product catalog listing' },
   { title: 'Categories & Taxonomy', path: '/admin/categories', group: 'Catalog', desc: 'Taxonomy tree & commission structure' },
   { title: 'Orders & Shipments', path: '/admin/orders', group: 'Operations', desc: 'Multi-vendor split orders & tracking' },
-  { title: 'Vendors & Merchants', path: '/admin/vendors', group: 'Stores', desc: 'KYC verification & merchant registry' },
+  { title: 'Vendors & Merchants', path: '/admin/vendors', group: 'Stores', desc: 'Applications awaiting a KYC decision' },
   { title: 'Disputes & Arbitration', path: '/admin/disputes', group: 'Governance', desc: 'Buyer protection & escrow claims' },
   { title: 'Commission & Fees', path: '/admin/commission', group: 'Finance', desc: 'Take rates, fee history & payout rules' },
   { title: 'Financial Reports', path: '/admin/reports', group: 'Finance', desc: 'Ledger exports & yield breakdown' },
-  { title: 'Files & Media Management', path: '/admin/media', group: 'Media', desc: 'Cloudflare CDN, S3 buckets & media assets' },
+  { title: 'Files & Media Management', path: '/admin/media', group: 'Media', desc: 'Platform assets, product imagery & vendor uploads' },
   { title: 'Admin Settings', path: '/admin/settings', group: 'System', desc: 'API keys, security policies & webhooks' },
   { title: 'Users & Permissions', path: '/admin/users', group: 'System', desc: 'Staff roles and access control' },
-  { title: 'Platform Notifications', path: '/admin/notifications', group: 'System', desc: 'Alert triggers and dispatch center' },
-  // Quick Products / Items
-  { title: 'Wireless Headphones Pro', path: '/admin/products', group: 'Products', desc: 'SKU: SPKR-009 • Nova Electronics' },
-  { title: 'Bamboo Cutting Board Set', path: '/admin/products', group: 'Products', desc: 'SKU: BMBRD-020 • Artisan Kitchen' },
-  { title: 'Adjustable Dumbbell Set', path: '/admin/products', group: 'Products', desc: 'SKU: DUNBL-015 • Nexus Tech' },
-  { title: 'Ergonomic Mesh Chair', path: '/admin/products', group: 'Products', desc: 'SKU: CHAIR-002 • Urban Nomad' },
-  // Stores
-  { title: 'Nova Electronics', path: '/admin/vendors', group: 'Vendors', desc: 'Consumer Audio & Tech • Tier 1' },
-  { title: 'Apex Optics Store', path: '/admin/vendors', group: 'Vendors', desc: 'Optics & Accessories • Tier 2' },
-  { title: 'Vendora Soundwave', path: '/admin/vendors', group: 'Vendors', desc: 'Audio & Studio Gear • Official Partner' },
+  { title: 'Platform Notifications', path: '/admin/notifications', group: 'System', desc: 'Announcement dispatch to an audience' },
+  { title: 'Brand Registry', path: '/admin/brands', group: 'Catalog', desc: 'Brands the catalog lists against' },
+  { title: 'CMS & Banners', path: '/admin/cms', group: 'Storefront', desc: 'Storefront banner blocks' },
+  { title: 'Logistics Fleet', path: '/admin/logistics', group: 'Operations', desc: 'Courier fleet & coverage' },
+  { title: 'Tax Compliance', path: '/admin/compliance', group: 'Governance', desc: 'Tax records & filings' },
+  { title: 'Audit Logs', path: '/admin/audit-logs', group: 'System', desc: 'Staff action history' },
 ];
 
-interface NotificationItem {
-  id: string;
-  category: 'orders' | 'disputes' | 'kyc';
-  title: string;
-  desc: string;
-  time: string;
-  unread: boolean;
-  actionUrl: string;
-  actionText: string;
+const VENDOR_SCREENS: WorkspaceScreen[] = [
+  { title: 'Seller Dashboard', path: '/vendor', group: 'Seller Hub', desc: 'Store performance, sales & analytics' },
+  { title: 'Add Product Listing', path: '/vendor/add-product', group: 'Seller Catalog', desc: 'Publish new store product listing' },
+  { title: 'Manage Products', path: '/vendor/products', group: 'Seller Catalog', desc: 'Catalog items, pricing & variants' },
+  { title: 'Import & Export', path: '/vendor/products/import-export', group: 'Seller Catalog', desc: 'Bulk catalog work' },
+  { title: 'Inventory & Stock', path: '/vendor/inventory', group: 'Seller Operations', desc: 'Stock levels & restock alerts' },
+  { title: 'Customer Orders', path: '/vendor/orders', group: 'Seller Operations', desc: 'Order fulfillment, packing slips & dispatch' },
+  { title: 'Returns & Refunds', path: '/vendor/returns', group: 'Seller Operations', desc: 'Manage buyer return requests & claims' },
+  { title: 'Earnings & Payouts', path: '/vendor/earnings', group: 'Seller Finance', desc: 'Sales revenue, settlements & balances' },
+  { title: 'Customer Reviews', path: '/vendor/reviews', group: 'Seller Store', desc: 'Ratings, feedback & store reputation' },
+  { title: 'Buyer Questions', path: '/vendor/qa', group: 'Seller Store', desc: 'Questions shoppers ask on your listings' },
+  { title: 'Messages', path: '/vendor/messages', group: 'Seller Store', desc: 'Conversations with buyers' },
+  { title: 'Promotions & Coupons', path: '/vendor/promotions', group: 'Seller Store', desc: 'Discount codes your store issues' },
+  { title: 'Media Assets Library', path: '/vendor/media', group: 'Seller Media', desc: 'Upload product photography & banners' },
+  { title: 'Store Settings', path: '/vendor/store-settings', group: 'Seller Store', desc: 'Shipping policies, store branding & profile' },
+  { title: 'Shipping & Origin', path: '/vendor/shipping-settings', group: 'Seller Store', desc: 'Dispatch SLA & warehouse per shipment' },
+  { title: 'All Notifications', path: '/notifications', group: 'Seller Account', desc: 'Every notice addressed to this account' },
+];
+
+const SUPPORT_SCREENS: WorkspaceScreen[] = [
+  { title: 'Triage Desk', path: '/support', group: 'Support', desc: 'Open conversations across the queue' },
+  { title: 'Dispute Queue', path: '/support/disputes', group: 'Governance', desc: 'Buyer protection cases awaiting a decision' },
+  { title: 'All Notifications', path: '/notifications', group: 'Support', desc: 'Every notice addressed to this account' },
+];
+
+const SCREENS_BY_ROLE: Record<string, WorkspaceScreen[]> = {
+  admin: ADMIN_SCREENS,
+  vendor: VENDOR_SCREENS,
+  support: SUPPORT_SCREENS,
+};
+
+const screensForRole = (roleKey: string): WorkspaceScreen[] => SCREENS_BY_ROLE[roleKey] ?? [];
+
+/**
+ * The tray's tabs are reads of their own: each one asks the `notifications` table for that
+ * slice, so a tab shows what Postgres holds for this account rather than a filter over rows
+ * that happened to load. Every id here is a member of `public.notification_type`.
+ */
+const NOTIFICATION_TABS: { id: NotificationKind | 'all'; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'order_status', label: 'Orders' },
+  { id: 'dispute', label: 'Disputes' },
+  { id: 'payout', label: 'Payouts' },
+];
+
+/** `created_at` the way a tray reads it: recent in relative terms, older as a date. */
+function relativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-const SAMPLE_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'n-1',
-    category: 'orders',
-    title: 'High-Value Order #ORD-9821',
-    desc: '$1,420.00 requires settlement split sign-off.',
-    time: '5m ago',
-    unread: true,
-    actionUrl: '/admin/orders',
-    actionText: 'View Order',
-  },
-  {
-    id: 'n-2',
-    category: 'kyc',
-    title: 'Merchant KYC: Artisan Audio Tech',
-    desc: 'Tax ID & bank mandate documents awaiting sign-off.',
-    time: '24m ago',
-    unread: true,
-    actionUrl: '/admin/vendors',
-    actionText: 'Review KYC',
-  },
-  {
-    id: 'n-3',
-    category: 'disputes',
-    title: 'Arbitration Escalation #DISP-402',
-    desc: 'Buyer claims missing item on mirrorless camera body.',
-    time: '1h ago',
-    unread: true,
-    actionUrl: '/admin/disputes',
-    actionText: 'Open Case',
-  },
-  {
-    id: 'n-4',
-    category: 'kyc',
-    title: 'Catalog Moderation: SoundWave Pro',
-    desc: 'New SKU pending trademark and policy verification.',
-    time: '2h ago',
-    unread: false,
-    actionUrl: '/admin/products',
-    actionText: 'Moderate SKU',
-  },
-  {
-    id: 'n-5',
-    category: 'orders',
-    title: 'Delivery SLA Alert #ORD-9755',
-    desc: 'Sub-order dispatched courier window exceeded 48h.',
-    time: '4h ago',
-    unread: false,
-    actionUrl: '/admin/orders',
-    actionText: 'Inspect SLA',
-  },
-];
+const NOTIFICATIONS_PANEL_ID = 'workspace-notification-panel';
+const SEARCH_LISTBOX_ID = 'workspace-search-listbox';
+const CREATE_MENU_ID = 'workspace-create-menu';
+const PROFILE_MENU_ID = 'workspace-profile-menu';
+const MOBILE_DRAWER_ID = 'workspace-mobile-drawer';
+
+/**
+ * A disclosure the keyboard can live with. While it is open the panel takes focus, so the first
+ * Tab or Escape lands inside what the user just summoned; Escape closes it and hands focus back to
+ * the control that opened it, and a click outside closes it without moving focus under the cursor.
+ * `focusOnOpen` stays false for the search field, which must keep the caret.
+ */
+function useDisclosure<P extends HTMLElement, T extends HTMLElement>(
+  open: boolean,
+  setOpen: (next: boolean) => void,
+  panelRef: React.RefObject<P | null>,
+  triggerRef: React.RefObject<T | null>,
+  focusOnOpen = true,
+) {
+  useEffect(() => {
+    if (!open) return;
+    if (focusOnOpen) panelRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+    const onMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onMouseDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onMouseDown);
+    };
+  }, [open, setOpen, panelRef, triggerRef, focusOnOpen]);
+}
 
 const getBreadcrumbData = (pathname: string) => {
   const segments = pathname.split('/').filter(Boolean);
@@ -234,6 +281,8 @@ const getBreadcrumbData = (pathname: string) => {
   return crumbs;
 };
 
+const PROFILE_FIELD_LABEL = 'block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1';
+
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   role,
   roleBadgeText,
@@ -245,34 +294,105 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, setUser } = useAuthStore();
+  const { user, setUser } = useAuthStore();
+  const { signOut } = useAuth();
+  // The reload at the end re-reads the persisted session, so the server sign-out must
+  // complete first; leaving anyway keeps the workspace unreachable if that call fails.
+  const handleSignOut = async () => {
+    setIsProfileMenuOpen(false);
+    try {
+      await signOut();
+    } finally {
+      window.location.href = '/';
+    }
+  };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobileDrawerRef = useRef<HTMLDivElement>(null);
+
+  // Derived first: the palette, the create menu and the tray all key off the signed-in role.
+  const effectiveRole = (role || user?.roles[0] || 'vendor').toLowerCase();
 
   // Breadcrumbs
   const crumbs = getBreadcrumbData(location.pathname);
 
-  // Environment badge state
-  const [envMode, setEnvMode] = useState<'production' | 'staging'>('production');
-  const [isEnvMenuOpen, setIsEnvMenuOpen] = useState(false);
-  const envMenuRef = useRef<HTMLDivElement>(null);
-
-  // Global Date Range filter state
-  const [dateRange, setDateRange] = useState('Last 30 Days');
-  const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
-  const dateRangeRef = useRef<HTMLDivElement>(null);
-
   // Quick Create menu state
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const createMenuRef = useRef<HTMLDivElement>(null);
+  const createTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Notifications dropdown & tabs
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notificationTab, setNotificationTab] = useState<'all' | 'orders' | 'disputes' | 'kyc'>('all');
+  const [notificationTab, setNotificationTab] = useState<NotificationKind | 'all'>('all');
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const bellTriggerRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * The tray is the account's own rows in `notifications` - the same table the storefront centre
+   * reads - through `api/notifications`, so the bell's badge is the server's unread head count and
+   * never a number this shell makes up. `unreadCount === null` means "not read yet", which is why
+   * the tray says so instead of printing a zero or an empty list.
+   */
+  const [notificationRows, setNotificationRows] = useState<Notification[] | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number | null>(null);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [notificationWriteError, setNotificationWriteError] = useState<string | null>(null);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+
+  const loadNotifications = useCallback(
+    async (tab: NotificationKind | 'all', signal?: AbortSignal) => {
+      setNotificationsLoading(true);
+      try {
+        const list = await fetchNotifications({ type: tab, pageSize: 8 }, signal);
+        if (signal?.aborted) return;
+        setNotificationRows(list.rows);
+        setUnreadCount(list.unread);
+        setNotificationsError(null);
+      } catch (cause) {
+        if (signal?.aborted) return;
+        setNotificationRows(null);
+        setUnreadCount(null);
+        setNotificationsError(cause instanceof Error ? cause.message : String(cause));
+      } finally {
+        if (!signal?.aborted) setNotificationsLoading(false);
+      }
+    },
+    [],
+  );
+
+  // The badge sits on the header before the tray is ever opened, so the first read happens on
+  // mount, and a new read runs whenever the tab changes: each tab is a read of its own.
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadNotifications(notificationTab, controller.signal);
+    return () => controller.abort();
+  }, [notificationTab, loadNotifications]);
+
+  const readNotification = (item: Notification) => {
+    if (item.readAt !== null) return;
+    void markNotificationRead(item.id)
+      .then(() => loadNotifications(notificationTab))
+      .catch((cause: unknown) =>
+        setNotificationWriteError(cause instanceof Error ? cause.message : String(cause)),
+      );
+  };
+
+  const markAllRead = () => {
+    setNotificationWriteError(null);
+    setMarkingAllRead(true);
+    void markAllNotificationsRead()
+      .then(() => loadNotifications(notificationTab))
+      .catch((cause: unknown) =>
+        setNotificationWriteError(cause instanceof Error ? cause.message : String(cause)),
+      )
+      .finally(() => setMarkingAllRead(false));
+  };
 
   // Profile menu dropdown
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Help / Docs Modal state
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
@@ -302,82 +422,110 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     setIsDarkMode((prev) => !prev);
   };
 
-  // Global Quick Search
+  // Global Quick Search. The palette is scoped to the role's own workspace, because every entry
+  // it offers has to be a route that role can actually open.
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [searchActiveIndex, setSearchActiveIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
 
+  const reachableScreens = screensForRole(effectiveRole);
+
+  const searchResults = searchQuery.trim()
+    ? reachableScreens.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.group.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : reachableScreens;
+
+  const goToScreen = (screen: WorkspaceScreen | undefined) => {
+    if (!screen) return;
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchActiveIndex(0);
+    navigate(screen.path);
+  };
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      if (searchResults.length === 0) return;
+      event.preventDefault();
+      setIsSearchOpen(true);
+      setSearchActiveIndex((index) =>
+        event.key === 'ArrowDown'
+          ? (index + 1) % searchResults.length
+          : (index - 1 + searchResults.length) % searchResults.length,
+      );
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      goToScreen(searchResults[searchActiveIndex]);
+    }
+  };
+
+  /** One disclosure open at a time, so Escape has a single owner and one control to return to. */
+  const openDisclosure = (open: () => void) => {
+    setIsSearchOpen(false);
+    setIsCreateMenuOpen(false);
+    setIsNotificationsOpen(false);
+    setIsProfileMenuOpen(false);
+    open();
+  };
+
+  const toggleDisclosure = (
+    isOpen: boolean,
+    setOpen: (next: boolean) => void,
+    onOpen?: () => void,
+  ) => {
+    if (isOpen) {
+      setOpen(false);
+      return;
+    }
+    openDisclosure(() => setOpen(true));
+    onOpen?.();
+  };
+
+  // ⌘K / Ctrl+K focuses the palette. Escape belongs to each disclosure (see `useDisclosure`), which
+  // hands focus back to the control that opened it instead of leaving it on a removed node.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
-      }
-      if (e.key === 'Escape') {
-        setIsSearchOpen(false);
-        setIsCreateMenuOpen(false);
-        setIsDateRangeOpen(false);
-        setIsNotificationsOpen(false);
-        setIsProfileMenuOpen(false);
-        setIsEnvMenuOpen(false);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        openDisclosure(() => setIsSearchOpen(true));
+        searchInputRef.current?.focus();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (searchContainerRef.current && !searchContainerRef.current.contains(target)) {
-        setIsSearchOpen(false);
-      }
-      if (createMenuRef.current && !createMenuRef.current.contains(target)) {
-        setIsCreateMenuOpen(false);
-      }
-      if (dateRangeRef.current && !dateRangeRef.current.contains(target)) {
-        setIsDateRangeOpen(false);
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(target)) {
-        setIsNotificationsOpen(false);
-      }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
-        setIsProfileMenuOpen(false);
-      }
-      if (envMenuRef.current && !envMenuRef.current.contains(target)) {
-        setIsEnvMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useDisclosure(isNotificationsOpen, setIsNotificationsOpen, notificationsRef, bellTriggerRef);
+  useDisclosure(isCreateMenuOpen, setIsCreateMenuOpen, createMenuRef, createTriggerRef);
+  useDisclosure(isProfileMenuOpen, setIsProfileMenuOpen, profileMenuRef, profileTriggerRef);
+  // The palette keeps the caret in the field, so it does not take focus for itself.
+  useDisclosure(isSearchOpen, setIsSearchOpen, searchPanelRef, searchInputRef, false);
+  useDisclosure(mobileMenuOpen, setMobileMenuOpen, mobileDrawerRef, mobileMenuTriggerRef);
 
-  const searchResults = searchQuery.trim()
-    ? GLOBAL_SEARCH_INDEX.filter(
-        (item) =>
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.group.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 8)
-    : GLOBAL_SEARCH_INDEX.slice(0, 6);
-
-  // Edit Profile Modal State
+  // Edit Profile Modal State. Only the two columns the session actually keeps are editable;
+  // a job title or phone number here would be typed into nothing.
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [editName, setEditName] = useState(user?.name || 'Vendora Administrator');
-  const [editEmail, setEditEmail] = useState(user?.email || 'admin@vendora.internal');
-  const [editRoleTitle, setEditRoleTitle] = useState('Marketplace Operations Lead');
-  const [editPhone, setEditPhone] = useState('+1 (555) 492-8812');
+  const [editName, setEditName] = useState(user?.name ?? '');
+  const [editEmail, setEditEmail] = useState(user?.email ?? '');
   const [profileSavedToast, setProfileSavedToast] = useState(false);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    if (user) {
-      setUser({
-        ...user,
-        name: editName.trim() || user.name,
-        email: editEmail.trim() || user.email,
-      });
-    }
+    if (!user) return;
+    setUser({
+      ...user,
+      name: editName.trim() || user.name,
+      email: editEmail.trim() || user.email,
+    });
     setProfileSavedToast(true);
     setTimeout(() => {
       setProfileSavedToast(false);
@@ -385,8 +533,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     }, 900);
   };
 
-  // Derive role and visual badge info
-  const effectiveRole = (role || user?.roles[0] || 'vendor').toLowerCase();
+  // Derive visual badge info from the role computed above
   const badgeStyle = ROLE_BADGE_STYLES[effectiveRole] || ROLE_BADGE_STYLES.vendor;
 
   // Friendly role title for "Logged in as [Role]"
@@ -409,12 +556,65 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const roleDisplayName = getRoleDisplayName(effectiveRole);
 
+  const panelShellClass =
+    effectiveRole === 'admin'
+      ? 'admin-shell'
+      : effectiveRole === 'vendor'
+        ? 'vendor-shell'
+        : effectiveRole === 'rider'
+          ? 'rider-shell'
+          : effectiveRole === 'support'
+            ? 'support-shell'
+            : '';
+
+  const panelSidebarClass =
+    effectiveRole === 'admin'
+      ? 'admin-sidebar'
+      : effectiveRole === 'vendor'
+        ? 'vendor-sidebar'
+        : effectiveRole === 'rider'
+          ? 'rider-sidebar'
+          : effectiveRole === 'support'
+            ? 'support-sidebar'
+            : '';
+
+  const panelHeaderClass =
+    effectiveRole === 'admin'
+      ? 'admin-header'
+      : effectiveRole === 'vendor'
+        ? 'vendor-header'
+        : effectiveRole === 'rider'
+          ? 'rider-header'
+          : effectiveRole === 'support'
+            ? 'support-header'
+            : '';
+
   // User presentation details
-  const userName = user?.name || 'Vendora User';
-  const userEmail = user?.email || 'user@vendora.internal';
+  const userName = user?.name || 'Signed-in user';
+  const userEmail = user?.email || 'No email on this session';
+
+  /**
+   * What the bell is allowed to claim: the server's unread count once the read has landed, and an
+   * explicit "not read" otherwise. A zero before the first response would be a made-up number.
+   */
+  const notificationReadout = notificationsError
+    ? 'could not be read'
+    : unreadCount === null
+      ? notificationsLoading
+        ? 'reading'
+        : 'not loaded yet'
+      : `${unreadCount} unread`;
+
+  /** Only the keys this shell really binds, and only when the control they drive is on screen. */
+  const shortcutRows: { keys: string; what: string }[] = [
+    ...(reachableScreens.length > 0
+      ? [{ keys: '⌘K / Ctrl+K', what: 'Jump to the screen list, then ↑ ↓ and Enter to open one' }]
+      : []),
+    { keys: 'Esc', what: 'Close the open panel and hand focus back to the control that opened it' },
+  ];
 
   return (
-    <div className="workspace-shell min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 relative isolate">
+    <div className={cn("workspace-shell h-screen max-h-screen overflow-hidden bg-[var(--panel-bg,#F8FAFC)] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-row font-sans transition-colors duration-200 relative isolate", panelShellClass)}>
       {/* Ambient soft glow mesh for Frosted Glass depth */}
       <div className="workspace-mesh-bg" aria-hidden="true">
         <div className="absolute -top-32 -left-32 h-[550px] w-[550px] rounded-full bg-gradient-to-br from-orange-400/15 via-amber-300/10 to-transparent blur-3xl dark:from-orange-500/15 dark:via-orange-950/20" />
@@ -424,46 +624,159 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       </div>
 
       {/* =========================================================================
-          Top Shell Bar (Full-Width Sticky Header)
+          Desktop Sidebar (Extends full-height to the top of the viewport)
           ========================================================================= */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/60 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl shadow-xs transition-colors">
-        <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Left section: Mobile menu + Logo + Storefront pill + Global Search */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            {sidebar && (
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 md:hidden"
-                aria-label={mobileMenuOpen ? 'Close sidebar menu' : 'Open sidebar menu'}
-                aria-expanded={mobileMenuOpen}
-              >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
-            )}
+      {sidebar && (
+        <aside
+          data-lenis-prevent
+          className={cn(
+            "hidden h-screen max-h-screen w-64 shrink-0 overflow-hidden border-r border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10 bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.65))] dark:bg-slate-900/65 backdrop-blur-xl md:flex md:flex-col transition-colors select-none relative z-30",
+            panelSidebarClass
+          )}
+        >
+          {sidebar}
+        </aside>
+      )}
 
-            {/* Logo replacement without redundant "/ Workspace" */}
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center gap-2 focus:outline-none group">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF7A1A] to-[#FF9A42] text-white shadow-xs font-black text-sm tracking-tighter">
-                  V
+      {/* =========================================================================
+          Workspace Right Column: Header at Top + Scrollable Main Content Area
+          ========================================================================= */}
+      <div className="flex flex-col flex-1 min-w-0 h-screen overflow-hidden relative z-10">
+        {/* Top Header Bar */}
+        <header className={cn("shrink-0 z-20 w-full border-b border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10 bg-[var(--panel-header-bg,rgba(255,255,255,0.75))] dark:bg-slate-900/75 backdrop-blur-xl shadow-xs transition-colors", panelHeaderClass)}>
+          <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
+            {/* Left section: Mobile menu + Global Search + Storefront Option */}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {sidebar && (
+                <button
+                  ref={mobileMenuTriggerRef}
+                  type="button"
+                  onClick={() => toggleDisclosure(mobileMenuOpen, setMobileMenuOpen)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 md:hidden"
+                  aria-label={mobileMenuOpen ? 'Close sidebar menu' : 'Open sidebar menu'}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls={mobileMenuOpen ? MOBILE_DRAWER_ID : undefined}
+                >
+                  {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+              )}
+
+              {/* Compact fallback logo only when no sidebar exists */}
+              {!sidebar && (
+                <div className="flex items-center mr-1">
+                  <Link to="/" className="flex items-center gap-2 focus:outline-none group">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF7A1A] to-[#FF9A42] text-white shadow-xs font-black text-sm tracking-tighter">
+                      V
+                    </div>
+                    <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white group-hover:text-[#FF7A1A] transition-colors">
+                      Vendora
+                      <span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] ml-0.5" />
+                    </span>
+                  </Link>
                 </div>
-                <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white group-hover:text-[#FF7A1A] transition-colors">
-                  Vendora
-                  <span className="inline-block h-2 w-2 rounded-full bg-[#FF7A1A] ml-0.5" />
-                </span>
-              </Link>
-            </div>
+              )}
 
-            {/* Back to Storefront pill button */}
+              {/* Palette. It only appears for a role that has screens to reach - a search box
+                  that can offer nothing would be a control with nothing behind it. */}
+              {reachableScreens.length > 0 && (
+                <div className="relative hidden md:flex items-center w-52 lg:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    id="workspace-panel-search"
+                    role="combobox"
+                    aria-label="Search the workspace screens this role can open"
+                    aria-expanded={isSearchOpen && searchResults.length > 0}
+                    aria-controls={
+                      isSearchOpen && searchResults.length > 0 ? SEARCH_LISTBOX_ID : undefined
+                    }
+                    aria-autocomplete="list"
+                    aria-activedescendant={
+                      isSearchOpen && searchResults.length > 0
+                        ? `${SEARCH_LISTBOX_ID}-option-${searchActiveIndex}`
+                        : undefined
+                    }
+                    value={searchQuery}
+                    onFocus={() => setIsSearchOpen(true)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setSearchActiveIndex(0);
+                      setIsSearchOpen(true);
+                    }}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder="Search panel..."
+                    className="w-full h-8 pl-8 pr-12 text-xs rounded-xl border border-white/60 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]/50 transition-all text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                  />
+                  <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 border border-white/60 dark:border-white/10 rounded px-1.5 py-0.5 bg-white/60 dark:bg-slate-800/60">
+                    ⌘K
+                  </kbd>
+
+                  {isSearchOpen && (
+                    <div
+                      ref={searchPanelRef}
+                      className="absolute top-10 left-0 w-80 lg:w-96 rounded-2xl border border-white/80 dark:border-white/10 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-1"
+                    >
+                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        <span>Quick Navigation</span>
+                        <span>{searchResults.length} reachable screens</span>
+                      </div>
+                      {searchResults.length === 0 ? (
+                        <p className="px-3 py-6 text-center text-[11px] text-slate-400">
+                          No screen this role can open matches “{searchQuery.trim()}”.
+                        </p>
+                      ) : (
+                        <div
+                          id={SEARCH_LISTBOX_ID}
+                          role="listbox"
+                          aria-label="Workspace screens this role can open"
+                          className="max-h-72 overflow-y-auto space-y-0.5"
+                        >
+                          {searchResults.map((item, idx) => (
+                            <button
+                              key={item.path}
+                              id={`${SEARCH_LISTBOX_ID}-option-${idx}`}
+                              type="button"
+                              role="option"
+                              aria-selected={idx === searchActiveIndex}
+                              onClick={() => goToScreen(item)}
+                              onMouseEnter={() => setSearchActiveIndex(idx)}
+                              className={cn(
+                                'w-full text-left flex items-start justify-between gap-2 p-2 rounded-xl transition-colors cursor-pointer group',
+                                idx === searchActiveIndex
+                                  ? 'bg-slate-50 dark:bg-slate-800'
+                                  : 'hover:bg-slate-50 dark:hover:bg-slate-800',
+                              )}
+                            >
+                              <div>
+                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#FF7A1A] transition-colors">
+                                  {item.title}
+                                </div>
+                                <div className="text-[11px] text-slate-400 truncate max-w-[220px]">
+                                  {item.desc}
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                                {item.group}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            {/* Back to Storefront pill button - positioned on the right side of the search bar */}
             {effectiveRole !== 'support' && effectiveRole !== 'rider' && (
               <Link
                 to="/"
-                className="glass-pill ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-[#FF7A1A]"
+                className="glass-pill inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-[#FF7A1A] shadow-2xs group"
                 title="Return to customer storefront"
               >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <Store className="h-3.5 w-3.5 hidden sm:inline" />
+                <ArrowLeft className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#FF7A1A] transition-colors" />
+                <Store className="h-3.5 w-3.5 text-[#FF7A1A]" />
                 <span>Storefront</span>
               </Link>
             )}
@@ -472,120 +785,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             {effectiveRole === 'support' && (
               <Link
                 to="/support"
-                className="glass-pill ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-sky-600"
+                className="glass-pill inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-sky-600 shadow-2xs"
                 title="Support Triage Queue"
               >
                 <Inbox className="h-3.5 w-3.5 text-sky-600" />
                 <span>My Queue</span>
-                <span className="rounded-full bg-sky-100 dark:bg-sky-950/60 px-1.5 py-0.2 text-[10px] font-bold text-sky-700 dark:text-sky-300">
-                  5
-                </span>
               </Link>
             )}
-
-            {/* Environment Safety Badge (Production / Staging) */}
-            {effectiveRole === 'admin' && (
-              <div className="relative" ref={envMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsEnvMenuOpen(!isEnvMenuOpen)}
-                  className={cn(
-                    "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer shadow-2xs",
-                    envMode === 'production'
-                      ? "bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100/90"
-                      : "bg-amber-50/90 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60 hover:bg-amber-100/90"
-                  )}
-                  title="Active Platform Environment — Click to switch"
-                >
-                  <span className={cn("h-1.5 w-1.5 rounded-full", envMode === 'production' ? "bg-emerald-500 animate-pulse" : "bg-amber-500")} />
-                  <span className="capitalize">{envMode}</span>
-                  <ChevronDown className="h-3 w-3 opacity-60" />
-                </button>
-                {isEnvMenuOpen && (
-                  <div className="absolute top-8 left-0 w-44 rounded-xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1">
-                    <button
-                      type="button"
-                      onClick={() => { setEnvMode('production'); setIsEnvMenuOpen(false); }}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Production
-                      </span>
-                      {envMode === 'production' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setEnvMode('staging'); setIsEnvMenuOpen(false); }}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                        Staging / Sandbox
-                      </span>
-                      {envMode === 'staging' && <CheckCircle2 className="h-3.5 w-3.5 text-amber-600" />}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Global Search Bar (Whole Panel Access - hidden for rider) */}
-            {effectiveRole !== 'rider' && (
-              <div ref={searchContainerRef} className="relative hidden md:flex items-center w-52 lg:w-64 ml-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onFocus={() => setIsSearchOpen(true)}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setIsSearchOpen(true);
-                }}
-                placeholder="Search panel..."
-                className="w-full h-8 pl-8 pr-12 text-xs rounded-xl border border-white/60 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]/50 transition-all text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
-              />
-              <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 border border-white/60 dark:border-white/10 rounded px-1.5 py-0.5 bg-white/60 dark:bg-slate-800/60">
-                ⌘K
-              </kbd>
-
-              {/* Quick Search Results Dropdown */}
-              {isSearchOpen && (
-                <div className="absolute top-10 left-0 w-80 lg:w-96 rounded-2xl border border-white/80 dark:border-white/10 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-1">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                    <span>Quick Navigation</span>
-                    <span>{searchResults.length} results</span>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto space-y-0.5">
-                    {searchResults.map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setIsSearchOpen(false);
-                          setSearchQuery('');
-                          navigate(item.path);
-                        }}
-                        className="w-full text-left flex items-start justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
-                      >
-                        <div>
-                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#FF7A1A] transition-colors">
-                            {item.title}
-                          </div>
-                          <div className="text-[11px] text-slate-400 truncate max-w-[220px]">
-                            {item.desc}
-                          </div>
-                        </div>
-                        <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
-                          {item.group}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
           </div>
 
           {/* Right section: Date range + Context action + Urgency badge + Create dropdown + Help + Theme + Notifications + User Avatar */}
@@ -594,43 +800,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <div className="hidden lg:flex items-center">{headerExtra}</div>
             )}
 
-            {/* Global Date Range Filter */}
-            {effectiveRole === 'admin' && (
-              <div className="relative hidden xl:block" ref={dateRangeRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}
-                  className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-2xs cursor-pointer"
-                  title="Global analytics date window"
-                >
-                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                  <span>{dateRange}</span>
-                  <ChevronDown className="h-3 w-3 text-slate-400" />
-                </button>
-                {isDateRangeOpen && (
-                  <div className="absolute top-10 right-0 w-40 rounded-xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1">
-                    {['Today', 'Last 7 Days', 'Last 30 Days', 'This Quarter', 'All Time'].map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => { setDateRange(r); setIsDateRangeOpen(false); }}
-                        className={cn(
-                          "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
-                          dateRange === r
-                            ? "bg-[#FF7A1A]/10 text-[#EA6C13] dark:text-[#FF7A1A] font-bold"
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        )}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Context-Aware Action Button */}
-            {effectiveRole === 'admin' && (
+            {effectiveRole === 'admin' ? (
               <>
                 {location.pathname === '/admin' || location.pathname === '/admin/' ? (
                   <Link
@@ -645,10 +816,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   <Link
                     to="/admin/vendors"
                     className="hidden lg:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-2xs"
-                    title="Invite new marketplace vendor"
+                    title="Open the vendor applications awaiting a decision"
                   >
                     <UserPlus className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Invite Vendor</span>
+                    <span>Vendor Applications</span>
                   </Link>
                 ) : location.pathname.startsWith('/admin/products') && location.pathname !== '/admin/add-product' ? (
                   <Link
@@ -660,41 +831,96 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   </Link>
                 ) : null}
               </>
-            )}
+            ) : effectiveRole === 'vendor' ? (
+              <>
+                {location.pathname === '/vendor' || location.pathname === '/vendor/' ? (
+                  <Link
+                    to="/vendor/add-product"
+                    className="hidden lg:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-2xs"
+                    title="Publish new product listing"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Add Product</span>
+                  </Link>
+                ) : location.pathname.startsWith('/vendor/products') && location.pathname !== '/vendor/add-product' ? (
+                  <Link
+                    to="/vendor/add-product"
+                    className="hidden lg:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-2xs"
+                    title="Publish new product listing"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Add Product</span>
+                  </Link>
+                ) : location.pathname.startsWith('/vendor/orders') ? (
+                  <Link
+                    to="/vendor/inventory"
+                    className="hidden lg:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-2xs"
+                    title="Manage inventory stock levels"
+                  >
+                    <Boxes className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Stock Console</span>
+                  </Link>
+                ) : location.pathname.startsWith('/vendor/inventory') ? (
+                  <Link
+                    to="/vendor/add-product"
+                    className="hidden lg:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-2xs"
+                    title="Create new listing"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Add Listing</span>
+                  </Link>
+                ) : null}
+              </>
+            ) : null}
 
-            {/* Action Urgency Button: Review Pending (2) */}
-            {effectiveRole === 'admin' && (
+            {/* Queue shortcuts. A count or an urgency dot here would claim work the queue page is
+                the only one that actually reads, so these just name where they lead. */}
+            {effectiveRole === 'admin' ? (
               <Link
                 to="/admin/products"
                 className="hidden sm:inline-flex items-center gap-1.5 h-8 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/40 px-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 shadow-2xs transition-all active:scale-95"
-                title="2 listings pending catalog moderation"
+                title="Open the catalog moderation queue"
               >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                </span>
-                <span>Review Pending</span>
-                <span className="rounded-full bg-amber-200/80 dark:bg-amber-800/80 px-1.5 py-0.2 text-[10px] font-extrabold text-amber-900 dark:text-amber-100">
-                  2
-                </span>
+                <span>Moderation Queue</span>
               </Link>
-            )}
+            ) : effectiveRole === 'vendor' ? (
+              <Link
+                to="/vendor/orders"
+                className="hidden sm:inline-flex items-center gap-1.5 h-8 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/40 px-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 shadow-2xs transition-all active:scale-95"
+                title="Open the fulfillment queue"
+              >
+                <span>Fulfillment Queue</span>
+              </Link>
+            ) : null}
 
             {/* Quick Create Dropdown ("+ Create") */}
             {effectiveRole === 'admin' ? (
-              <div className="relative" ref={createMenuRef}>
+              <div className="relative">
                 <button
+                  ref={createTriggerRef}
                   type="button"
-                  onClick={() => setIsCreateMenuOpen(!isCreateMenuOpen)}
+                  onClick={() => toggleDisclosure(isCreateMenuOpen, setIsCreateMenuOpen)}
                   className="inline-flex items-center gap-1.5 h-8 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
-                  title="Create new catalog item or platform entity"
+                  title="Create a first-party listing or a storefront banner"
+                  aria-expanded={isCreateMenuOpen}
+                  aria-controls={isCreateMenuOpen ? CREATE_MENU_ID : undefined}
                 >
                   <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
                   <span>Create</span>
                   <ChevronDown className="h-3 w-3 text-white/80" />
                 </button>
+                {/* Only the two creations this console really owns: `AdminAddProductPage` writes a
+                    listing and `AdminCMSPage` has the Add Banner form. Inviting a merchant or
+                    minting a platform voucher has no surface here, so neither is offered. */}
                 {isCreateMenuOpen && (
-                  <div className="absolute top-10 right-0 w-56 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1">
+                  <div
+                    id={CREATE_MENU_ID}
+                    ref={createMenuRef}
+                    role="group"
+                    aria-label="Quick create"
+                    tabIndex={-1}
+                    className="absolute top-10 right-0 w-56 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1 focus:outline-none"
+                  >
                     <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       Quick Create
                     </div>
@@ -708,33 +934,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       </div>
                       <div>
                         <div>Product</div>
-                        <div className="text-[10px] font-normal text-slate-400">Catalog listing</div>
-                      </div>
-                    </Link>
-                    <Link
-                      to="/admin/vendors"
-                      onClick={() => setIsCreateMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 transition-colors"
-                    >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600">
-                        <UserPlus className="h-3.5 w-3.5" />
-                      </div>
-                      <div>
-                        <div>Vendor</div>
-                        <div className="text-[10px] font-normal text-slate-400">Invite merchant</div>
-                      </div>
-                    </Link>
-                    <Link
-                      to="/admin/commission"
-                      onClick={() => setIsCreateMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 transition-colors"
-                    >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600">
-                        <Tag className="h-3.5 w-3.5" />
-                      </div>
-                      <div>
-                        <div>Coupon / Promotion</div>
-                        <div className="text-[10px] font-normal text-slate-400">Platform voucher</div>
+                        <div className="text-[10px] font-normal text-slate-400">First-party listing</div>
                       </div>
                     </Link>
                     <Link
@@ -746,8 +946,77 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                         <Image className="h-3.5 w-3.5" />
                       </div>
                       <div>
-                        <div>Banner / Campaign</div>
+                        <div>Banner</div>
                         <div className="text-[10px] font-normal text-slate-400">Storefront showcase</div>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ) : effectiveRole === 'vendor' ? (
+              <div className="relative">
+                <button
+                  ref={createTriggerRef}
+                  type="button"
+                  onClick={() => toggleDisclosure(isCreateMenuOpen, setIsCreateMenuOpen)}
+                  className="inline-flex items-center gap-1.5 h-8 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                  title="Create a listing, a discount code, or upload store media"
+                  aria-expanded={isCreateMenuOpen}
+                  aria-controls={isCreateMenuOpen ? CREATE_MENU_ID : undefined}
+                >
+                  <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+                  <span>Create</span>
+                  <ChevronDown className="h-3 w-3 text-white/80" />
+                </button>
+                {isCreateMenuOpen && (
+                  <div
+                    id={CREATE_MENU_ID}
+                    ref={createMenuRef}
+                    role="group"
+                    aria-label="Store actions"
+                    tabIndex={-1}
+                    className="absolute top-10 right-0 w-56 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1 focus:outline-none"
+                  >
+                    <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Store Actions
+                    </div>
+                    <Link
+                      to="/vendor/add-product"
+                      onClick={() => setIsCreateMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-[#FF7A1A]/10 hover:text-[#EA6C13] dark:hover:text-[#FF7A1A] transition-colors"
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/40 text-[#FF7A1A]">
+                        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                      </div>
+                      <div>
+                        <div>Product Listing</div>
+                        <div className="text-[10px] font-normal text-slate-400">Create new item</div>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/vendor/promotions"
+                      onClick={() => setIsCreateMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 transition-colors"
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600">
+                        <Tag className="h-3.5 w-3.5" />
+                      </div>
+                      <div>
+                        <div>Promo Code</div>
+                        <div className="text-[10px] font-normal text-slate-400">Discount your store issues</div>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/vendor/media"
+                      onClick={() => setIsCreateMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 transition-colors"
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600">
+                        <Image className="h-3.5 w-3.5" />
+                      </div>
+                      <div>
+                        <div>Upload Media</div>
+                        <div className="text-[10px] font-normal text-slate-400">Images &amp; banners</div>
                       </div>
                     </Link>
                   </div>
@@ -760,8 +1029,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               type="button"
               onClick={() => setIsHelpModalOpen(true)}
               className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all shadow-2xs cursor-pointer"
-              title="Help & Operations SOP"
-              aria-label="Help and operations SOP"
+              title="Workspace shortcuts and reachable screens"
+              aria-label="Workspace shortcuts and reachable screens"
             >
               <HelpCircle className="h-4 w-4" />
             </button>
@@ -777,112 +1046,208 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
             </button>
 
-            {/* Notification Bell with Dropdown & Tabs (Orders, Disputes, KYC) */}
-            <div className="relative" ref={notificationsRef}>
+            {/* Notification bell. The tray and its badge are this account's own rows in the
+                `notifications` table - the same read the storefront centre makes - so a count here
+                is the server's, and an unread that has not arrived is reported as not arrived. */}
+            <div className="relative">
               <button
+                ref={bellTriggerRef}
                 type="button"
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                onClick={() =>
+                  toggleDisclosure(isNotificationsOpen, setIsNotificationsOpen, () => {
+                    setNotificationWriteError(null);
+                    void loadNotifications(notificationTab);
+                  })
+                }
                 className="relative flex h-8 w-8 items-center justify-center rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all shadow-2xs cursor-pointer"
-                title="5 unread platform notifications"
-                aria-label="View notifications"
+                title={`Notifications ${notificationReadout}`}
+                aria-label={`View notifications: ${notificationReadout}`}
+                aria-expanded={isNotificationsOpen}
+                aria-controls={isNotificationsOpen ? NOTIFICATIONS_PANEL_ID : undefined}
               >
                 <Bell className="h-4 w-4" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#FF7A1A] text-[9px] font-bold text-white shadow-2xs">
-                  5
-                </span>
+                {!notificationsError && unreadCount !== null && unreadCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF7A1A] px-1 text-[9px] font-bold text-white shadow-2xs"
+                    aria-hidden="true"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               {isNotificationsOpen && (
-                <div className="absolute top-10 right-0 w-80 sm:w-96 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-3 z-50 animate-in fade-in slide-in-from-top-1">
+                <div
+                  id={NOTIFICATIONS_PANEL_ID}
+                  ref={notificationsRef}
+                  role="region"
+                  aria-label="Notifications addressed to this account"
+                  tabIndex={-1}
+                  className="absolute top-10 right-0 w-80 sm:w-96 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-3 z-50 animate-in fade-in slide-in-from-top-1 focus:outline-none"
+                >
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
                       <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 px-1.5 py-0.2 text-[10px] font-bold text-[#EA6C13]">
-                        5 unread
+                        {notificationReadout}
                       </span>
                     </div>
-                    <Link
-                      to={effectiveRole === 'admin' ? '/admin/notifications' : '/vendor/messages'}
-                      onClick={() => setIsNotificationsOpen(false)}
-                      className="text-[11px] font-semibold text-[#EA6C13] hover:underline"
-                    >
-                      View All
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={markAllRead}
+                        disabled={
+                          notificationsLoading ||
+                          markingAllRead ||
+                          notificationsError !== null ||
+                          unreadCount === null ||
+                          unreadCount === 0
+                        }
+                        className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-[#EA6C13] disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {markingAllRead ? 'Marking…' : 'Mark all read'}
+                      </button>
+                      <Link
+                        to={effectiveRole === 'admin' ? '/admin/notifications' : '/notifications'}
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="text-[11px] font-semibold text-[#EA6C13] hover:underline"
+                      >
+                        View All
+                      </Link>
+                    </div>
                   </div>
 
-                  {/* Tabs: All, Orders, Disputes, KYC */}
-                  <div className="grid grid-cols-4 gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold mb-2">
-                    {(['all', 'orders', 'disputes', 'kyc'] as const).map((tab) => (
+                  {notificationWriteError && (
+                    <p role="alert" className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] font-semibold text-rose-700">
+                      {notificationWriteError}
+                    </p>
+                  )}
+
+                  {/* Tabs: each one is its own read of the table */}
+                  <div
+                    role="group"
+                    aria-label="Filter notices by type"
+                    className="grid grid-cols-4 gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold mb-2"
+                  >
+                    {NOTIFICATION_TABS.map((tab) => (
                       <button
-                        key={tab}
+                        key={tab.id}
                         type="button"
-                        onClick={() => setNotificationTab(tab)}
+                        onClick={() => setNotificationTab(tab.id)}
+                        aria-pressed={notificationTab === tab.id}
                         className={cn(
-                          "py-1 rounded-lg capitalize transition-all cursor-pointer",
-                          notificationTab === tab
+                          "py-1 rounded-lg transition-all cursor-pointer",
+                          notificationTab === tab.id
                             ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold"
                             : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                         )}
                       >
-                        {tab === 'kyc' ? 'KYC' : tab}
+                        {tab.label}
                       </button>
                     ))}
                   </div>
 
-                  {/* Notification List */}
+                  <div aria-busy={notificationsLoading}>
+                  {notificationsLoading && notificationRows === null ? (
+                    <p role="status" className="py-6 text-center text-[11px] text-slate-400">Reading your notifications…</p>
+                  ) : notificationsError ? (
+                    <div role="alert" className="py-6 text-center">
+                      <p className="text-[11px] font-bold text-rose-700 dark:text-rose-400">
+                        Your notifications could not be read
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-400">{notificationsError}</p>
+                      <button
+                        type="button"
+                        onClick={() => void loadNotifications(notificationTab)}
+                        className="mt-2 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+                      >
+                        Read them again
+                      </button>
+                    </div>
+                  ) : (notificationRows?.length ?? 0) === 0 ? (
+                    <div role="status" className="py-6 text-center">
+                      <BellOff className="mx-auto h-5 w-5 text-slate-300 dark:text-slate-600" aria-hidden="true" />
+                      <p className="mt-1.5 text-[11px] text-slate-400">
+                        No notice is addressed to this account in this category.
+                      </p>
+                    </div>
+                  ) : (
                   <div className="max-h-72 overflow-y-auto space-y-1.5">
-                    {SAMPLE_NOTIFICATIONS.filter((n) => notificationTab === 'all' || n.category === notificationTab).map((n) => (
+                    {(notificationRows ?? []).map((n) => (
                       <div
                         key={n.id}
                         className={cn(
                           "p-2 rounded-xl border text-xs transition-colors",
-                          n.unread
+                          n.readAt === null
                             ? "bg-orange-50/40 dark:bg-orange-950/20 border-orange-200/60 dark:border-orange-800/40"
                             : "bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50"
                         )}
                       >
                         <div className="flex items-start justify-between gap-1">
                           <p className="font-bold text-slate-900 dark:text-slate-100 leading-snug">{n.title}</p>
-                          <span className="text-[10px] text-slate-400 shrink-0">{n.time}</span>
+                          <span className="text-[10px] text-slate-400 shrink-0">{relativeTime(n.createdAt)}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{n.desc}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{n.message}</p>
                         <div className="mt-2 flex items-center justify-between">
                           <span className={cn(
                             "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
-                            n.category === 'orders' ? "bg-blue-100 dark:bg-blue-950/60 text-blue-700" :
-                            n.category === 'disputes' ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700" :
-                            "bg-purple-100 dark:bg-purple-950/60 text-purple-700"
+                            n.type === 'order_status' ? "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300" :
+                            n.type === 'dispute' ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300" :
+                            n.type === 'payout' ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300" :
+                            "bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300"
                           )}>
-                            {n.category.toUpperCase()}
+                            {n.type.replace(/_/g, ' ')}
                           </span>
-                          <Link
-                            to={n.actionUrl}
-                            onClick={() => setIsNotificationsOpen(false)}
-                            className="text-[11px] font-bold text-[#EA6C13] hover:underline"
-                          >
-                            {n.actionText} →
-                          </Link>
+                          {n.href ? (
+                            <Link
+                              to={n.href}
+                              onClick={() => {
+                                setIsNotificationsOpen(false);
+                                readNotification(n);
+                              }}
+                              className="text-[11px] font-bold text-[#EA6C13] hover:underline"
+                            >
+                              Open →
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => readNotification(n)}
+                              disabled={n.readAt !== null}
+                              aria-label={`Mark “${n.title}” read`}
+                              className="text-[11px] font-bold text-slate-500 hover:text-[#EA6C13] disabled:opacity-40"
+                            >
+                              {n.readAt !== null ? 'Read' : 'Mark read'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
+                  </div>
+                  )}
                   </div>
                 </div>
               )}
             </div>
 
             {/* User Profile Avatar & Dropdown Menu */}
-            <div className="relative" ref={profileMenuRef}>
-              <div
+            <div className="relative">
+              <button
+                ref={profileTriggerRef}
+                type="button"
                 data-testid="user-profile"
-                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                onClick={() => toggleDisclosure(isProfileMenuOpen, setIsProfileMenuOpen)}
+                aria-expanded={isProfileMenuOpen}
+                aria-controls={isProfileMenuOpen ? PROFILE_MENU_ID : undefined}
                 className="flex items-center gap-1.5 cursor-pointer group p-0.5 rounded-full hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-700 transition-all"
                 title="Profile & Settings"
+                aria-label={`Account menu for ${userName} (${userEmail})`}
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-xs">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-xs" aria-hidden="true">
                   <UserIcon className="h-4 w-4" />
                 </div>
                 <span className="sr-only">{userName} ({userEmail})</span>
-              </div>
+              </button>
 
               {/* Accessible Test Compatibility Role Badge (Kept for tests) */}
               <span
@@ -899,7 +1264,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
               {/* Profile Dropdown Menu */}
               {isProfileMenuOpen && (
-                <div className="absolute top-10 right-0 w-60 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-1">
+                <div
+                  id={PROFILE_MENU_ID}
+                  ref={profileMenuRef}
+                  role="group"
+                  aria-label="Account"
+                  tabIndex={-1}
+                  className="absolute top-10 right-0 w-60 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-1 focus:outline-none"
+                >
                   {/* Identity & Role Badge */}
                   <div className="px-2.5 py-2 border-b border-slate-100 dark:border-slate-800 mb-1">
                     <div className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">{userName}</div>
@@ -919,20 +1291,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     </div>
                   </div>
 
-                  {/* Language Selector in Menu */}
-                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl transition-colors">
-                    <span className="flex items-center gap-2">
-                      <Globe className="h-3.5 w-3.5 text-slate-400" />
-                      Language
-                    </span>
-                    <span className="text-[11px] font-semibold text-slate-500">English (US)</span>
-                  </div>
-
                   {/* Edit Profile */}
                   <button
                     type="button"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
+                      setEditName(user?.name ?? '');
+                      setEditEmail(user?.email ?? '');
+                      setProfileSavedToast(false);
                       setIsEditProfileOpen(true);
                     }}
                     className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl transition-colors cursor-pointer"
@@ -941,25 +1307,25 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     Edit Profile
                   </button>
 
-                  {/* Platform Settings */}
-                  <Link
-                    to={effectiveRole === 'admin' ? '/admin/settings' : '/vendor/store-settings'}
-                    onClick={() => setIsProfileMenuOpen(false)}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl transition-colors"
-                  >
-                    <Settings className="h-3.5 w-3.5 text-slate-400" />
-                    Platform Settings
-                  </Link>
+                  {/* Platform Settings - only where the router serves one. `/vendor/store-settings`
+                      is behind `VendorOnlyRoute`, so offering it to a support agent or a rider would
+                      be a link that goes nowhere. */}
+                  {(effectiveRole === 'admin' || effectiveRole === 'vendor') && (
+                    <Link
+                      to={effectiveRole === 'admin' ? '/admin/settings' : '/vendor/store-settings'}
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl transition-colors"
+                    >
+                      <Settings className="h-3.5 w-3.5 text-slate-400" />
+                      Platform Settings
+                    </Link>
+                  )}
 
                   {/* Sign Out */}
                   <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        logout();
-                        window.location.href = '/';
-                      }}
+                      onClick={() => void handleSignOut()}
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer"
                     >
                       <LogOut className="h-3.5 w-3.5" />
@@ -980,211 +1346,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         )}
       </header>
 
-      {/* Edit Profile Modal Dialog */}
-      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-        <DialogContent className="max-w-md p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl text-slate-900 dark:text-slate-100">
-          <DialogHeader className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                <Edit3 className="h-4 w-4" />
-              </div>
-              <DialogTitle className="text-lg font-bold">Edit Admin Profile</DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-slate-500">
-              Update your administrative profile identity, contact details, and role preferences.
-            </DialogDescription>
-          </DialogHeader>
-
-          {profileSavedToast && (
-            <div className="mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-              <span>Profile updated successfully!</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                required
-                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                required
-                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Job Title / Scope
-                </label>
-                <input
-                  type="text"
-                  value={editRoleTitle}
-                  onChange={(e) => setEditRoleTitle(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Contact Phone
-                </label>
-                <input
-                  type="text"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setIsEditProfileOpen(false)}
-                className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-1.5 rounded-xl bg-slate-900 dark:bg-[#FF7A1A] text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-[#ea6c13] shadow-xs cursor-pointer"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Admin Operations Playbook & SOPs Dialog */}
-      <Dialog open={isHelpModalOpen} onOpenChange={setIsHelpModalOpen}>
-        <DialogContent className="max-w-md sm:max-w-lg p-6 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-2xl text-slate-900 dark:text-slate-100">
-          <DialogHeader className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF7A1A]">
-                <HelpCircle className="h-4 w-4" />
-              </div>
-              <DialogTitle className="text-lg font-bold">Marketplace Operations Playbook & SOPs</DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-slate-500">
-              Platform governance policies, approval SLAs, and quick operator shortcuts.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 text-xs">
-            <div className="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
-              <div className="font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
-                <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
-                Catalog Moderation SLA (24h)
-              </div>
-              <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                Vendor submissions must be reviewed for IP infringement, authentic barcode/UPC formatting, and compliant imagery before marketplace indexing.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
-              <div className="font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
-                <Scale className="h-3.5 w-3.5 text-rose-500" />
-                Escrow & Dispute Resolution (7-Day Hold)
-              </div>
-              <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                Vendor settlement is held in automated escrow for 7 days post-delivery. Customer defect disputes require merchant rebuttal within 48h.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
-              <div className="font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
-                <Search className="h-3.5 w-3.5 text-indigo-500" />
-                Operator Keyboard Shortcuts
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-                <div className="flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">⌘K</kbd>
-                  <span>Global Panel Search</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">Esc</kbd>
-                  <span>Close Menus & Dialogs</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* =========================================================================
-          Workspace Body Shell: Full-Width Sidebar + Content
-          ========================================================================= */}
-      <div className="flex w-full flex-1 items-start relative z-10">
-        {/* Desktop Sidebar (Smooth scrollable with hidden scrollbar) */}
-        {sidebar && (
-          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-r border-white/60 dark:border-white/10 bg-white/65 dark:bg-slate-900/65 backdrop-blur-xl p-3 md:block transition-colors">
-            {sidebar}
-          </aside>
-        )}
-
-        {/* Mobile Sidebar Overlay & Drawer */}
-        {sidebar && mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 flex md:hidden" role="dialog" aria-modal="true">
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-              onClick={() => setMobileMenuOpen(false)}
-              aria-hidden="true"
-            />
-            {/* Drawer */}
-            <div className="relative flex w-72 max-w-[80vw] flex-col bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl p-5 shadow-2xl border-r border-white/60 dark:border-white/10">
-              <div className="mb-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-slate-900 dark:text-white">Navigation</span>
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
-                      badgeStyle.bg,
-                      badgeStyle.text,
-                    )}
-                  >
-                    {effectiveRole}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200"
-                  aria-label="Close menu"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div
-                className="flex-1 overflow-y-auto"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {sidebar}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content Area */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 relative z-10">
+        {/* Main Content Area (Independent isolated scrolling, page only) */}
+        <main
+          data-lenis-prevent
+          className="flex-1 h-full min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 relative z-10"
+        >
           {/* Breadcrumbs for deeper pages */}
           {crumbs.length > 1 && (
             <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-slate-400">
@@ -1218,6 +1384,199 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {children ?? <Outlet />}
         </main>
       </div>
+
+      {/* Mobile Sidebar Overlay & Drawer */}
+      {sidebar && mobileMenuOpen && (
+        <div
+          id={MOBILE_DRAWER_ID}
+          ref={mobileDrawerRef}
+          className="fixed inset-0 z-50 flex md:hidden focus:outline-none"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="workspace-mobile-drawer-title"
+          tabIndex={-1}
+        >
+          {/* Backdrop */}
+          <button
+            type="button"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-default"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Close sidebar menu"
+          />
+          {/* Drawer */}
+          <div className={cn("relative flex w-72 max-w-[80vw] flex-col bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.85))] dark:bg-slate-900/85 backdrop-blur-2xl p-5 shadow-2xl border-r border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10", panelSidebarClass)}>
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span id="workspace-mobile-drawer-title" className="text-base font-bold text-slate-900 dark:text-white">Navigation</span>
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
+                    badgeStyle.bg,
+                    badgeStyle.text,
+                  )}
+                >
+                  {effectiveRole}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  mobileMenuTriggerRef.current?.focus();
+                }}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200"
+                aria-label="Close sidebar menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div
+              data-lenis-prevent
+              className="flex-1 overflow-y-auto overscroll-contain no-scrollbar"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {sidebar}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal Dialog */}
+      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
+        <DialogContent className="max-w-md p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl text-slate-900 dark:text-slate-100">
+          <DialogHeader className="mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                <Edit3 className="h-4 w-4" />
+              </div>
+              <DialogTitle className="text-lg font-bold">Edit Profile</DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-slate-500">
+              The name and email the session is signed in with.
+            </DialogDescription>
+          </DialogHeader>
+
+          {profileSavedToast && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+              <span>Profile updated on this session.</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div>
+              <label className={PROFILE_FIELD_LABEL} htmlFor="profile-name">
+                Full Name
+              </label>
+              <input
+                id="profile-name"
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className={PROFILE_FIELD_LABEL} htmlFor="profile-email">
+                Email Address
+              </label>
+              <input
+                id="profile-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                required
+                className="w-full h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              This writes the signed-in session only. The profile row in the database keeps the
+              name and email staff set when the account was provisioned, so a reload can restore
+              what is stored there.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsEditProfileOpen(false)}
+                className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 rounded-xl bg-slate-900 dark:bg-[#FF7A1A] text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-[#ea6c13] shadow-xs cursor-pointer"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Operator help dialog: the keys this shell binds and the screens this role can open. The
+          moderation and escrow timings it used to quote are not read from anywhere, so they are
+          gone rather than repeated. */}
+      <Dialog open={isHelpModalOpen} onOpenChange={setIsHelpModalOpen}>
+        <DialogContent className="max-w-md sm:max-w-lg p-6 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 shadow-2xl text-slate-900 dark:text-slate-100">
+          <DialogHeader className="mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-[#FF7A1A]">
+                <HelpCircle className="h-4 w-4" />
+              </div>
+              <DialogTitle className="text-lg font-bold">Workspace shortcuts</DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-slate-500">
+              The keys this shell binds, and the screens your role can open from it.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-xs">
+            <div className="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+              <div className="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                <Search className="h-3.5 w-3.5 text-indigo-500" />
+                Keyboard
+              </div>
+              <ul className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                {shortcutRows.map((row) => (
+                  <li key={row.keys} className="flex items-start gap-2">
+                    <kbd className="shrink-0 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">
+                      {row.keys}
+                    </kbd>
+                    <span>{row.what}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {reachableScreens.length > 0 && (
+              <div className="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                <div className="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                  <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
+                  Screens for this role
+                </div>
+                <ul className="grid grid-cols-2 gap-1 text-[11px]">
+                  {reachableScreens.slice(0, 8).map((screen) => (
+                    <li key={screen.path}>
+                      <Link
+                        to={screen.path}
+                        onClick={() => setIsHelpModalOpen(false)}
+                        className="block truncate rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-[#EA6C13] transition-colors"
+                        title={screen.desc}
+                      >
+                        {screen.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

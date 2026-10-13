@@ -349,7 +349,7 @@ export const VendorImportExportPage: React.FC = () => {
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Upload className="h-4 w-4" />
+            <Upload className="h-4 w-4" aria-hidden="true" />
             CSV Import
           </button>
 
@@ -362,7 +362,7 @@ export const VendorImportExportPage: React.FC = () => {
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4" aria-hidden="true" />
             Catalog Exporter
           </button>
         </div>
@@ -381,7 +381,7 @@ export const VendorImportExportPage: React.FC = () => {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#FF7A1A] mb-3">
-                  <FileSpreadsheet className="h-6 w-6" />
+                  <FileSpreadsheet className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900">{fileName || 'Choose a catalog CSV'}</h3>
                 <p className="text-xs text-slate-500 mt-1">
@@ -405,7 +405,7 @@ export const VendorImportExportPage: React.FC = () => {
                   onClick={handleTemplate}
                   className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-2.5 font-bold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="h-4 w-4" aria-hidden="true" />
                   Download catalog_template.csv
                 </button>
               </div>
@@ -413,7 +413,7 @@ export const VendorImportExportPage: React.FC = () => {
 
             {fileError && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex gap-3 items-start text-xs text-amber-900">
-                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
                 <p>{fileError}</p>
               </div>
             )}
@@ -422,7 +422,7 @@ export const VendorImportExportPage: React.FC = () => {
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4 text-xs">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                    <CheckCircle2 className="h-5 w-5" />
+                    <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
@@ -509,7 +509,7 @@ export const VendorImportExportPage: React.FC = () => {
                       >
                         {running ? (
                           <>
-                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
                             Importing {readyRows.length} listings...
                           </>
                         ) : (
@@ -517,7 +517,7 @@ export const VendorImportExportPage: React.FC = () => {
                             <span>
                               Import {readyRows.length} {readyRows.length === 1 ? 'listing' : 'listings'}
                             </span>
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
                           </>
                         )}
                       </button>
@@ -560,12 +560,12 @@ export const VendorImportExportPage: React.FC = () => {
                             <td className="p-3">
                               {row.problems.length === 0 ? (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-[10px] font-bold">
-                                  <CheckCircle2 className="h-3 w-3" />
+                                  <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                                   Ready
                                 </span>
                               ) : (
                                 <span className="inline-flex items-start gap-1 text-[10px] font-bold text-amber-800">
-                                  <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                                  <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" aria-hidden="true" />
                                   <span>
                                     {row.problems.map((problem) => (
                                       <span key={problem} className="block">
@@ -588,7 +588,7 @@ export const VendorImportExportPage: React.FC = () => {
             {!report && importRows.length === 0 && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-3 text-xs">
                 <div className="flex items-center gap-2 text-slate-900">
-                  <Info className="h-4 w-4 text-[#FF7A1A]" />
+                  <Info className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
                   <h3 className="text-sm font-bold">What an import does here</h3>
                 </div>
                 <ul className="space-y-1.5 text-slate-500 list-disc pl-5">
@@ -660,7 +660,7 @@ export const VendorImportExportPage: React.FC = () => {
                 disabled={exportRows.length === 0}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 font-bold cursor-pointer transition-colors"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4" aria-hidden="true" />
                 Export {exportRows.length} {exportRows.length === 1 ? 'listing' : 'listings'} (CSV)
               </button>
 

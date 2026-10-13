@@ -15,6 +15,7 @@ import { AdminVendorsPage } from './AdminVendorsPage';
 import { renderWorkspace } from '../test/vendor-render';
 import { useAuthStore } from '../store/auth-store';
 import { DEMO_ACCOUNTS } from '../lib/demo-accounts';
+import { formatPrice } from '../store/currency-store';
 import {
   applicationRow,
   profileRow,
@@ -56,9 +57,9 @@ describe('AdminVendorsPage', () => {
     render();
 
     await waitFor(() => expect(screen.getAllByText('Nova Tech').length).toBeGreaterThan(0));
-    expect(screen.getByText('$4,400')).toBeInTheDocument();
+    expect(screen.getByText(formatPrice(4400))).toBeInTheDocument();
     // The header quotes the platform sum the SQL produced, not a total of the page on screen.
-    expect(screen.getByTestId('volume-gross')).toHaveTextContent('$9,800');
+    expect(screen.getByTestId('volume-gross')).toHaveTextContent(formatPrice(9800));
     expect(screen.getByTestId('volume-active-pct')).toHaveTextContent('75%');
   });
 
@@ -145,7 +146,7 @@ describe('AdminVendorsPage', () => {
 
     render();
 
-    await waitFor(() => expect(screen.getByTestId('volume-gross')).toHaveTextContent('$0'));
+    await waitFor(() => expect(screen.getByTestId('volume-gross')).toHaveTextContent(formatPrice(0)));
     expect(screen.getByTestId('volume-active-pct')).toHaveTextContent('0%');
     expect(screen.queryAllByText('Nova Tech')).toHaveLength(0);
   });

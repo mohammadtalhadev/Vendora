@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ArrowRight, ShieldCheck, Tag } from 'lucide-react';
 import { useCartStore, useCartGroups, useCartCalculations } from '../store/cart-store';
+import { useCurrency } from '../store/currency-store';
 import { Badge } from '../components/ui/badge';
 
 export const CartPage: React.FC = () => {
@@ -9,6 +10,7 @@ export const CartPage: React.FC = () => {
   const { removeItem, updateQuantity, clearCart, applyCoupon, removeCoupon, appliedCoupon } = useCartStore();
   const groups = useCartGroups();
   const { subtotal, shippingTotal, discountTotal, grandTotal, itemCount } = useCartCalculations();
+  const { formatPrice } = useCurrency();
 
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
@@ -121,7 +123,7 @@ export const CartPage: React.FC = () => {
                             )}
                           </div>
                           <span className="text-sm font-bold text-slate-900">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            {formatPrice(item.price * item.quantity)}
                           </span>
                         </div>
 
@@ -129,9 +131,11 @@ export const CartPage: React.FC = () => {
                         <div className="flex items-center justify-between pt-2">
                           <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-1">
                             <button
+                              type="button"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               className="text-slate-500 hover:text-slate-900"
                               title="Decrease quantity"
+                              aria-label="Decrease quantity"
                             >
                               <Minus className="h-3 w-3" />
                             </button>
@@ -139,9 +143,11 @@ export const CartPage: React.FC = () => {
                               {item.quantity}
                             </span>
                             <button
+                              type="button"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               className="text-slate-500 hover:text-slate-900"
                               title="Increase quantity"
+                              aria-label="Increase quantity"
                             >
                               <Plus className="h-3 w-3" />
                             </button>
@@ -166,9 +172,9 @@ export const CartPage: React.FC = () => {
                     Group Subtotal ({group.items.length} items):
                   </span>
                   <span className="font-bold text-slate-900">
-                    ${group.subtotal.toFixed(2)}{' '}
+                    {formatPrice(group.subtotal)}{' '}
                     {group.estimatedShipping > 0
-                      ? `+ $${group.estimatedShipping.toFixed(2)} shipping`
+                      ? `+ ${formatPrice(group.estimatedShipping)} shipping`
                       : '· Free shipping'}
                   </span>
                 </div>
@@ -186,25 +192,25 @@ export const CartPage: React.FC = () => {
             <div className="mt-4 space-y-2.5 text-xs text-slate-600">
               <div className="flex justify-between">
                 <span>Items Subtotal</span>
-                <span className="font-semibold text-slate-900">${subtotal.toFixed(2)}</span>
+                <span className="font-semibold text-slate-900">{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Estimated Shipping</span>
                 <span className="font-semibold text-slate-900">
-                  {shippingTotal > 0 ? `$${shippingTotal.toFixed(2)}` : 'FREE'}
+                  {shippingTotal > 0 ? formatPrice(shippingTotal) : 'FREE'}
                 </span>
               </div>
 
               {discountTotal > 0 && (
                 <div className="flex justify-between text-emerald-600 font-semibold">
                   <span>Coupon Discount ({appliedCoupon?.code})</span>
-                  <span>-${discountTotal.toFixed(2)}</span>
+                  <span>-{formatPrice(discountTotal)}</span>
                 </div>
               )}
 
               <div className="border-t border-slate-100 pt-3 flex justify-between text-base font-extrabold text-slate-900">
                 <span>Grand Total</span>
-                <span>${grandTotal.toFixed(2)}</span>
+                <span>{formatPrice(grandTotal)}</span>
               </div>
             </div>
 
@@ -224,6 +230,7 @@ export const CartPage: React.FC = () => {
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="Coupon (e.g. VENDORAPRO)"
+                    aria-label="Coupon code"
                     className="flex-1 rounded-full border border-slate-200 px-3 py-2 text-xs focus:border-[#FF7A1A] focus:outline-none uppercase"
                   />
                   <button
@@ -234,7 +241,7 @@ export const CartPage: React.FC = () => {
                   </button>
                 </form>
               )}
-              {couponError && <p className="mt-1 text-[11px] text-rose-500">{couponError}</p>}
+              {couponError && <p role="alert" className="mt-1 text-[11px] text-rose-500">{couponError}</p>}
             </div>
 
             {/* Checkout Button */}

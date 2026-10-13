@@ -120,10 +120,14 @@ export async function fetchVendorStore(signal?: AbortSignal): Promise<VendorStor
 
 /** Any public storefront, addressed by its slug or id - the buyer-facing store page. */
 export async function fetchStoreByHandle(handle: string, signal?: AbortSignal): Promise<VendorStore> {
+  // PostgREST types the whole `or` filter from the uuid column, so a slug reaching
+  // `id.eq.<slug>` fails the request outright (22P02) instead of simply not matching.
+  // One clause, chosen by what the handle actually is, keeps it a single round trip.
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(handle);
   let query = supabase
     .from('vendor_profiles')
     .select(STORE_SELECT)
-    .or(`slug.eq.${handle},id.eq.${handle}`);
+    .eq(isUuid ? 'id' : 'slug', handle);
   if (signal) query = query.abortSignal(signal);
 
   const { data, error } = await query.maybeSingle();

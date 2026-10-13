@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../types/database';
 import type { Coupon } from '../utils/totals';
+import { formatPrice } from '../../../store/currency-store';
 
 type PromotionRow = Database['public']['Tables']['promotions']['Row'];
 
@@ -37,7 +38,7 @@ export async function fetchCouponByCode(code: string, subtotal: number): Promise
   }
   const minimum = Number(row.minimum_order);
   if (subtotal < minimum) {
-    throw new Error(`Spend at least $${minimum.toFixed(2)} to use "${wanted}".`);
+    throw new Error(`Spend at least ${formatPrice(minimum)} to use "${wanted}".`);
   }
 
   return {

@@ -212,6 +212,8 @@ export const AdminReportsPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="relative">
               <select
+                id="reports-preset-date-range"
+                aria-label="Report date range"
                 value={selectedDateRange}
                 onChange={(e) => setSelectedDateRange(e.target.value)}
                 className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer focus:outline-hidden"
@@ -221,23 +223,24 @@ export const AdminReportsPage: React.FC = () => {
                 <option value="90d">Date Range: Last 90 Days</option>
                 <option value="ytd">Date Range: Year to Date</option>
               </select>
-              <Calendar className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Calendar className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
             </div>
             <button
               type="button"
               onClick={() => handleDownloadPreset('Platform Analytics Reconciliation')}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
               title="Refresh and export summary"
+              aria-label="Refresh and export summary"
             >
-              <RotateCw className="h-3.5 w-3.5" />
+              <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
             <button
               type="button"
               onClick={() => setIsGenerateModalOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" aria-hidden="true" />
               <span className="text-white">Generate Custom Report</span>
             </button>
           </div>
@@ -395,9 +398,9 @@ export const AdminReportsPage: React.FC = () => {
                   <Check className="h-4 w-4" />
                   <span>Next automatic settlement clearance in <strong>3 days (Nov 03)</strong></span>
                 </div>
-                <button className="flex items-center gap-1 font-semibold text-slate-900 hover:underline">
+                <button type="button" className="flex items-center gap-1 font-semibold text-slate-900 hover:underline">
                   <span>Download Forecast Ledger</span>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -558,7 +561,7 @@ export const AdminReportsPage: React.FC = () => {
                   onClick={() => handleDownloadPreset('Vendor Performance and SLA Audit')}
                   className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
                 >
-                  <Download className="h-3.5 w-3.5 text-slate-400" />
+                  <Download className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   Download CSV
                 </button>
               </div>
@@ -588,7 +591,7 @@ export const AdminReportsPage: React.FC = () => {
                   onClick={() => handleDownloadPreset('Commission and Platform Margins')}
                   className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
                 >
-                  <Download className="h-3.5 w-3.5 text-slate-400" />
+                  <Download className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   Download CSV
                 </button>
               </div>
@@ -618,7 +621,7 @@ export const AdminReportsPage: React.FC = () => {
                   onClick={() => handleDownloadPreset('Inventory and Catalog Health')}
                   className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
                 >
-                  <Download className="h-3.5 w-3.5 text-slate-400" />
+                  <Download className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   Download CSV
                 </button>
               </div>
@@ -639,9 +642,11 @@ export const AdminReportsPage: React.FC = () => {
             {/* Filter bar */}
             <div className="p-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                 <input
+                  id="reports-archive-search"
                   type="text"
+                  aria-label="Filter generated reports"
                   value={searchReport}
                   onChange={(e) => setSearchReport(e.target.value)}
                   placeholder="Filter reports..."
@@ -650,6 +655,8 @@ export const AdminReportsPage: React.FC = () => {
               </div>
               <div className="relative">
                 <select
+                  id="reports-archive-type"
+                  aria-label="Filter reports by category"
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
                   className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-hidden cursor-pointer"
@@ -661,22 +668,25 @@ export const AdminReportsPage: React.FC = () => {
                   <option>Compliance</option>
                   <option>Catalog</option>
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
               </div>
             </div>
 
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table
+                className="w-full text-left text-xs"
+                aria-label="Generated report archives"
+              >
                 <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="px-4 py-3">REPORT NAME</th>
-                    <th className="px-4 py-3">FREQUENCY / TYPE</th>
-                    <th className="px-4 py-3">DATE RANGE GENERATED</th>
-                    <th className="px-4 py-3">FILE SIZE</th>
-                    <th className="px-4 py-3">GENERATED BY</th>
-                    <th className="px-4 py-3">STATUS</th>
-                    <th className="px-4 py-3 text-right">ACTION</th>
+                    <th scope="col" className="px-4 py-3">REPORT NAME</th>
+                    <th scope="col" className="px-4 py-3">FREQUENCY / TYPE</th>
+                    <th scope="col" className="px-4 py-3">DATE RANGE GENERATED</th>
+                    <th scope="col" className="px-4 py-3">FILE SIZE</th>
+                    <th scope="col" className="px-4 py-3">GENERATED BY</th>
+                    <th scope="col" className="px-4 py-3">STATUS</th>
+                    <th scope="col" className="px-4 py-3 text-right">ACTION</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -684,7 +694,7 @@ export const AdminReportsPage: React.FC = () => {
                     <tr key={report.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-slate-400 shrink-0" />
+                          <FileText className="h-4 w-4 text-slate-400 shrink-0" aria-hidden="true" />
                           <span className="font-semibold text-slate-900 font-mono text-[11px]">
                             {report.name}
                           </span>
@@ -715,7 +725,7 @@ export const AdminReportsPage: React.FC = () => {
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
-                            <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                            <Loader2 className="h-3 w-3 animate-spin text-blue-600" aria-hidden="true" />
                             Processing
                           </span>
                         )}
@@ -726,7 +736,7 @@ export const AdminReportsPage: React.FC = () => {
                           onClick={() => handleDownloadArchive(report)}
                           className="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
                         >
-                          <Download className="h-3 w-3 text-slate-500" />
+                          <Download className="h-3 w-3 text-slate-500" aria-hidden="true" />
                           Download
                         </button>
                       </td>
@@ -742,7 +752,7 @@ export const AdminReportsPage: React.FC = () => {
                 Showing {filteredReports.length === 0 ? 0 : (reportPage - 1) * reportsPerPage + 1} to{' '}
                 {Math.min(reportPage * reportsPerPage, filteredReports.length)} of {filteredReports.length} generated audit archives
               </span>
-              <div className="flex items-center gap-1">
+              <nav aria-label="Report archive pagination" className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setReportPage((p) => Math.max(1, p - 1))}
@@ -755,6 +765,8 @@ export const AdminReportsPage: React.FC = () => {
                   <button
                     key={page}
                     type="button"
+                    aria-label={`Go to page ${page}`}
+                    aria-current={reportPage === page ? 'page' : undefined}
                     onClick={() => setReportPage(page)}
                     className={`h-6 w-6 rounded text-center text-xs font-bold transition-colors cursor-pointer ${
                       reportPage === page
@@ -773,7 +785,7 @@ export const AdminReportsPage: React.FC = () => {
                 >
                   Next
                 </button>
-              </div>
+              </nav>
             </div>
           </div>
         </div>
@@ -792,8 +804,9 @@ export const AdminReportsPage: React.FC = () => {
 
             <form onSubmit={handleCreateReport} className="space-y-3 py-2 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Report Name / Description</label>
+                <label htmlFor="report-custom-name" className="block font-bold text-slate-700 mb-1">Report Name / Description</label>
                 <input
+                  id="report-custom-name"
                   type="text"
                   required
                   value={customReportName}
@@ -804,8 +817,9 @@ export const AdminReportsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Report Category</label>
+                <label htmlFor="report-custom-type" className="block font-bold text-slate-700 mb-1">Report Category</label>
                 <select
+                  id="report-custom-type"
                   value={customReportType}
                   onChange={(e) => setCustomReportType(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
@@ -819,8 +833,9 @@ export const AdminReportsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Date Range</label>
+                <label htmlFor="report-custom-range" className="block font-bold text-slate-700 mb-1">Date Range</label>
                 <select
+                  id="report-custom-range"
                   value={customDateRange}
                   onChange={(e) => setCustomDateRange(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"

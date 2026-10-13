@@ -25,6 +25,7 @@ import type { Product, ProductType, Variant } from '../../../types/domain';
 import { useCategories } from '../../catalog/hooks/useProducts';
 import { useCreateVendorProduct, useUpdateVendorProduct } from '../hooks/useVendorProducts';
 import type { VendorProductDraft } from '../api/products';
+import { useCurrency } from '../../../store/currency-store';
 import { cn } from '../../../lib/utils';
 
 export interface ProductFormModalProps {
@@ -55,6 +56,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('details');
+  const { formatPrice } = useCurrency();
   const { data: categoryData } = useCategories();
   const categories = categoryData?.categories ?? [];
   const createListing = useCreateVendorProduct();
@@ -155,7 +157,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
 
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum <= 0) {
-      setErrorMessage('Please enter a valid price greater than $0.');
+      setErrorMessage('Please enter a valid price greater than zero.');
       setActiveTab('pricing');
       return;
     }
@@ -209,7 +211,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
       <DialogHeader>
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-[#FF7A1A]">
-            <Package className="h-4 w-4" />
+            <Package className="h-4 w-4" aria-hidden="true" />
           </span>
           <DialogTitle>
             {initialProduct ? 'Edit Vendor Product' : 'Add New Product'}
@@ -225,6 +227,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('details')}
+          aria-pressed={activeTab === 'details'}
           className={cn(
             'flex-1 rounded-full py-1.5 text-xs font-semibold transition-all duration-150',
             activeTab === 'details'
@@ -237,6 +240,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('pricing')}
+          aria-pressed={activeTab === 'pricing'}
           className={cn(
             'flex-1 rounded-full py-1.5 text-xs font-semibold transition-all duration-150',
             activeTab === 'pricing'
@@ -249,6 +253,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('variants')}
+          aria-pressed={activeTab === 'variants'}
           className={cn(
             'flex-1 rounded-full py-1.5 text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-1',
             activeTab === 'variants'
@@ -268,7 +273,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
       {/* Error Alert */}
       {errorMessage && (
         <div className="flex items-center gap-2 rounded-2xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+          <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -278,10 +283,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         {activeTab === 'details' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label htmlFor="listing-title" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                 Product Title <span className="text-coral">*</span>
               </label>
               <Input
+                id="listing-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Aura Precision Studio Reference In-Ear Monitors"
@@ -291,10 +297,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                <label htmlFor="listing-category" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                   Category <span className="text-coral">*</span>
                 </label>
                 <select
+                  id="listing-category"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="flex h-11 w-full rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
@@ -309,10 +316,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                <label htmlFor="listing-brand" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                   Brand Name
                 </label>
                 <Input
+                  id="listing-brand"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
                   placeholder="e.g. SoundWave Audio"
@@ -321,10 +329,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label htmlFor="listing-image-url" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                 Image URL
               </label>
               <Input
+                id="listing-image-url"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://images.unsplash.com/photo-..."
@@ -332,10 +341,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label htmlFor="listing-description" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                 Description
               </label>
               <textarea
+                id="listing-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -351,13 +361,14 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
           <div className="space-y-4">
             {/* Physical vs Digital Toggle */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
                 Fulfillment Type
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+              </span>
+              <div role="group" aria-label="Fulfillment Type" className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setProductType('physical')}
+                  aria-pressed={productType === 'physical'}
                   className={cn(
                     'flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-xs font-bold border transition-all duration-150',
                     productType === 'physical'
@@ -365,12 +376,13 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
                   )}
                 >
-                  <Box className="h-4 w-4" />
+                  <Box className="h-4 w-4" aria-hidden="true" />
                   <span>Physical Good (Courier Pickup)</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setProductType('digital')}
+                  aria-pressed={productType === 'digital'}
                   className={cn(
                     'flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-xs font-bold border transition-all duration-150',
                     productType === 'digital'
@@ -378,7 +390,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
                   )}
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="h-4 w-4" aria-hidden="true" />
                   <span>Digital Asset (Instant License)</span>
                 </button>
               </div>
@@ -387,10 +399,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
             {/* Price & Stock */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                  Price ($) <span className="text-coral">*</span>
+                <label htmlFor="listing-price" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Price <span className="text-coral">*</span>
                 </label>
                 <Input
+                  id="listing-price"
                   type="number"
                   step="0.01"
                   min="0"
@@ -400,10 +413,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                  Compare At ($)
+                <label htmlFor="listing-compare-at-price" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Compare At
                 </label>
                 <Input
+                  id="listing-compare-at-price"
                   type="number"
                   step="0.01"
                   min="0"
@@ -413,10 +427,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                <label htmlFor="listing-stock" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                   Total Stock <span className="text-coral">*</span>
                 </label>
                 <Input
+                  id="listing-stock"
                   type="number"
                   min="0"
                   value={stock}
@@ -429,10 +444,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
             {/* Physical vs Digital Specific Fields */}
             {productType === 'physical' ? (
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                    Standard Shipping Fee ($)
+                  <label htmlFor="listing-shipping-fee" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Standard Shipping Fee
                   </label>
                   <Input
+                    id="listing-shipping-fee"
                     type="number"
                     step="0.01"
                     min="0"
@@ -444,10 +460,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl bg-sky-50/70 border border-sky-100 p-3">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                    <label htmlFor="listing-license-type" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                       License Type
                     </label>
                     <select
+                      id="listing-license-type"
                       value={licenseType}
                       onChange={(e) => setLicenseType(e.target.value)}
                       className="w-full admin-select h-10"
@@ -462,10 +479,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                    <label htmlFor="listing-asset-url" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                       Asset Download URL
                     </label>
                     <Input
+                      id="listing-asset-url"
                       value={downloadUrl}
                       onChange={(e) => setDownloadUrl(e.target.value)}
                       placeholder="/downloads/asset-package.zip"
@@ -481,17 +499,18 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
           <div className="space-y-4">
             <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4 text-[#FF7A1A]" />
+                <Sparkles className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
                   Quick Variant Generator
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  <label htmlFor="variant-generator-option" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                     Option Name
                   </label>
                   <select
+                    id="variant-generator-option"
                     value={optionName}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -517,10 +536,11 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  <label htmlFor="variant-generator-values" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                     Values (comma-separated)
                   </label>
                   <Input
+                    id="variant-generator-values"
                     value={optionValues}
                     onChange={(e) => setOptionValues(e.target.value)}
                     placeholder="e.g. Matte Black, Lunar Silver, Gold"
@@ -535,7 +555,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                   onClick={handleGenerateVariants}
                   className="gap-1.5 text-xs"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Generate Variants</span>
                 </Button>
               </div>
@@ -551,7 +571,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
 
               {variants.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
-                  <Layers className="mx-auto h-6 w-6 text-slate-400 mb-1" />
+                  <Layers className="mx-auto h-6 w-6 text-slate-400 mb-1" aria-hidden="true" />
                   <p>No variants configured yet.</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     Use the quick generator above to create color or size combinations.
@@ -564,7 +584,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                       <tr>
                         <th className="py-2.5 px-3 font-semibold">Variant Name</th>
                         <th className="py-2.5 px-3 font-semibold">SKU</th>
-                        <th className="py-2.5 px-3 font-semibold">Price ($)</th>
+                        <th className="py-2.5 px-3 font-semibold">Price</th>
                         <th className="py-2.5 px-3 font-semibold">Stock</th>
                         <th className="py-2.5 px-3 text-right">Actions</th>
                       </tr>
@@ -574,7 +594,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                         <tr key={v.id} className="hover:bg-slate-50/50">
                           <td className="py-2 px-3 font-medium text-slate-800">{v.name}</td>
                           <td className="py-2 px-3 text-slate-500 font-mono text-[11px]">{v.sku}</td>
-                          <td className="py-2 px-3 text-slate-700">${v.price.toFixed(2)}</td>
+                          <td className="py-2 px-3 text-slate-700">{formatPrice(v.price)}</td>
                           <td className="py-2 px-3 text-slate-700">{v.stock}</td>
                           <td className="py-2 px-3 text-right">
                             <button
@@ -583,7 +603,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                               className="rounded-full p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                               aria-label={`Remove variant ${v.name}`}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                             </button>
                           </td>
                         </tr>

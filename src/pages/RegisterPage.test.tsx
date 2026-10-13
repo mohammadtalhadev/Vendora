@@ -1,121 +1,197 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RegisterPage } from './RegisterPage';
+import { AuthProvider } from '../lib/auth-context';
 import { useAuthStore } from '../store/auth-store';
+import { supabaseDouble } from '../test/supabase-double';
 
-describe('RegisterPage Component', { timeout: 15000 }, () => {
+// Registration connects to Supabase auth & vendor_applications
+vi.mock('../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <AuthProvider>
+        <RegisterPage />
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+
+describe('RegisterPage Component (Vendora Dual-Role Customer & Seller Portal)', () => {
   beforeEach(() => {
     localStorage.clear();
+    supabaseDouble.reset();
     useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
   });
 
-  it('renders showcase benefits, brand logo, and registration form elements', () => {
-    render(
-      <MemoryRouter>
-        <RegisterPage />
-      </MemoryRouter>,
-    );
+  it('renders Vendora brand logo, typography, and dual-role switcher tabs', () => {
+    renderPage();
 
-    // Visual Showcase (Left Column)
-    expect(screen.getByText('Unlock Premier Tech Deals & Verified Shopping.')).toBeInTheDocument();
-    expect(screen.getByText('Member Perks')).toBeInTheDocument();
-    expect(screen.getByText('Up to $20 Welcome Coupon')).toBeInTheDocument();
-    expect(screen.getByText('Live Delivery Handover')).toBeInTheDocument();
-    expect(screen.getByText('100% Genuine Escrow Protection')).toBeInTheDocument();
-
-    // Form (Right Column)
-    expect(screen.getByText('Create your account')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Sarah Jenkins')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('sarah.jenkins@example.com')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Create a strong password')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Repeat your password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Create Account & Claim Rewards/i })).toBeInTheDocument();
-
-    // Trust strip (Bottom)
-    expect(screen.getByText('Fast & Free Shipping')).toBeInTheDocument();
-    expect(screen.getByText('100% Authentic')).toBeInTheDocument();
-    expect(screen.getByText('30-Day Easy Returns')).toBeInTheDocument();
-    expect(screen.getByText('24/7 Dedicated Support')).toBeInTheDocument();
-  });
-
-  it('toggles account type between customer and seller', () => {
-    render(
-      <MemoryRouter>
-        <RegisterPage />
-      </MemoryRouter>,
-    );
-
-    const merchantTab = screen.getByRole('button', { name: /Merchant/i });
-    fireEvent.click(merchantTab);
-
-    expect(screen.getByText('Merchant Registration Selected')).toBeInTheDocument();
+    // 1. Brand Heading & Subtitles
+    expect(screen.getAllByText('Vendora').length).toBeGreaterThan(0);
+    expect(screen.getByText('Create an Account')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Continue to Seller Verification/i }),
+      screen.getByText(/Select your account tier to begin transacting with verified buyer protections/i)
     ).toBeInTheDocument();
+    expect(screen.queryByText("Pakistan's Premier Multi-Vendor Marketplace")).not.toBeInTheDocument();
+    expect(screen.queryByText('Protected by Vendora Escrow Shield')).not.toBeInTheDocument();
+    expect(screen.queryByText('Encrypted Escrow Vault')).not.toBeInTheDocument();
+    expect(screen.queryByText('SBP Regulated Gateways')).not.toBeInTheDocument();
+
+    // 2. Dual-Role Switcher Tabs
+    expect(screen.getByRole('button', { name: /Customer \(Shopper\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Seller \(Merchant Store\)/i })).toBeInTheDocument();
+
+    // 3. Customer Form Inputs
+    expect(screen.getByPlaceholderText('e.g. Ayesha Khan')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('ayesha@example.com')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('300 1234567')).toBeInTheDocument();
+
+    // 4. Submit button
+    expect(screen.getByRole('button', { name: /Create Customer Account/i })).toBeInTheDocument();
+
+    // 5. Lateral Perks
+    expect(screen.getByText('100% Escrow Buyer Protection')).toBeInTheDocument();
+    expect(screen.getByText('24–48h Express Nationwide Dispatch')).toBeInTheDocument();
   });
 
-  it('displays live password strength meter as user enters password', () => {
-    render(
-      <MemoryRouter>
-        <RegisterPage />
-      </MemoryRouter>,
-    );
+  it('switches between Customer and Seller mode smoothly, changing perks and fields', () => {
+    renderPage();
 
-    const passwordInput = screen.getByPlaceholderText('Create a strong password');
+    // Switch to Seller Tab
+    const sellerTab = screen.getByRole('button', { name: /Seller \(Merchant Store\)/i });
+    fireEvent.click(sellerTab);
 
-    // Type weak password
-    fireEvent.change(passwordInput, { target: { value: 'abc' } });
-    expect(screen.getByText(/Strength: Weak/i)).toBeInTheDocument();
+    // Verify Seller Form Heading & Inputs
+    expect(screen.getByPlaceholderText('e.g. Khaadi Studio or Volt Audio PK')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('brand-slug')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Authorized Representative Name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('sales@yourbrand.pk')).toBeInTheDocument();
 
-    // Type strong password
-    fireEvent.change(passwordInput, { target: { value: 'Secret1234!@#' } });
-    expect(screen.getByText(/Strength: Strong/i)).toBeInTheDocument();
+    // Verify Seller Lateral Perks
+    expect(screen.getByText('0% Take Rate / 90 Days')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Submit Merchant Application/i })).toBeInTheDocument();
+
+    // Switch back to Customer Tab
+    const customerTab = screen.getByRole('button', { name: /Customer \(Shopper\)/i });
+    fireEvent.click(customerTab);
+
+    expect(screen.getByPlaceholderText('e.g. Ayesha Khan')).toBeInTheDocument();
+    expect(screen.getByText('100% Escrow Buyer Protection')).toBeInTheDocument();
   });
 
-  it('detects password match and displays confirmation indicator', () => {
-    render(
-      <MemoryRouter>
-        <RegisterPage />
-      </MemoryRouter>,
-    );
+  it('validates password mismatch on customer form', async () => {
+    renderPage();
 
-    const passwordInput = screen.getByPlaceholderText('Create a strong password');
-    const confirmInput = screen.getByPlaceholderText('Repeat your password');
+    const nameInput = screen.getByPlaceholderText('e.g. Ayesha Khan');
+    const emailInput = screen.getByPlaceholderText('ayesha@example.com');
+    const passwordInputs = screen.getAllByPlaceholderText('••••••••••••');
 
-    fireEvent.change(passwordInput, { target: { value: 'Password123' } });
-    fireEvent.change(confirmInput, { target: { value: 'Password123' } });
+    fireEvent.change(nameInput, { target: { value: 'Ayesha Khan' } });
+    fireEvent.change(emailInput, { target: { value: 'ayesha@example.com' } });
+    fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
+    fireEvent.change(passwordInputs[1], { target: { value: 'DifferentPass123!' } });
 
-    expect(screen.getByText('Passwords match')).toBeInTheDocument();
+    const submitBtn = screen.getByRole('button', { name: /Create Customer Account/i });
+    fireEvent.submit(submitBtn.closest('form')!);
+
+    expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
   });
 
-  it('submits registration form successfully and sets user state', () => {
-    render(
-      <MemoryRouter>
-        <RegisterPage />
-      </MemoryRouter>,
-    );
+  it('validates terms agreement on customer form', async () => {
+    renderPage();
 
-    fireEvent.change(screen.getByPlaceholderText('Sarah Jenkins'), {
-      target: { value: 'Alex Morgan' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('sarah.jenkins@example.com'), {
-      target: { value: 'alex.morgan@test.com' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Create a strong password'), {
-      target: { value: 'SuperSecret123' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Repeat your password'), {
-      target: { value: 'SuperSecret123' },
-    });
+    const nameInput = screen.getByPlaceholderText('e.g. Ayesha Khan');
+    const emailInput = screen.getByPlaceholderText('ayesha@example.com');
+    const passwordInputs = screen.getAllByPlaceholderText('••••••••••••');
 
-    const submitBtn = screen.getByRole('button', { name: /Create Account & Claim Rewards/i });
-    fireEvent.click(submitBtn);
+    fireEvent.change(nameInput, { target: { value: 'Ayesha Khan' } });
+    fireEvent.change(emailInput, { target: { value: 'ayesha@example.com' } });
+    fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
+    fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
 
-    const currentUser = useAuthStore.getState().user;
-    expect(currentUser).not.toBeNull();
-    expect(currentUser?.name).toBe('Alex Morgan');
-    expect(currentUser?.email).toBe('alex.morgan@test.com');
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    // Uncheck terms (customerAgreed defaults to true in form)
+    const termsCheckbox = screen.getByRole('checkbox');
+    fireEvent.click(termsCheckbox);
+
+    const submitBtn = screen.getByRole('button', { name: /Create Customer Account/i });
+    fireEvent.submit(submitBtn.closest('form')!);
+
+    expect(screen.getByText('You must accept the Vendora Customer Terms of Service')).toBeInTheDocument();
+  });
+
+  it('successfully creates customer account and syncs authentication', async () => {
+    renderPage();
+
+    const nameInput = screen.getByPlaceholderText('e.g. Ayesha Khan');
+    const emailInput = screen.getByPlaceholderText('ayesha@example.com');
+    const phoneInput = screen.getByPlaceholderText('300 1234567');
+    const passwordInputs = screen.getAllByPlaceholderText('••••••••••••');
+
+    fireEvent.change(nameInput, { target: { value: 'Ayesha Khan' } });
+    fireEvent.change(emailInput, { target: { value: 'ayesha.buyer@vendora.pk' } });
+    fireEvent.change(phoneInput, { target: { value: '300 1234567' } });
+    fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
+    fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Create Customer Account/i });
+    fireEvent.submit(submitBtn.closest('form')!);
+
+    await waitFor(() => expect(useAuthStore.getState().isAuthenticated).toBe(true));
+    const authUser = useAuthStore.getState().user;
+    expect(authUser).not.toBeNull();
+    expect(authUser?.name).toBe('Ayesha Khan');
+    expect(authUser?.email).toBe('ayesha.buyer@vendora.pk');
+  });
+
+  it('validates required fields on seller form', async () => {
+    renderPage();
+
+    // Switch to seller
+    fireEvent.click(screen.getByRole('button', { name: /Seller \(Merchant Store\)/i }));
+
+    const submitBtn = screen.getByRole('button', { name: /Submit Merchant Application/i });
+    fireEvent.submit(submitBtn.closest('form')!);
+
+    expect(screen.getByText('Please provide your store / brand name')).toBeInTheDocument();
+  });
+
+  it('successfully submits seller application to vendor_applications table', async () => {
+    renderPage();
+
+    // Switch to seller
+    fireEvent.click(screen.getByRole('button', { name: /Seller \(Merchant Store\)/i }));
+
+    const storeInput = screen.getByPlaceholderText('e.g. Khaadi Studio or Volt Audio PK');
+    const slugInput = screen.getByPlaceholderText('brand-slug');
+    const ownerInput = screen.getByPlaceholderText('Authorized Representative Name');
+    const emailInput = screen.getByPlaceholderText('sales@yourbrand.pk');
+    const phoneInput = screen.getByPlaceholderText('321 9876543');
+    const passwordInputs = screen.getAllByPlaceholderText('••••••••••••');
+
+    fireEvent.change(storeInput, { target: { value: 'Khaadi Crafts Hub' } });
+    fireEvent.change(slugInput, { target: { value: 'khaadi-crafts-hub' } });
+    fireEvent.change(ownerInput, { target: { value: 'Tariq Mehmood' } });
+    fireEvent.change(emailInput, { target: { value: 'tariq.seller@vendora.pk' } });
+    fireEvent.change(phoneInput, { target: { value: '321 9876543' } });
+    fireEvent.change(passwordInputs[0], { target: { value: 'MerchantSecret123!' } });
+    fireEvent.change(passwordInputs[1], { target: { value: 'MerchantSecret123!' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Submit Merchant Application/i });
+    fireEvent.submit(submitBtn.closest('form')!);
+
+    // Verify vendor application was inserted into database double
+    await waitFor(() => {
+      const applications = supabaseDouble.tables.vendor_applications;
+      expect(applications.length).toBeGreaterThan(0);
+      const app = applications[0];
+      expect(app.proposed_store_name).toBe('Khaadi Crafts Hub');
+      expect(app.slug).toBe('khaadi-crafts-hub');
+      expect(app.contact_email).toBe('tariq.seller@vendora.pk');
+    });
   });
 });

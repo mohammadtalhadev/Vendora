@@ -1,7 +1,7 @@
 import { http, HttpResponse, delay } from 'msw';
 import { mockDb } from './db';
 import { canTransitionSubOrder } from '../lib/order-state-machine';
-import type { UserRole, SubOrderStatus, DisputeStatus } from '../types/domain';
+import type { UserRole, SubOrderStatus, DisputeStatus, ModerationStatus, Dispute } from '../types/domain';
 
 // Helper to extract bearer token role
 function getActorRoleFromHeader(request: Request): UserRole {
@@ -154,63 +154,9 @@ export const handlers = [
   http.get('/api/products/:id', async ({ params }) => {
     await delay(150);
     const productId = params.id as string;
-    let product = mockDb.products.find((p) => p.id === productId || p.slug === productId);
+    const product = mockDb.products.find((p) => p.id === productId || p.slug === productId);
     if (!product) {
-      const cleanTitle = productId
-        .replace(/^(elec|beauty|home|deal|winter|fash|prod|groc)-/, '')
-        .replace(/-/g, ' ')
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-      product = {
-        id: productId,
-        title: cleanTitle || 'Vendora Verified Product',
-        slug: productId,
-        description: `Official authentic ${cleanTitle} backed by Vendora 100% Quality Assurance Guarantee. Includes premium packaging, original accessories, and express delivery.`,
-        category: productId.startsWith('beauty')
-          ? 'cat-beauty'
-          : productId.startsWith('home')
-            ? 'cat-home'
-            : productId.startsWith('fash') || productId.startsWith('winter')
-              ? 'cat-fashion'
-              : 'cat-electronics',
-        brand: 'Vendora',
-        images: [
-          '/images/products/prod_silver_headphones.jpg',
-          '/images/products/prod_titanium_phone.jpg',
-          '/images/products/prod_smart_watch.jpg',
-          '/images/products/prod_gold_watch.jpg',
-        ],
-        price: 199.0,
-        compareAtPrice: 249.0,
-        type: 'physical',
-        sellerId: 'platform',
-        sellerName: 'Vendora',
-        sellerType: 'platform',
-        variants: [
-          {
-            id: `${productId}-var-1`,
-            name: 'Standard Edition',
-            sku: `VEN-${productId.slice(0, 6).toUpperCase()}-1`,
-            price: 199.0,
-            stock: 35,
-            attributes: { edition: 'Standard' },
-          },
-          {
-            id: `${productId}-var-2`,
-            name: 'Pro Edition',
-            sku: `VEN-${productId.slice(0, 6).toUpperCase()}-2`,
-            price: 249.0,
-            stock: 15,
-            attributes: { edition: 'Pro' },
-          },
-        ],
-        stock: 50,
-        shippingSettings: { freeShipping: true, standardFee: 0 },
-        rating: 4.9,
-        reviewCount: 388,
-        status: 'approved',
-        createdAt: new Date().toISOString(),
-      };
-      mockDb.products.push(product);
+      return HttpResponse.json({ error: 'Product not found' }, { status: 404 });
     }
     return HttpResponse.json(product);
   }),
@@ -223,6 +169,55 @@ export const handlers = [
     }
     const vendorProducts = mockDb.products.filter((p) => p.sellerId === vendor.id && p.status === 'approved');
     return HttpResponse.json({ ...vendor, products: vendorProducts });
+  }),
+
+  http.patch('/api/products/:id/moderate', async ({ params, request }) => {
+    await delay(150);
+    const body = (await request.json()) as { status: ModerationStatus; rejectionReason?: string };
+    try {
+      const updated = mockDb.moderateProduct(params.id as string, body.status, body.rejectionReason);
+      return HttpResponse.json(updated);
+    } catch {
+      return HttpResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+  }),
+
+  http.post('/api/products/:id/approve', async ({ params }) => {
+    await delay(150);
+    try {
+      const updated = mockDb.moderateProduct(params.id as string, 'approved');
+      return HttpResponse.json(updated);
+    } catch {
+      return HttpResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+  }),
+
+  http.post('/api/products/:id/reject', async ({ params, request }) => {
+    await delay(150);
+    let reason = 'Violates catalog policies';
+    try {
+      const body = (await request.json()) as { reason?: string };
+      if (body?.reason) reason = body.reason;
+    } catch {
+      // ignore
+    }
+    try {
+      const updated = mockDb.moderateProduct(params.id as string, 'rejected', reason);
+      return HttpResponse.json(updated);
+    } catch {
+      return HttpResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+  }),
+
+  http.patch('/api/vendors/:id/status', async ({ params, request }) => {
+    await delay(150);
+    const body = (await request.json()) as { status: 'active' | 'suspended'; reason?: string };
+    try {
+      const updated = mockDb.updateVendorStatus(params.id as string, body.status, body.reason);
+      return HttpResponse.json(updated);
+    } catch {
+      return HttpResponse.json({ error: 'Vendor not found' }, { status: 404 });
+    }
   }),
 
   // ==========================================
@@ -244,6 +239,7 @@ export const handlers = [
       paymentMethod: body.paymentMethod || 'card',
       paymentBrand: body.paymentBrand,
       last4: body.last4,
+      deliveryOptions: body.deliveryOptions,
     });
 
     return HttpResponse.json(
@@ -390,5 +386,12 @@ export const handlers = [
     };
     const updated = mockDb.updateDisputeStatus(params.id as string, body.status, body.resolutionNote);
     return HttpResponse.json(updated);
+  }),
+
+  http.post('/api/disputes', async ({ request }) => {
+    await delay(200);
+    const body = (await request.json()) as Partial<Dispute>;
+    const created = mockDb.createDispute(body);
+    return HttpResponse.json(created, { status: 201 });
   }),
 ];

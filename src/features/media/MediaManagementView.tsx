@@ -1,43 +1,62 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
-  Search,
-  Upload,
-  FolderPlus,
-  SlidersHorizontal,
-  LayoutGrid,
-  List,
+  Check,
+  Clock,
+  Copy,
+  ExternalLink,
   Folder,
   FolderOpen,
-  Check,
-  CheckCircle2,
-  Download,
-  Trash2,
-  Move,
-  Copy,
-  RefreshCw,
-  Maximize2,
-  FileText,
-  ChevronRight,
-  Globe,
   HardDrive,
   Layers,
-  Store,
-  FileCode,
+  LayoutGrid,
+  Library,
+  List,
+  Move,
+  Pencil,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react';
-import {
-  type MediaItem,
-  type FolderNode,
-  ADMIN_SYSTEM_BINS,
-  VENDOR_FOLDERS,
-  INITIAL_MEDIA_ITEMS,
-} from './mediaData';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '../../components/ui/dialog';
+import { foldersOf, type VendorMediaItem } from '../vendor/api/media';
+import {
+  useDeleteMedia,
+  useMediaLibrary,
+  useMoveMedia,
+  useRenameMedia,
+  useUploadMedia,
+} from '../vendor/hooks/useVendorMedia';
+import {
+  cleanFolderName,
+  DATE_FILTERS,
+  dimensionLabel,
+  FILE_KIND_ICONS,
+  folderLabel,
+  formatDate,
+  formatBytes,
+  formatOf,
+  isStoredObject,
+  KIND_FILTERS,
+  matchesQuery,
+  MEDIA_PAGE_SIZE,
+  mediaKindOf,
+  STATUS_LABEL,
+  STATUS_STYLE,
+  withinDays,
+  dateWindowOf,
+  type DateFilter,
+  type MediaKindFilter,
+  type MediaLayout,
+} from './mediaData';
 
 export interface MediaManagementViewProps {
   mode: 'admin' | 'vendor';
@@ -45,631 +64,591 @@ export interface MediaManagementViewProps {
   vendorName?: string;
 }
 
-export const MediaManagementView: React.FC<MediaManagementViewProps> = ({
-  mode,
-  vendorId = 'vendor-tech-1',
-  vendorName = 'Nova Electronics',
-}) => {
-  // Folder tree states
-  const [systemBins] = useState<FolderNode[]>(ADMIN_SYSTEM_BINS);
-  const [vendorFolders, setVendorFolders] = useState<FolderNode[]>(VENDOR_FOLDERS);
-  const [expandedVendorId, setExpandedVendorId] = useState<string | null>('vf-nova');
-  const [activeFolderId, setActiveFolderId] = useState<string>(
-    mode === 'admin' ? 'nova-products' : 'nova-products'
-  );
-  const [activeTab, setActiveTab] = useState<
-    'all' | 'media-mgmt' | 'vendor-folders' | 'system-media' | 'trash'
-  >('media-mgmt');
+const CARD =
+  'rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between';
+const TILE_HEAD =
+  'flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500';
+const TILE_ICON = 'flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700';
+const GHOST_BUTTON =
+  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-45';
+const PRIMARY_BUTTON =
+  'inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
+const DANGER_BUTTON =
+  'inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:opacity-45';
+const FIELD =
+  'w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900';
 
-  // Directory segment toggle (Admin directories vs By Vendor Store)
-  const [directoryViewMode, setDirectoryViewMode] = useState<'admin' | 'vendor'>(
-    mode === 'admin' ? 'vendor' : 'vendor'
-  );
+/**
+ * The asset library of the store the signed-in account owns. Reads, uploads, renames,
+ * moves and deletes all go through `src/features/vendor/api/media.ts`, so every row here
+ * is a `media_items` record backed by an object in the `vendor-assets` bucket - and a
+ * write the server refuses is reported with the server's own words instead of a toast.
+ */
+export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }) => {
+  const library = useMediaLibrary();
+  const upload = useUploadMedia();
+  const rename = useRenameMedia();
+  const move = useMoveMedia();
+  const remove = useDeleteMedia();
 
-  // File filter states
-  const [fileTypeFilter, setFileTypeFilter] = useState<'all' | 'image' | 'document' | 'archive'>('all');
-  const [dateFilter, setDateFilter] = useState<'all' | '7d' | '30d'>('all');
+  const items = useMemo(() => library.data ?? [], [library.data]);
+  const folders = useMemo(() => foldersOf(items), [items]);
+
+  const [folderFilter, setFolderFilter] = useState<string>('all');
+  const [kindFilter, setKindFilter] = useState<MediaKindFilter>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
+  const [layout, setLayout] = useState<MediaLayout>('grid');
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [inspectedId, setInspectedId] = useState<string | null>(null);
 
-  // Media items state
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>(INITIAL_MEDIA_ITEMS);
-  const [selectedIds, setSelectedIds] = useState<string[]>(['media-1']);
-  const [inspectedMediaId, setInspectedMediaId] = useState<string>('media-1');
+  const [banner, setBanner] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Modals state
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isNewFolderModalOpen, setIsNewFolderModalOpen] = useState(false);
-  const [isCdnSettingsModalOpen, setIsCdnSettingsModalOpen] = useState(false);
-  const [isFullscreenModalOpen, setIsFullscreenModalOpen] = useState(false);
-  const [isReplaceModalOpen, setIsReplaceModalOpen] = useState(false);
-  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<File[]>([]);
+  const [uploadFolder, setUploadFolder] = useState('products');
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Upload modal form state
-  const [uploadFileName, setUploadFileName] = useState('');
-  const [uploadTag, setUploadTag] = useState('Product');
-  const [uploadTargetFolder, setUploadTargetFolder] = useState('nova-products');
-  const uploadFileInputRef = useRef<HTMLInputElement>(null);
-  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveFolder, setMoveFolder] = useState('');
+  const [moveError, setMoveError] = useState<string | null>(null);
 
-  // New folder form state
-  const [newFolderName, setNewFolderName] = useState('');
-  const [newFolderParent, setNewFolderParent] = useState('Nova Electronics');
+  // The clicked rows wait here until the confirm dialog has been answered; nothing is
+  // removed from the library before the server accepts the delete.
+  const [deleteTargets, setDeleteTargets] = useState<VendorMediaItem[]>([]);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Move target folder state
-  const [moveTargetFolder, setMoveTargetFolder] = useState('nova-banners');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
 
-  // Toast notification state
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3200);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  const note = (message: string) => {
+    setError(null);
+    setBanner(message);
+    window.setTimeout(() => setBanner(null), 5000);
   };
 
-  // Determine current active folder path and name
-  const currentFolderInfo = useMemo(() => {
-    if (activeFolderId === 'sys-root') return { name: 'Platform Root', path: 'Root / Platform Root' };
-    if (activeFolderId === 'sys-brand') return { name: 'Brand & System UI', path: 'Root / Brand & System UI' };
-    if (activeFolderId === 'sys-1p') return { name: 'First-Party Catalog', path: 'Root / First-Party Catalog' };
-    if (activeFolderId === 'sys-marketing') return { name: 'Marketing Campaigns', path: 'Root / Marketing Campaigns' };
-    if (activeFolderId === 'sys-kyc') return { name: 'KYC & Compliance Docs', path: 'Root / KYC & Compliance Docs' };
+  const fail = (cause: unknown) => {
+    setBanner(null);
+    setError(cause instanceof Error ? cause.message : String(cause));
+  };
 
-    // Find in vendor folders
-    for (const vf of vendorFolders) {
-      if (vf.id === activeFolderId) return { name: vf.name, path: vf.path };
-      if (vf.children) {
-        for (const child of vf.children) {
-          if (child.id === activeFolderId) {
-            return { name: child.name, path: child.path };
-          }
-        }
-      }
-    }
-    return { name: 'Product Images', path: 'Root / Vendor Folders / Nova Electronics / Product Images' };
-  }, [activeFolderId, vendorFolders]);
+  // Nothing here mirrors the query into state: `inspected` and `selected` are derived from
+  // the loaded rows, so a refetch that dropped a row also drops its inspector and its tick.
+  const changeFilter = (apply: () => void) => {
+    apply();
+    setPage(1);
+  };
 
-  // Filter media items
-  const filteredItems = useMemo(() => {
-    return mediaItems.filter((item) => {
-      // If vendor mode, strictly enforce vendor isolation
-      if (mode === 'vendor') {
-        if (item.vendorId !== vendorId && item.vendorName !== vendorName) {
-          return false;
-        }
-      }
+  const totals = useMemo(
+    () => ({
+      bytes: items.reduce((sum, item) => sum + item.sizeBytes, 0),
+      pending: items.filter((item) => item.status === 'pending').length,
+      flagged: items.filter((item) => item.status === 'flagged').length,
+      images: items.filter((item) => mediaKindOf(item.mimeType) === 'image').length,
+      documents: items.filter((item) => mediaKindOf(item.mimeType) === 'document').length,
+      other: items.filter((item) => {
+        const kind = mediaKindOf(item.mimeType);
+        return kind !== 'image' && kind !== 'document';
+      }).length,
+    }),
+    [items],
+  );
 
-      // Filter by active folder (unless activeTab is 'all')
-      if (activeTab === 'media-mgmt' && activeFolderId) {
-        if (item.folderId !== activeFolderId) {
-          return false;
-        }
-      } else if (activeTab === 'system-media') {
-        if (!item.folderId.startsWith('sys-')) return false;
-      } else if (activeTab === 'vendor-folders') {
-        if (item.folderId.startsWith('sys-')) return false;
-      }
+  const folderCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of items) counts.set(item.folder, (counts.get(item.folder) ?? 0) + 1);
+    return counts;
+  }, [items]);
 
-      // Filter by file type
-      if (fileTypeFilter !== 'all' && item.type !== fileTypeFilter) {
-        return false;
-      }
-
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = item.name.toLowerCase().includes(q);
-        const matchesTag = item.tag?.toLowerCase().includes(q);
-        const matchesVendor = item.vendorName?.toLowerCase().includes(q);
-        const matchesFormat = item.format.toLowerCase().includes(q);
-        if (!matchesName && !matchesTag && !matchesVendor && !matchesFormat) {
-          return false;
-        }
-      }
-
+  const filtered = useMemo(() => {
+    const window = dateWindowOf(dateFilter);
+    return items.filter((item) => {
+      if (folderFilter !== 'all' && item.folder !== folderFilter) return false;
+      if (kindFilter !== 'all' && mediaKindOf(item.mimeType) !== kindFilter) return false;
+      if (window !== null && !withinDays(item.createdAt, window)) return false;
+      if (!matchesQuery(item, searchQuery)) return false;
       return true;
     });
-  }, [mediaItems, mode, vendorId, vendorName, activeTab, activeFolderId, fileTypeFilter, searchQuery]);
+  }, [items, folderFilter, kindFilter, dateFilter, searchQuery]);
 
-  // Currently inspected item
-  const inspectedItem = useMemo(() => {
-    return (
-      filteredItems.find((i) => i.id === inspectedMediaId) ||
-      filteredItems[0] ||
-      mediaItems[0]
-    );
-  }, [filteredItems, inspectedMediaId, mediaItems]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / MEDIA_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const firstIndex = (currentPage - 1) * MEDIA_PAGE_SIZE;
+  const visible = filtered.slice(firstIndex, firstIndex + MEDIA_PAGE_SIZE);
+  const lastIndex = Math.min(firstIndex + MEDIA_PAGE_SIZE, filtered.length);
 
-  // Selection handlers
-  const toggleSelectOne = (id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  // The library query waits for a signed-in account; `isPending` alone cannot tell a read
+  // in flight from a read that never started, so the panel says which one it is.
+  const awaitingSession = library.isPending && library.fetchStatus === 'idle';
+
+  const inspected = useMemo(
+    () => items.find((item) => item.id === inspectedId) ?? null,
+    [items, inspectedId],
+  );
+
+  const selected = useMemo(
+    () => items.filter((item) => selectedIds.includes(item.id)),
+    [items, selectedIds],
+  );
+
+  /** What the Move dialog will act on: the current selection, named before any write. */
+  const moveTargets = selected;
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((item) => selectedIds.includes(item.id));
+
+  const toggleSelect = (id: string, checked: boolean) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((current) => current !== id),
     );
-    setInspectedMediaId(id);
   };
 
-  const handleSelectAll = () => {
-    if (selectedIds.length === filteredItems.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredItems.map((i) => i.id));
+  const copyUrl = async (item: VendorMediaItem) => {
+    try {
+      await navigator.clipboard.writeText(item.cdnUrl);
+      note(`Copied the public URL for “${item.name}”.`);
+    } catch {
+      setError('Your browser blocked the clipboard, so the URL was not copied. Select it in the field below the preview instead.');
     }
   };
 
-  // Copy CDN link
-  const handleCopyCdnLink = (url: string) => {
-    navigator.clipboard.writeText(url);
-    showToast('CDN URL copied to clipboard: ' + url.slice(0, 38) + '...');
+  const pickedFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadQueue(Array.from(event.target.files ?? []));
+    setUploadError(null);
   };
 
-  // Upload handler
-  const handleConfirmUpload = (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalName = uploadFileName.trim() || `asset-${Date.now().toString().slice(-4)}.webp`;
-    const isDoc = finalName.endsWith('.pdf');
-    const newItem: MediaItem = {
-      id: `media-${Date.now()}`,
-      name: finalName,
-      folderPath: currentFolderInfo.path,
-      folderId: uploadTargetFolder || activeFolderId,
-      vendorId: mode === 'vendor' ? vendorId : 'vendor-tech-1',
-      vendorName: mode === 'vendor' ? vendorName : 'Nova Electronics',
-      vendorTier: 'Tier 1 Elite',
-      type: isDoc ? 'document' : 'image',
-      format: isDoc ? 'PDF' : 'WEBP',
-      sizeFormatted: '1.24 MB',
-      sizeBytes: 1300000,
-      dimensions: isDoc ? 'A4 Document' : '2400 × 2400 px',
-      encoding: isDoc ? 'PDF/A' : 'WebP Lossless',
-      tag: uploadTag || 'Product',
-      dateFormatted: 'Just now',
-      createdAt: new Date().toISOString(),
-      cdnUrl: `https://cdn.vendora.io/vendors/${(mode === 'vendor' ? vendorName : 'nova-electronics')
-        .toLowerCase()
-        .replace(/\s+/g, '-')}/products/${finalName}`,
-      thumbnailUrl: isDoc
-        ? ''
-        : 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80',
-      isSecurityVerified: true,
-      status: 'approved',
-    };
+  const submitUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (uploadQueue.length === 0) {
+      setUploadError('Choose at least one file to upload.');
+      return;
+    }
+    const folder = cleanFolderName(uploadFolder);
+    if (!folder) {
+      setUploadError('Give the destination folder a name of letters, numbers, dashes or underscores.');
+      return;
+    }
 
-    setMediaItems((prev) => [newItem, ...prev]);
-    setSelectedIds([newItem.id]);
-    setInspectedMediaId(newItem.id);
-    setIsUploadModalOpen(false);
-    setUploadFileName('');
-    showToast(`Asset "${finalName}" uploaded and distributed to edge CDN.`);
-  };
+    setUploadError(null);
+    let stored = 0;
+    let reason: string | null = null;
+    // One file at a time, so a rejected write is reported as the file that actually failed
+    // rather than as a batch that never happened.
+    for (const file of uploadQueue) {
+      try {
+        await upload.mutateAsync({ file, folder });
+        stored += 1;
+      } catch (cause) {
+        reason = cause instanceof Error ? cause.message : String(cause);
+        break;
+      }
+    }
 
-  // New folder creation handler
-  const handleCreateFolder = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFolderName.trim()) return;
-
-    const newFolderId = `folder-${Date.now()}`;
-    const newChild: FolderNode = {
-      id: newFolderId,
-      name: newFolderName.trim(),
-      path: `Root / Vendor Folders / ${newFolderParent} / ${newFolderName.trim()}`,
-      countLabel: '0',
-      vendorId: mode === 'vendor' ? vendorId : 'vendor-tech-1',
-    };
-
-    setVendorFolders((prev) =>
-      prev.map((vf) => {
-        if (vf.name === newFolderParent || vf.id === 'vf-nova') {
-          return {
-            ...vf,
-            children: [...(vf.children || []), newChild],
-          };
-        }
-        return vf;
-      })
-    );
-
-    setActiveFolderId(newFolderId);
-    setNewFolderName('');
-    setIsNewFolderModalOpen(false);
-    showToast(`Folder "${newFolderName}" created successfully.`);
-  };
-
-  // Replace file handler
-  const handleReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && inspectedItem) {
-      setMediaItems((prev) =>
-        prev.map((item) =>
-          item.id === inspectedItem.id
-            ? {
-                ...item,
-                sizeFormatted: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-                dateFormatted: 'Just now',
-                encoding: 'WebP (Updated Revision)',
-              }
-            : item
-        )
+    if (reason) {
+      setUploadError(
+        stored > 0
+          ? `Stored ${stored} of ${uploadQueue.length} before it failed: ${reason}`
+          : `Nothing was uploaded: ${reason}`,
       );
-      setIsReplaceModalOpen(false);
-      showToast(`Asset "${inspectedItem.name}" replaced. CDN cache purged and refreshed.`);
+      return;
     }
-  };
 
-  // Move files handler
-  const handleConfirmMove = () => {
-    if (selectedIds.length === 0) return;
-    setMediaItems((prev) =>
-      prev.map((item) =>
-        selectedIds.includes(item.id)
-          ? {
-              ...item,
-              folderId: moveTargetFolder,
-              folderPath: `Root / Vendor Folders / Nova Electronics / ${
-                moveTargetFolder === 'nova-banners'
-                  ? 'Store Banners'
-                  : moveTargetFolder === 'nova-compliance'
-                  ? 'Compliance & Docs'
-                  : 'Product Images'
-              }`,
-            }
-          : item
-      )
+    setUploadOpen(false);
+    setUploadQueue([]);
+    if (uploadInputRef.current) uploadInputRef.current.value = '';
+    note(
+      `Uploaded ${stored} file${stored === 1 ? '' : 's'} into “${folder}”. Each one is recorded as pending until platform review.`,
     );
-    setIsMoveModalOpen(false);
-    showToast(`Moved ${selectedIds.length} item(s) to destination folder.`);
   };
 
-  // Delete files handler
-  const handleConfirmDelete = () => {
-    if (selectedIds.length === 0) return;
-    setMediaItems((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
-    const deletedCount = selectedIds.length;
-    setSelectedIds([]);
-    setIsDeleteConfirmOpen(false);
-    showToast(`Deleted ${deletedCount} file(s) from asset repository.`);
+  const startRename = (item: VendorMediaItem) => {
+    setEditingId(item.id);
+    setDraftName(item.name);
   };
+
+  const saveRename = (item: VendorMediaItem) => {
+    const next = draftName.trim();
+    if (!next || next === item.name) {
+      setEditingId(null);
+      return;
+    }
+    rename.mutate(
+      { itemId: item.id, name: next },
+      {
+        onSuccess: () => {
+          note(`Renamed to “${next}”. The stored object keeps its path, so live links stay valid.`);
+          setEditingId(null);
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  const confirmMove = async () => {
+    const folder = cleanFolderName(moveFolder);
+    if (!folder) {
+      setMoveError('Type a destination folder of letters, numbers, dashes or underscores.');
+      return;
+    }
+    if (moveTargets.length === 0) {
+      setMoveError('Select at least one file to move.');
+      return;
+    }
+
+    setMoveError(null);
+    const failed: VendorMediaItem[] = [];
+    let reason = '';
+    for (const item of moveTargets) {
+      try {
+        await move.mutateAsync({ itemId: item.id, folder });
+      } catch (cause) {
+        reason = cause instanceof Error ? cause.message : String(cause);
+        failed.push(item);
+      }
+    }
+
+    if (failed.length > 0) {
+      // Failed rows stay in the library and stay selectable; only the moved ones leave.
+      setSelectedIds(failed.map((item) => item.id));
+      setMoveError(
+        failed.length === moveTargets.length
+          ? `Nothing was moved: ${reason}`
+          : `Moved ${moveTargets.length - failed.length}, ${failed.length} still here: ${reason}`,
+      );
+      return;
+    }
+
+    setMoveOpen(false);
+    setMoveFolder('');
+    note(`Moved ${moveTargets.length} file${moveTargets.length === 1 ? '' : 's'} into “${folder}”. The object itself was moved, and the row now records the new path.`);
+  };
+
+  const askDelete = (targets: VendorMediaItem[]) => {
+    if (targets.length === 0) return;
+    setDeleteError(null);
+    setDeleteTargets(targets);
+  };
+
+  const closeDelete = () => {
+    // Escape, outside-click and the Cancel button cannot close the dialog mid-write.
+    if (remove.isPending) return;
+    setDeleteTargets([]);
+    setDeleteError(null);
+  };
+
+  const confirmDelete = async () => {
+    const remaining: VendorMediaItem[] = [];
+    let reason = '';
+    for (const item of deleteTargets) {
+      try {
+        await remove.mutateAsync(item.id);
+      } catch (cause) {
+        reason = cause instanceof Error ? cause.message : String(cause);
+        remaining.push(item);
+      }
+    }
+
+    const deleted = deleteTargets.length - remaining.length;
+    if (remaining.length > 0) {
+      setDeleteTargets(remaining);
+      setDeleteError(
+        deleted > 0
+          ? `Deleted ${deleted} of ${deleteTargets.length}. These are still here: ${reason}`
+          : `Nothing was deleted: ${reason}`,
+      );
+      return;
+    }
+
+    setDeleteTargets([]);
+    setDeleteError(null);
+    setSelectedIds([]);
+    note(`Deleted ${deleted} file${deleted === 1 ? '' : 's'}. The row and the stored object are both gone.`);
+  };
+
+  const pageNumbers = useMemo(() => {
+    const start = Math.max(1, Math.min(currentPage - 2, pageCount - 4));
+    const end = Math.min(pageCount, start + 4);
+    const list: number[] = [];
+    for (let n = start; n <= end; n += 1) list.push(n);
+    return list;
+  }, [currentPage, pageCount]);
+
+  const InspectedIcon = inspected
+    ? FILE_KIND_ICONS[mediaKindOf(inspected.mimeType)]
+    : FILE_KIND_ICONS.other;
+  const deleteCountLabel = `${deleteTargets.length} file${deleteTargets.length === 1 ? '' : 's'}`;
 
   return (
     <div className="space-y-6 pb-12 font-sans text-slate-900">
-      {/* ── Breadcrumb & Page Header ─────────────────────────────────── */}
+      {/* ── Page header ─────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {mode === 'admin' ? 'Marketplace' : 'Store Workspace'}{' '}
-            <span className="text-slate-300">/</span> Files &amp; Media
-          </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+          {mode !== 'admin' && (
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Store Workspace <span className="text-slate-300">/</span> Files &amp; Media
+            </div>
+          )}
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 font-outfit">
             File &amp; Media Management
           </h1>
           <p className="mt-0.5 text-xs text-slate-500 max-w-2xl">
             {mode === 'admin'
-              ? 'Centralized asset repository. Organize platform media, product imagery, vendor uploads, legal documents, and marketing assets.'
-              : 'Direct media repository for your store. Organize your catalog product photography, high-resolution banners, and compliance certificates.'}
+              ? 'Asset library as the data layer serves it: one row per stored object, with the moderation verdict recorded against it.'
+              : 'Direct media repository for your store. Every row below is a file in your bucket plus the record the platform kept for it.'}
           </p>
         </div>
 
-        {/* Header Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {mode === 'admin' && (
-            <button
-              type="button"
-              onClick={() => setIsCdnSettingsModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <FileCode className="h-3.5 w-3.5 text-slate-500" />
-              <span>&lt;&gt; Storage Settings &amp; CDN</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsUploadModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
-          >
-            <Upload className="h-3.5 w-3.5 text-slate-600" />
+          <button type="button" onClick={() => setUploadOpen(true)} className={PRIMARY_BUTTON}>
+            <Upload className="h-3.5 w-3.5" />
             <span>Upload Files</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsNewFolderModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer"
-          >
-            <FolderPlus className="h-3.5 w-3.5" />
-            <span>+ New Folder {mode === 'admin' ? '/ Bucket' : ''}</span>
           </button>
         </div>
       </div>
 
-      {/* ── 4 Top KPI Stat Cards (Matching Mockup) ───────────────────── */}
+      {/* ── What this console can read ──────────────────────────────── */}
+      {mode === 'admin' && (
+        <section className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-xs">
+          <div className="flex items-center gap-2 font-bold text-slate-800">
+            <ShieldAlert className="h-4 w-4 text-slate-500" />
+            Scope of this listing
+          </div>
+          <p className="text-slate-600">
+            Every media call in this app resolves <code className="font-mono">current_vendor_id()</code>{' '}
+            and filters <code className="font-mono">media_items</code> to the store the signed-in account
+            owns, so the rows below are that store&apos;s library — not a cross-store index. A platform-wide
+            listing has no read behind it yet: the insert, update and delete policies are owner-scoped, and
+            the storage policy only lets a writer touch{' '}
+            <code className="font-mono">vendor-assets/&lt;their slug&gt;/</code>. Offering staff a queue of
+            every store&apos;s assets needs a server-side read and policy, which is not something this screen
+            can substitute with a client-side filter.
+          </p>
+        </section>
+      )}
+
+      {/* ── Real outcome banners ────────────────────────────────────── */}
+      {banner && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800"
+        >
+          <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+          {banner}
+        </div>
+      )}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800"
+        >
+          <X className="h-4 w-4 shrink-0 text-rose-600" />
+          {error}
+        </div>
+      )}
+
+      {/* ── KPI tiles: counts of the rows actually loaded ────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Storage Used */}
-        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
+        <div className={CARD}>
           <div>
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>{mode === 'admin' ? 'Total Storage Used' : 'Vendor Storage Allocation'}</span>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <div className={TILE_HEAD}>
+              <span>Total stored</span>
+              <span className={TILE_ICON}>
                 <HardDrive className="h-3.5 w-3.5" />
-              </div>
+              </span>
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
               <span className="text-3xl font-black text-slate-900">
-                {mode === 'admin' ? '1.84 TB' : '320 GB'}
-              </span>
-              <span className="text-xs font-semibold text-slate-400">
-                {mode === 'admin' ? '/ 5.0 TB' : '/ 1.0 TB'}
+                {library.isPending ? '—' : formatBytes(totals.bytes)}
               </span>
             </div>
           </div>
-          <div className="mt-4 pt-1">
-            <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div
-                className="h-full bg-slate-900 rounded-full"
-                style={{ width: mode === 'admin' ? '36.8%' : '32.0%' }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] font-medium">
-              <span className="text-slate-500">
-                {mode === 'admin' ? '36.8% capacity' : '32% tier capacity'}
-              </span>
-              <span className="text-emerald-700 font-bold">
-                {mode === 'admin' ? '+124 GB this month' : 'Tier 1 Elite Quota'}
-              </span>
-            </div>
+          <div className="mt-4 pt-2 text-[11px] font-medium text-slate-500 border-t border-slate-100">
+            Summed from the <code className="font-mono">size_bytes</code> of{' '}
+            {library.isPending ? '…' : items.length} loaded{' '}
+            {items.length === 1 ? 'row' : 'rows'}. No quota column exists on this table, so no
+            percentage is shown.
           </div>
         </div>
 
-        {/* Card 2: Total Media Assets */}
-        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
+        <div className={CARD}>
           <div>
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>{mode === 'admin' ? 'Total Media Assets' : 'Store Media Assets'}</span>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <div className={TILE_HEAD}>
+              <span>Assets recorded</span>
+              <span className={TILE_ICON}>
                 <Layers className="h-3.5 w-3.5" />
-              </div>
+              </span>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900">
-                {mode === 'admin' ? '84,290' : '14,210'}
+                {library.isPending ? '—' : items.length}
               </span>
-              <span className="text-xs text-slate-400 font-medium">assets indexed</span>
+              <span className="text-xs text-slate-400 font-medium">rows in media_items</span>
             </div>
           </div>
-          <div className="mt-4 pt-1 flex items-center justify-between text-[11px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
+          <div className="mt-4 pt-2 flex items-center justify-between text-[11px] font-semibold text-slate-600 border-t border-slate-100">
             <span>
-              <strong className="text-slate-900 font-bold">
-                {mode === 'admin' ? '68.1k' : '12.8k'}
-              </strong>{' '}
-              Img
+              <strong className="text-slate-900 font-bold">{totals.images}</strong> Img
             </span>
             <span>•</span>
             <span>
-              <strong className="text-slate-900 font-bold">
-                {mode === 'admin' ? '11.2k' : '1.3k'}
-              </strong>{' '}
-              Docs
+              <strong className="text-slate-900 font-bold">{totals.documents}</strong> Docs
             </span>
             <span>•</span>
             <span>
-              <strong className="text-slate-900 font-bold">
-                {mode === 'admin' ? '4.9k' : '110'}
-              </strong>{' '}
-              Other
+              <strong className="text-slate-900 font-bold">{totals.other}</strong> Other
             </span>
           </div>
         </div>
 
-        {/* Card 3: Vendor Upload Volume */}
-        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
+        <div className={CARD}>
           <div>
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>{mode === 'admin' ? 'Vendor Upload Volume' : 'Monthly Upload Activity'}</span>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <Store className="h-3.5 w-3.5" />
-              </div>
+            <div className={TILE_HEAD}>
+              <span>Awaiting review</span>
+              <span className={TILE_ICON}>
+                <Clock className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900">
-                {mode === 'admin' ? '52,410' : '+342'}
+                {library.isPending ? '—' : totals.pending}
               </span>
-              <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
-                +8.4% MoM
-              </span>
+              <span className="text-xs text-slate-400 font-medium">status = pending</span>
             </div>
           </div>
-          <div className="mt-4 pt-1 text-[11px] text-slate-500 border-t border-slate-100 pt-2">
-            {mode === 'admin'
-              ? 'Across 1,280 active marketplace stores'
-              : 'Indexed across active product catalog & banners'}
+          <div className="mt-4 pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+            A fresh upload is written as <code className="font-mono">pending</code>; only platform staff
+            can change that verdict.
           </div>
         </div>
 
-        {/* Card 4: Bandwidth & CDN Delivery */}
-        <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
+        <div className={CARD}>
           <div>
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span>Bandwidth &amp; CDN Delivery</span>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <Globe className="h-3.5 w-3.5" />
-              </div>
+            <div className={TILE_HEAD}>
+              <span>Flagged by staff</span>
+              <span className={TILE_ICON}>
+                <ShieldAlert className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900">
-                {mode === 'admin' ? '14.2 TB' : '2.4 TB'}
+                {library.isPending ? '—' : totals.flagged}
               </span>
-              <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
-                Edge CDN
-              </span>
+              <span className="text-xs text-slate-400 font-medium">status = flagged</span>
             </div>
           </div>
-          <div className="mt-4 pt-1 flex items-center justify-between text-[11px] font-medium text-slate-500 border-t border-slate-100 pt-2">
-            <span>Cache Hit Rate:</span>
-            <span className="font-bold text-slate-900">99.98% active</span>
+          <div className="mt-4 pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+            {folders.length} folder label{folders.length === 1 ? '' : 's'} appear in these rows.
           </div>
         </div>
       </div>
 
-      {/* ── Tabs Navigation ─────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1 text-xs font-bold" data-lenis-prevent>
-        <button
-          type="button"
-          onClick={() => setActiveTab('all')}
-          className={`rounded-lg px-3.5 py-2 whitespace-nowrap transition-all ${
-            activeTab === 'all'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          All Assets ({mode === 'admin' ? '84,290' : '14,210'})
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('media-mgmt')}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 whitespace-nowrap transition-all ${
-            activeTab === 'media-mgmt'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <FolderOpen className="h-3.5 w-3.5" />
-          <span>Media Management</span>
-        </button>
-
-        {mode === 'admin' && (
-          <>
-            <button
-              type="button"
-              onClick={() => setActiveTab('vendor-folders')}
-              className={`rounded-lg px-3.5 py-2 whitespace-nowrap transition-all ${
-                activeTab === 'vendor-folders'
-                  ? 'bg-slate-900 text-white shadow-2xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              Vendor Folders (1,280)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('system-media')}
-              className={`rounded-lg px-3.5 py-2 whitespace-nowrap transition-all ${
-                activeTab === 'system-media'
-                  ? 'bg-slate-900 text-white shadow-2xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              System &amp; Platform Media
-            </button>
-          </>
-        )}
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab('trash');
-            showToast('Trash bin is currently clean. Archived items purge after 30 days.');
-          }}
-          className={`rounded-lg px-3.5 py-2 whitespace-nowrap transition-all ${
-            activeTab === 'trash'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          Trash / Archive
-        </button>
-      </div>
-
-      {/* ── Sub-Filter Bar (Matching Mockup) ─────────────────────────── */}
+      {/* ── Filter bar ──────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          {mode === 'admin' && (
-            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-              <button
-                type="button"
-                onClick={() => setDirectoryViewMode('admin')}
-                className={`rounded-md px-3 py-1 font-semibold transition-all ${
-                  directoryViewMode === 'admin'
-                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                Admin Directories
-              </button>
-              <button
-                type="button"
-                onClick={() => setDirectoryViewMode('vendor')}
-                className={`rounded-md px-3 py-1 font-semibold transition-all ${
-                  directoryViewMode === 'vendor'
-                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                By Vendor Store
-              </button>
-            </div>
-          )}
-
-          {/* File Types Dropdown */}
-          <select
-            value={fileTypeFilter}
-            onChange={(e) => setFileTypeFilter(e.target.value as any)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900"
-          >
-            <option value="all">All File Types</option>
-            <option value="image">Images (WEBP, PNG, JPG)</option>
-            <option value="document">Documents (PDF)</option>
-            <option value="archive">Archives (ZIP)</option>
-          </select>
-
-          {/* Date Filter Dropdown */}
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as any)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900"
-          >
-            <option value="all">All Dates (Lifetime)</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-          </select>
-        </div>
-
-        {/* Right side: Search & Layout Toggle */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search files, tags, SKU, or vendor..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/70 pl-8 pr-10 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white transition-all"
-            />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded bg-slate-200/80 px-1.5 py-0.5 text-[9px] font-bold text-slate-500 font-mono">
-              ⌘K
-            </span>
+          <div>
+            <label htmlFor="media-kind-filter" className="sr-only">
+              Filter by file type
+            </label>
+            <select
+              id="media-kind-filter"
+              value={kindFilter}
+              onChange={(event) =>
+                changeFilter(() =>
+                  setKindFilter(
+                    KIND_FILTERS.find((option) => option.value === event.target.value)?.value ?? 'all',
+                  ),
+                )
+              }
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900"
+            >
+              {KIND_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Layout Buttons */}
-          <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+          <div>
+            <label htmlFor="media-date-filter" className="sr-only">
+              Filter by upload date
+            </label>
+            <select
+              id="media-date-filter"
+              value={dateFilter}
+              onChange={(event) =>
+                changeFilter(() =>
+                  setDateFilter(
+                    DATE_FILTERS.find((option) => option.value === event.target.value)?.value ?? 'all',
+                  ),
+                )
+              }
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900"
+            >
+              {DATE_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {library.isError && (
             <button
               type="button"
-              onClick={() => setViewLayout('grid')}
-              className={`p-1 rounded ${
-                viewLayout === 'grid' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-400 hover:text-slate-700'
-              }`}
+              onClick={() => void library.refetch()}
+              disabled={library.isFetching}
+              className={GHOST_BUTTON}
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+              <span>{library.isFetching ? 'Retrying…' : 'Retry read'}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="relative w-full sm:w-72">
+            <label htmlFor="media-search" className="sr-only">
+              Search files by name, folder, type or URL
+            </label>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              id="media-search"
+              type="search"
+              placeholder="Search files, folders or types…"
+              value={searchQuery}
+              onChange={(event) => changeFilter(() => setSearchQuery(event.target.value))}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50/70 pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white transition-all"
+            />
+          </div>
+
+          <div role="group" aria-label="Layout" className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => setLayout('grid')}
+              aria-pressed={layout === 'grid'}
+              aria-label="Grid view"
               title="Grid view"
+              className={`p-1 rounded cursor-pointer ${
+                layout === 'grid' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-400 hover:text-slate-700'
+              }`}
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => setViewLayout('list')}
-              className={`p-1 rounded ${
-                viewLayout === 'list' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-400 hover:text-slate-700'
-              }`}
+              onClick={() => setLayout('list')}
+              aria-pressed={layout === 'list'}
+              aria-label="List view"
               title="List view"
+              className={`p-1 rounded cursor-pointer ${
+                layout === 'list' ? 'bg-white shadow-2xs text-slate-900' : 'text-slate-400 hover:text-slate-700'
+              }`}
             >
               <List className="h-4 w-4" />
             </button>
@@ -677,371 +656,365 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({
         </div>
       </div>
 
-      {/* ── Main Two-Column Layout ───────────────────────────────────── */}
+      {/* ── Main two-column layout ──────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-        {/* ── Left Column (Folder Directory Tree: 3.5 cols) ─────────── */}
+        {/* Folder directory: labels taken from the rows themselves */}
         <div className="lg:col-span-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
-              Folder Directory
+              Folder labels
             </h3>
-            <button
-              type="button"
-              onClick={() => setIsNewFolderModalOpen(true)}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-900 hover:underline cursor-pointer"
-            >
-              <span>+ New</span>
-            </button>
+            <span className="text-[10px] font-bold text-slate-400">
+              {folders.length} in use
+            </span>
           </div>
 
-          {/* Section 1: ADMIN SYSTEM BINS (Admin Only) */}
-          {mode === 'admin' && (
-            <div className="space-y-1.5">
-              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-1">
-                Admin System Bins
-              </div>
-              <div className="space-y-0.5 text-xs">
-                {systemBins.map((bin) => {
-                  const isActive = activeFolderId === bin.id;
-                  return (
-                    <button
-                      key={bin.id}
-                      type="button"
-                      onClick={() => setActiveFolderId(bin.id)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
-                        isActive
-                          ? 'bg-slate-900 text-white font-bold'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <Folder className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="truncate">{bin.name}</span>
-                      </div>
-                      <span className={`text-[10px] shrink-0 font-medium ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
-                        {bin.countLabel}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <div className="space-y-1 text-xs">
+            <button
+              type="button"
+              onClick={() => changeFilter(() => setFolderFilter('all'))}
+              aria-current={folderFilter === 'all' ? 'true' : undefined}
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                folderFilter === 'all'
+                  ? 'bg-slate-900 text-white font-bold'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span className="flex items-center gap-2 truncate">
+                <Library className="h-3.5 w-3.5 shrink-0" />
+                All folders
+              </span>
+              <span className={folderFilter === 'all' ? 'text-slate-300' : 'text-slate-400'}>
+                {items.length}
+              </span>
+            </button>
 
-          {/* Section 2: VENDOR FOLDERS */}
-          <div className="space-y-1.5 pt-2">
-            <div className="flex items-center justify-between text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-1">
-              <span>{mode === 'admin' ? 'Vendor Folders (1,280)' : 'Store Directories'}</span>
-              {mode === 'admin' && <SlidersHorizontal className="h-3 w-3 text-slate-400" />}
-            </div>
-
-            <div className="space-y-1 text-xs">
-              {/* If Vendor Mode: Only show the logged-in vendor's directory! */}
-              {(mode === 'vendor' ? vendorFolders.filter((vf) => vf.id === 'vf-nova') : vendorFolders).map((vf) => {
-                const isExpanded = expandedVendorId === vf.id;
-                const isCurrentActive = activeFolderId === vf.id;
-
-                return (
-                  <div key={vf.id} className="space-y-0.5">
-                    {/* Vendor parent header */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExpandedVendorId(isExpanded ? null : vf.id);
-                        if (!isExpanded && vf.children && vf.children.length > 0) {
-                          setActiveFolderId(vf.children[0].id);
-                        }
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer ${
-                        isCurrentActive
-                          ? 'bg-slate-100 font-bold text-slate-900'
-                          : 'hover:bg-slate-50 text-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <Store className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                        <span className="font-bold truncate">{vf.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {vf.sizeLabel && (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[9px] font-bold text-slate-600">
-                            {vf.sizeLabel}
-                          </span>
-                        )}
-                        <ChevronRight
-                          className={`h-3 w-3 text-slate-400 transition-transform ${
-                            isExpanded ? 'rotate-90' : ''
-                          }`}
-                        />
-                      </div>
-                    </button>
-
-                    {/* Subfolders list */}
-                    {isExpanded && vf.children && (
-                      <div className="pl-4 pr-1 space-y-0.5 border-l-2 border-slate-100 ml-3">
-                        {vf.children.map((sub) => {
-                          const isSubActive = activeFolderId === sub.id;
-                          return (
-                            <button
-                              key={sub.id}
-                              type="button"
-                              onClick={() => setActiveFolderId(sub.id)}
-                              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-left transition-colors cursor-pointer ${
-                                isSubActive
-                                  ? 'bg-slate-900 text-white font-bold'
-                                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 truncate">
-                                <Folder className={`h-3 w-3 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-400'}`} />
-                                <span className="truncate">{sub.name}</span>
-                              </div>
-                              <span
-                                className={`text-[10px] shrink-0 font-medium ${
-                                  isSubActive ? 'text-slate-300' : 'text-slate-400'
-                                }`}
-                              >
-                                {sub.countLabel}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {mode === 'admin' && (
+            {folders.map((name) => {
+              const isActive = folderFilter === name;
+              return (
                 <button
+                  key={name}
                   type="button"
-                  onClick={() => showToast('Displaying 1,280 active seller directory indexes.')}
-                  className="w-full pt-2 text-left text-[11px] font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                  onClick={() => changeFilter(() => setFolderFilter(name))}
+                  aria-current={isActive ? 'true' : undefined}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-slate-900 text-white font-bold'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
                 >
-                  View all 1,280 vendor folders →
+                  <span className="flex items-center gap-2 truncate">
+                    <Folder className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate font-mono text-[11px]">{name}</span>
+                  </span>
+                  <span className={isActive ? 'text-slate-300' : 'text-slate-400'}>
+                    {folderCounts.get(name) ?? 0}
+                  </span>
                 </button>
-              )}
-            </div>
+              );
+            })}
+
+            {folders.length === 0 && (
+              <p className="px-1 text-[11px] text-slate-500">
+                {library.isPending
+                  ? 'Reading your library…'
+                  : library.isError
+                    ? 'The library read failed, so there are no folder labels to list.'
+                    : 'No folder labels yet. A folder only exists once a file carries its name, because the table stores a text label, not a folder row.'}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* ── Right Column (File Grid & Inspector: 8.5 cols) ─────────── */}
+        {/* File list + inspector */}
         <div className="lg:col-span-9 space-y-5">
-          {/* Top Folder Path Breadcrumb & Bulk Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 min-w-0">
               <FolderOpen className="h-4 w-4 text-slate-500 shrink-0" />
               <div className="truncate font-mono text-[11px] text-slate-600">
-                {currentFolderInfo.path}
+                {folderFilter === 'all' ? 'all folders' : folderFilter}
+                <span className="ml-2 text-slate-400">
+                  {filtered.length} of {items.length} rows
+                </span>
               </div>
             </div>
 
-            {/* Batch Action Buttons */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => showToast(`Packaging ${selectedIds.length} item(s) into zip archive...`)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
-              >
-                <Download className="h-3.5 w-3.5 text-slate-500" />
-                <span>Download ZIP</span>
-              </button>
+            <div
+              role="group"
+              aria-label="Bulk actions for selected files"
+              className="flex items-center gap-2 shrink-0"
+            >
+              <div className="flex items-center gap-1.5">
+                <input
+                  id="media-select-all"
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  aria-checked={allFilteredSelected}
+                  onChange={(event) =>
+                    setSelectedIds(event.target.checked ? filtered.map((item) => item.id) : [])
+                  }
+                  disabled={filtered.length === 0}
+                  className="h-4 w-4 rounded border-slate-300 accent-slate-900 disabled:opacity-40"
+                />
+                <label htmlFor="media-select-all" className="text-[11px] font-bold text-slate-600">
+                  Select {filtered.length === items.length ? 'all' : `${filtered.length}`}
+                </label>
+              </div>
 
               <button
                 type="button"
-                onClick={() => setIsMoveModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
+                onClick={() => {
+                  setMoveError(null);
+                  setMoveFolder('');
+                  setMoveOpen(true);
+                }}
+                disabled={selected.length === 0 || move.isPending}
+                className={GHOST_BUTTON}
               >
                 <Move className="h-3.5 w-3.5 text-slate-500" />
-                <span>Move</span>
+                <span>{selected.length > 0 ? `Move (${selected.length})` : 'Move'}</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setIsDeleteConfirmOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 cursor-pointer shadow-2xs"
+                onClick={() => askDelete(selected)}
+                disabled={selected.length === 0}
+                className={DANGER_BUTTON}
               >
                 <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                <span>Delete</span>
+                <span>{selected.length > 0 ? `Delete (${selected.length})` : 'Delete'}</span>
               </button>
             </div>
           </div>
 
-          {/* ── Media Items View (Grid or List) ────────────────────── */}
-          {filteredItems.length === 0 ? (
+          {awaitingSession ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-xs font-semibold text-slate-500">
+              This library is read as the signed-in store account, through{' '}
+              <code className="font-mono">current_vendor_id()</code>. No session means no rows to show —
+              sign in as a seller and the same query returns its assets.
+            </div>
+          ) : library.isPending ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-xs font-semibold text-slate-500">
+              Loading your library from Postgres…
+            </div>
+          ) : library.isError ? (
+            <div
+              role="alert"
+              className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800"
+            >
+              <div className="flex items-start gap-2">
+                <X className="h-4 w-4 shrink-0 text-rose-600" />
+                <span>{library.error?.message ?? 'The media library read did not return.'}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void library.refetch()}
+                disabled={library.isFetching}
+                className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50 cursor-pointer"
+              >
+                {library.isFetching ? 'Retrying…' : 'Try the read again'}
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center space-y-3">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
                 <Folder className="h-6 w-6" />
               </div>
-              <h4 className="text-sm font-bold text-slate-900">No media assets in this directory</h4>
+              <h4 className="text-sm font-bold text-slate-900">
+                {items.length === 0 ? 'No files stored yet' : 'No file matches these filters'}
+              </h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Upload your first image, document, or promotional banner to publish to the global edge CDN.
+                {items.length === 0
+                  ? 'Upload an image or document and it will be written to your bucket, then recorded here as pending review.'
+                  : 'Widen the filters above, or pick “All folders” in the directory.'}
               </p>
               <button
                 type="button"
-                onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-slate-800"
+                onClick={() => setUploadOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
               >
                 <Upload className="h-3.5 w-3.5" />
-                <span>Upload First File</span>
+                <span>Upload a file</span>
               </button>
             </div>
-          ) : viewLayout === 'grid' ? (
-            /* Grid View (4 columns x 2 rows = 8 cards) */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredItems.slice(0, 8).map((item) => {
+          ) : layout === 'grid' ? (
+            <div role="group" aria-label="Media assets" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {visible.map((item) => {
                 const isSelected = selectedIds.includes(item.id);
-                const isInspected = inspectedMediaId === item.id;
+                const isInspected = inspected?.id === item.id;
+                const kind = mediaKindOf(item.mimeType);
+                const KindIcon = FILE_KIND_ICONS[kind];
 
                 return (
                   <div
                     key={item.id}
-                    onClick={() => {
-                      setInspectedMediaId(item.id);
-                      if (!selectedIds.includes(item.id)) {
-                        setSelectedIds([item.id]);
-                      }
-                    }}
-                    className={`group relative rounded-xl border bg-white p-2.5 transition-all cursor-pointer shadow-xs flex flex-col justify-between ${
+                    className={`relative rounded-xl border bg-white p-2.5 transition-all shadow-xs flex flex-col justify-between ${
                       isSelected || isInspected
                         ? 'border-slate-900 ring-2 ring-slate-900/10'
                         : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
                     }`}
                   >
-                    {/* Thumbnail box */}
-                    <div className="relative aspect-square w-full rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center border border-slate-100">
-                      {item.type === 'image' && item.thumbnailUrl ? (
-                        <img
-                          src={item.thumbnailUrl}
-                          alt={item.name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="text-center p-4">
-                          <FileText className="h-10 w-10 text-rose-500 mx-auto" />
-                          <div className="mt-1 text-[10px] font-extrabold text-rose-700">
-                            Verified Doc
-                          </div>
-                          <div className="text-[9px] text-slate-400">PDF</div>
-                        </div>
-                      )}
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      aria-checked={isSelected}
+                      aria-label={`Select ${item.name}`}
+                      onChange={(event) => toggleSelect(item.id, event.target.checked)}
+                      className="absolute top-3 left-3 z-10 h-4 w-4 cursor-pointer rounded accent-slate-900"
+                    />
 
-                      {/* Selection checkbox */}
-                      <button
-                        type="button"
-                        onClick={(e) => toggleSelectOne(item.id, e)}
-                        className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-md border transition-all ${
-                          isSelected
-                            ? 'border-slate-900 bg-slate-900 text-white'
-                            : 'border-white/80 bg-white/90 text-transparent hover:border-slate-400 shadow-2xs'
-                        }`}
-                      >
-                        <Check className="h-3 w-3 stroke-[3]" />
-                      </button>
-
-                      {/* Format Pill (Bottom-right) */}
-                      <span className="absolute bottom-2 right-2 rounded bg-slate-900/80 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
-                        {item.format}
-                      </span>
-                    </div>
-
-                    {/* Meta info */}
-                    <div className="mt-2.5 space-y-1">
-                      <div className="font-bold text-slate-900 text-xs truncate" title={item.name}>
-                        {item.name}
-                      </div>
-
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span>{item.sizeFormatted}</span>
-                        <span>•</span>
-                        <span className="truncate">{item.dimensions || item.dateFormatted}</span>
-                        {item.tag && (
-                          <span className="rounded bg-slate-100 px-1 py-0.2 text-[9px] font-bold text-slate-600">
-                            {item.tag}
+                    <button
+                      type="button"
+                      onClick={() => setInspectedId(item.id)}
+                      aria-pressed={isSelected}
+                      aria-label={`Inspect ${item.name}`}
+                      className="group flex cursor-pointer flex-col justify-between text-left"
+                    >
+                      <span className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-100">
+                        {kind === 'image' && item.cdnUrl ? (
+                          <img
+                            src={item.cdnUrl}
+                            alt={item.name}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <span className="p-4 text-center">
+                            <KindIcon className="mx-auto h-10 w-10 text-slate-400" />
+                            <span className="mt-1 block text-[10px] font-extrabold text-slate-600">
+                              {formatOf(item.mimeType)}
+                            </span>
                           </span>
                         )}
-                      </div>
-                    </div>
+                        <span className="absolute bottom-2 right-2 rounded bg-slate-900/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                          {formatOf(item.mimeType)}
+                        </span>
+                      </span>
+
+                      <span className="mt-2.5 block space-y-1">
+                        <span className="block truncate font-bold text-slate-900 text-xs" title={item.name}>
+                          {item.name}
+                        </span>
+                        <span className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
+                          <span>{formatBytes(item.sizeBytes)}</span>
+                          <span>•</span>
+                          <span className="truncate">{dimensionLabel(item)}</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${STATUS_STYLE[item.status]}`}
+                          >
+                            {STATUS_LABEL[item.status]}
+                          </span>
+                          <span className="truncate text-[9px] font-mono text-slate-400">
+                            {folderLabel(item.folder)}
+                          </span>
+                        </span>
+                      </span>
+                    </button>
                   </div>
                 );
               })}
             </div>
           ) : (
-            /* List View */
             <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
               <table className="w-full text-left text-xs">
+                <caption className="sr-only">
+                  Media assets in {folderFilter === 'all' ? 'all folders' : folderFilter}, page{' '}
+                  {currentPage} of {pageCount}
+                </caption>
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <tr>
-                    <th className="px-4 py-3 w-8">
+                    <th className="px-4 py-3 w-8" scope="col">
+                      <label htmlFor="media-select-all-head" className="sr-only">
+                        Select all {filtered.length} listed files
+                      </label>
                       <input
+                        id="media-select-all-head"
                         type="checkbox"
-                        checked={selectedIds.length === filteredItems.length && filteredItems.length > 0}
-                        onChange={handleSelectAll}
-                        className="rounded"
+                        checked={allFilteredSelected}
+                        aria-checked={allFilteredSelected}
+                        onChange={(event) =>
+                          setSelectedIds(event.target.checked ? filtered.map((item) => item.id) : [])
+                        }
+                        className="rounded accent-slate-900"
                       />
                     </th>
-                    <th className="px-4 py-3">Asset Name</th>
-                    <th className="px-4 py-3">Dimensions / Format</th>
-                    <th className="px-4 py-3">File Size</th>
-                    <th className="px-4 py-3">Merchant / Folder</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3" scope="col">Asset name</th>
+                    <th className="px-4 py-3" scope="col">Dimensions / format</th>
+                    <th className="px-4 py-3" scope="col">File size</th>
+                    <th className="px-4 py-3" scope="col">Folder</th>
+                    <th className="px-4 py-3" scope="col">Status</th>
+                    <th className="px-4 py-3 text-right" scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {filteredItems.map((item) => {
+                  {visible.map((item) => {
                     const isSelected = selectedIds.includes(item.id);
+                    const kind = mediaKindOf(item.mimeType);
+                    const KindIcon = FILE_KIND_ICONS[kind];
                     return (
-                      <tr
-                        key={item.id}
-                        onClick={() => {
-                          setInspectedMediaId(item.id);
-                          if (!selectedIds.includes(item.id)) setSelectedIds([item.id]);
-                        }}
-                        className={`hover:bg-slate-50/80 cursor-pointer ${
-                          isSelected ? 'bg-slate-50/90 font-medium' : ''
-                        }`}
-                      >
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <tr key={item.id} aria-selected={isSelected} className={isSelected ? 'bg-slate-50/90' : 'hover:bg-slate-50/80'}>
+                        <td className="px-4 py-3">
                           <input
                             type="checkbox"
+                            id={`media-row-${item.id}`}
                             checked={isSelected}
-                            onChange={(e) => toggleSelectOne(item.id, e as any)}
-                            className="rounded"
+                            aria-checked={isSelected}
+                            onChange={(event) => toggleSelect(item.id, event.target.checked)}
+                            className="rounded accent-slate-900"
                           />
+                          <label htmlFor={`media-row-${item.id}`} className="sr-only">
+                            Select {item.name}
+                          </label>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="h-8 w-8 rounded bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                              {item.type === 'image' ? (
-                                <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setInspectedId(item.id)}
+                            className="flex cursor-pointer items-center gap-2.5 text-left"
+                          >
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-slate-100">
+                              {kind === 'image' && item.cdnUrl ? (
+                                <img src={item.cdnUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                               ) : (
-                                <FileText className="h-4 w-4 text-rose-500" />
+                                <KindIcon className="h-4 w-4 text-slate-400" />
                               )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-slate-900 truncate">{item.name}</div>
-                              <div className="text-[10px] text-slate-400">{item.tag || item.dateFormatted}</div>
-                            </div>
-                          </div>
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate font-bold text-slate-900">{item.name}</span>
+                              <span className="block text-[10px] text-slate-400">
+                                {formatDate(item.createdAt)}
+                              </span>
+                            </span>
+                          </button>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-bold mr-2">
-                            {item.format}
+                          <span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-bold">
+                            {formatOf(item.mimeType)}
                           </span>
-                          <span className="text-slate-500">{item.dimensions}</span>
+                          <span className="text-slate-500">{dimensionLabel(item)}</span>
                         </td>
-                        <td className="px-4 py-3 font-mono">{item.sizeFormatted}</td>
-                        <td className="px-4 py-3 text-slate-500 truncate max-w-xs">{item.vendorName}</td>
+                        <td className="px-4 py-3 font-mono">{formatBytes(item.sizeBytes)}</td>
+                        <td className="max-w-xs truncate px-4 py-3 font-mono text-[11px] text-slate-500">
+                          {folderLabel(item.folder)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[item.status]}`}
+                          >
+                            {STATUS_LABEL[item.status]}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyCdnLink(item.cdnUrl);
-                            }}
-                            className="text-xs font-semibold text-slate-700 hover:text-slate-900 underline"
+                            onClick={() => askDelete([item])}
+                            aria-label={`Delete ${item.name}`}
+                            title={`Delete ${item.name}`}
+                            className="ml-auto inline-flex items-center rounded-lg border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50 cursor-pointer"
                           >
-                            Copy Link
+                            <Trash2 className="h-3 w-3" />
                           </button>
                         </td>
                       </tr>
@@ -1052,539 +1025,517 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({
             </div>
           )}
 
-          {/* ── Selected Item Detailed Inspector (Matching Mockup Bottom Drawer) ─ */}
-          {inspectedItem && (
+          {/* ── Inspector: the row's own columns, nothing else ──────── */}
+          {inspected && (
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              {/* Top Row: File icon, name, status, merchant, actions */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 border border-slate-200 text-slate-700 overflow-hidden">
-                    {inspectedItem.type === 'image' && inspectedItem.thumbnailUrl ? (
-                      <img src={inspectedItem.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-700 overflow-hidden">
+                    {mediaKindOf(inspected.mimeType) === 'image' && inspected.cdnUrl ? (
+                      <img src={inspected.cdnUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <FileText className="h-6 w-6 text-rose-500" />
+                      <InspectedIcon className="h-6 w-6 text-slate-400" />
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-slate-900 text-sm">
-                        {inspectedItem.name}
-                      </h3>
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                        Approved / Safe
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                      <span>Merchant: <strong>{inspectedItem.vendorName}</strong> [{inspectedItem.vendorTier || 'Tier 1'}]</span>
+                  <div className="min-w-0">
+                    {editingId === inspected.id ? (
+                      <div className="flex items-center gap-1.5">
+                        <label htmlFor="media-rename" className="sr-only">
+                          New name for {inspected.name}
+                        </label>
+                        <input
+                          id="media-rename"
+                          value={draftName}
+                          onChange={(event) => setDraftName(event.target.value)}
+                          className="w-48 rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => saveRename(inspected)}
+                          disabled={rename.isPending}
+                          className="rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-50 cursor-pointer"
+                        >
+                          {rename.isPending ? 'Saving…' : 'Save'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-600 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-extrabold text-slate-900 text-sm break-all">{inspected.name}</h3>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[inspected.status]}`}
+                        >
+                          {STATUS_LABEL[inspected.status]}
+                        </span>
+                      </div>
+                    )}
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+                      <span className="font-mono">{folderLabel(inspected.folder)}</span>
                       <span>•</span>
-                      <a href="/vendors/vendor-tech-1" className="text-blue-600 hover:underline">
-                        View Store Profile
-                      </a>
+                      <span>{formatDate(inspected.createdAt)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* 4 Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2 text-xs">
+                <div role="group" aria-label="Actions for the inspected file" className="flex flex-wrap items-center gap-2 text-xs">
                   <button
                     type="button"
-                    onClick={() => handleCopyCdnLink(inspectedItem.cdnUrl)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                    onClick={() => startRename(inspected)}
+                    className={GHOST_BUTTON}
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Rename</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedIds([inspected.id]);
+                      setMoveError(null);
+                      setMoveFolder(inspected.folder);
+                      setMoveOpen(true);
+                    }}
+                    disabled={move.isPending}
+                    className={GHOST_BUTTON}
+                  >
+                    <Move className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Move</span>
+                  </button>
+
+                  <a
+                    href={inspected.cdnUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Open ${inspected.name} in a new tab`}
+                    className={GHOST_BUTTON}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Open file</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => void copyUrl(inspected)}
+                    className={GHOST_BUTTON}
                   >
                     <Copy className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Copy CDN Link</span>
+                    <span>Copy URL</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setIsReplaceModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Replace File</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsFullscreenModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
-                  >
-                    <Maximize2 className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Open Fullscreen</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsDeleteConfirmOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 font-semibold text-rose-700 hover:bg-rose-50 shadow-2xs cursor-pointer"
+                    onClick={() => askDelete([inspected])}
+                    className={DANGER_BUTTON}
                   >
                     <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                    <span>Delete Asset</span>
+                    <span>Delete asset</span>
                   </button>
                 </div>
               </div>
 
-              {/* 4 Columns Spec Bar */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs pt-1">
+              <dl className="grid grid-cols-2 gap-4 text-xs pt-1 md:grid-cols-4">
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-slate-400">Dimensions</div>
-                  <div className="mt-0.5 font-bold text-slate-900">{inspectedItem.dimensions || '2400 x 2400 px'}</div>
+                  <dt className="text-[10px] font-bold uppercase text-slate-400">Dimensions</dt>
+                  <dd className="mt-0.5 font-bold text-slate-900">{dimensionLabel(inspected)}</dd>
                 </div>
-
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-slate-400">Format / Encoding</div>
-                  <div className="mt-0.5 font-bold text-slate-900">{inspectedItem.encoding || 'WebP (Lossless 92%)'}</div>
+                  <dt className="text-[10px] font-bold uppercase text-slate-400">MIME type</dt>
+                  <dd className="mt-0.5 break-all font-bold text-slate-900">
+                    {inspected.mimeType || 'Not recorded'}
+                  </dd>
                 </div>
-
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-slate-400">File Size</div>
-                  <div className="mt-0.5 font-bold text-slate-900">{inspectedItem.sizeFormatted}</div>
+                  <dt className="text-[10px] font-bold uppercase text-slate-400">File size</dt>
+                  <dd className="mt-0.5 font-bold text-slate-900">
+                    {formatBytes(inspected.sizeBytes)}
+                    <span className="ml-1 text-[10px] font-medium text-slate-400">
+                      ({inspected.sizeBytes} bytes)
+                    </span>
+                  </dd>
                 </div>
-
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-slate-400">Content Security Check</div>
-                  <div className="mt-0.5 font-bold text-emerald-700 flex items-center gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Passed automated scan</span>
-                  </div>
+                  <dt className="text-[10px] font-bold uppercase text-slate-400">Storage</dt>
+                  <dd className="mt-0.5 font-bold text-slate-900">
+                    {isStoredObject(inspected.cdnUrl) ? 'vendor-assets bucket' : 'External URL, no object in your bucket'}
+                  </dd>
                 </div>
-              </div>
+              </dl>
 
-              {/* Bottom CDN URL Input Bar */}
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2 text-xs">
-                <span className="text-slate-400 pl-1 font-mono">🔗</span>
-                <input
-                  type="text"
-                  readOnly
-                  value={inspectedItem.cdnUrl}
-                  className="w-full bg-transparent font-mono text-[11px] text-slate-700 focus:outline-none select-all"
-                />
-                <span className="shrink-0 rounded bg-slate-200/80 px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase text-slate-600 font-mono">
-                  GLOBAL EDGE CACHED
-                </span>
-              </div>
+              {inspected.objectPath && (
+                <div>
+                  <label htmlFor="media-object-path" className="text-[10px] font-bold uppercase text-slate-400">
+                    Stored object path
+                  </label>
+                  <input
+                    id="media-object-path"
+                    type="text"
+                    readOnly
+                    value={inspected.objectPath}
+                    className={`${FIELD} mt-1 select-all font-mono text-[11px] text-slate-700`}
+                  />
+                </div>
+              )}
             </div>
           )}
 
-          {/* ── Bottom Pagination Bar ───────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
-            <div>
-              Showing <strong>1 - {Math.min(8, filteredItems.length)}</strong> of{' '}
-              <strong>{mode === 'admin' ? '12,800' : '342'}</strong> files in this folder • Total Size: <strong>24.6 GB</strong>
-            </div>
+          {/* ── Pagination over the rows actually loaded ────────────── */}
+          {!library.isPending && !library.isError && filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
+              <div>
+                Showing <strong>{firstIndex + 1} - {lastIndex}</strong> of{' '}
+                <strong>{filtered.length}</strong> files in this selection • Total size:{' '}
+                <strong>
+                  {formatBytes(filtered.reduce((sum, item) => sum + item.sizeBytes, 0))}
+                </strong>
+              </div>
 
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-              >
-                &lt; Previous
-              </button>
-              <button type="button" className="rounded bg-slate-900 text-white px-2.5 py-1 font-bold">
-                1
-              </button>
-              <button type="button" className="rounded border border-slate-200 bg-white px-2.5 py-1 text-slate-600 hover:bg-slate-50">
-                2
-              </button>
-              <button type="button" className="rounded border border-slate-200 bg-white px-2.5 py-1 text-slate-600 hover:bg-slate-50">
-                3
-              </button>
-              <span className="px-1 text-slate-400">...</span>
-              <button type="button" className="rounded border border-slate-200 bg-white px-2.5 py-1 text-slate-600 hover:bg-slate-50">
-                {mode === 'admin' ? '1600' : '43'}
-              </button>
-              <button
-                type="button"
-                className="rounded border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50"
-              >
-                Next &gt;
-              </button>
+              <nav aria-label="File pages" className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={currentPage <= 1}
+                  aria-label="Previous page"
+                  className="rounded border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                >
+                  &lt; Previous
+                </button>
+                {pageNumbers.map((number) => (
+                  <button
+                    key={number}
+                    type="button"
+                    onClick={() => setPage(number)}
+                    aria-current={number === currentPage ? 'page' : undefined}
+                    aria-label={`Page ${number}`}
+                    className={`rounded px-2.5 py-1 cursor-pointer ${
+                      number === currentPage
+                        ? 'bg-slate-900 text-white font-bold'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {number}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                  disabled={currentPage >= pageCount}
+                  aria-label="Next page"
+                  className="rounded border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                >
+                  Next &gt;
+                </button>
+              </nav>
             </div>
-          </div>
+          )}
+
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-2">
+            <h2 className="text-sm font-bold text-slate-900">What this library is</h2>
+            <ul className="space-y-1.5 text-[11px] text-slate-500">
+              <li>
+                — Folders are labels on <code className="font-mono">media_items.folder</code>. There is no
+                folder table, so an empty folder cannot exist and no “create folder” form can be honest here;
+                naming a folder while uploading or moving is what creates it.
+              </li>
+              <li>
+                — A new upload is recorded as <code className="font-mono">pending</code>. The moderation
+                verdict is written by platform staff; the owner policy on this table refuses a seller write of
+                it, so nothing here approves itself.
+              </li>
+              <li>
+                — Delete removes the row and the object in <code className="font-mono">vendor-assets</code>.
+                There is no trash column and no archive table, so there is no trash bin to show and a delete
+                cannot be undone.
+              </li>
+              <li>
+                — A move is a real storage move plus a recorded path. Demo rows whose URL points outside the
+                bucket have no object to move, and the server says so when you try.
+              </li>
+              <li>
+                — Sizes come from the stored <code className="font-mono">size_bytes</code>; dimensions only
+                appear when a row recorded <code className="font-mono">width</code> and{' '}
+                <code className="font-mono">height</code>. There is no CDN, quota, bandwidth or cache endpoint
+                behind this screen, so those figures were removed rather than estimated.
+              </li>
+            </ul>
+          </section>
         </div>
       </div>
 
-      {/* ── Modal 1: Upload Files ──────────────────────────────────── */}
-      <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* ── Upload dialog ───────────────────────────────────────────── */}
+      <Dialog
+        open={uploadOpen}
+        onOpenChange={(open) => {
+          if (!open && upload.isPending) return;
+          setUploadOpen(open);
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onEscapeKeyDown={(event) => {
+            if (upload.isPending) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (upload.isPending) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (upload.isPending) event.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
               <Upload className="h-5 w-5 text-slate-700" />
-              Upload Files to Media Repository
+              Upload files to your media library
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Drag-and-drop imagery or select from disk. Assets are converted to progressive WebP and cached globally.
+              Each file is written to <code className="font-mono">vendor-assets/&lt;your slug&gt;/&lt;folder&gt;/</code>{' '}
+              and recorded as pending until the platform reviews it.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleConfirmUpload} className="space-y-3.5 py-2 text-xs">
-            {/* Dropzone */}
-            <div
-              onClick={() => uploadFileInputRef.current?.click()}
-              className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/70 p-6 text-center hover:border-slate-400 hover:bg-slate-50 transition-all cursor-pointer space-y-2"
-            >
-              <input
-                type="file"
-                ref={uploadFileInputRef}
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) setUploadFileName(file.name);
-                }}
-              />
-              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-slate-200 shadow-2xs text-slate-600">
-                <Upload className="h-5 w-5" />
-              </div>
-              <div className="font-bold text-slate-800">
-                {uploadFileName ? uploadFileName : 'Click to select or drag files here'}
-              </div>
-              <div className="text-[10px] text-slate-400">
-                Supports WebP, PNG, JPG, PDF up to 50 MB
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Asset Tag / Descriptor</label>
-              <select
-                value={uploadTag}
-                onChange={(e) => setUploadTag(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-              >
-                <option value="Product">Product Catalog Image</option>
-                <option value="Promo">Storefront Cover Banner</option>
-                <option value="High-Res">High-Res Studio Spec</option>
-                <option value="Compliance">Compliance &amp; Legal PDF</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Destination Folder</label>
-              <select
-                value={uploadTargetFolder}
-                onChange={(e) => setUploadTargetFolder(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900 font-mono"
-              >
-                <option value="nova-products">Nova Electronics / Product Images</option>
-                <option value="nova-banners">Nova Electronics / Store Banners</option>
-                <option value="nova-compliance">Nova Electronics / Compliance &amp; Docs</option>
-                {mode === 'admin' && (
-                  <>
-                    <option value="sys-1p">Platform Root / First-Party Catalog</option>
-                    <option value="sys-brand">Platform Root / Brand &amp; System UI</option>
-                  </>
-                )}
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsUploadModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs"
-              >
-                Start Upload &amp; CDN Sync
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Modal 2: New Folder / Bucket ───────────────────────────── */}
-      <Dialog open={isNewFolderModalOpen} onOpenChange={setIsNewFolderModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <FolderPlus className="h-5 w-5 text-slate-700" />
-              Create New Folder {mode === 'admin' ? '/ Storage Bucket' : ''}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Establish a categorized container to partition media assets.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleCreateFolder} className="space-y-3.5 py-2 text-xs">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Folder Name</label>
-              <input
-                type="text"
-                required
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="e.g. 2026-Summer-Campaign or Schematics"
-                className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Parent Hierarchy</label>
-              <select
-                value={newFolderParent}
-                onChange={(e) => setNewFolderParent(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900"
-              >
-                <option value="Nova Electronics">Nova Electronics Root</option>
-                {mode === 'admin' && (
-                  <>
-                    <option value="Platform Root">Admin System / Platform Root</option>
-                    <option value="First-Party Catalog">Admin System / First-Party Catalog</option>
-                    <option value="Aura Apparel">Aura Apparel Root</option>
-                  </>
-                )}
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsNewFolderModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-              >
-                Create Folder
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Modal 3: Storage Settings & CDN (Admin Only) ─────────────── */}
-      {mode === 'admin' && (
-        <Dialog open={isCdnSettingsModalOpen} onOpenChange={setIsCdnSettingsModalOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Globe className="h-5 w-5 text-blue-600" />
-                Cloudflare Edge CDN &amp; S3 Storage Configuration
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Manage global edge delivery caches, SSL origins, and automatic WebP transformation.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2 text-xs">
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
-                <div className="font-bold text-slate-900">Current Primary S3 Storage Bucket</div>
-                <div className="font-mono text-slate-600 text-[11px]">s3://vendora-production-assets.us-east-1</div>
-                <div className="text-[10px] text-emerald-700 font-semibold">Active &amp; Health 100% (Replica: eu-central-1)</div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Edge Cache TTL Policy</label>
-                <select className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none">
-                  <option>30 Days Edge Browser Cache (Recommended for catalog images)</option>
-                  <option>7 Days Standard Edge TTL</option>
-                  <option>1 Year Immutable Assets (Hash fingerprinting)</option>
-                </select>
-              </div>
-
-              <div className="space-y-2 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-                  <input type="checkbox" defaultChecked className="rounded text-slate-900" />
-                  <span>Automatic On-the-Fly WebP / AVIF Lossless Compression</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-                  <input type="checkbox" defaultChecked className="rounded text-slate-900" />
-                  <span>Automated Content Security Antivirus &amp; Malware Deep Scan</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-                  <input type="checkbox" defaultChecked className="rounded text-slate-900" />
-                  <span>CORS Allow Origin: *.vendora.io and secure checkout tunnels</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsCdnSettingsModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('Storage CDN edge settings updated.');
-                  setIsCdnSettingsModalOpen(false);
-                }}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-              >
-                Save CDN Settings
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* ── Modal 4: Fullscreen Preview ────────────────────────────── */}
-      <Dialog open={isFullscreenModalOpen} onOpenChange={setIsFullscreenModalOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
-              <span>{inspectedItem?.name}</span>
-              <span className="text-xs font-mono text-slate-400">{inspectedItem?.dimensions}</span>
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="aspect-video w-full rounded-xl bg-slate-950 flex items-center justify-center overflow-hidden">
-            {inspectedItem?.type === 'image' && inspectedItem.thumbnailUrl ? (
-              <img
-                src={inspectedItem.thumbnailUrl}
-                alt={inspectedItem.name}
-                className="max-h-full max-w-full object-contain"
-              />
-            ) : (
-              <div className="text-center text-white space-y-2 p-6">
-                <FileText className="h-16 w-16 text-rose-400 mx-auto" />
-                <div className="font-bold text-sm">{inspectedItem?.name}</div>
-                <div className="text-xs text-slate-400">PDF Document Preview Ready</div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between text-xs pt-2">
-            <span className="text-slate-500 font-mono">{inspectedItem?.cdnUrl}</span>
+          <form onSubmit={(event) => void submitUpload(event)} className="space-y-3.5 py-2 text-xs">
+            <label htmlFor="upload-file-input" className="sr-only">
+              Files to upload
+            </label>
+            <input
+              id="upload-file-input"
+              ref={uploadInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={pickedFiles}
+              disabled={upload.isPending}
+            />
             <button
               type="button"
-              onClick={() => handleCopyCdnLink(inspectedItem.cdnUrl)}
-              className="font-bold text-slate-900 hover:underline"
+              onClick={() => uploadInputRef.current?.click()}
+              disabled={upload.isPending}
+              className="w-full cursor-pointer space-y-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/70 p-6 text-center transition-all hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60"
             >
-              Copy URL
+              <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-2xs">
+                <Upload className="h-5 w-5" />
+              </span>
+              <span className="block font-bold text-slate-800">
+                {uploadQueue.length === 0
+                  ? 'Click to choose files'
+                  : `${uploadQueue.length} file${uploadQueue.length === 1 ? '' : 's'} ready`}
+              </span>
+              <span className="block text-[10px] text-slate-400">
+                {uploadQueue.length === 0
+                  ? 'Any type the bucket accepts; the row records its real size and MIME type.'
+                  : uploadQueue.map((file) => `${file.name} (${formatBytes(file.size)})`).join(', ')}
+              </span>
             </button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* ── Modal 5: Replace File ──────────────────────────────────── */}
-      <Dialog open={isReplaceModalOpen} onOpenChange={setIsReplaceModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-slate-700" />
-              Replace File Revision
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Upload an updated version of "{inspectedItem?.name}". The permanent CDN URL will remain identical to avoid broken listings.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-2 text-xs">
-            <input
-              type="file"
-              ref={replaceFileInputRef}
-              onChange={handleReplaceFile}
-              className="hidden"
-            />
-            <div
-              onClick={() => replaceFileInputRef.current?.click()}
-              className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center hover:bg-slate-100 cursor-pointer space-y-2"
-            >
-              <RefreshCw className="h-6 w-6 text-slate-500 mx-auto" />
-              <div className="font-bold text-slate-800">Select replacement file from computer</div>
-              <div className="text-[10px] text-slate-400">Instantly replaces asset and purges edge cache</div>
+            <div>
+              <label htmlFor="upload-folder" className="block font-bold text-slate-700 mb-1">
+                Destination folder
+              </label>
+              <input
+                id="upload-folder"
+                list="media-folder-options"
+                value={uploadFolder}
+                onChange={(event) => setUploadFolder(event.target.value)}
+                disabled={upload.isPending}
+                placeholder="products"
+                className={`${FIELD} font-mono`}
+              />
+              <p className="mt-1 text-[10px] text-slate-400">
+                A label on the row, not a record: a new name here creates the folder for that file.
+              </p>
             </div>
-          </div>
+
+            <datalist id="media-folder-options">
+              {folders.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+
+            {uploadError && (
+              <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 font-bold text-rose-800">
+                {uploadError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setUploadOpen(false)}
+                disabled={upload.isPending}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={upload.isPending || uploadQueue.length === 0}
+                className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {upload.isPending ? `Uploading… (${uploadQueue.length})` : `Upload ${uploadQueue.length || ''}`.trim()}
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
-      {/* ── Modal 6: Move Asset ────────────────────────────────────── */}
-      <Dialog open={isMoveModalOpen} onOpenChange={setIsMoveModalOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* ── Move dialog ─────────────────────────────────────────────── */}
+      <Dialog
+        open={moveOpen}
+        onOpenChange={(open) => {
+          if (!open && move.isPending) return;
+          setMoveOpen(open);
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onEscapeKeyDown={(event) => {
+            if (move.isPending) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (move.isPending) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (move.isPending) event.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
               <Move className="h-5 w-5 text-slate-700" />
-              Move {selectedIds.length} Selected File(s)
+              Move {moveTargets.length} file{moveTargets.length === 1 ? '' : 's'}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Select destination directory folder to relocate files.
+              {moveTargets.map((item) => item.name).join(', ')} — each file is physically moved in the
+              bucket and its stored path is rewritten. One move per call, so a rejected one leaves the others
+              alone.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Target Directory</label>
-              <select
-                value={moveTargetFolder}
-                onChange={(e) => setMoveTargetFolder(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none"
-              >
-                <option value="nova-products">Nova Electronics / Product Images</option>
-                <option value="nova-banners">Nova Electronics / Store Banners</option>
-                <option value="nova-compliance">Nova Electronics / Compliance &amp; Docs</option>
-                <option value="nova-marketing">Nova Electronics / Marketing Assets</option>
-              </select>
+              <label htmlFor="move-folder" className="block font-bold text-slate-700 mb-1">
+                Destination folder
+              </label>
+              <input
+                id="move-folder"
+                list="media-folder-options-move"
+                value={moveFolder}
+                onChange={(event) => setMoveFolder(event.target.value)}
+                disabled={move.isPending}
+                placeholder="banners"
+                className={`${FIELD} font-mono`}
+              />
             </div>
+
+            <datalist id="media-folder-options-move">
+              {folders.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+
+            {moveError && (
+              <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 font-bold text-rose-800">
+                {moveError}
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setIsMoveModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                onClick={() => setMoveOpen(false)}
+                disabled={move.isPending}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleConfirmMove}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                onClick={() => void confirmMove()}
+                disabled={move.isPending}
+                className="rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirm Move
+                {move.isPending ? 'Moving…' : 'Confirm move'}
               </button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* ── Modal 7: Delete Confirm ─────────────────────────────────── */}
-      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* ── Delete confirm dialog ───────────────────────────────────── */}
+      <Dialog
+        open={deleteTargets.length > 0}
+        onOpenChange={(open) => {
+          if (!open) closeDelete();
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onEscapeKeyDown={(event) => {
+            if (remove.isPending) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (remove.isPending) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (remove.isPending) event.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-rose-700 flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-rose-600" />
-              Confirm Asset Deletion
+              Delete {deleteCountLabel} permanently?
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Are you sure you want to permanently delete {selectedIds.length} file(s)? This will revoke CDN delivery.
+              {deleteTargets.length} file{deleteTargets.length === 1 ? '' : 's'} will be removed:
+              <span className="mt-2 block space-y-1">
+                {deleteTargets.map((item) => (
+                  <span key={item.id} className="block">
+                    <strong className="text-slate-800">{item.name}</strong>{' '}
+                    <span className="font-mono text-[11px] text-slate-500">
+                      ({folderLabel(item.folder)}, {formatBytes(item.sizeBytes)})
+                    </span>
+                  </span>
+                ))}
+              </span>
+              <span className="mt-2 block">
+                This deletes each <code className="font-mono">media_items</code> row and the object in your
+                bucket. There is no trash bin, so it cannot be undone, and a listing still pointing at the old
+                URL keeps showing that link until you edit it on Products.
+              </span>
             </DialogDescription>
           </DialogHeader>
+
+          {deleteError && (
+            <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800">
+              {deleteError}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setIsDeleteConfirmOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              onClick={closeDelete}
+              disabled={remove.isPending}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="button"
-              onClick={handleConfirmDelete}
-              className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700"
+              onClick={() => void confirmDelete()}
+              disabled={remove.isPending || deleteTargets.length === 0}
+              className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
             >
-              Delete Permanently
+              {remove.isPending ? 'Deleting…' : `Delete ${deleteCountLabel}`}
             </button>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* ── Floating Toast Notification ───────────────────────────── */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
     </div>
   );
 };

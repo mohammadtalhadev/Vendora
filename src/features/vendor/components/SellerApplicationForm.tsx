@@ -19,6 +19,7 @@ import { Badge } from '../../../components/ui/badge';
 import { useAuthStore } from '../../../store/auth-store';
 import { cn } from '../../../lib/utils';
 import type { User } from '../../../types/domain';
+import { supabaseApplications } from '../../../lib/supabase-service';
 
 export const CATEGORY_OPTIONS = [
   { value: 'electronics', label: 'Electronics & Audio' },
@@ -108,7 +109,7 @@ export const ApplicationPendingCard: FC<ApplicationPendingCardProps> = ({
       )}
     >
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-[#FF7A1A] shadow-inner">
-        <Clock className="h-8 w-8 animate-pulse" />
+        <Clock className="h-8 w-8 animate-pulse" aria-hidden="true" />
       </div>
 
       <div className="mt-5">
@@ -125,7 +126,7 @@ export const ApplicationPendingCard: FC<ApplicationPendingCardProps> = ({
 
       {/* Review Time Badge */}
       <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full border border-orange-200/90 bg-orange-50 px-4 py-2 text-xs font-semibold text-[#EA6C13] shadow-xs">
-        <Clock className="h-4 w-4 shrink-0 text-[#FF7A1A]" />
+        <Clock className="h-4 w-4 shrink-0 text-[#FF7A1A]" aria-hidden="true" />
         <span data-testid="estimated-review-time">
           Estimated review time: {estimatedTime}
         </span>
@@ -155,19 +156,19 @@ export const ApplicationPendingCard: FC<ApplicationPendingCardProps> = ({
         </h3>
         <ul className="space-y-3 text-xs text-slate-600">
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <strong>Document & Identity Verification:</strong> We confirm your business identity and tax information.
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <strong>Product Catalog Standards:</strong> We ensure your product category aligns with marketplace guidelines.
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <strong>Vendor Hub Activation:</strong> Upon approval, your store URL goes live and your dashboard unlocks.
             </span>
@@ -176,7 +177,7 @@ export const ApplicationPendingCard: FC<ApplicationPendingCardProps> = ({
       </div>
 
       <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-slate-500">
-        <Info className="h-3.5 w-3.5" />
+        <Info className="h-3.5 w-3.5" aria-hidden="true" />
         <span>You will receive an automated notification once approved.</span>
       </div>
     </div>
@@ -277,6 +278,18 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
     setIsSubmitting(true);
 
     try {
+      const currentUser = useAuthStore.getState().user;
+      
+      // Persist to Supabase vendor_applications table
+      await supabaseApplications.submitApplication({
+        userId: currentUser?.id,
+        proposedStoreName: result.data.businessName,
+        slug: result.data.storeSlug,
+        businessType: result.data.categoryFocus,
+        contactEmail: result.data.businessEmail,
+        businessAddress: { description: result.data.storeDescription },
+      });
+
       if (onSubmit) {
         await onSubmit(result.data);
       } else {
@@ -284,7 +297,6 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
           await new Promise((resolve) => setTimeout(resolve, apiDelayMs));
         }
 
-        const currentUser = useAuthStore.getState().user;
         if (currentUser) {
           setUser({
             ...currentUser,
@@ -367,7 +379,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             value={formData.businessName}
             onChange={handleInputChange}
             placeholder="e.g. Apex Audio Labs"
-            leftIcon={<Building2 className="h-4 w-4" />}
+            leftIcon={<Building2 className="h-4 w-4" aria-hidden="true" />}
             hasError={!!errors.businessName}
             aria-invalid={!!errors.businessName}
             aria-describedby={errors.businessName ? 'businessName-error' : undefined}
@@ -403,7 +415,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             value={formData.storeSlug}
             onChange={handleInputChange}
             placeholder="e.g. apex-audio-labs"
-            leftIcon={<Globe className="h-4 w-4" />}
+            leftIcon={<Globe className="h-4 w-4" aria-hidden="true" />}
             hasError={!!errors.storeSlug}
             aria-invalid={!!errors.storeSlug}
             aria-describedby={errors.storeSlug ? 'storeSlug-error' : undefined}
@@ -454,7 +466,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
               ))}
             </select>
             <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-              <Tag className="h-4 w-4" />
+              <Tag className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
           {errors.categoryFocus && (
@@ -483,7 +495,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             value={formData.businessEmail}
             onChange={handleInputChange}
             placeholder="seller@business.com"
-            leftIcon={<Mail className="h-4 w-4" />}
+            leftIcon={<Mail className="h-4 w-4" aria-hidden="true" />}
             hasError={!!errors.businessEmail}
             aria-invalid={!!errors.businessEmail}
             aria-describedby={errors.businessEmail ? 'businessEmail-error' : undefined}
@@ -590,13 +602,13 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                 <span>Submitting Application...</span>
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <span>Submit Merchant Application</span>
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
               </span>
             )}
           </Button>

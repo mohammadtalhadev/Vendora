@@ -57,15 +57,15 @@ export const ProductCarouselWithoutTabs: React.FC<ProductCarouselWithoutTabsProp
         <div className="flex items-center gap-2">
           <Link
             to={computedViewAllHref}
-            className="group mr-2 hidden sm:flex items-center gap-1 text-xs font-bold text-[#FF7A1A] hover:underline"
+            className="group mr-2 hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#FF7A1A] hover:text-white bg-orange-50/80 hover:bg-[#FF7A1A] border border-orange-200/70 hover:border-[#FF7A1A] shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-95"
           >
             <span>View All</span>
-            <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
           <button
             type="button"
             onClick={() => scrollContainer(-320)}
-            className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-2xs hover:bg-slate-50 text-slate-700 hover:scale-105 transition-all cursor-pointer"
+            className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/60 bg-white/80 backdrop-blur-md shadow-2xs hover:bg-white text-slate-700 hover:scale-105 transition-all cursor-pointer"
             aria-label="Scroll left"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -73,7 +73,7 @@ export const ProductCarouselWithoutTabs: React.FC<ProductCarouselWithoutTabsProp
           <button
             type="button"
             onClick={() => scrollContainer(320)}
-            className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-2xs hover:bg-slate-50 text-slate-700 hover:scale-105 transition-all cursor-pointer"
+            className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/60 bg-white/80 backdrop-blur-md shadow-2xs hover:bg-white text-slate-700 hover:scale-105 transition-all cursor-pointer"
             aria-label="Scroll right"
           >
             <ChevronRight className="h-4 w-4" />
@@ -84,7 +84,7 @@ export const ProductCarouselWithoutTabs: React.FC<ProductCarouselWithoutTabsProp
       {/* Product Cards Track */}
       <div
         ref={carouselRef}
-        className="flex gap-4 overflow-x-auto no-scrollbar py-2 -mx-1 px-1 cursor-grab active:cursor-grabbing select-none"
+        className="flex gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto no-scrollbar py-2 -mx-1 px-1 cursor-grab active:cursor-grabbing select-none"
         style={{ scrollSnapType: 'x mandatory' }}
       >
         {products.map((product) => (

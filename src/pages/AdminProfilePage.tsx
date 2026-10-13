@@ -144,12 +144,51 @@ export const AdminProfilePage: React.FC = () => {
     showToast('Password updated and cryptographic credentials re-issued');
   };
 
+  const PROFILE_TABS: Array<'profile' | 'security' | 'permissions' | 'sessions' | 'audit'> = [
+    'profile',
+    'security',
+    'permissions',
+    'sessions',
+    'audit',
+  ];
+
+  const handleProfileTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = PROFILE_TABS.indexOf(activeTab);
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % PROFILE_TABS.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + PROFILE_TABS.length) % PROFILE_TABS.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = PROFILE_TABS.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    const nextTab = PROFILE_TABS[nextIndex];
+    setActiveTab(nextTab);
+    document.getElementById(`admin-profile-tab-${nextTab}`)?.focus();
+  };
+
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" sidebar={<AdminNav />}>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2"
+        >
+          <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-hidden="true" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -181,7 +220,7 @@ export const AdminProfilePage: React.FC = () => {
               onClick={handleSaveProfile}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 active:scale-95 transition-all cursor-pointer"
             >
-              <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+              <Check className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden="true" />
               <span>Save Profile Changes</span>
             </button>
           </div>
@@ -190,65 +229,95 @@ export const AdminProfilePage: React.FC = () => {
         {/* =========================================================================
             Tab Navigation Bar
             ========================================================================= */}
-        <div className="mb-8 flex items-center gap-1 overflow-x-auto border-b border-slate-200 pb-2.5">
+        <div
+          role="tablist"
+          aria-label="Administrator account settings sections"
+          onKeyDown={handleProfileTabKeyDown}
+          className="mb-8 flex items-center gap-1 overflow-x-auto border-b border-slate-200 pb-2.5"
+        >
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
+            role="tab"
+            id="admin-profile-tab-profile"
+            aria-controls="admin-profile-panel-profile"
+            aria-selected={activeTab === 'profile'}
+            tabIndex={activeTab === 'profile' ? 0 : -1}
             className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
               activeTab === 'profile'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <User className="h-3.5 w-3.5" />
+            <User className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Profile Details</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('security')}
+            role="tab"
+            id="admin-profile-tab-security"
+            aria-controls="admin-profile-panel-security"
+            aria-selected={activeTab === 'security'}
+            tabIndex={activeTab === 'security' ? 0 : -1}
             className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
               activeTab === 'security'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <Lock className="h-3.5 w-3.5" />
+            <Lock className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Security &amp; Authentication</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('permissions')}
+            role="tab"
+            id="admin-profile-tab-permissions"
+            aria-controls="admin-profile-panel-permissions"
+            aria-selected={activeTab === 'permissions'}
+            tabIndex={activeTab === 'permissions' ? 0 : -1}
             className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
               activeTab === 'permissions'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <Shield className="h-3.5 w-3.5" />
+            <Shield className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Role &amp; Permissions</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('sessions')}
+            role="tab"
+            id="admin-profile-tab-sessions"
+            aria-controls="admin-profile-panel-sessions"
+            aria-selected={activeTab === 'sessions'}
+            tabIndex={activeTab === 'sessions' ? 0 : -1}
             className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
               activeTab === 'sessions'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <Smartphone className="h-3.5 w-3.5" />
+            <Smartphone className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Active Sessions &amp; Devices</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('audit')}
+            role="tab"
+            id="admin-profile-tab-audit"
+            aria-controls="admin-profile-panel-audit"
+            aria-selected={activeTab === 'audit'}
+            tabIndex={activeTab === 'audit' ? 0 : -1}
             className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition-all ${
               activeTab === 'audit'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <History className="h-3.5 w-3.5" />
+            <History className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Audit Log &amp; History</span>
           </button>
         </div>
@@ -263,7 +332,12 @@ export const AdminProfilePage: React.FC = () => {
           <div className="space-y-6 lg:col-span-8">
             {/* 1. Personal Information Section */}
             {activeTab === 'profile' && (
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
+              <section
+                role="tabpanel"
+                id="admin-profile-panel-profile"
+                aria-labelledby="admin-profile-tab-profile"
+                className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs"
+              >
                 <div className="mb-5 flex items-center justify-between">
                   <div>
                     <h2 className="text-base sm:text-lg font-bold text-slate-900">Personal Information</h2>
@@ -293,7 +367,7 @@ export const AdminProfilePage: React.FC = () => {
                         onClick={() => showToast('Avatar updated')}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
                       >
-                        <Upload className="h-3.5 w-3.5" />
+                        <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                         <span>Change Avatar</span>
                       </button>
                       <button
@@ -304,7 +378,7 @@ export const AdminProfilePage: React.FC = () => {
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         <span>Remove</span>
                       </button>
                     </div>
@@ -317,8 +391,9 @@ export const AdminProfilePage: React.FC = () => {
                 {/* Form Fields Grid */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-xs font-bold text-slate-700">First Name</label>
+                    <label htmlFor="admin-profile-first-name" className="mb-1 block text-xs font-bold text-slate-700">First Name</label>
                     <input
+                      id="admin-profile-first-name"
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -327,8 +402,9 @@ export const AdminProfilePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-bold text-slate-700">Last Name</label>
+                    <label htmlFor="admin-profile-last-name" className="mb-1 block text-xs font-bold text-slate-700">Last Name</label>
                     <input
+                      id="admin-profile-last-name"
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
@@ -338,39 +414,42 @@ export const AdminProfilePage: React.FC = () => {
 
                   <div>
                     <div className="mb-1 flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-700">Work Email</label>
+                      <label htmlFor="admin-profile-work-email" className="text-xs font-bold text-slate-700">Work Email</label>
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3 w-3" aria-hidden="true" />
                         <span>Verified</span>
                       </span>
                     </div>
                     <div className="relative">
                       <input
+                        id="admin-profile-work-email"
                         type="email"
                         value={workEmail}
                         onChange={(e) => setWorkEmail(e.target.value)}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-3 pr-8 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
                       />
-                      <Mail className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                      <Mail className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" aria-hidden="true" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-bold text-slate-700">Direct Phone</label>
+                    <label htmlFor="admin-profile-phone" className="mb-1 block text-xs font-bold text-slate-700">Direct Phone</label>
                     <div className="relative">
                       <input
+                        id="admin-profile-phone"
                         type="tel"
                         value={directPhone}
                         onChange={(e) => setDirectPhone(e.target.value)}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-3 pr-8 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
                       />
-                      <Phone className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                      <Phone className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" aria-hidden="true" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-bold text-slate-700">Job Title / Role</label>
+                    <label htmlFor="admin-profile-job-title" className="mb-1 block text-xs font-bold text-slate-700">Job Title / Role</label>
                     <input
+                      id="admin-profile-job-title"
                       type="text"
                       value={jobTitle}
                       onChange={(e) => setJobTitle(e.target.value)}
@@ -379,8 +458,9 @@ export const AdminProfilePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-bold text-slate-700">Department</label>
+                    <label htmlFor="admin-profile-department" className="mb-1 block text-xs font-bold text-slate-700">Department</label>
                     <input
+                      id="admin-profile-department"
                       type="text"
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
@@ -389,8 +469,9 @@ export const AdminProfilePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-bold text-slate-700">Timezone</label>
+                    <label htmlFor="admin-profile-timezone" className="mb-1 block text-xs font-bold text-slate-700">Timezone</label>
                     <select
+                      id="admin-profile-timezone"
                       value={timezone}
                       onChange={(e) => setTimezone(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
@@ -405,8 +486,9 @@ export const AdminProfilePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-bold text-slate-700">Language Preference</label>
+                    <label htmlFor="admin-profile-language" className="mb-1 block text-xs font-bold text-slate-700">Language Preference</label>
                     <select
+                      id="admin-profile-language"
                       value={language}
                       onChange={(e) => setLanguage(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
@@ -421,8 +503,9 @@ export const AdminProfilePage: React.FC = () => {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs font-bold text-slate-700">Bio / Executive Staff Notes</label>
+                    <label htmlFor="admin-profile-bio" className="mb-1 block text-xs font-bold text-slate-700">Bio / Executive Staff Notes</label>
                     <textarea
+                      id="admin-profile-bio"
                       rows={3}
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
@@ -438,7 +521,12 @@ export const AdminProfilePage: React.FC = () => {
 
             {/* 2. Security & 2-Factor Authentication Section */}
             {activeTab === 'security' && (
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
+              <section
+                role="tabpanel"
+                id="admin-profile-panel-security"
+                aria-labelledby="admin-profile-tab-security"
+                className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs"
+              >
                 <div className="mb-5 flex items-center justify-between">
                   <div>
                     <h2 className="text-base sm:text-lg font-bold text-slate-900">
@@ -458,7 +546,7 @@ export const AdminProfilePage: React.FC = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
                     <div className="flex items-start gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                        <Shield className="h-4 w-4" />
+                        <Shield className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div>
                         <h3 className="text-xs sm:text-sm font-bold text-slate-900">
@@ -482,7 +570,7 @@ export const AdminProfilePage: React.FC = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
                     <div className="flex items-start gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                        <Key className="h-4 w-4" />
+                        <Key className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div>
                         <h3 className="text-xs sm:text-sm font-bold text-slate-900">
@@ -506,16 +594,17 @@ export const AdminProfilePage: React.FC = () => {
                 {/* Sub-section: Update Password */}
                 <div className="mt-6 border-t border-slate-100 pt-6">
                   <div className="mb-4 flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-slate-600" />
+                    <Lock className="h-4 w-4 text-slate-600" aria-hidden="true" />
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Update Password</h3>
                   </div>
 
                   <form onSubmit={handleUpdatePassword} className="space-y-4">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold text-slate-600">Current Password</label>
+                        <label htmlFor="admin-profile-current-password" className="mb-1 block text-[11px] font-bold text-slate-600">Current Password</label>
                         <div className="relative">
                           <input
+                            id="admin-profile-current-password"
                             type={showPassword ? 'text' : 'password'}
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
@@ -525,15 +614,19 @@ export const AdminProfilePage: React.FC = () => {
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            aria-pressed={showPassword}
+                            aria-controls="admin-profile-current-password admin-profile-new-password admin-profile-confirm-password"
                           >
-                            {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            {showPassword ? <EyeOff className="h-3.5 w-3.5" aria-hidden="true" /> : <Eye className="h-3.5 w-3.5" aria-hidden="true" />}
                           </button>
                         </div>
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold text-slate-600">New Password</label>
+                        <label htmlFor="admin-profile-new-password" className="mb-1 block text-[11px] font-bold text-slate-600">New Password</label>
                         <input
+                          id="admin-profile-new-password"
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Enter new strong password"
                           value={newPassword}
@@ -543,8 +636,9 @@ export const AdminProfilePage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold text-slate-600">Confirm New Password</label>
+                        <label htmlFor="admin-profile-confirm-password" className="mb-1 block text-[11px] font-bold text-slate-600">Confirm New Password</label>
                         <input
+                          id="admin-profile-confirm-password"
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Confirm new password"
                           value={confirmPassword}
@@ -561,19 +655,19 @@ export const AdminProfilePage: React.FC = () => {
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
-                          <Check className="h-2.5 w-2.5" />
+                          <Check className="h-2.5 w-2.5" aria-hidden="true" />
                           <span>12+ characters</span>
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
-                          <Check className="h-2.5 w-2.5" />
+                          <Check className="h-2.5 w-2.5" aria-hidden="true" />
                           <span>1+ special symbol</span>
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
-                          <Check className="h-2.5 w-2.5" />
+                          <Check className="h-2.5 w-2.5" aria-hidden="true" />
                           <span>1+ numeric digit</span>
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
-                          <Check className="h-2.5 w-2.5" />
+                          <Check className="h-2.5 w-2.5" aria-hidden="true" />
                           <span>Upper &amp; lower case</span>
                         </span>
                       </div>
@@ -584,7 +678,7 @@ export const AdminProfilePage: React.FC = () => {
                         type="submit"
                         className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
                       >
-                        <Lock className="h-3.5 w-3.5 text-slate-500" />
+                        <Lock className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                         <span>Update Password</span>
                       </button>
                     </div>
@@ -595,7 +689,12 @@ export const AdminProfilePage: React.FC = () => {
 
             {/* 3. Role Privileges & Admin Scope Section */}
             {activeTab === 'permissions' && (
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
+              <section
+                role="tabpanel"
+                id="admin-profile-panel-permissions"
+                aria-labelledby="admin-profile-tab-permissions"
+                className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs"
+              >
                 <div className="mb-5 flex items-center justify-between">
                   <div>
                     <h2 className="text-base sm:text-lg font-bold text-slate-900">
@@ -651,7 +750,12 @@ export const AdminProfilePage: React.FC = () => {
 
             {/* 4. Active Sessions & Authorized Devices Section */}
             {activeTab === 'sessions' && (
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+              <section
+                role="tabpanel"
+                id="admin-profile-panel-sessions"
+                aria-labelledby="admin-profile-tab-sessions"
+                className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-4"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
                   <div>
                     <h2 className="text-base sm:text-lg font-bold text-slate-900">
@@ -666,7 +770,7 @@ export const AdminProfilePage: React.FC = () => {
                     onClick={() => setIsRevokeModalOpen(true)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer self-start sm:self-auto"
                   >
-                    <LogOut className="h-3.5 w-3.5" />
+                    <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Revoke All Other Sessions</span>
                   </button>
                 </div>
@@ -681,7 +785,7 @@ export const AdminProfilePage: React.FC = () => {
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                            <Icon className="h-5 w-5" />
+                            <Icon className="h-5 w-5" aria-hidden="true" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -727,7 +831,12 @@ export const AdminProfilePage: React.FC = () => {
 
             {/* 5. Audit Log Trail Section */}
             {activeTab === 'audit' && (
-              <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+              <section
+                role="tabpanel"
+                id="admin-profile-panel-audit"
+                aria-labelledby="admin-profile-tab-audit"
+                className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs space-y-4"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
                   <div>
                     <h2 className="text-base sm:text-lg font-bold text-slate-900">
@@ -742,7 +851,7 @@ export const AdminProfilePage: React.FC = () => {
                     className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-2xs self-start sm:self-auto"
                   >
                     <span>Full Audit Center</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 </div>
 
@@ -805,11 +914,12 @@ export const AdminProfilePage: React.FC = () => {
                   type="button"
                   onClick={handleCopyId}
                   className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  aria-label="Copy administrator ID ADM-0048-COMP"
                   title="Click to copy Administrator ID"
                 >
                   <span className="font-mono">ADM-0048-COMP</span>
-                  <Copy className="h-2.5 w-2.5 text-slate-400" />
-                  {copiedId && <span className="text-[9px] text-emerald-600">Copied!</span>}
+                  <Copy className="h-2.5 w-2.5 text-slate-400" aria-hidden="true" />
+                  {copiedId && <span className="text-[9px] text-emerald-600" role="status" aria-live="polite">Copied!</span>}
                 </button>
               </div>
 
@@ -829,7 +939,7 @@ export const AdminProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Security Profile</span>
                   <span className="inline-flex items-center gap-1 font-bold text-emerald-600">
-                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Active 2FA</span>
                   </span>
                 </div>
@@ -868,7 +978,7 @@ export const AdminProfilePage: React.FC = () => {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                          <Icon className="h-3.5 w-3.5 text-slate-500" />
+                          <Icon className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                           <span>{sess.device}</span>
                         </div>
                         {sess.isCurrent ? (
@@ -894,7 +1004,7 @@ export const AdminProfilePage: React.FC = () => {
                 onClick={() => setIsRevokeModalOpen(true)}
                 className="mt-4 flex w-full items-center justify-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Revoke All Other Sessions</span>
               </button>
             </div>
@@ -938,13 +1048,14 @@ export const AdminProfilePage: React.FC = () => {
                 ].map((item) => (
                   <div key={item.key} className="flex items-start justify-between gap-2">
                     <div className="min-w-0 pr-1">
-                      <p className="text-xs font-bold text-slate-800 leading-snug">{item.title}</p>
+                      <p id={`admin-profile-notif-${item.key}-label`} className="text-xs font-bold text-slate-800 leading-snug">{item.title}</p>
                       <p className="text-[10px] text-slate-500 leading-normal">{item.desc}</p>
                     </div>
                     <button
                       type="button"
                       role="switch"
                       aria-checked={notifications[item.key]}
+                      aria-labelledby={`admin-profile-notif-${item.key}-label`}
                       onClick={() =>
                         setNotifications((prev) => ({
                           ...prev,
@@ -959,6 +1070,7 @@ export const AdminProfilePage: React.FC = () => {
                         className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                           notifications[item.key] ? 'translate-x-4' : 'translate-x-0'
                         }`}
+                        aria-hidden="true"
                       />
                     </button>
                   </div>
@@ -972,11 +1084,11 @@ export const AdminProfilePage: React.FC = () => {
                 </span>
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 text-slate-700">
-                    <Mail className="h-3 w-3 text-slate-400" />
+                    <Mail className="h-3 w-3 text-slate-400" aria-hidden="true" />
                     <span className="font-mono text-[11px] truncate">{workEmail}</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700">
-                    <MessageSquare className="h-3 w-3 text-slate-400" />
+                    <MessageSquare className="h-3 w-3 text-slate-400" aria-hidden="true" />
                     <span className="font-mono text-[11px] truncate">ops-admin-alerts (Slack)</span>
                   </div>
                 </div>
@@ -1004,7 +1116,7 @@ export const AdminProfilePage: React.FC = () => {
               <p className="font-bold text-slate-900">Enrolled YubiKey 5C NFC</p>
               <p className="text-slate-500 text-[11px] mt-0.5">Firmware 5.4.3 • Registered Oct 12, 2025</p>
               <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-emerald-600">
-                <Check className="h-3 w-3" />
+                <Check className="h-3 w-3" aria-hidden="true" />
                 <span>Primary Cryptographic Token Verified</span>
               </span>
             </div>
@@ -1089,7 +1201,7 @@ export const AdminProfilePage: React.FC = () => {
         <DialogContent className="max-w-md bg-white p-6 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-rose-600 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
               <span>Revoke All Other Sessions?</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">

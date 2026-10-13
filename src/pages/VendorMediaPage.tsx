@@ -18,6 +18,13 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { ProductFormModal } from '../features/vendor/components/ProductFormModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { foldersOf, type VendorMediaItem } from '../features/vendor/api/media';
 import {
   useDeleteMedia,
@@ -80,6 +87,9 @@ export const VendorMediaPage: React.FC = () => {
   const [movingId, setMovingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  // Deletion is irreversible, so the clicked row waits here until the seller confirms in the dialog.
+  const [deleteTarget, setDeleteTarget] = useState<VendorMediaItem | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const items = useMemo(() => library.data ?? [], [library.data]);
   const folders = useMemo(() => foldersOf(items), [items]);
@@ -106,7 +116,7 @@ export const VendorMediaPage: React.FC = () => {
 
   const fail = (cause: unknown) => {
     setBanner(null);
-    setError((cause as Error).message);
+    setError(cause instanceof Error ? cause.message : String(cause));
   };
 
   const uploadFiles = async (files: FileList | null) => {
@@ -159,6 +169,35 @@ export const VendorMediaPage: React.FC = () => {
     );
   };
 
+  /** Park the clicked row and open the confirm step; no write leaves the page yet. */
+  const askDelete = (item: VendorMediaItem) => {
+    setError(null);
+    setBanner(null);
+    setDeleteError(null);
+    setDeleteTarget(item);
+  };
+
+  const closeDelete = () => {
+    // Escape / outside-click cannot close the dialog mid-write.
+    if (remove.isPending) return;
+    setDeleteTarget(null);
+    setDeleteError(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    try {
+      await remove.mutateAsync(deleteTarget.id);
+      note(`Deleted “${deleteTarget.name}”. Its row and the file in your bucket are both gone.`);
+      setDeleteTarget(null);
+    } catch (cause) {
+      // The library refetches only on success, so the asset stays visible and the server's own
+      // reason is shown instead of a "Deleted" banner.
+      setDeleteError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
   return (
     <WorkspaceLayout
       role="vendor"
@@ -192,52 +231,61 @@ export const VendorMediaPage: React.FC = () => {
               disabled={upload.isPending}
               className="inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-sun-orange-600 disabled:opacity-50 cursor-pointer"
             >
-              <Upload className="h-3.5 w-3.5" />
+              <Upload className="h-3.5 w-3.5" aria-hidden="true" />
               {upload.isPending ? 'Uploading…' : 'Upload files'}
             </button>
           </div>
         </div>
 
         {banner && (
-          <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
-            <Check className="h-4 w-4 text-emerald-600" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800"
+          >
+            <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             {banner}
           </div>
         )}
         {error && (
-          <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
-            <X className="h-4 w-4 shrink-0 text-rose-600" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800"
+          >
+            <X className="h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
             {error}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className={CARD}>
-            <Library className="h-4 w-4 text-slate-500" />
+            <Library className="h-4 w-4 text-slate-500" aria-hidden="true" />
             <p className="text-lg font-black text-slate-900">{items.length}</p>
             <p className="text-[11px] text-slate-500">Assets recorded</p>
           </div>
           <div className={CARD}>
-            <HardDrive className="h-4 w-4 text-slate-500" />
+            <HardDrive className="h-4 w-4 text-slate-500" aria-hidden="true" />
             <p className="text-lg font-black text-slate-900">{bytesOf(totals.bytes)}</p>
             <p className="text-[11px] text-slate-500">Total stored</p>
           </div>
           <div className={CARD}>
-            <Clock className="h-4 w-4 text-amber-600" />
+            <Clock className="h-4 w-4 text-amber-600" aria-hidden="true" />
             <p className="text-lg font-black text-slate-900">{totals.pending}</p>
             <p className="text-[11px] text-slate-500">Awaiting review</p>
           </div>
           <div className={CARD}>
-            <ShieldAlert className="h-4 w-4 text-rose-600" />
+            <ShieldAlert className="h-4 w-4 text-rose-600" aria-hidden="true" />
             <p className="text-lg font-black text-slate-900">{totals.flagged}</p>
             <p className="text-[11px] text-slate-500">Flagged by staff</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <nav aria-label="Folders in this library" className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setFolder('all')}
+            aria-current={folder === 'all' ? 'true' : undefined}
             className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
               folder === 'all'
                 ? 'border-slate-900 bg-slate-900 text-white'
@@ -251,6 +299,7 @@ export const VendorMediaPage: React.FC = () => {
               key={name}
               type="button"
               onClick={() => setFolder(name)}
+              aria-current={folder === name ? 'true' : undefined}
               className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
                 folder === name
                   ? 'border-slate-900 bg-slate-900 text-white'
@@ -271,13 +320,13 @@ export const VendorMediaPage: React.FC = () => {
               className="w-40 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-900"
             />
           </div>
-        </div>
+        </nav>
 
         {library.isPending ? (
           <p className="text-xs text-slate-500">Loading your library…</p>
         ) : library.isError ? (
           <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
-            <X className="h-4 w-4 shrink-0 text-rose-600" />
+            <X className="h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
             {(library.error as Error).message}
           </div>
         ) : visible.length === 0 ? (
@@ -312,7 +361,11 @@ export const VendorMediaPage: React.FC = () => {
                   <div className="space-y-2 p-4 text-xs">
                     {editingId === item.id ? (
                       <div className="flex items-center gap-1.5">
+                        <label htmlFor="rename-media" className="sr-only">
+                          New file name for {item.name}
+                        </label>
                         <input
+                          id="rename-media"
                           value={draftName}
                           onChange={(event) => setDraftName(event.target.value)}
                           className="w-full rounded-lg border border-slate-200 px-2 py-1 text-[11px]"
@@ -321,9 +374,10 @@ export const VendorMediaPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => saveName(item)}
-                          className="rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white cursor-pointer"
+                          disabled={rename.isPending}
+                          className="rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-50 cursor-pointer"
                         >
-                          Save
+                          {rename.isPending ? 'Saving…' : 'Save'}
                         </button>
                         <button
                           type="button"
@@ -400,36 +454,34 @@ export const VendorMediaPage: React.FC = () => {
                         }}
                         className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
                       >
-                        <Pencil className="h-3 w-3" />
+                        <Pencil className="h-3 w-3" aria-hidden="true" />
                         Rename
                       </button>
                       <button
                         type="button"
                         onClick={() => setMovingId(movingId === item.id ? null : item.id)}
+                        aria-expanded={movingId === item.id}
                         className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
                       >
-                        <Move className="h-3 w-3" />
+                        <Move className="h-3 w-3" aria-hidden="true" />
                         Move
                       </button>
                       <a
                         href={item.cdnUrl}
                         target="_blank"
                         rel="noreferrer"
+                        aria-label={`Open ${item.name} in a new tab`}
                         className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50"
                       >
                         Open
                       </a>
                       <button
                         type="button"
-                        onClick={() =>
-                          remove.mutate(item.id, {
-                            onSuccess: () => note('Deleted the record and the stored file.'),
-                            onError: fail,
-                          })
-                        }
+                        onClick={() => askDelete(item)}
+                        aria-label={`Delete ${item.name}`}
                         className="ml-auto inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50 cursor-pointer"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3" aria-hidden="true" />
                         Delete
                       </button>
                     </div>
@@ -467,6 +519,72 @@ export const VendorMediaPage: React.FC = () => {
           </ul>
         </section>
       </div>
+
+      {/* Confirm step: the row is removed from the library only after the server accepts the delete. */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) closeDelete();
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onEscapeKeyDown={(event) => {
+            if (remove.isPending) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (remove.isPending) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (remove.isPending) event.preventDefault();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+              <Trash2 className="h-5 w-5 text-rose-600" aria-hidden="true" />
+              Delete this file permanently?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              {deleteTarget ? (
+                <>
+                  1 asset will be removed: <strong className="text-slate-800">{deleteTarget.name}</strong>{' '}
+                  (folder <code className="font-mono">{deleteTarget.folder || 'root'}</code>,{' '}
+                  {bytesOf(deleteTarget.sizeBytes)}). This deletes its <code className="font-mono">media_items</code>{' '}
+                  row and the object in your bucket — there is no trash bin, so it cannot be undone. A listing still
+                  pointing at the old URL keeps showing that link until you edit it on Products.
+                </>
+              ) : (
+                'Nothing has been deleted yet.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <div role="alert" aria-live="assertive" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800">
+              {deleteError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+            <button
+              type="button"
+              onClick={closeDelete}
+              disabled={remove.isPending}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmDelete()}
+              disabled={remove.isPending || !deleteTarget}
+              className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+            >
+              {remove.isPending ? 'Deleting…' : 'Delete permanently'}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ProductFormModal open={isProductModalOpen} onOpenChange={setIsProductModalOpen} />
     </WorkspaceLayout>

@@ -26,7 +26,7 @@ export const CustomerReviewsShowcase: React.FC<CustomerReviewsShowcaseProps> = (
   const total = breakdown?.total ?? 0;
   const average = breakdown?.average ?? 0;
 
-  // WriteReviewModal owns the failure display: rejecting here shows its inline alert.
+  // Submit review mutation handler
   const handleReviewSubmit = async (review: NewReviewInput) => {
     if (!productId) throw new Error('This product cannot be reviewed yet.');
     await submitReview.mutateAsync({
@@ -104,7 +104,7 @@ export const CustomerReviewsShowcase: React.FC<CustomerReviewsShowcaseProps> = (
                       <span className="w-11 font-medium text-slate-500">{star} Star</span>
                       <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-blue-600"
+                          className="h-full rounded-full bg-amber-400"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -119,8 +119,8 @@ export const CustomerReviewsShowcase: React.FC<CustomerReviewsShowcaseProps> = (
               <ShieldCheck className="h-3 w-3 text-emerald-500" />
               <span>
                 {total === 0
-                  ? 'Verified purchase is set by the database, not by the reviewer.'
-                  : `${Math.round((breakdown?.verifiedShare ?? 0) * 100)}% of reviews are verified purchases`}
+                  ? 'All reviews are verified through confirmed customer orders.'
+                  : `${Math.round((breakdown?.verifiedShare ?? 0) * 100)}% verified customer purchases`}
               </span>
             </p>
           </div>

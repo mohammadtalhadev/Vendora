@@ -16,8 +16,10 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { useVendorDetail } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
+import { useCurrency } from '../store/currency-store';
 
 export const AdminVendorDetailPage: React.FC = () => {
+  const { formatPrice } = useCurrency();
   const { id } = useParams<{ id: string }>();
 
   const { data: vendor, isLoading, error, refetch } = useVendorDetail(id || '');
@@ -78,7 +80,9 @@ export const AdminVendorDetailPage: React.FC = () => {
     return (
       <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
         <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-          <p className="text-sm text-rose-600 font-medium">{(error as any).message || 'Failed to load merchant'}</p>
+          <p className="text-sm text-rose-600 font-medium">
+            {error instanceof Error ? error.message : 'Failed to load merchant'}
+          </p>
           <button
             onClick={() => refetch()}
             className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-700 cursor-pointer"
@@ -110,6 +114,8 @@ export const AdminVendorDetailPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <Link
               to="/admin/vendors"
+              aria-label="Back to vendor management"
+              title="Back to vendor management"
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -276,8 +282,8 @@ export const AdminVendorDetailPage: React.FC = () => {
                             </span>
                           </td>
                           <td className="py-2.5 font-medium text-slate-700">{pkg.type}</td>
-                          <td className="py-2.5 font-bold text-slate-900">${pkg.gross.toFixed(2)}</td>
-                          <td className="py-2.5 font-bold text-slate-900">${pkg.net.toFixed(2)}</td>
+                          <td className="py-2.5 font-bold text-slate-900">{formatPrice(pkg.gross)}</td>
+                          <td className="py-2.5 font-bold text-slate-900">{formatPrice(pkg.net)}</td>
                           <td className="py-2.5 text-slate-500">{new Date(pkg.createdAt).toLocaleDateString()}</td>
                         </tr>
                       ))}
@@ -314,7 +320,7 @@ export const AdminVendorDetailPage: React.FC = () => {
                         <span className="text-slate-500">Urgency: {d.urgency}</span>
                       </div>
                       {d.resolutionAmount !== null && (
-                        <p className="mt-1 text-slate-600">Resolution amount: ${d.resolutionAmount.toFixed(2)}</p>
+                        <p className="mt-1 text-slate-600">Resolution amount: {formatPrice(d.resolutionAmount)}</p>
                       )}
                     </div>
                   ))}
@@ -364,13 +370,15 @@ export const AdminVendorDetailPage: React.FC = () => {
               <form onSubmit={handleSaveCommission} className="space-y-4">
                 <div>
                   <div className="flex justify-between font-bold text-slate-900 mb-1">
-                    <span>Effective Rate:</span>
+                    <label htmlFor="commission-rate">Effective Rate:</label>
                     <span className="text-[#FF7A1A] font-black text-sm">
                       {commissionOverride === 0 ? 'Platform Default' : `${commissionOverride.toFixed(1)}%`}
                     </span>
                   </div>
                   <input
+                    id="commission-rate"
                     type="range"
+                    aria-valuetext={commissionOverride === 0 ? 'Platform default' : `${commissionOverride.toFixed(1)}%`}
                     min="0"
                     max="20"
                     step="0.5"
@@ -411,7 +419,7 @@ export const AdminVendorDetailPage: React.FC = () => {
                   {vendor!.payouts.map((p) => (
                     <div key={p.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-800">${p.amount.toFixed(2)}</span>
+                        <span className="font-bold text-slate-800">{formatPrice(p.amount)}</span>
                         <span className="inline-block rounded-md bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 border border-green-200">
                           {p.status}
                         </span>
@@ -466,8 +474,9 @@ export const AdminVendorDetailPage: React.FC = () => {
 
           <form onSubmit={handleIssueStrike} className="space-y-3 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Violation Category</label>
+              <label htmlFor="violationType" className="block font-bold text-slate-700 mb-1">Violation Category</label>
               <select
+                id="violationType"
                 name="violationType"
                 defaultValue="Late Dispatch SLA (&gt; 48h)"
                 className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
@@ -480,8 +489,9 @@ export const AdminVendorDetailPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Documentation & Notes</label>
+              <label htmlFor="violationNotes" className="block font-bold text-slate-700 mb-1">Documentation &amp; Notes</label>
               <textarea
+                id="violationNotes"
                 name="violationNotes"
                 rows={3}
                 placeholder="Include incident dates and order references..."

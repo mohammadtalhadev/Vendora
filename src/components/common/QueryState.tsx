@@ -220,13 +220,14 @@ export function QueryState({
 
     return (
       <div
+        role="alert"
         className={cn(
           'flex flex-col items-center justify-center rounded-3xl border border-coral/20 bg-coral/5 p-8 text-center',
           className,
         )}
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-coral/15 text-coral">
-          <AlertCircle className="h-6 w-6" />
+          <AlertCircle className="h-6 w-6" aria-hidden="true" />
         </div>
         <h4 className="mt-3 text-base font-semibold text-ink">{errorTitle}</h4>
         <p className="mt-1 max-w-md text-sm text-slate-600">
@@ -239,7 +240,7 @@ export function QueryState({
             onClick={retryHandler}
             className="mt-4 gap-2"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
             Try again
           </Button>
         )}
@@ -255,13 +256,14 @@ export function QueryState({
 
     return (
       <div
+        role="status"
         className={cn(
           'flex flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white/95 p-10 text-center shadow-xs',
           className,
         )}
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-          <Inbox className="h-6 w-6" />
+          <Inbox className="h-6 w-6" aria-hidden="true" />
         </div>
         <h4 className="mt-3 text-base font-semibold text-ink">{emptyTitle}</h4>
         <p className="mt-1 max-w-sm text-sm text-slate-500">{emptyMessage}</p>
@@ -280,8 +282,11 @@ export function QueryState({
   return (
     <div className={cn('relative', className)}>
       {showRefetchIndicator && isCurrentlyRefetching && (
-        <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-xs font-medium text-ink shadow-sm backdrop-blur-[16px] transition-all">
-          <Loader2 className="h-3 w-3 animate-spin text-sun-orange" />
+        <div
+          role="status"
+          className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-xs font-medium text-ink shadow-sm backdrop-blur-[16px] transition-all"
+        >
+          <Loader2 className="h-3 w-3 animate-spin text-sun-orange" aria-hidden="true" />
           <span>{refetchLabel}</span>
         </div>
       )}

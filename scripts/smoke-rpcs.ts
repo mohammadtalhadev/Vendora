@@ -925,6 +925,15 @@ ok('escalation raises urgency and takes ownership',
   esc.status === 'escalated' && escRow.urgency === 'urgent' && escRow.a === SUPPORT);
 ok('the escalation reason is kept on the case as a note',
   (await q(`select content from dispute_messages where dispute_id=$1 and is_internal_note order by created_at desc limit 1`, [sCase]))[0].content === 'Needs senior review');
+await as('authenticated', CU);
+const buyerThread = (await q(
+  `select count(*)::int c, coalesce(bool_or(is_internal_note),false) saw_note from dispute_messages where dispute_id=$1`, [sCase],
+))[0];
+ok('the buyer reads the staff reply but never a desk note',
+  buyerThread.c === 1 && buyerThread.saw_note === false);
+await as('authenticated', SUPPORT);
+ok('and the desk still reads the whole thread',
+  (await q(`select count(*)::int c from dispute_messages where dispute_id=$1`, [sCase]))[0].c === 3);
 await q(`select resolve_dispute($1,'resolved_denied','No evidence supplied')`, [sCase]);
 await expectThrow('a resolved case cannot be escalated',
   () => q(`select escalate_to_support($1,'too late')`, [sCase]), 'resolved disputes cannot be escalated');

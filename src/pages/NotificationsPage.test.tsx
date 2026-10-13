@@ -126,7 +126,9 @@ describe('NotificationsPage', () => {
     await waitFor(() => expect(screen.getByText('Support replied to your dispute')).toBeInTheDocument());
     const readsBeforeTab = noticeReads();
 
-    fireEvent.click(screen.getByRole('button', { name: /^Orders/ }));
+    // The category bar is a genuine tablist: mutually exclusive views of one panel, so the
+    // accessible query is by tab role, not button.
+    fireEvent.click(screen.getByRole('tab', { name: /^Orders/ }));
 
     // A tab is a fresh question for Postgres, not a filter over what is already on screen.
     await waitFor(() => expect(noticeReads()).toBeGreaterThan(readsBeforeTab));
@@ -136,7 +138,7 @@ describe('NotificationsPage', () => {
     await waitFor(() => expect(screen.queryByText('Support replied to your dispute')).not.toBeInTheDocument());
     expect(screen.getByText('Your package is on the way')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /^Payouts/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Payouts/ }));
 
     await waitFor(() => expect(kept({ user_id: ME.id, type: 'payout', read_at: null })).toBe(true));
     expect(kept({ user_id: ME.id, type: 'order_status', read_at: null })).toBe(false);
@@ -158,10 +160,10 @@ describe('NotificationsPage', () => {
 
     // Two rows carry a null `read_at`, so the tray says two - however the list is filtered.
     await waitFor(() => expect(screen.getByText('2 Unread')).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: /^Unread/ })).toHaveTextContent('2');
+    expect(screen.getByRole('tab', { name: /^Unread/ })).toHaveTextContent('2');
     expect(screen.getByTestId('notice-mine-3')).not.toHaveTextContent('Unread');
 
-    fireEvent.click(screen.getByRole('button', { name: /^Unread/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Unread/ }));
 
     await waitFor(() => expect(kept({ user_id: ME.id, type: 'payout', read_at: null })).toBe(true));
     expect(kept({ user_id: ME.id, type: 'payout', read_at: '2026-10-11T10:00:00.000Z' })).toBe(false);

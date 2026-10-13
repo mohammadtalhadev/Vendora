@@ -1,256 +1,277 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
-  FileCheck,
-  Download,
-  CheckCircle2,
   ShieldCheck,
-  Percent,
+  ScrollText,
+  AlertTriangle,
+  BadgeCheck,
+  Scale,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { useAdminScope } from '../features/admin/hooks/admin-keys';
+import { useAuditQueue } from '../features/admin/hooks/useAdminQueries';
+import { fetchComplianceEvidence } from '../features/admin/api/compliance';
+import { formatPrice } from '../store/currency-store';
 
-interface TaxJurisdiction {
-  code: string;
-  name: string;
-  rate: number;
-  type: 'state_sales_tax' | 'vat';
-  withholdingEnabled: boolean;
+/**
+ * This schema has no tax-jurisdiction table and no 1099-K filing workflow, so the old
+ * "withholding" toggle and "Generate Form" button wrote to nothing and are gone. What a
+ * compliance console can honestly show is the governance trail Postgres keeps: merchant
+ * verification state (`vendor_profiles`, `vendor_applications`), active strikes
+ * (`vendor_strikes`), buyer-protection outcomes (`disputes`, `refunds`) and the audit log of
+ * staff decisions. Every number is counted from those rows.
+ */
+
+const reason = (error: unknown, fallback: string): string =>
+  error instanceof Error && error.message.trim() !== '' ? error.message : fallback;
+
+const AUDIT_PAGE_SIZE = 12;
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+      <div className="text-2xl font-black text-slate-900">{value.toLocaleString()}</div>
+      <div className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>
+    </div>
+  );
 }
-
-interface VendorTaxFiling {
-  vendorId: string;
-  vendorName: string;
-  tinEin: string;
-  grossSalesYtd: number;
-  transactionsCount: number;
-  exceeded1099Threshold: boolean;
-  statementStatus: 'generated' | 'pending';
-}
-
-const SEED_JURISDICTIONS: TaxJurisdiction[] = [
-  { code: 'US-CA', name: 'California (State + Local)', rate: 8.25, type: 'state_sales_tax', withholdingEnabled: true },
-  { code: 'US-NY', name: 'New York (State + NYC)', rate: 8.875, type: 'state_sales_tax', withholdingEnabled: true },
-  { code: 'US-TX', name: 'Texas (State + Local)', rate: 6.25, type: 'state_sales_tax', withholdingEnabled: true },
-  { code: 'US-OR', name: 'Oregon', rate: 0.00, type: 'state_sales_tax', withholdingEnabled: false },
-  { code: 'EU-DE', name: 'Germany (Standard VAT)', rate: 19.00, type: 'vat', withholdingEnabled: true },
-  { code: 'GB-UK', name: 'United Kingdom (VAT)', rate: 20.00, type: 'vat', withholdingEnabled: true },
-];
-
-const SEED_FILINGS: VendorTaxFiling[] = [
-  {
-    vendorId: 'vendor-tech-1',
-    vendorName: 'Apex Audio & Gear Inc.',
-    tinEin: 'XX-XXX1049',
-    grossSalesYtd: 124500.00,
-    transactionsCount: 840,
-    exceeded1099Threshold: true,
-    statementStatus: 'generated',
-  },
-  {
-    vendorId: 'vendor-apparel-2',
-    vendorName: 'Matrix Apparel Hub LLC',
-    tinEin: 'XX-XXX8812',
-    grossSalesYtd: 42100.00,
-    transactionsCount: 310,
-    exceeded1099Threshold: true,
-    statementStatus: 'generated',
-  },
-  {
-    vendorId: 'vendor-home-3',
-    vendorName: 'TerraCraft Ceramics',
-    tinEin: 'XX-XXX4419',
-    grossSalesYtd: 9400.00,
-    transactionsCount: 65,
-    exceeded1099Threshold: false,
-    statementStatus: 'pending',
-  },
-];
 
 export const AdminCompliancePage: React.FC = () => {
-  const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[]>(SEED_JURISDICTIONS);
-  const [filings] = useState<VendorTaxFiling[]>(SEED_FILINGS);
-  const [activeTab, setActiveTab] = useState<'tax' | '1099k'>('tax');
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const userId = useAdminScope();
+  const [activeTab, setActiveTab] = useState<'evidence' | 'trail'>('evidence');
+  const [page, setPage] = useState(1);
 
-  const handleToggleWithholding = (code: string) => {
-    setJurisdictions((prev) =>
-      prev.map((j) => (j.code === code ? { ...j, withholdingEnabled: !j.withholdingEnabled } : j)),
-    );
-  };
+  const evidence = useQuery({
+    queryKey: ['admin', userId ?? 'anon', 'compliance', 'evidence'] as const,
+    queryFn: ({ signal }) => fetchComplianceEvidence(signal),
+    enabled: Boolean(userId),
+  });
 
-  const handleGenerateStatement = (vendorName: string) => {
-    setToastMsg(`Generated 2026 IRS Form 1099-K & DAC7 tax statement for ${vendorName}`);
-    setTimeout(() => setToastMsg(null), 3000);
-  };
+  const audit = useAuditQueue({ page, pageSize: AUDIT_PAGE_SIZE });
+
+  const data = evidence.data;
+  const auditRows = audit.data?.rows ?? [];
+  const auditTotal = audit.data?.total ?? 0;
+  const auditPages = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
 
   return (
-    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Tax Compliance" subtitle="Marketplace facilitator sales tax collection rules, automated remittance tables, and IRS 1099-K merchant earnings statements." sidebar={<AdminNav />}>
+    <WorkspaceLayout
+      role="admin"
+      roleBadgeText="SUPER ADMIN"
+      title="Compliance"
+      subtitle="Seller verification, strikes, buyer protection and the governance trail, counted from the tables that record them."
+      sidebar={<AdminNav />}
+    >
       <div className="space-y-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
-            Tax, VAT & 1099-K Regulatory Compliance
+            Platform Compliance Overview
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Marketplace facilitator sales tax collection rules, automated remittance tables, and IRS 1099-K merchant earnings statements.
+            The compliance evidence this marketplace actually stores: verified merchants, strikes,
+            dispute and refund outcomes, and the audit trail of staff decisions.
           </p>
         </div>
 
-        {toastMsg && (
-          <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            {toastMsg}
-          </div>
-        )}
-
-        {/* Tab Toggle */}
-        <div className="flex border-b border-slate-200 gap-4 text-xs font-bold">
+        <div role="tablist" className="flex border-b border-slate-200 gap-4 text-xs font-bold">
           <button
             type="button"
-            onClick={() => setActiveTab('tax')}
+            role="tab"
+            aria-selected={activeTab === 'evidence'}
+            onClick={() => setActiveTab('evidence')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'tax'
+              activeTab === 'evidence'
                 ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Percent className="h-4 w-4" />
-            Jurisdiction Tax Tables ({jurisdictions.length})
+            <ShieldCheck className="h-4 w-4" />
+            Verification &amp; Protection
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('1099k')}
+            role="tab"
+            aria-selected={activeTab === 'trail'}
+            onClick={() => setActiveTab('trail')}
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
-              activeTab === '1099k'
+              activeTab === 'trail'
                 ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <FileCheck className="h-4 w-4" />
-            IRS 1099-K & Merchant Statements
+            <ScrollText className="h-4 w-4" />
+            Governance Trail
           </button>
         </div>
 
-        {/* TAB 1: Tax Rates */}
-        {activeTab === 'tax' && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-xs text-slate-700 flex items-start gap-3">
-              <ShieldCheck className="h-5 w-5 text-[#2563EB] shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold text-slate-900 block">Marketplace Facilitator Legislation Active</span>
-                <p className="text-slate-600 mt-0.5 leading-relaxed">
-                  Vendora automatically calculates, collects from buyers, and remits sales taxes on behalf of third-party vendors for all enabled jurisdictions below.
-                </p>
-              </div>
-            </div>
+        {activeTab === 'evidence' && (
+          <div className="space-y-6">
+            {evidence.isError && (
+              <p role="alert" className="flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
+                <AlertTriangle className="h-4 w-4" />
+                {reason(evidence.error, 'The compliance evidence could not be loaded.')}
+              </p>
+            )}
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs text-xs">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                  <tr>
-                    <th className="p-4">Jurisdiction Code</th>
-                    <th className="p-4">Jurisdiction Name</th>
-                    <th className="p-4">Tax Type</th>
-                    <th className="p-4">Effective Rate</th>
-                    <th className="p-4">Marketplace Withholding</th>
-                    <th className="p-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {jurisdictions.map((j) => (
-                    <tr key={j.code} className="hover:bg-slate-50/50">
-                      <td className="p-4 font-mono font-bold text-slate-900">{j.code}</td>
-                      <td className="p-4 font-bold text-slate-800">{j.name}</td>
-                      <td className="p-4 text-slate-600 uppercase text-[10px] font-bold">
-                        {j.type.replace(/_/g, ' ')}
-                      </td>
-                      <td className="p-4 font-mono font-bold text-slate-900">{j.rate.toFixed(3)}%</td>
-                      <td className="p-4">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                            j.withholdingEnabled
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-slate-100 text-slate-500'
-                          }`}
-                        >
-                          {j.withholdingEnabled ? 'Auto-Collected & Remitted' : 'Exempt / Zero Rate'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleWithholding(j.code)}
-                          className="rounded-lg border border-slate-200 px-3 py-1 font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
-                        >
-                          {j.withholdingEnabled ? 'Disable' : 'Enable'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {evidence.isPending && !evidence.isError ? (
+              <p className="text-xs text-slate-500">Reading compliance evidence…</p>
+            ) : data ? (
+              <>
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <BadgeCheck className="h-4 w-4 text-[#2563EB]" />
+                    Seller verification
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <Stat label="Active stores" value={data.sellers.activeStores} />
+                    <Stat label="Suspended stores" value={data.sellers.suspendedStores} />
+                    <Stat label="Applications pending" value={data.sellers.applicationsPending} />
+                    <Stat label="Under review" value={data.sellers.applicationsUnderReview} />
+                    <Stat label="Approved" value={data.sellers.applicationsApproved} />
+                    <Stat label="Rejected" value={data.sellers.applicationsRejected} />
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <Scale className="h-4 w-4 text-[#2563EB]" />
+                    Buyer protection
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <Stat label="Open disputes" value={data.protection.openDisputes} />
+                    <Stat label="Under review" value={data.protection.underReviewDisputes} />
+                    <Stat label="Escalated" value={data.protection.escalatedDisputes} />
+                    <Stat label="Resolved · refund" value={data.protection.resolvedWithRefund} />
+                    <Stat label="Resolved · denied" value={data.protection.resolvedDenied} />
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                      <div className="text-2xl font-black text-slate-900">{formatPrice(data.protection.refundsTotal)}</div>
+                      <div className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                        Refunded · {data.protection.refundsCount.toLocaleString()} claims
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                  <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
+                    <AlertTriangle className="h-4 w-4 text-rose-600" />
+                    <h3 className="text-sm font-bold text-slate-900">Active strikes ({data.totalStrikes.toLocaleString()})</h3>
+                  </div>
+                  {data.recentStrikes.length === 0 ? (
+                    <p className="px-5 py-8 text-center text-xs text-slate-500">No strikes have been issued.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
+                          <tr>
+                            <th className="p-3">Store</th>
+                            <th className="p-3">Reason</th>
+                            <th className="p-3">Note</th>
+                            <th className="p-3 text-right">Issued</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {data.recentStrikes.map((s) => (
+                            <tr key={s.id} className="hover:bg-slate-50/50">
+                              <td className="p-3 font-bold text-slate-900">{s.storeName}</td>
+                              <td className="p-3 text-slate-700">{s.reason}</td>
+                              <td className="p-3 text-slate-500">{s.note || '—'}</td>
+                              <td className="p-3 text-right text-slate-500">{new Date(s.createdAt).toLocaleDateString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              </>
+            ) : null}
           </div>
         )}
 
-        {/* TAB 2: 1099-K Statements */}
-        {activeTab === '1099k' && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4 text-xs">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Annual 1099-K Merchant Reporting Pool</h3>
-                <p className="text-slate-500">
-                  Merchants exceeding $20,000 gross volume and 200 transactions are required to receive Form 1099-K.
-                </p>
-              </div>
-
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
-                    <tr>
-                      <th className="p-3">Merchant Name</th>
-                      <th className="p-3">Tax Identification (TIN)</th>
-                      <th className="p-3">Gross Sales YTD</th>
-                      <th className="p-3">Orders Count</th>
-                      <th className="p-3">Filing Required</th>
-                      <th className="p-3 text-right">Statement Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filings.map((f) => (
-                      <tr key={f.vendorId} className="hover:bg-slate-50/50">
-                        <td className="p-3 font-bold text-slate-900">{f.vendorName}</td>
-                        <td className="p-3 font-mono text-slate-600">{f.tinEin}</td>
-                        <td className="p-3 font-bold text-slate-900">${f.grossSalesYtd.toLocaleString()}</td>
-                        <td className="p-3 text-slate-700">{f.transactionsCount}</td>
-                        <td className="p-3">
-                          {f.exceeded1099Threshold ? (
-                            <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-[10px] font-bold">
-                              Threshold Met (&gt;$20K)
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-slate-100 text-slate-500 px-2.5 py-0.5 text-[10px] font-bold">
-                              Under Threshold
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleGenerateStatement(f.vendorName)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-[#FF7A1A] text-white px-3 py-1 font-bold hover:bg-[#EA580C] cursor-pointer"
-                          >
-                            <Download className="h-3 w-3" />
-                            Generate Form
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        {activeTab === 'trail' && (
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                <ScrollText className="h-4 w-4" />
+                Staff decisions ({auditTotal.toLocaleString()})
+              </h3>
+              <button
+                type="button"
+                onClick={() => void audit.refetch()}
+                disabled={audit.isFetching}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              >
+                {audit.isFetching ? 'Reading…' : 'Reload'}
+              </button>
             </div>
-          </div>
+
+            {audit.isPending ? (
+              <p className="px-5 py-8 text-xs text-slate-500">Reading the governance trail…</p>
+            ) : audit.isError ? (
+              <p role="alert" className="m-5 rounded-lg border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
+                {reason(audit.error, 'The audit trail could not be loaded.')}
+              </p>
+            ) : auditRows.length === 0 ? (
+              <p className="px-5 py-8 text-center text-xs text-slate-500">No staff actions recorded yet.</p>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-[11px]">
+                      <tr>
+                        <th className="p-3">Action</th>
+                        <th className="p-3">Actor</th>
+                        <th className="p-3">Entity</th>
+                        <th className="p-3 text-right">When</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {auditRows.map((row) => (
+                        <tr key={row.id} className="hover:bg-slate-50/50">
+                          <td className="p-3 font-mono font-bold text-slate-800">{row.action}</td>
+                          <td className="p-3 text-slate-700">
+                            {row.actorName} <span className="text-slate-400">({row.actorRole})</span>
+                          </td>
+                          <td className="p-3 text-slate-500">
+                            {row.entityType ? `${row.entityType}${row.entityId ? ` · ${row.entityId}` : ''}` : '—'}
+                          </td>
+                          <td className="p-3 text-right text-slate-500">{new Date(row.createdAt).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
+                  <span>
+                    Page <strong className="text-slate-800">{audit.data?.page ?? page}</strong> of{' '}
+                    <strong className="text-slate-800">{auditPages}</strong>
+                  </span>
+                  <span className="flex gap-1">
+                    <button
+                      type="button"
+                      disabled={page <= 1}
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      className="cursor-pointer rounded-lg border border-slate-200 px-3 py-1 font-bold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={page >= auditPages}
+                      onClick={() => setPage((current) => Math.min(auditPages, current + 1))}
+                      className="cursor-pointer rounded-lg border border-slate-200 px-3 py-1 font-bold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </span>
+                </div>
+              </>
+            )}
+          </section>
         )}
       </div>
     </WorkspaceLayout>

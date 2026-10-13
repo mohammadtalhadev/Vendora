@@ -1,10 +1,9 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Printer, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
+import { Printer, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useOrderDetail } from '../features/orders/hooks/useOrders';
 import { QueryState } from '../components/common/QueryState';
-
-const money = (value: number) => `$${value.toFixed(2)}`;
+import { useCurrency } from '../store/currency-store';
 
 /** What the server recorded at booking. Nothing here is inferred from the payment method. */
 function settlementLine(status: string | undefined): { label: string; tone: string } {
@@ -23,6 +22,7 @@ function settlementLine(status: string | undefined): { label: string; tone: stri
 }
 
 export const InvoicePage: React.FC = () => {
+  const { formatPrice } = useCurrency();
   const { orderId } = useParams<{ orderId: string }>();
   const effectiveOrderId = orderId ?? '';
 
@@ -47,14 +47,8 @@ export const InvoicePage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-10 px-4 sm:px-6 print:p-0 print:bg-white overflow-hidden transition-colors">
-      {/* Ambient background glow orbs (hidden in print) */}
-      <div className="ambient-glow-wrapper print:hidden" aria-hidden="true">
-        <div className="ambient-orb-orange -top-20 -left-20 opacity-50" />
-        <div className="ambient-orb-aqua top-1/2 -right-32 opacity-40" />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-4xl">
+    <div className="py-10 print:p-0">
+      <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 print:px-0">
         {/* Top Action Bar (Hidden when printing) */}
         <div className="mb-6 flex items-center justify-between print:hidden">
           <Link
@@ -100,9 +94,6 @@ export const InvoicePage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-200 dark:border-white/10 print:border-slate-300">
                 <div>
                   <div className="flex items-center gap-2.5 mb-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sun-orange text-white shadow-md">
-                      <Sparkles className="h-5 w-5 fill-white" />
-                    </div>
                     <span className="font-outfit text-2xl font-black text-slate-900 dark:text-white print:text-black tracking-tight">
                       Vendora<span className="text-sun-orange">.</span>
                     </span>
@@ -185,9 +176,9 @@ export const InvoicePage: React.FC = () => {
                           {item.sellerType === 'platform' ? 'Vendora Central Fulfillment' : item.sellerName}
                         </td>
                         <td className="py-3.5 text-center text-slate-700 dark:text-slate-300 print:text-black font-semibold">{item.quantity}</td>
-                        <td className="py-3.5 text-right text-slate-700 dark:text-slate-300 print:text-black">{money(item.price)}</td>
+                        <td className="py-3.5 text-right text-slate-700 dark:text-slate-300 print:text-black">{formatPrice(item.price)}</td>
                         <td className="py-3.5 text-right font-black text-slate-900 dark:text-white print:text-black">
-                          {money(item.price * item.quantity)}
+                          {formatPrice(item.price * item.quantity)}
                         </td>
                       </tr>
                     ))}
@@ -222,23 +213,23 @@ export const InvoicePage: React.FC = () => {
                 <div className="w-full sm:w-72 space-y-2 text-right">
                   <div className="flex justify-between text-slate-600 dark:text-slate-400 print:text-slate-600">
                     <span>Items ({items.length}):</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 print:text-black">{money(grossLineTotal)}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 print:text-black">{formatPrice(grossLineTotal)}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-slate-600 dark:text-slate-400 print:text-slate-600">
                       <span>Discount applied:</span>
-                      <span className="font-bold text-emerald-700 dark:text-emerald-400 print:text-emerald-800">−{money(discount)}</span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400 print:text-emerald-800">−{formatPrice(discount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-slate-600 dark:text-slate-400 print:text-slate-600">
                     <span>Shipping ({subOrders.length} {subOrders.length === 1 ? 'package' : 'packages'}):</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200 print:text-black">
-                      {shippingTotal > 0 ? money(shippingTotal) : 'FREE'}
+                      {shippingTotal > 0 ? formatPrice(shippingTotal) : 'FREE'}
                     </span>
                   </div>
                   <div className="border-t border-slate-200 dark:border-white/10 print:border-slate-300 pt-3 flex justify-between text-base font-black text-slate-900 dark:text-white print:text-black">
                     <span>Grand Total:</span>
-                    <span className="text-sun-orange text-lg">{money(grandTotal)}</span>
+                    <span className="text-sun-orange text-lg">{formatPrice(grandTotal)}</span>
                   </div>
                 </div>
               </div>

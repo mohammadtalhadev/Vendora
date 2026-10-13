@@ -16,6 +16,7 @@ import { VendorOrdersPage } from '../../../pages/VendorOrdersPage';
 import { VendorProductsPage } from '../../../pages/VendorProductsPage';
 import { ProductFormModal } from './ProductFormModal';
 import { renderWorkspace, signInVendor } from '../../../test/vendor-render';
+import { formatPrice } from '../../../store/currency-store';
 import {
   categoryRow,
   dashboardJson,
@@ -41,20 +42,23 @@ describe('VendorDashboardPage', () => {
   it('reports the KPI numbers the vendor_dashboard query returns', async () => {
     fixtureWith({
       kpis: { ...dashboardJson().kpis, grossBooked: 12500, commission: 1250, netPayout: 11250, orders7d: 3 },
-      stages: { ...dashboardJson().stages, placed: 4 },
+      // Several buckets, so the pending tile can only come from the `placed` count itself.
+      stages: { ...dashboardJson().stages, placed: 4, confirmed: 1, delivered: 2 },
       catalog: { ...dashboardJson().catalog, approved: 7, lowStock: 2 },
     });
     renderWorkspace(<VendorDashboardPage />);
 
     // The tiles quote the RPC's own jsonb, not a number the screen remembered.
-    await waitFor(() => expect(screen.getAllByText('$11,250').length).toBeGreaterThan(0));
-    expect(screen.getAllByText('$12,500').length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getAllByText(formatPrice(11250)).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(formatPrice(12500)).length).toBeGreaterThan(0);
 
     // Pending Orders and Low Stock are the RPC's stage and catalog counts, relabelled.
     const metrics = screen.getByText('Gross Sales').parentElement as HTMLElement;
     expect(within(metrics).getByText('4')).toBeInTheDocument();
     expect(within(metrics).getByText('2')).toBeInTheDocument();
-    expect(screen.queryByText('$34,820')).not.toBeInTheDocument();
+    // The stage tiles add the seven buckets once: 4 + 1 + 2, never the queue on top of them.
+    expect(within(metrics).getByText('7')).toBeInTheDocument();
+    expect(screen.queryByText(formatPrice(34820))).not.toBeInTheDocument();
   });
 
   it('lists only this store’s packages, with the buyer read from the parent order', async () => {

@@ -1,0 +1,533 @@
+/**
+ * Vendora Admin Panel Theme (Catmin Design System)
+ * Governance, moderation, and platform operations workspace
+ * Professional, authoritative, data-dense with indigo/blue accent
+ */
+
+/* Admin panel theme variables */
+:root {
+  --panel-bg: #F8FAFC;
+  --panel-surface: #FFFFFF;
+  --panel-surface-hover: #F1F5F9;
+  --panel-border: #E2E8F0;
+  --panel-text: #0F172A;
+  --panel-text-muted: #64748B;
+  --panel-primary: #4F46E5; /* Indigo - Catmin brand */
+  --panel-primary-hover: #4338CA;
+  --panel-primary-light: #EEF2FF;
+  --panel-accent: #06B6D4; /* Cyan */
+  --panel-sidebar-bg: rgba(255, 255, 255, 0.72);
+  --panel-header-bg: rgba(255, 255, 255, 0.85);
+  --panel-card-bg: rgba(255, 255, 255, 0.88);
+  --panel-glass-border: rgba(255, 255, 255, 0.6);
+  --panel-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  --panel-radius: 1rem;
+  --panel-sidebar-width: 280px;
+  --panel-header-height: 64px;
+}
+
+/* Dark mode for Admin */
+html.dark {
+  --panel-bg: #0B1120;
+  --panel-surface: #111827;
+  --panel-surface-hover: #1F2937;
+  --panel-border: #273449;
+  --panel-text: #F8FAFC;
+  --panel-text-muted: #94A3B8;
+  --panel-primary: #6366F1; /* Lighter indigo for dark */
+  --panel-primary-hover: #818CF8;
+  --panel-primary-light: #1E1B4B;
+  --panel-accent: #22D3EE;
+  --panel-sidebar-bg: rgba(17, 24, 39, 0.85);
+  --panel-header-bg: rgba(15, 23, 42, 0.9);
+  --panel-card-bg: rgba(17, 24, 39, 0.9);
+  --panel-glass-border: rgba(255, 255, 255, 0.08);
+  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+}
+
+/* Catmin/Shadcn design system color overrides for Admin */
+:root {
+  --primary: 239 84% 67%; /* Indigo */
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 239 84% 67%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 239 84% 67%;
+}
+
+html.dark {
+  --primary: 239 84% 67%;
+  --primary-foreground: 222.2 84% 4.9%;
+  --sidebar-background: 222.2 84% 4.9%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 239 84% 67%;
+  --sidebar-primary-foreground: 222.2 84% 4.9%;
+  --sidebar-accent: 217.2 32.6% 17.5%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217.2 32.6% 17.5%;
+  --sidebar-ring: 239 84% 67%;
+}
+
+/* Admin-specific component overrides */
+.admin-shell {
+  background-color: var(--panel-bg);
+}
+
+.admin-sidebar {
+  background-color: var(--panel-sidebar-bg) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-right: 1px solid var(--panel-glass-border) !important;
+  width: var(--panel-sidebar-width);
+}
+
+.admin-header {
+  background-color: var(--panel-header-bg) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid var(--panel-glass-border) !important;
+  height: var(--panel-header-height);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+}
+
+.admin-card {
+  background-color: var(--panel-card-bg) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--panel-glass-border) !important;
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow) !important;
+}
+
+.admin-card-solid {
+  background-color: var(--panel-surface);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+}
+
+.admin-table {
+  background-color: var(--panel-card-bg);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: var(--panel-radius);
+}
+
+.admin-table th {
+  background-color: var(--panel-surface-hover);
+  color: var(--panel-text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+html.dark .admin-table th {
+  background-color: var(--panel-surface-hover);
+  border-color: var(--panel-border);
+}
+
+.admin-table td {
+  border-bottom: 1px solid var(--panel-border);
+}
+
+html.dark .admin-table td {
+  border-color: var(--panel-border);
+}
+
+.admin-table tr:hover td {
+  background-color: var(--panel-surface-hover);
+}
+
+html.dark .admin-table tr:hover td {
+  background-color: var(--panel-surface-hover);
+}
+
+/* Admin buttons */
+.admin-btn-primary {
+  background-color: var(--panel-primary);
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px 0 rgba(79, 70, 229, 0.25);
+}
+
+.admin-btn-primary:hover {
+  background-color: var(--panel-primary-hover);
+  box-shadow: 0 4px 16px 0 rgba(79, 70, 229, 0.35);
+}
+
+.admin-btn-secondary {
+  background-color: var(--panel-surface);
+  color: var(--panel-text);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.admin-btn-secondary:hover {
+  background-color: var(--panel-surface-hover);
+  border-color: var(--panel-primary);
+  color: var(--panel-primary);
+}
+
+.admin-btn-ghost {
+  background-color: transparent;
+  color: var(--panel-text-muted);
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.admin-btn-ghost:hover {
+  background-color: var(--panel-surface-hover);
+  color: var(--panel-text);
+}
+
+.admin-btn-danger {
+  background-color: #EF4444;
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px 0 rgba(239, 68, 68, 0.25);
+}
+
+.admin-btn-danger:hover {
+  background-color: #DC2626;
+  box-shadow: 0 4px 16px 0 rgba(239, 68, 68, 0.35);
+}
+
+/* Admin status badges */
+.admin-badge-pending {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+
+html.dark .admin-badge-pending {
+  background-color: #78350F;
+  color: #FDE68A;
+  border-color: #92400E;
+}
+
+.admin-badge-approved {
+  background-color: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+}
+
+html.dark .admin-badge-approved {
+  background-color: #064E3B;
+  color: #A7F3D0;
+  border-color: #065F46;
+}
+
+.admin-badge-rejected {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+html.dark .admin-badge-rejected {
+  background-color: #7F1D1D;
+  color: #FCA5A5;
+  border-color: #991B1B;
+}
+
+.admin-badge-active {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+  border: 1px solid #93C5FD;
+}
+
+html.dark .admin-badge-active {
+  background-color: #1E3A8A;
+  color: #93C5FD;
+  border-color: #1E40AF;
+}
+
+/* Admin KPI cards */
+.admin-kpi-card {
+  background-color: var(--panel-card-bg);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  transition: all 0.2s ease;
+}
+
+.admin-kpi-card:hover {
+  box-shadow: 0 8px 24px -2px rgba(15, 23, 42, 0.08);
+}
+
+.admin-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-kpi-icon-primary {
+  background-color: var(--panel-primary-light);
+  color: var(--panel-primary);
+}
+
+.admin-kpi-icon-success {
+  background-color: #D1FAE5;
+  color: #059669;
+}
+
+html.dark .admin-kpi-icon-success {
+  background-color: #064E3B;
+  color: #6EE7B7;
+}
+
+.admin-kpi-icon-warning {
+  background-color: #FEF3C7;
+  color: #D97706;
+}
+
+html.dark .admin-kpi-icon-warning {
+  background-color: #78350F;
+  color: #FDE68A;
+}
+
+.admin-kpi-icon-info {
+  background-color: #DBEAFE;
+  color: #2563EB;
+}
+
+html.dark .admin-kpi-icon-info {
+  background-color: #1E3A8A;
+  color: #93C5FD;
+}
+
+/* Admin sidebar navigation */
+.admin-nav-item {
+  border-radius: 0.75rem;
+  transition: all 0.15s ease;
+  color: var(--panel-text-muted);
+}
+
+.admin-nav-item:hover {
+  background-color: var(--panel-surface-hover);
+  color: var(--panel-text);
+}
+
+.admin-nav-item.active {
+  background-color: var(--panel-primary-light);
+  color: var(--panel-primary);
+  font-weight: 600;
+}
+
+html.dark .admin-nav-item.active {
+  background-color: var(--panel-primary-light);
+  color: var(--panel-primary);
+}
+
+.admin-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background-color: var(--panel-primary);
+  border-radius: 0 3px 3px 0;
+}
+
+.admin-nav-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--panel-text-muted);
+  padding: 0.5rem 1rem;
+}
+
+/* Admin global search */
+.admin-search-input {
+  background-color: var(--panel-surface);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.75rem;
+  color: var(--panel-text);
+  transition: all 0.2s ease;
+}
+
+.admin-search-input:focus {
+  border-color: var(--panel-primary);
+  box-shadow: 0 0 0 3px var(--panel-primary-light);
+  outline: none;
+}
+
+html.dark .admin-search-input {
+  background-color: var(--panel-surface);
+  border-color: var(--panel-border);
+  color: var(--panel-text);
+}
+
+html.dark .admin-search-input:focus {
+  box-shadow: 0 0 0 3px var(--panel-primary-light);
+}
+
+/* Admin dropdown/menu */
+.admin-dropdown {
+  background-color: var(--panel-card-bg);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: 1rem;
+  box-shadow: 0 10px 40px -10px rgba(15, 23, 42, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html.dark .admin-dropdown {
+  border-color: var(--panel-glass-border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4);
+}
+
+.admin-dropdown-item {
+  border-radius: 0.5rem;
+  transition: all 0.1s ease;
+  color: var(--panel-text);
+}
+
+.admin-dropdown-item:hover {
+  background-color: var(--panel-surface-hover);
+}
+
+/* Admin data table density */
+.admin-table-compact th,
+.admin-table-compact td {
+  padding: 0.5rem 0.75rem;
+}
+
+.admin-table-comfortable th,
+.admin-table-comfortable td {
+  padding: 0.75rem 1rem;
+}
+
+.admin-table-spacious th,
+.admin-table-spacious td {
+  padding: 1rem 1.25rem;
+}
+
+/* Admin modal/dialog */
+.admin-modal {
+  background-color: var(--panel-card-bg);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 60px -10px rgba(15, 23, 42, 0.2);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+html.dark .admin-modal {
+  border-color: var(--panel-glass-border);
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Admin charts/analytics containers */
+.admin-chart-container {
+  background-color: var(--panel-card-bg);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: var(--panel-radius);
+  padding: 1.5rem;
+}
+
+/* Admin empty states */
+.admin-empty-state {
+  color: var(--panel-text-muted);
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+.admin-empty-state-icon {
+  color: var(--panel-text-muted);
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+/* Admin breadcrumb */
+.admin-breadcrumb {
+  color: var(--panel-text-muted);
+  font-size: 0.8125rem;
+}
+
+.admin-breadcrumb a:hover {
+  color: var(--panel-primary);
+}
+
+.admin-breadcrumb-current {
+  color: var(--panel-text);
+  font-weight: 500;
+}
+
+/* Admin page loader */
+.admin-page-loader {
+  color: var(--panel-primary);
+}
+
+/* Admin notification badge */
+.admin-notification-badge {
+  background-color: var(--panel-primary);
+  color: white;
+}
+
+/* Admin urgency indicator */
+.admin-urgency-indicator {
+  background-color: #FEF3C7;
+  border-color: #FCD34D;
+  color: #92400E;
+}
+
+html.dark .admin-urgency-indicator {
+  background-color: #78350F;
+  border-color: #92400E;
+  color: #FDE68A;
+}
+
+/* Admin scrollbar */
+.admin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(79, 70, 229, 0.3) transparent;
+}
+
+.admin-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.admin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(79, 70, 229, 0.3);
+  border-radius: 9999px;
+}
+
+.admin-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(79, 70, 229, 0.5);
+}
+
+html.dark .admin-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(99, 102, 241, 0.25);
+}
+
+html.dark .admin-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(99, 102, 241, 0.45);
+}

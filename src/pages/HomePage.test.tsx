@@ -24,7 +24,7 @@ describe('HomePage Component - Limited Campaign & Electronics Carousel', { timeo
 
     // Verify parent categories with sale products are present as pills
     expect(screen.getByRole('button', { name: 'Electronics' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Audio & Wearables' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Audio & Wearables' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Fashion' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Beauty & Personal Care' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Home & Kitchen' })).toBeInTheDocument();
@@ -103,8 +103,8 @@ describe('HomePage Component - Limited Campaign & Electronics Carousel', { timeo
 
     // Switch to Audio & Headphones
     fireEvent.click(audioPill);
-    expect(screen.getByText(/Sony WH-1000XM5/i)).toBeInTheDocument();
-    expect(screen.getByText(/Marshall Emberton II/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Sony WH-1000XM5/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Marshall Emberton II/i).length).toBeGreaterThan(0);
   });
 
   it('renders parent category titles for carousels without tabs and displays verified badge hover tooltip', () => {

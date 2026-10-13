@@ -10,13 +10,17 @@ import {
   Layers,
   Sparkles,
   ArrowRight,
+  Truck,
+  RotateCcw,
 } from 'lucide-react';
 import { useCompareStore } from '../store/compare-store';
 import { useCartStore } from '../store/cart-store';
+import { useCurrency } from '../store/currency-store';
 
 export const ComparePage: React.FC = () => {
   const { items, removeItem, clearCompare } = useCompareStore();
   const { addItem } = useCartStore();
+  const { formatPrice } = useCurrency();
 
   const [highlightDiff, setHighlightDiff] = useState(false);
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
@@ -27,6 +31,7 @@ export const ComparePage: React.FC = () => {
       productId: product.id,
       title: product.title,
       price: product.price,
+      compareAtPrice: product.compareAtPrice,
       maxStock: product.stock,
       image: product.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',
       sellerId: product.sellerId,
@@ -41,31 +46,6 @@ export const ComparePage: React.FC = () => {
     }, 2000);
   };
 
-  if (items.length === 0) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center px-4 py-16 bg-slate-50/50">
-        <div className="max-w-md text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-100 text-[#FF7A1A] mb-6 shadow-lg shadow-orange-100">
-            <ArrowLeftRight className="h-10 w-10" />
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">No Products to Compare</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            You haven't added any products to your comparison list yet. You can compare up to 4 products side-by-side.
-          </p>
-          <div className="mt-6">
-            <Link
-              to="/products"
-              className="inline-flex items-center gap-2 rounded-full bg-[#FF7A1A] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-[#EA580C] transition-all"
-            >
-              <span>Explore Products</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Helper to determine if an attribute differs across items
   const isDifferent = (key: 'price' | 'brand' | 'category' | 'sellerName' | 'rating' | 'stock' | 'type') => {
     if (items.length <= 1) return false;
@@ -73,29 +53,92 @@ export const ComparePage: React.FC = () => {
     return items.some((item) => item[key] !== firstVal);
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50/50 py-10">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#FF7A1A] mb-1">
-              <Sparkles className="h-3.5 w-3.5" />
-              Side-by-Side Product Comparison
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Compare Products ({items.length}/4)
-            </h1>
+  if (items.length === 0) {
+    return (
+      <div className="relative min-h-[75vh] flex items-center justify-center px-4 py-16 bg-slate-50/70 dark:bg-[#0b1120] overflow-hidden transition-colors">
+        {/* Ambient background glow */}
+        <div className="ambient-glow-wrapper" aria-hidden="true">
+          <div className="ambient-orb-orange top-1/4 left-1/4 opacity-50" />
+          <div className="ambient-orb-aqua bottom-1/4 right-1/4 opacity-40" />
+        </div>
+
+        <div className="relative z-10 max-w-lg w-full text-center glass-panel rounded-3xl p-8 sm:p-12 shadow-2xl border border-white/80 dark:border-white/10">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-100 dark:bg-orange-950/50 text-sun-orange mb-6 shadow-lg shadow-orange-500/20">
+            <ArrowLeftRight className="h-10 w-10" />
           </div>
 
-          <div className="flex items-center gap-3">
+          <span className="inline-block rounded-full bg-orange-100 dark:bg-orange-950/60 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange mb-3">
+            Comparison Matrix Empty
+          </span>
+
+          <h1 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            No Products to Compare
+          </h1>
+          <p className="mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            Select up to 4 items from our catalog to compare specifications, pricing, seller ratings, and fulfillment details side-by-side.
+          </p>
+
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to="/products"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange px-6 py-3 text-xs font-extrabold text-white shadow-lg shadow-orange-500/25 hover:bg-sun-orange-600 active:scale-95 transition-all"
+            >
+              <span>Explore Marketplace</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          {/* Quick Categories */}
+          <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/10 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[11px] font-bold text-slate-400">Popular:</span>
+            {['Electronics', 'Audio', 'Digital', 'Fashion'].map((category) => (
+              <Link
+                key={category}
+                to={`/products?category=${category.toLowerCase()}`}
+                className="rounded-full bg-slate-100 dark:bg-slate-800/80 px-3 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-sun-orange hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                {category}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
+      {/* Ambient background glow orbs */}
+      <div className="ambient-glow-wrapper" aria-hidden="true">
+        <div className="ambient-orb-orange -top-20 -left-20 opacity-60" />
+        <div className="ambient-orb-aqua top-1/3 -right-24 opacity-50" />
+        <div className="ambient-orb-indigo bottom-10 left-1/3 opacity-30" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-[1600px]">
+        {/* Top Header */}
+        <div className="glass-panel rounded-3xl p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border border-white/80 dark:border-white/10">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange dark:text-orange-400 mb-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Side-by-Side Product Comparison</span>
+            </div>
+            <h1 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Product Analysis Matrix ({items.length}/4)
+            </h1>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Evaluate hardware specs, seller credentials, and pricing across multi-vendor inventory.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => setHighlightDiff(!highlightDiff)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer border ${
                 highlightDiff
-                  ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20 ring-2 ring-amber-500/30'
+                  : 'bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
@@ -105,67 +148,68 @@ export const ComparePage: React.FC = () => {
             <button
               type="button"
               onClick={clearCompare}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/40 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100/60 transition-colors cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Clear All
+              <span>Clear Matrix</span>
             </button>
 
             <Link
               to="/products"
-              className="inline-flex items-center gap-1 rounded-full bg-[#FF7A1A] px-4 py-2 text-xs font-bold text-white hover:bg-[#EA580C] transition-colors"
+              className="inline-flex items-center gap-1 rounded-full bg-sun-orange px-5 py-2 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-sun-orange-600 transition-colors active:scale-95"
             >
-              + Add More
+              <span>+ Add Product</span>
             </Link>
           </div>
         </div>
 
         {/* Comparison Matrix Table */}
-        <div className="overflow-x-auto rounded-3xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/50">
+        <div className="overflow-x-auto glass-panel rounded-3xl border border-white/80 dark:border-white/10 shadow-2xl">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-100">
-                <th className="w-48 p-5 bg-slate-50/60 text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Feature / Spec
+              <tr className="border-b border-slate-100 dark:border-white/10">
+                <th className="w-56 p-6 bg-slate-50/70 dark:bg-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Feature / Parameter
                 </th>
                 {items.map((item) => (
-                  <th key={item.id} className="min-w-[280px] p-5 align-top">
+                  <th key={item.id} className="min-w-[300px] p-6 align-top">
                     <div className="relative group">
                       <button
                         type="button"
                         onClick={() => removeItem(item.id)}
-                        className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-600 transition-colors cursor-pointer"
-                        title="Remove from comparison"
+                        className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900 dark:hover:text-rose-300 transition-colors cursor-pointer shadow-sm border border-slate-200 dark:border-white/10"
+                        title="Remove product"
+                        aria-label={`Remove ${item.title || 'product'} from comparison`}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
 
-                      <div className="h-44 w-full rounded-2xl bg-slate-100 overflow-hidden mb-3 border border-slate-100">
+                      <div className="h-48 w-full rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden mb-4 border border-white/80 dark:border-white/10 shadow-inner">
                         <img
                           src={item.images[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80'}
                           alt={item.title}
-                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
 
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        {item.brand}
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                        {item.brand?.trim() || '—'}
                       </div>
 
                       <Link
                         to={`/products/${item.id}`}
-                        className="font-bold text-sm text-slate-900 hover:text-[#FF7A1A] line-clamp-2 leading-snug mb-2 block"
+                        className="font-outfit font-black text-sm text-slate-900 dark:text-white hover:text-sun-orange dark:hover:text-sun-orange line-clamp-2 leading-snug mb-3 block transition-colors"
                       >
                         {item.title}
                       </Link>
 
-                      <div className="flex items-baseline gap-2 mb-3">
-                        <span className="text-xl font-black text-slate-900">
-                          ${item.price.toFixed(2)}
+                      <div className="flex items-baseline gap-2 mb-4">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white">
+                          {formatPrice(item.price)}
                         </span>
                         {item.compareAtPrice && item.compareAtPrice > item.price && (
                           <span className="text-xs text-slate-400 line-through">
-                            ${item.compareAtPrice.toFixed(2)}
+                            {formatPrice(item.compareAtPrice)}
                           </span>
                         )}
                       </div>
@@ -173,21 +217,21 @@ export const ComparePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleAddToCart(item)}
-                        className={`w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 px-4 text-xs font-bold transition-all cursor-pointer ${
+                        className={`w-full flex items-center justify-center gap-2 rounded-full py-3 px-4 text-xs font-extrabold transition-all cursor-pointer shadow-md active:scale-95 ${
                           addedIds[item.id]
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-[#FF7A1A] hover:bg-[#e0650f] text-white shadow-md shadow-orange-500/20'
+                            : 'bg-sun-orange hover:bg-sun-orange-600 text-white shadow-orange-500/25'
                         }`}
                       >
                         {addedIds[item.id] ? (
                           <>
                             <Check className="h-3.5 w-3.5" />
-                            Added to Cart
+                            <span>Added to Cart</span>
                           </>
                         ) : (
                           <>
                             <ShoppingCart className="h-3.5 w-3.5" />
-                            Add to Cart
+                            <span>Add to Cart</span>
                           </>
                         )}
                       </button>
@@ -196,94 +240,146 @@ export const ComparePage: React.FC = () => {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {/* Sold By */}
-              <tr className={highlightDiff && isDifferent('sellerName') ? 'bg-amber-50/40' : ''}>
-                <td className="p-4 font-bold text-slate-500 bg-slate-50/40">Seller / Store</td>
+            <tbody className="divide-y divide-slate-100 dark:divide-white/10 text-xs">
+              {/* Seller / Store */}
+              <tr className={highlightDiff && isDifferent('sellerName') ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Seller / Store
+                </td>
                 {items.map((item) => (
-                  <td key={item.id} className="p-4 font-medium text-slate-800">
+                  <td key={item.id} className="p-5 font-semibold text-slate-800 dark:text-slate-200">
                     {item.sellerType === 'platform' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-extrabold text-[#2563EB]">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sun-orange/15 px-3 py-1 text-[11px] font-extrabold text-[#D9610B] dark:text-orange-400 border border-sun-orange/35">
                         Sold by Vendora
                       </span>
                     ) : (
                       <Link
                         to={`/vendors/${item.sellerId}`}
-                        className="text-slate-800 font-bold hover:text-[#2563EB] hover:underline"
+                        className="text-slate-800 dark:text-slate-200 font-bold hover:text-sun-orange hover:underline transition-colors"
                       >
-                        {item.sellerName}
+                        {item.sellerName?.trim() || '—'}
                       </Link>
                     )}
                   </td>
                 ))}
               </tr>
 
-              {/* Rating */}
-              <tr className={highlightDiff && isDifferent('rating') ? 'bg-amber-50/40' : ''}>
-                <td className="p-4 font-bold text-slate-500 bg-slate-50/40">Customer Rating</td>
+              {/* Customer Rating */}
+              <tr className={highlightDiff && isDifferent('rating') ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Customer Rating
+                </td>
                 {items.map((item) => (
-                  <td key={item.id} className="p-4">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-800">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      <span>{item.rating.toFixed(1)}</span>
-                      <span className="text-slate-400 font-normal">({item.reviewCount} reviews)</span>
-                    </div>
-                  </td>
-                ))}
-              </tr>
-
-              {/* Category */}
-              <tr className={highlightDiff && isDifferent('category') ? 'bg-amber-50/40' : ''}>
-                <td className="p-4 font-bold text-slate-500 bg-slate-50/40">Category</td>
-                {items.map((item) => (
-                  <td key={item.id} className="p-4 font-medium text-slate-700 capitalize">
-                    {item.category}
-                  </td>
-                ))}
-              </tr>
-
-              {/* Fulfillment Type */}
-              <tr className={highlightDiff && isDifferent('type') ? 'bg-amber-50/40' : ''}>
-                <td className="p-4 font-bold text-slate-500 bg-slate-50/40">Product Type</td>
-                {items.map((item) => (
-                  <td key={item.id} className="p-4">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                        item.type === 'digital'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-emerald-100 text-emerald-700'
-                      }`}
-                    >
-                      <Package className="h-3 w-3" />
-                      {item.type === 'digital' ? 'Digital Download' : 'Physical Parcel'}
-                    </span>
-                  </td>
-                ))}
-              </tr>
-
-              {/* Stock Availability */}
-              <tr className={highlightDiff && isDifferent('stock') ? 'bg-amber-50/40' : ''}>
-                <td className="p-4 font-bold text-slate-500 bg-slate-50/40">Availability</td>
-                {items.map((item) => (
-                  <td key={item.id} className="p-4 font-medium">
-                    {item.stock > 0 ? (
-                      <span className="text-emerald-600 font-bold flex items-center gap-1">
-                        <Check className="h-3.5 w-3.5" />
-                        In Stock ({item.stock} available)
-                      </span>
+                  <td key={item.id} className="p-5">
+                    {item.reviewCount > 0 ? (
+                      <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="text-sm font-black">{item.rating.toFixed(1)}</span>
+                        <span className="text-slate-400 font-normal">({item.reviewCount} reviews)</span>
+                      </div>
                     ) : (
-                      <span className="text-rose-600 font-bold">Out of Stock</span>
+                      <span className="text-slate-400 font-medium">No ratings yet</span>
                     )}
                   </td>
                 ))}
               </tr>
 
-              {/* Description Snippet */}
-              <tr>
-                <td className="p-4 font-bold text-slate-500 bg-slate-50/40">Description</td>
+              {/* Category */}
+              <tr className={highlightDiff && isDifferent('category') ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Category
+                </td>
                 {items.map((item) => (
-                  <td key={item.id} className="p-4 text-slate-600 leading-relaxed text-xs line-clamp-3">
-                    {item.description}
+                  <td key={item.id} className="p-5 font-semibold text-slate-700 dark:text-slate-300 capitalize">
+                    {item.category?.trim() || '—'}
+                  </td>
+                ))}
+              </tr>
+
+              {/* Product Type */}
+              <tr className={highlightDiff && isDifferent('type') ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Fulfillment Type
+                </td>
+                {items.map((item) => (
+                  <td key={item.id} className="p-5">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${
+                        item.type === 'digital'
+                          ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'
+                          : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                      }`}
+                    >
+                      <Package className="h-3.5 w-3.5" />
+                      <span>{item.type === 'digital' ? 'Digital License (Instant)' : 'Physical Parcel'}</span>
+                    </span>
+                  </td>
+                ))}
+              </tr>
+
+              {/* Stock Status */}
+              <tr className={highlightDiff && isDifferent('stock') ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Availability
+                </td>
+                {items.map((item) => (
+                  <td key={item.id} className="p-5 font-medium">
+                    {item.stock > 0 ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                        <Check className="h-4 w-4" />
+                        In Stock ({item.stock} available)
+                      </span>
+                    ) : (
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">Out of Stock</span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+
+              {/* Shipping Estimate */}
+              <tr>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Shipping SLA
+                </td>
+                {items.map((item) => (
+                  <td key={item.id} className="p-5 text-slate-700 dark:text-slate-300 font-medium">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-sun-orange shrink-0" />
+                      <span>
+                        {item.type === 'digital'
+                          ? 'Instant digital access'
+                          : item.shippingSettings?.freeShipping
+                            ? 'Free shipping · SLA not specified'
+                            : '—'}
+                      </span>
+                    </div>
+                  </td>
+                ))}
+              </tr>
+
+              {/* Warranty & Guarantee */}
+              <tr>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Protection
+                </td>
+                {items.map((item) => (
+                  <td key={item.id} className="p-5 text-slate-700 dark:text-slate-300 font-medium">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className="h-4 w-4 text-aqua shrink-0" />
+                      <span>—</span>
+                    </div>
+                  </td>
+                ))}
+              </tr>
+
+              {/* Description */}
+              <tr>
+                <td className="p-5 font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                  Overview
+                </td>
+                {items.map((item) => (
+                  <td key={item.id} className="p-5 text-slate-600 dark:text-slate-400 leading-relaxed text-xs">
+                    <p className="line-clamp-3">{item.description?.trim() || '—'}</p>
                   </td>
                 ))}
               </tr>

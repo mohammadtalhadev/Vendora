@@ -18,16 +18,22 @@ export const BottomNav: React.FC = () => {
     { to: '/account/profile', icon: User, label: 'Account' },
   ];
 
+  // Segment-aware match so nested routes stay active: /orders/123 marks "Orders",
+  // while '/' only matches the exact root path.
+  const isItemActive = (to: string): boolean =>
+    to === '/' ? location.pathname === '/' : location.pathname === to || location.pathname.startsWith(`${to}/`);
+
   return (
-    <div className="fixed bottom-3 left-1/2 z-50 w-[94%] max-w-md -translate-x-1/2 md:hidden">
-      <nav className="glass-pill flex items-center justify-around border border-white/60 bg-white/85 py-2 px-3 shadow-2xl backdrop-blur-xl">
+    <div className="fixed inset-x-3 bottom-3 z-50 md:hidden">
+      <nav className="flex items-center justify-between rounded-full border border-white/70 bg-white/92 px-2 py-1.5 shadow-[0_8px_30px_-6px_rgba(15,23,42,0.25)] backdrop-blur-2xl">
         {navItems.map(({ to, icon: Icon, label, badge }) => {
-          const isActive = location.pathname === to;
+          const isActive = isItemActive(to);
           return (
             <Link
               key={to}
               to={to}
-              className={`relative flex flex-col items-center gap-0.5 rounded-full px-3 py-1 transition-all ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/60 ${
                 isActive ? 'text-[#FF7A1A]' : 'text-slate-500 hover:text-slate-800'
               }`}
             >

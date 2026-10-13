@@ -336,7 +336,7 @@ export const VendorAddProductPage: React.FC = () => {
         {/* Floating Toast Notification */}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -349,7 +349,7 @@ export const VendorAddProductPage: React.FC = () => {
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-2xs transition-colors"
               title="Back to products list"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
             <div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 font-outfit">
@@ -387,7 +387,7 @@ export const VendorAddProductPage: React.FC = () => {
               disabled={createListing.isPending}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
             >
-              <Upload className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <Upload className="h-3.5 w-3.5 text-white stroke-[2.5]" aria-hidden="true" />
               <span className="text-white">
                 {createListing.isPending ? 'Saving…' : 'Submit for Review'}
               </span>
@@ -398,7 +398,7 @@ export const VendorAddProductPage: React.FC = () => {
         {/* Validation Alert */}
         {errorMessage && (
           <div className="flex items-center gap-2.5 rounded-xl border border-rose-200 bg-rose-50/80 p-4 text-xs font-semibold text-rose-800 animate-in fade-in">
-            <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+            <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" aria-hidden="true" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -516,7 +516,7 @@ export const VendorAddProductPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                    <ImageIcon className="h-4 w-4" />
+                    <ImageIcon className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Product Photography &amp; Assets</h3>
                 </div>
@@ -545,7 +545,7 @@ export const VendorAddProductPage: React.FC = () => {
               >
                 {isUploading ? (
                   <div className="flex flex-col items-center justify-center py-2">
-                    <Loader2 className="h-8 w-8 animate-spin text-[#FF7A1A]" />
+                    <Loader2 className="h-8 w-8 animate-spin text-[#FF7A1A]" aria-hidden="true" />
                     <p className="mt-2 text-xs font-bold text-slate-800">
                       Uploading to Supabase Storage...
                     </p>
@@ -553,7 +553,7 @@ export const VendorAddProductPage: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <UploadCloud className="mx-auto h-8 w-8 text-slate-400 transition-transform group-hover:scale-110" />
+                    <UploadCloud className="mx-auto h-8 w-8 text-slate-400 transition-transform group-hover:scale-110" aria-hidden="true" />
                     <p className="mt-2 text-xs font-bold text-slate-800">
                       Click to browse or drag & drop high-res photography here
                     </p>
@@ -581,7 +581,7 @@ export const VendorAddProductPage: React.FC = () => {
                   onClick={handleAddImage}
                   className="text-xs rounded-xl border-slate-200"
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <Plus className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
                   <span>Add URL</span>
                 </Button>
               </div>
@@ -621,7 +621,7 @@ export const VendorAddProductPage: React.FC = () => {
                       className="absolute top-2 right-2 rounded-md bg-white/90 p-1 text-slate-600 shadow-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-50 hover:text-rose-600"
                       title="Remove image"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -633,7 +633,7 @@ export const VendorAddProductPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                    <DollarSign className="h-4 w-4" />
+                    <DollarSign className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Pricing &amp; Margins</h3>
                 </div>
@@ -699,7 +699,7 @@ export const VendorAddProductPage: React.FC = () => {
                 <div>
                   <span className="text-slate-500 font-medium">Profit Margin: </span>
                   <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 text-emerald-800 px-2 py-0.5 font-bold">
-                    <Percent className="h-3 w-3" />
+                    <Percent className="h-3 w-3" aria-hidden="true" />
                     {profitMargin}%
                   </span>
                 </div>
@@ -727,7 +727,7 @@ export const VendorAddProductPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
-                    <Box className="h-4 w-4" />
+                    <Box className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Inventory &amp; Warehousing</h3>
                 </div>
@@ -738,7 +738,7 @@ export const VendorAddProductPage: React.FC = () => {
                   onClick={handleGenerateSku}
                   className="text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                 >
-                  <Sparkles className="h-3.5 w-3.5 mr-1" />
+                  <Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
                   <span>Generate SKU</span>
                 </Button>
               </div>
@@ -818,7 +818,7 @@ export const VendorAddProductPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
-                    <Download className="h-4 w-4" />
+                    <Download className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Fulfillment &amp; Delivery</h3>
                 </div>
@@ -937,7 +937,7 @@ export const VendorAddProductPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                    <Layers className="h-4 w-4" />
+                    <Layers className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Variants &amp; Options</h3>
                 </div>
@@ -981,7 +981,7 @@ export const VendorAddProductPage: React.FC = () => {
                                 { label: 'Custom Option', value: 'Custom Option' },
                               ].find((o) => o.value === optionName)?.label || optionName}
                             </span>
-                            <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 shrink-0 ml-1.5 transition-transform", isOptionDropdownOpen && "rotate-180")} />
+                            <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 shrink-0 ml-1.5 transition-transform", isOptionDropdownOpen && "rotate-180")} aria-hidden="true" />
                           </button>
 
                           {isOptionDropdownOpen && (
@@ -1014,7 +1014,7 @@ export const VendorAddProductPage: React.FC = () => {
                                     )}
                                   >
                                     <span className="truncate">{opt.label}</span>
-                                    {isSelected && <Check className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0 ml-1.5" />}
+                                    {isSelected && <Check className="h-3.5 w-3.5 text-[#FF7A1A] shrink-0 ml-1.5" aria-hidden="true" />}
                                   </button>
                                 );
                               })}
@@ -1042,7 +1042,7 @@ export const VendorAddProductPage: React.FC = () => {
                         onClick={handleGenerateVariants}
                         className="text-xs rounded-xl gap-1.5"
                       >
-                        <Plus className="h-3.5 w-3.5" />
+                        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                         <span>Build Variant Matrix</span>
                       </Button>
                     </div>
@@ -1073,7 +1073,7 @@ export const VendorAddProductPage: React.FC = () => {
                                   onClick={() => handleRemoveVariant(v.id)}
                                   className="rounded p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                                 </button>
                               </td>
                             </tr>
@@ -1096,7 +1096,7 @@ export const VendorAddProductPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-orange-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FF7A1A] text-white">
-                    <Store className="h-4 w-4" />
+                    <Store className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Store Identity</h3>
                 </div>
@@ -1150,7 +1150,7 @@ export const VendorAddProductPage: React.FC = () => {
                     Preview only - the catalogue has no SEO columns, so this text is not saved.
                   </p>
                 </div>
-                <Globe className="h-4 w-4 text-slate-400" />
+                <Globe className="h-4 w-4 text-slate-400" aria-hidden="true" />
               </div>
 
               {/* Google Result Preview Snippet */}

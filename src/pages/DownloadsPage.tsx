@@ -102,15 +102,8 @@ export const DownloadsPage: React.FC = () => {
     }`;
 
   return (
-    <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
-      {/* Ambient background glow orbs */}
-      <div className="ambient-glow-wrapper" aria-hidden="true">
-        <div className="ambient-orb-orange -top-24 -left-24 opacity-60" />
-        <div className="ambient-orb-aqua top-1/3 -right-32 opacity-50" />
-        <div className="ambient-orb-indigo bottom-10 left-1/3 opacity-40" />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-6xl">
+    <div className="py-10">
+      <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange dark:text-orange-400 mb-3 shadow-xs">
@@ -175,6 +168,7 @@ export const DownloadsPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by title, key, or seller..."
+                  aria-label="Search downloads"
                   className="w-full rounded-full border border-slate-200/90 dark:border-white/15 bg-white/90 dark:bg-slate-800/90 py-2 pl-10 pr-4 text-xs font-medium text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-sun-orange focus:ring-2 focus:ring-orange-500/20"
                 />
               </div>

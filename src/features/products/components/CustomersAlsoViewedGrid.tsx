@@ -40,7 +40,7 @@ const DEFAULT_ALSO_VIEWED: AlsoViewedItem[] = [
     brand: 'Apple Official',
     title: '20W USB-C Power Adapter',
     price: 'AED 79',
-    image: 'https://images.unsplash.com/photo-1622445268462-349711fc8117?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?auto=format&fit=crop&w=600&q=80',
     link: '/products',
   },
 ];

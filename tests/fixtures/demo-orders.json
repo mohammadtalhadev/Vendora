@@ -350,7 +350,7 @@
       "id": "sub-ord-1001-C",
       "orderGroupId": "ord-grp-1001",
       "sellerId": "platform",
-      "sellerName": "Vendora Direct",
+      "sellerName": "Vendora",
       "sellerType": "platform",
       "type": "physical",
       "items": [
@@ -364,7 +364,7 @@
           "maxStock": 100,
           "image": "/assets/products/usb-cable-orange.webp",
           "sellerId": "platform",
-          "sellerName": "Vendora Direct",
+          "sellerName": "Vendora",
           "sellerType": "platform",
           "type": "physical"
         }

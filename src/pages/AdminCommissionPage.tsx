@@ -366,7 +366,7 @@ export const AdminCommissionPage: React.FC = () => {
               onClick={() => setIsHistoryModalOpen(true)}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <Clock className="h-4 w-4 text-slate-500" />
+              <Clock className="h-4 w-4 text-slate-500" aria-hidden="true" />
               Fee Adjustment History
             </button>
             <button
@@ -374,7 +374,7 @@ export const AdminCommissionPage: React.FC = () => {
               onClick={() => setIsRuleModalOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
             >
-              <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" />
+              <Plus className="h-3.5 w-3.5 text-white stroke-[2.5]" aria-hidden="true" />
               <span className="text-white">Create Commission Rule</span>
             </button>
           </div>
@@ -469,6 +469,7 @@ export const AdminCommissionPage: React.FC = () => {
               </p>
             </div>
             <button
+              type="button"
               onClick={() => {
                 setTierToEdit({
                   tierName: 'Tier 1: High Volume',
@@ -480,7 +481,7 @@ export const AdminCommissionPage: React.FC = () => {
               }}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
             >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
               Edit tier logic
             </button>
           </div>
@@ -636,9 +637,11 @@ export const AdminCommissionPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
               <div className="p-3 border-b border-slate-100 flex items-center justify-between gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                   <input
+                    id="commission-category-search"
                     type="text"
+                    aria-label="Filter commission categories"
                     value={categorySearch}
                     onChange={(e) => { setCategorySearch(e.target.value); setCategoryPage(1); }}
                     placeholder="Filter categories..."
@@ -647,6 +650,7 @@ export const AdminCommissionPage: React.FC = () => {
                 </div>
                 <button
                   type="button"
+                  aria-pressed={statusFilter === 'active'}
                   onClick={() => {
                     setStatusFilter((prev) => (prev === 'all' ? 'active' : 'all'));
                     setCategoryPage(1);
@@ -657,21 +661,24 @@ export const AdminCommissionPage: React.FC = () => {
                       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <Filter className="h-3 w-3 text-slate-500" />
+                  <Filter className="h-3 w-3 text-slate-500" aria-hidden="true" />
                   <span>{statusFilter === 'active' ? 'Active Only' : 'Filter All'}</span>
                 </button>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table
+                  className="w-full text-left text-xs"
+                  aria-label="Category specific commission overrides"
+                >
                   <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th className="px-4 py-3">CATEGORY</th>
-                      <th className="px-4 py-3">BASE TIER FEE</th>
-                      <th className="px-4 py-3">CATEGORY OVERRIDE</th>
-                      <th className="px-4 py-3">FIXED ORDER FEE</th>
-                      <th className="px-4 py-3">MERCHANTS</th>
-                      <th className="px-4 py-3">STATUS</th>
+                      <th scope="col" className="px-4 py-3">CATEGORY</th>
+                      <th scope="col" className="px-4 py-3">BASE TIER FEE</th>
+                      <th scope="col" className="px-4 py-3">CATEGORY OVERRIDE</th>
+                      <th scope="col" className="px-4 py-3">FIXED ORDER FEE</th>
+                      <th scope="col" className="px-4 py-3">MERCHANTS</th>
+                      <th scope="col" className="px-4 py-3">STATUS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -682,7 +689,7 @@ export const AdminCommissionPage: React.FC = () => {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2.5">
                               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                                <Icon className="h-3.5 w-3.5" />
+                                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                               </div>
                               <div>
                                 <div className="font-bold text-slate-900">{cat.categoryName}</div>
@@ -728,6 +735,7 @@ export const AdminCommissionPage: React.FC = () => {
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
+                    aria-label="Previous page of commission categories"
                     onClick={() => setCategoryPage((p) => Math.max(1, p - 1))}
                     disabled={categoryPage === 1}
                     className="h-6 w-6 rounded border border-slate-200 bg-white text-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
@@ -738,6 +746,8 @@ export const AdminCommissionPage: React.FC = () => {
                     <button
                       key={page}
                       type="button"
+                      aria-label={`Go to page ${page}`}
+                      aria-current={categoryPage === page ? 'page' : undefined}
                       onClick={() => setCategoryPage(page)}
                       className={`h-6 w-6 rounded text-center text-xs font-bold transition-colors cursor-pointer ${
                         categoryPage === page
@@ -750,6 +760,7 @@ export const AdminCommissionPage: React.FC = () => {
                   ))}
                   <button
                     type="button"
+                    aria-label="Next page of commission categories"
                     onClick={() => setCategoryPage((p) => Math.min(totalCategoryPages, p + 1))}
                     disabled={categoryPage === totalCategoryPages || totalCategoryPages === 0}
                     className="h-6 w-6 rounded border border-slate-200 bg-white text-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
@@ -819,7 +830,7 @@ export const AdminCommissionPage: React.FC = () => {
                 onClick={handleExportLedger}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
               >
-                <Download className="h-3.5 w-3.5 text-slate-500" />
+                <Download className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                 Download Ledger Report
               </button>
             </div>
@@ -842,23 +853,26 @@ export const AdminCommissionPage: React.FC = () => {
               onClick={() => setIsHistoryModalOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
-              <Calendar className="h-3.5 w-3.5 text-slate-500" />
+              <Calendar className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
               All Events
             </button>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table
+                className="w-full text-left text-xs"
+                aria-label="Recent fee adjustment audit rows"
+              >
                 <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <th className="px-4 py-3">TIMESTAMP</th>
-                    <th className="px-4 py-3">MERCHANT</th>
-                    <th className="px-4 py-3">ADJUSTMENT TYPE</th>
-                    <th className="px-4 py-3">PRIOR RATE</th>
-                    <th className="px-4 py-3">NEW RATE</th>
-                    <th className="px-4 py-3">AUTHORIZED BY</th>
-                    <th className="px-4 py-3">AUDIT STATUS</th>
+                    <th scope="col" className="px-4 py-3">TIMESTAMP</th>
+                    <th scope="col" className="px-4 py-3">MERCHANT</th>
+                    <th scope="col" className="px-4 py-3">ADJUSTMENT TYPE</th>
+                    <th scope="col" className="px-4 py-3">PRIOR RATE</th>
+                    <th scope="col" className="px-4 py-3">NEW RATE</th>
+                    <th scope="col" className="px-4 py-3">AUTHORIZED BY</th>
+                    <th scope="col" className="px-4 py-3">AUDIT STATUS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -883,7 +897,7 @@ export const AdminCommissionPage: React.FC = () => {
                       <td className="px-4 py-3">
                         {event.auditStatus === 'Verified' ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                            <CheckCircle2 className="h-3 w-3" />
+                            <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                             Verified
                           </span>
                         ) : (
@@ -914,8 +928,9 @@ export const AdminCommissionPage: React.FC = () => {
 
             <form onSubmit={handleCreateRule} className="space-y-3 py-2 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Category Name</label>
+                <label htmlFor="commission-rule-cat-name" className="block font-bold text-slate-700 mb-1">Category Name</label>
                 <input
+                  id="commission-rule-cat-name"
                   type="text"
                   required
                   value={newCatName}
@@ -926,8 +941,9 @@ export const AdminCommissionPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Subtext / Scope</label>
+                <label htmlFor="commission-rule-subtext" className="block font-bold text-slate-700 mb-1">Subtext / Scope</label>
                 <input
+                  id="commission-rule-subtext"
                   type="text"
                   value={newSubtext}
                   onChange={(e) => setNewSubtext(e.target.value)}
@@ -938,8 +954,9 @@ export const AdminCommissionPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Take Rate (%)</label>
+                  <label htmlFor="commission-rule-take-rate" className="block font-bold text-slate-700 mb-1">Take Rate (%)</label>
                   <input
+                    id="commission-rule-take-rate"
                     type="text"
                     required
                     value={newOverrideRate}
@@ -949,8 +966,9 @@ export const AdminCommissionPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Fixed Order Fee ($)</label>
+                  <label htmlFor="commission-rule-fixed-fee" className="block font-bold text-slate-700 mb-1">Fixed Order Fee ($)</label>
                   <input
+                    id="commission-rule-fixed-fee"
                     type="text"
                     required
                     value={newFixedFee}
@@ -985,7 +1003,7 @@ export const AdminCommissionPage: React.FC = () => {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Crown className="h-5 w-5 text-amber-500" />
+                <Crown className="h-5 w-5 text-amber-500" aria-hidden="true" />
                 <span>Configure Volume Tier Bracket</span>
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
@@ -1002,8 +1020,9 @@ export const AdminCommissionPage: React.FC = () => {
                 className="space-y-3 py-2 text-xs"
               >
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Tier Name & Bracket</label>
+                  <label htmlFor="commission-tier-name" className="block font-bold text-slate-700 mb-1">Tier Name & Bracket</label>
                   <input
+                    id="commission-tier-name"
                     type="text"
                     value={tierToEdit.tierName}
                     onChange={(e) =>
@@ -1014,8 +1033,9 @@ export const AdminCommissionPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Qualification Criteria</label>
+                  <label htmlFor="commission-tier-criteria" className="block font-bold text-slate-700 mb-1">Qualification Criteria</label>
                   <input
+                    id="commission-tier-criteria"
                     type="text"
                     value={tierToEdit.description}
                     onChange={(e) =>
@@ -1027,8 +1047,9 @@ export const AdminCommissionPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Take Rate (%)</label>
+                    <label htmlFor="commission-tier-take-rate" className="block font-bold text-slate-700 mb-1">Take Rate (%)</label>
                     <input
+                      id="commission-tier-take-rate"
                       type="text"
                       value={tierToEdit.takeRate}
                       onChange={(e) =>
@@ -1038,8 +1059,9 @@ export const AdminCommissionPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Transaction Fee ($)</label>
+                    <label htmlFor="commission-tier-fixed-fee" className="block font-bold text-slate-700 mb-1">Transaction Fee ($)</label>
                     <input
+                      id="commission-tier-fixed-fee"
                       type="text"
                       value={tierToEdit.fixedFee}
                       onChange={(e) =>
@@ -1077,7 +1099,7 @@ export const AdminCommissionPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-2xs">
-                    <Clock className="h-5 w-5" />
+                    <Clock className="h-5 w-5" aria-hidden="true" />
                   </div>
                   <div>
                     <DialogTitle className="text-lg font-black text-slate-900">
@@ -1093,7 +1115,7 @@ export const AdminCommissionPage: React.FC = () => {
                   onClick={handleExportAdjustmentHistoryCsv}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer self-start sm:self-center"
                 >
-                  <Download className="h-3.5 w-3.5" />
+                  <Download className="h-3.5 w-3.5" aria-hidden="true" />
                   Export History (CSV)
                 </button>
               </div>
@@ -1122,9 +1144,11 @@ export const AdminCommissionPage: React.FC = () => {
               {/* Filters */}
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   <input
+                    id="commission-history-search"
                     type="text"
+                    aria-label="Search adjustment history by merchant, approver, or rationale memo"
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
                     placeholder="Search by merchant, approver, or rationale memo..."
@@ -1132,6 +1156,8 @@ export const AdminCommissionPage: React.FC = () => {
                   />
                 </div>
                 <select
+                  id="commission-history-type-filter"
+                  aria-label="Filter adjustment history by type"
                   value={historyTypeFilter}
                   onChange={(e) => setHistoryTypeFilter(e.target.value)}
                   className="admin-select text-xs font-medium text-slate-700 sm:w-56"
@@ -1148,17 +1174,20 @@ export const AdminCommissionPage: React.FC = () => {
               {/* Detailed Table */}
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table
+                    className="w-full text-left text-xs"
+                    aria-label="Fee adjustment history and audit ledger"
+                  >
                     <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       <tr>
-                        <th className="px-3.5 py-2.5">TIMESTAMP</th>
-                        <th className="px-3.5 py-2.5">MERCHANT</th>
-                        <th className="px-3.5 py-2.5">TYPE</th>
-                        <th className="px-3.5 py-2.5">RATE DELTA</th>
-                        <th className="px-3.5 py-2.5">DURATION</th>
-                        <th className="px-3.5 py-2.5">AUTHORIZED BY</th>
-                        <th className="px-3.5 py-2.5">RATIONALE / AUDIT MEMO</th>
-                        <th className="px-3.5 py-2.5">STATUS</th>
+                        <th scope="col" className="px-3.5 py-2.5">TIMESTAMP</th>
+                        <th scope="col" className="px-3.5 py-2.5">MERCHANT</th>
+                        <th scope="col" className="px-3.5 py-2.5">TYPE</th>
+                        <th scope="col" className="px-3.5 py-2.5">RATE DELTA</th>
+                        <th scope="col" className="px-3.5 py-2.5">DURATION</th>
+                        <th scope="col" className="px-3.5 py-2.5">AUTHORIZED BY</th>
+                        <th scope="col" className="px-3.5 py-2.5">RATIONALE / AUDIT MEMO</th>
+                        <th scope="col" className="px-3.5 py-2.5">STATUS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1191,7 +1220,7 @@ export const AdminCommissionPage: React.FC = () => {
                           <td className="px-3.5 py-2.5 whitespace-nowrap">
                             {item.auditStatus === 'Verified' ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                <CheckCircle2 className="h-3 w-3" />
+                                <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                                 Verified
                               </span>
                             ) : (
@@ -1218,7 +1247,7 @@ export const AdminCommissionPage: React.FC = () => {
                     onClick={handleExportAdjustmentHistoryCsv}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                   >
-                    <Download className="h-3.5 w-3.5 text-slate-500" />
+                    <Download className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                     Export CSV
                   </button>
                   <button

@@ -7,12 +7,24 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
+import { useCurrency } from '../store/currency-store';
 import {
   ProductCard,
   ProductCarouselWithTabs,
   ProductCarouselWithoutTabs,
   type ProductItem,
 } from '../features/products';
+import {
+  DealsStrip,
+  BestSellersRail,
+  RecommendedShelf,
+  BrandSpotlight,
+  DigitalShowcase,
+  TestimonialsSection,
+  AppPromoSection,
+  BackToTopButton,
+} from '../features/home';
+
 
 // Hero Carousel Slides matching User Upscaled Images
 const HERO_CAROUSEL_SLIDES = [
@@ -56,18 +68,6 @@ const POPULAR_CATEGORIES = [
   { id: 'cat-kids', name: 'Kids & Baby', image: '/images/categories/cat_kids_baby_2k.png', slug: 'kids-baby' },
   { id: 'cat-sports', name: 'Sports & Outdoors', image: '/images/categories/cat_sports_outdoors_2k.png', slug: 'sports-outdoors' },
   { id: 'cat-digital', name: 'Digital Products', image: '/images/categories/cat_digital_products_2k.png', slug: 'digital-products' },
-];
-
-// Featured Stores — fictional vendor names only
-const BRAND_STORES = [
-  { name: 'AeroStride', category: 'Sportswear & Shoes', logo: '👟' },
-  { name: 'NourishCo', category: 'Food & Nutrition', logo: '🥛' },
-  { name: 'FizzBlend', category: 'Beverages', logo: '🥤' },
-  { name: 'HomeTech Hub', category: 'Home Tech', logo: '📺' },
-  { name: 'CorePulse', category: 'Laptops & PCs', logo: '💻' },
-  { name: 'NovaCrest', category: 'Phones & Macs', logo: '📱' },
-  { name: 'LumoScent', category: 'Luxury Fragrance', logo: '✨' },
-  { name: 'ThreadWise', category: 'Apparel & Trends', logo: '👗' },
 ];
 
 // Sub-categories under parent category Electronics
@@ -1263,7 +1263,7 @@ const BEAUTY_SKINCARE_CAROUSEL: ProductItem[] = [
   },
 ];
 
-// Product Data Rows matching Image 2
+// Home & Kitchen Featured Products
 const HOME_KITCHEN_CAROUSEL: ProductItem[] = [
   { id: 'home-cookware', title: 'Ceramic Non-Stick Cookware Set with Detachable Handle, 10 Piece', category: 'KITCHEN', price: 129.0, compareAtPrice: 169.0, discountPercent: 24, rating: 4.7, reviewCount: 842, stock: 34, maxStock: 60, sellerId: 'platform', sellerName: 'Vendora', sellerType: 'platform', type: 'physical', image: '/images/bevesi/1-39.jpg' },
   { id: 'home-lamp', title: 'Woven Rattan Globe Table Lamp with Linen Shade', category: 'LIGHTING', price: 74.5, compareAtPrice: 99.0, discountPercent: 25, rating: 4.5, reviewCount: 316, stock: 22, maxStock: 50, sellerId: 'platform', sellerName: 'Vendora', sellerType: 'platform', type: 'physical', image: '/images/bevesi/1-40.jpg' },
@@ -1949,6 +1949,8 @@ const CountdownPills: React.FC<CountdownPillsProps> = ({
 export const HomePage: React.FC = () => {
   const { addItem } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { formatPrice } = useCurrency();
+
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -1979,12 +1981,15 @@ export const HomePage: React.FC = () => {
   // Ref for Popular Categories interactive smooth scrolling
   const categoriesRef = useRef<HTMLDivElement>(null);
 
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+
   useEffect(() => {
+    if (isCarouselPaused) return;
     const timer = setInterval(() => {
       setHeroSlideIndex((prev) => (prev + 1) % HERO_CAROUSEL_SLIDES.length);
-    }, 4500);
+    }, 6500);
     return () => clearInterval(timer);
-  }, []);
+  }, [isCarouselPaused]);
 
   const scrollContainer = useCallback((ref: React.RefObject<HTMLDivElement | null>, offset: number) => {
     const el = ref.current;
@@ -2054,15 +2059,18 @@ export const HomePage: React.FC = () => {
 
 
   return (
-    <div className="bg-[#FFFFFF] min-h-screen text-[#1F2937]">
+    <div className="w-full text-[#1F2937] dark:text-slate-100">
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6">
         {/* =========================================================================
-            1. Hero Bento Grid (Image 2)
+            1. Hero Featured Carousel & Highlights
             ========================================================================= */}
         <section className="mb-10">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            {/* Left Card: Interactive Carousel (iPhone 18 Pro Max & Apple Watch Series 10) (8 Cols) */}
-            <div className="relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl lg:col-span-9 group aspect-[16/9] min-h-[260px] sm:min-h-[320px] flex items-center justify-center">
+            <div
+              className="relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl lg:col-span-9 group aspect-[16/9] min-h-[260px] sm:min-h-[320px] flex items-center justify-center"
+              onMouseEnter={() => setIsCarouselPaused(true)}
+              onMouseLeave={() => setIsCarouselPaused(false)}
+            >
               {HERO_CAROUSEL_SLIDES.map((slide, idx) => (
                 <div
                   key={slide.id}
@@ -2098,14 +2106,14 @@ export const HomePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Right Card: Sale Up to 50% Off Running Sneaker (3 Cols, hidden on mobile) */}
-            <div className="relative overflow-hidden hidden md:block rounded-[28px] bg-[#1A9ACB] shadow-lg lg:col-span-3 group lg:aspect-auto aspect-[16/9] min-h-[260px] sm:min-h-[320px]">
+            {/* Right Card: Apple AirPods Pro (2nd Gen) (3 Cols, hidden on mobile) */}
+            <div className="relative overflow-hidden hidden md:block rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3 group lg:aspect-auto aspect-[16/9] min-h-[260px] sm:min-h-[320px]">
               <img
-                src="/images/emox/hero_sneaker_clean.jpg"
-                alt="Sale Up to 50% Off Puma Running Sneaker"
+                src="/images/emox/banner_airpods_pro.webp"
+                alt="Apple AirPods Pro (2nd Gen) From $249*"
                 className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
               />
-              <Link to="/products?category=shoes" className="absolute inset-0 z-20" title="Shop Sneakers Sale" />
+              <Link to="/products?category=audio-wearables" className="absolute inset-0 z-20" title="Apple AirPods Pro (2nd Gen)" />
             </div>
           </div>
 
@@ -2128,7 +2136,7 @@ export const HomePage: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            2. Explore Popular Categories (Image 2 - Centered Alignment)
+            2. Explore Popular Categories
             ========================================================================= */}
         <section className="mb-12">
           <div className="mb-6 flex items-center justify-between">
@@ -2166,7 +2174,7 @@ export const HomePage: React.FC = () => {
                   to={`/products?category=${cat.slug}`}
                   className="group flex flex-col items-center shrink-0 transition-transform hover:-translate-y-1"
                 >
-                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 items-center justify-center rounded-full bg-[#F4F6F8] p-3 overflow-hidden shadow-2xs border border-slate-100 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:bg-[#EBF1F7] group-hover:border-sky-200">
+                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 items-center justify-center rounded-full bg-[#F4F6F8] p-3 overflow-hidden shadow-2xs border border-slate-100 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:bg-[#FFF4EC] group-hover:border-[#FF7A1A]/60 group-hover:ring-4 group-hover:ring-orange-500/15">
                     <img
                       src={cat.image}
                       alt={cat.name}
@@ -2192,6 +2200,15 @@ export const HomePage: React.FC = () => {
             </button>
           </div>
         </section>
+
+        {/* =========================================================================
+            2B. Flash Deals Strip (Urgency ticker with countdown & claimed stats)
+            ========================================================================= */}
+        <DealsStrip
+          onAddToCart={handleAddToCart}
+          onToggleWishlist={handleToggleWishlist}
+          isInWishlist={isInWishlist}
+        />
 
         {/* =========================================================================
             3. Limited Campaign (Sale Offers by Parent Category)
@@ -2315,7 +2332,7 @@ export const HomePage: React.FC = () => {
                     Retro Sound,<br />Modern Quality
                   </h3>
                   <p className="font-outfit text-[10px] text-[#9A6B66]/80 mt-0.5">
-                    Speakers & radios from $39.
+                    Speakers & radios from {formatPrice(39)}.
                   </p>
                   <img
                     src="/images/bevesi/art_elec_radio.png"
@@ -2349,11 +2366,11 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Electronics Brand Strip */}
-          <div className="mt-8 flex items-center justify-center border-t border-slate-100 pt-6">
+          <div className="mt-8 flex items-center justify-center border-t border-slate-100/80 pt-6 w-full">
             <img
               src="/images/bevesi/brands_electronics_strip_clean.png"
               alt="Official Electronics Brands: oppo, SIEMENS, dyson, SONY, DELL, Lenovo, intel"
-              className="max-h-9 sm:max-h-11 w-full max-w-4xl object-contain opacity-80 hover:opacity-100 transition-opacity"
+              className="h-14 sm:h-18 lg:h-22 w-full max-w-6xl object-contain transition-transform duration-300 hover:scale-[1.01]"
             />
           </div>
         </section>
@@ -2366,6 +2383,15 @@ export const HomePage: React.FC = () => {
           categorySlug="electronics"
           tabs={ELECTRONICS_SUBCATEGORIES}
           products={TRENDING_ELECTRONICS_CAROUSEL}
+          onAddToCart={handleAddToCart}
+          onToggleWishlist={handleToggleWishlist}
+          isInWishlist={isInWishlist}
+        />
+
+        {/* =========================================================================
+            3B-2. Best-Sellers Rail (Leaderboard & Top Sales Velocity)
+            ========================================================================= */}
+        <BestSellersRail
           onAddToCart={handleAddToCart}
           onToggleWishlist={handleToggleWishlist}
           isInWishlist={isInWishlist}
@@ -2442,11 +2468,11 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Beauty Brands Strip */}
-          <div className="mt-8 flex items-center justify-center border-t border-slate-100 pt-6">
+          <div className="mt-8 flex items-center justify-center border-t border-slate-100/80 pt-6 w-full">
             <img
               src="/images/bevesi/brands_beauty_strip_clean.png"
               alt="Official Beauty Brands: allure, L'Oreal, Aesop, Kerastase, Biotherm, Unilever, Dior, Aveda"
-              className="max-h-8 sm:max-h-10 w-full max-w-4xl object-contain opacity-80 hover:opacity-100 transition-opacity"
+              className="h-14 sm:h-18 lg:h-22 w-full max-w-6xl object-contain transition-transform duration-300 hover:scale-[1.01]"
             />
           </div>
         </section>
@@ -2458,6 +2484,15 @@ export const HomePage: React.FC = () => {
           title="Beauty & Personal Care"
           categorySlug="beauty"
           products={BEAUTY_SKINCARE_CAROUSEL}
+          onAddToCart={handleAddToCart}
+          onToggleWishlist={handleToggleWishlist}
+          isInWishlist={isInWishlist}
+        />
+
+        {/* =========================================================================
+            3D-2. Recommended For You & Recently Viewed Shelf
+            ========================================================================= */}
+        <RecommendedShelf
           onAddToCart={handleAddToCart}
           onToggleWishlist={handleToggleWishlist}
           isInWishlist={isInWishlist}
@@ -2485,7 +2520,7 @@ export const HomePage: React.FC = () => {
                 </h3>
               </div>
               <p className="font-outfit absolute inset-x-0 bottom-6 z-10 px-4 text-center text-xs font-medium text-slate-600 sm:text-sm">
-                Mixers, kettles &amp; cookware from $29.
+                Mixers, kettles &amp; cookware from {formatPrice(29)}.
               </p>
             </Link>
 
@@ -2538,7 +2573,7 @@ export const HomePage: React.FC = () => {
                     Everyday Essentials
                   </h3>
                   <p className="font-outfit mt-1 text-[11px] font-medium text-[#7A6A8A]/90">
-                    Top-rated picks under $100.
+                    Top-rated picks under {formatPrice(100)}.
                   </p>
                 </div>
               </Link>
@@ -2577,44 +2612,36 @@ export const HomePage: React.FC = () => {
           isInWishlist={isInWishlist}
         />
 
-        {/* =========================================================================
-            4. Featured Stores
-            ========================================================================= */}
-        <section className="mb-14">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
-              Featured Stores
-            </h2>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-            {BRAND_STORES.map((brand) => (
-              <Link
-                key={brand.name}
-                to="/products"
-                className="group flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-2xs hover:border-[#FF7A1A]/40 hover:shadow-md transition-all hover:-translate-y-0.5"
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-xl font-bold group-hover:bg-orange-50 transition-colors">
-                  {brand.logo}
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#FF7A1A] transition-colors truncate">
-                    {brand.name}
-                  </h4>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
-                    <CheckCircle2 className="h-2.5 w-2.5" />
-                    <span className="truncate">Delivery within 24 hours</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+        {/* =========================================================================
+            4. Brand Spotlight & Official Stores
+            ========================================================================= */}
+        <BrandSpotlight />
+
+        {/* =========================================================================
+            4B. Digital Goods & Software Vault
+            ========================================================================= */}
+        <DigitalShowcase onAddToCart={handleAddToCart} />
+
+
+
+        {/* =========================================================================
+            6. Customer Testimonials & Verified Unboxing Reviews
+            ========================================================================= */}
+        <TestimonialsSection />
+
+        {/* =========================================================================
+            7. Mobile App Promo & Exclusive Voucher Banner
+            ========================================================================= */}
+        <AppPromoSection />
       </div>
+
+      {/* Floating Back-To-Top Button */}
+      <BackToTopButton />
 
       {/* Floating Toast Notification Pill */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900/95 backdrop-blur-md px-5 py-3 text-xs font-semibold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-20 right-6 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900/95 backdrop-blur-md px-5 py-3 text-xs font-semibold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>

@@ -127,13 +127,13 @@ export const VendorProfilePage: React.FC = () => {
 
         {banner && (
           <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             {banner}
           </div>
         )}
         {error && (
           <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
             {error}
           </div>
         )}
@@ -235,7 +235,7 @@ export const VendorProfilePage: React.FC = () => {
                     disabled={busy}
                     className="inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-sun-orange-600 disabled:opacity-50 cursor-pointer"
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                     Save identity
                   </button>
                 </div>
@@ -291,7 +291,7 @@ export const VendorProfilePage: React.FC = () => {
                       disabled={busy || !nextPassword || !confirmPassword}
                       className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-2xs transition-all hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
                     >
-                      <KeyRound className="h-3.5 w-3.5 text-slate-500" />
+                      <KeyRound className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                       Update password
                     </button>
                   </div>
@@ -330,7 +330,7 @@ export const VendorProfilePage: React.FC = () => {
                       onClick={() => void signOut()}
                       className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 shadow-2xs transition-all hover:bg-rose-50 cursor-pointer"
                     >
-                      <LogOut className="h-3.5 w-3.5" />
+                      <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                       Sign out of this device
                     </button>
                   </div>
@@ -436,7 +436,7 @@ export const VendorProfilePage: React.FC = () => {
 
             <section className={CARD}>
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <Store className="h-4 w-4 text-[#FF7A1A]" />
+                <Store className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
                 <h3 className="text-sm font-bold text-slate-900">Not built in this project</h3>
               </div>
               <ul className="space-y-2 text-[11px] text-slate-500">
@@ -473,7 +473,7 @@ export const VendorProfilePage: React.FC = () => {
                 to="/vendor/store-settings"
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 hover:underline"
               >
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
                 Store Settings for storefront, policies and alerts
               </Link>
             </section>

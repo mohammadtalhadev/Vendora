@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, ArrowUpRight } from 'lucide-react';
 import { useProducts } from '../../catalog/hooks/useProducts';
 import { useCarouselScroll } from '../../../hooks/useCarouselScroll';
+import { useCurrency } from '../../../store/currency-store';
 import type { Product } from '../../../types/domain';
 
 interface SimilarProductsCarouselProps {
@@ -21,6 +22,7 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { scrollLeft, scrollRight } = useCarouselScroll(scrollContainerRef);
+  const { formatPrice } = useCurrency();
 
   // Fetch similar products in same category supplemented by general catalog to guarantee 10+ items
   const { data: catData, isLoading: isCatLoading } = useProducts({
@@ -89,7 +91,7 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
       {/* Carousel Track */}
       <div
         ref={scrollContainerRef}
-        className="no-scrollbar flex gap-4 overflow-x-auto pb-4 pt-1 cursor-grab active:cursor-grabbing select-none"
+        className="no-scrollbar flex gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto pb-4 pt-1 cursor-grab active:cursor-grabbing select-none"
         style={{ scrollSnapType: 'x mandatory' }}
       >
         {isLoading
@@ -142,11 +144,11 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
                 <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
                   <div className="min-w-0 pr-1">
                     <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
-                      ${item.price.toFixed(2)}
+                      {formatPrice(item.price)}
                     </span>
                     {item.compareAtPrice && item.compareAtPrice > item.price && (
                       <span className="text-[11px] text-slate-400 line-through block truncate">
-                        ${item.compareAtPrice.toFixed(2)}
+                        {formatPrice(item.compareAtPrice)}
                       </span>
                     )}
                   </div>
@@ -155,7 +157,7 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
                     onClick={() => onAddToCart(item)}
                     type="button"
                     title="Add to cart"
-                    className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-xs hover:bg-blue-700 transition-transform active:scale-95"
+                    className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-[#FF7A1A] text-white shadow-xs hover:bg-[#EA6C13] transition-transform active:scale-95 cursor-pointer"
                   >
                     <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </button>

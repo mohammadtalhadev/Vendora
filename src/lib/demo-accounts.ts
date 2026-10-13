@@ -3,9 +3,11 @@ import type { User } from '../types/domain';
 export type DemoRoleKey = 'customer' | 'newuser' | 'vendor' | 'admin' | 'support' | 'rider';
 
 /**
- * Seeded demo accounts (PRD §4.3). One-click demo personas for QA.
- * Passwords live only in the mock API seed (src/mocks/seed/users.ts); nothing here
- * is a real credential.
+ * The demo personas seeded into the backend (`supabase/seed.sql` creates the auth
+ * users, profiles and stores). Signing in as one of them is a real password sign-in
+ * against the real RLS policies, so the personas exercise the same access control the
+ * production roles get. The ids here match the mock API universe in src/mocks; a
+ * session loaded from Supabase carries the database uuid instead.
  */
 export const DEMO_ACCOUNTS: Record<DemoRoleKey, User> = {
   customer: {
@@ -53,10 +55,5 @@ export const DEMO_ACCOUNTS: Record<DemoRoleKey, User> = {
   },
 };
 
-/** Shared simulated password for every seeded demo account. */
+/** Password seeded for every demo persona. */
 export const DEMO_PASSWORD = 'demo1234';
-
-export function findDemoAccountByEmail(email: string): User | undefined {
-  const normalized = email.trim().toLowerCase();
-  return Object.values(DEMO_ACCOUNTS).find((account) => account.email === normalized);
-}

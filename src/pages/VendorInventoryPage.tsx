@@ -284,7 +284,7 @@ export const VendorInventoryPage: React.FC = () => {
 
           <div className="flex items-center gap-2">
             {dirtyRows.length > 0 && (
-              <span className="text-xs font-bold text-amber-700">
+              <span role="status" aria-live="polite" className="text-xs font-bold text-amber-700">
                 {dirtyRows.length} unsaved
               </span>
             )}
@@ -294,14 +294,21 @@ export const VendorInventoryPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsKpiSelectorOpen(!isKpiSelectorOpen)}
+                aria-expanded={isKpiSelectorOpen}
+                aria-controls="kpi-selector-panel"
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
               >
-                <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
+                <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                 <span>Customize KPIs</span>
               </button>
 
               {isKpiSelectorOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-20 space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                <div
+                  id="kpi-selector-panel"
+                  role="group"
+                  aria-label="Choose displayed metrics"
+                  className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-20 space-y-2 animate-in fade-in zoom-in-95 duration-150"
+                >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <span className="text-xs font-bold text-slate-800">Choose Displayed Metrics</span>
                     <button
@@ -320,15 +327,16 @@ export const VendorInventoryPage: React.FC = () => {
                           key={kpi.id}
                           type="button"
                           onClick={() => toggleKpi(kpi.id)}
+                          aria-pressed={isSelected}
                           className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
                             isSelected ? 'bg-orange-50/70 text-slate-900 font-semibold' : 'hover:bg-slate-50 text-slate-600'
                           }`}
                         >
                           <div className="flex items-center gap-2">
                             {isSelected ? (
-                              <CheckSquare className="h-4 w-4 text-[#FF7A1A]" />
+                              <CheckSquare className="h-4 w-4 text-[#FF7A1A]" aria-hidden="true" />
                             ) : (
-                              <Square className="h-4 w-4 text-slate-400" />
+                              <Square className="h-4 w-4 text-slate-400" aria-hidden="true" />
                             )}
                             <span>{kpi.label}</span>
                           </div>
@@ -346,7 +354,7 @@ export const VendorInventoryPage: React.FC = () => {
               disabled={isSaving}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#FF7A1A] to-[#FF9233] hover:from-[#ea6c13] hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-60 disabled:cursor-wait"
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-4 w-4" aria-hidden="true" />
               {isSaving ? 'Saving…' : 'Save All Changes'}
             </button>
           </div>
@@ -354,15 +362,23 @@ export const VendorInventoryPage: React.FC = () => {
 
         {/* Toast + write failures */}
         {toastMessage && (
-          <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in"
+          >
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             {toastMessage}
           </div>
         )}
         {saveErrors.length > 0 && (
-          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs text-rose-800 space-y-1">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs text-rose-800 space-y-1"
+          >
             <div className="flex items-center gap-2 font-bold">
-              <AlertCircle className="h-4 w-4 text-rose-600" />
+              <AlertCircle className="h-4 w-4 text-rose-600" aria-hidden="true" />
               The database refused these writes:
             </div>
             <ul className="list-disc pl-6 space-y-0.5">
@@ -373,8 +389,12 @@ export const VendorInventoryPage: React.FC = () => {
           </div>
         )}
         {loadError && (
-          <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs font-bold text-rose-800 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-rose-600" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs font-bold text-rose-800 flex items-center gap-2"
+          >
+            <AlertCircle className="h-4 w-4 text-rose-600" aria-hidden="true" />
             <span>{loadError instanceof Error ? loadError.message : String(loadError)}</span>
             <button
               type="button"
@@ -411,17 +431,23 @@ export const VendorInventoryPage: React.FC = () => {
         </div>
 
         {/* Tab Toggle */}
-        <div className="flex border-b border-slate-200 gap-4 text-xs font-bold">
+        <div
+          role="group"
+          aria-label="Inventory views"
+          className="flex border-b border-slate-200 gap-4 text-xs font-bold"
+        >
           <button
             type="button"
             onClick={() => setActiveTab('physical')}
+            aria-pressed={activeTab === 'physical'}
+            aria-controls="inventory-physical-panel"
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'physical'
                 ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Boxes className="h-4 w-4" />
+            <Boxes className="h-4 w-4" aria-hidden="true" />
             Physical Stock Management
             {lowStockCount > 0 && (
               <span className="rounded-full bg-amber-500 text-white px-2 py-0.2 text-[10px]">
@@ -433,25 +459,27 @@ export const VendorInventoryPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('digital')}
+            aria-pressed={activeTab === 'digital'}
+            aria-controls="inventory-digital-panel"
             className={`pb-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'digital'
                 ? 'border-[#FF7A1A] text-[#FF7A1A]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Key className="h-4 w-4" />
+            <Key className="h-4 w-4" aria-hidden="true" />
             Digital Licenses ({keysIssued} issued)
           </button>
         </div>
 
         {/* TAB 1: Physical Inventory */}
         {activeTab === 'physical' && (
-          <div className="space-y-4">
+          <div id="inventory-physical-panel" className="space-y-4">
             {/* Low-Stock Alert Banner */}
             {lowStockCount > 0 && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 flex items-center justify-between text-xs text-amber-900">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" aria-hidden="true" />
                   <div>
                     <span className="font-bold">Low-stock threshold:</span> {lowStockCount} listings
                     are at {LOW_STOCK_AT} units or fewer, including sold-out ones.
@@ -466,8 +494,12 @@ export const VendorInventoryPage: React.FC = () => {
             {/* Quick Filter Bar */}
             <div className="flex items-center justify-between gap-4">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <label htmlFor="inventory-search" className="sr-only">
+                  Filter listings by SKU or product title
+                </label>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                 <input
+                  id="inventory-search"
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -479,29 +511,29 @@ export const VendorInventoryPage: React.FC = () => {
 
             {/* Table of SKUs */}
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-xs" aria-label="Physical listings and stock levels">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500 text-[11px]">
-                    <th className="p-4">
+                    <th scope="col" className="p-4">
                       Product Details
                       <span className="sr-only">Product &amp; Variant</span>
                     </th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Price &amp; Valuation</th>
-                    <th className="p-4 text-center">Stock Status</th>
-                    <th className="p-4 text-center">
+                    <th scope="col" className="p-4">Category</th>
+                    <th scope="col" className="p-4">Price &amp; Valuation</th>
+                    <th scope="col" className="p-4 text-center">Stock Status</th>
+                    <th scope="col" className="p-4 text-center">
                       Stock Stepper
                       <span className="sr-only">Quick Stock Stepper</span>
                     </th>
-                    <th className="p-4">Moderation</th>
-                    <th className="p-4 text-right">Action</th>
+                    <th scope="col" className="p-4">Moderation</th>
+                    <th scope="col" className="p-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {isLoading && (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-500">
-                        <Boxes className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" />
+                        <Boxes className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" aria-hidden="true" />
                         <p className="font-semibold text-slate-700">Reading your catalog…</p>
                         <p className="text-xs text-slate-400 mt-0.5">
                           Stock levels come from your listings, not a local copy.
@@ -512,7 +544,7 @@ export const VendorInventoryPage: React.FC = () => {
                   {!isLoading && filteredRows.length === 0 && (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-500">
-                        <Boxes className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                        <Boxes className="h-8 w-8 mx-auto text-slate-300 mb-2" aria-hidden="true" />
                         <p className="font-semibold text-slate-700">
                           {rows.length === 0
                             ? 'No physical listings yet'
@@ -538,7 +570,7 @@ export const VendorInventoryPage: React.FC = () => {
                             />
                           ) : (
                             <div className="h-11 w-11 rounded-xl border border-slate-200 shrink-0 bg-slate-50 flex items-center justify-center">
-                              <Boxes className="h-4 w-4 text-slate-300" />
+                              <Boxes className="h-4 w-4 text-slate-300" aria-hidden="true" />
                             </div>
                           )}
                           <div className="min-w-0">
@@ -585,6 +617,7 @@ export const VendorInventoryPage: React.FC = () => {
                           <button
                             type="button"
                             title="Decrement stock"
+                            aria-label={`Decrement stock for ${item.title}`}
                             onClick={() => handleStockChange(item.id, item.stock - 1)}
                             className="px-2.5 py-1 text-slate-600 hover:bg-slate-200 font-bold cursor-pointer"
                           >
@@ -592,6 +625,7 @@ export const VendorInventoryPage: React.FC = () => {
                           </button>
                           <input
                             type="number"
+                            aria-label={`Stock for ${item.title}`}
                             value={item.stock}
                             onChange={(e) => handleStockChange(item.id, parseInt(e.target.value) || 0)}
                             className="w-14 text-center py-1 font-bold text-slate-900 bg-white border-x border-slate-200 focus:outline-none"
@@ -599,6 +633,7 @@ export const VendorInventoryPage: React.FC = () => {
                           <button
                             type="button"
                             title="Increment stock"
+                            aria-label={`Increment stock for ${item.title}`}
                             onClick={() => handleStockChange(item.id, item.stock + 1)}
                             className="px-2.5 py-1 text-slate-600 hover:bg-slate-200 font-bold cursor-pointer"
                           >
@@ -654,7 +689,7 @@ export const VendorInventoryPage: React.FC = () => {
 
         {/* TAB 2: Digital licenses the platform has issued */}
         {activeTab === 'digital' && (
-          <div className="space-y-4">
+          <div id="inventory-digital-panel" className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-bold text-purple-700 tracking-wider uppercase block">
@@ -669,7 +704,7 @@ export const VendorInventoryPage: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-xs text-slate-600 flex items-start gap-3">
-              <Key className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+              <Key className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" aria-hidden="true" />
               <p>
                 License keys are generated by the platform inside the checkout transaction that
                 books a digital order, then delivered to the buyer. There is no seller-side key
@@ -679,21 +714,21 @@ export const VendorInventoryPage: React.FC = () => {
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-xs" aria-label="License keys issued on your digital packages">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500 text-[11px]">
-                    <th className="p-4">Product</th>
-                    <th className="p-4">Buyer</th>
-                    <th className="p-4">License key</th>
-                    <th className="p-4">Package status</th>
-                    <th className="p-4 text-right">Action</th>
+                    <th scope="col" className="p-4">Product</th>
+                    <th scope="col" className="p-4">Buyer</th>
+                    <th scope="col" className="p-4">License key</th>
+                    <th scope="col" className="p-4">Package status</th>
+                    <th scope="col" className="p-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {isLoading && (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-slate-500">
-                        <Key className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" />
+                        <Key className="h-8 w-8 mx-auto text-slate-300 mb-2 animate-pulse" aria-hidden="true" />
                         <p className="font-semibold text-slate-700">Reading your digital sales…</p>
                       </td>
                     </tr>
@@ -701,7 +736,7 @@ export const VendorInventoryPage: React.FC = () => {
                   {!isLoading && digitalPackages.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-slate-500">
-                        <Key className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                        <Key className="h-8 w-8 mx-auto text-slate-300 mb-2" aria-hidden="true" />
                         <p className="font-semibold text-slate-700">No digital packages yet</p>
                         <p className="text-xs text-slate-400 mt-0.5">
                           A key appears here once a buyer pays for one of your digital listings.
@@ -732,9 +767,9 @@ export const VendorInventoryPage: React.FC = () => {
                             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
                           >
                             {copiedKey === k.licenseKey ? (
-                              <Check className="h-3 w-3 text-emerald-600" />
+                              <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                             ) : (
-                              <Copy className="h-3 w-3" />
+                              <Copy className="h-3 w-3" aria-hidden="true" />
                             )}
                             {copiedKey === k.licenseKey ? 'Copied' : 'Copy'}
                           </button>

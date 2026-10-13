@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Download,
-  Zap,
   Search,
   CheckCircle2,
   AlertTriangle,
@@ -43,6 +42,8 @@ interface ReviewItem {
   orderRef: string;
   needsAction: boolean;
   needsActionReason?: string;
+  /** The reply text on its own, so an export carries prose rather than a jsonb object. */
+  replyBody: string;
   merchantReply?: {
     author: string;
     timeAgo: string;
@@ -80,6 +81,7 @@ function toReviewItem({ review, productTitle, productSlug }: VendorReview): Revi
     orderRef: review.orderNumber || 'No order reference',
     needsAction,
     needsActionReason: needsAction ? 'Pending merchant reply' : undefined,
+    replyBody: review.sellerReply?.body ?? '',
     merchantReply: review.sellerReply ?? undefined,
   };
 }
@@ -90,7 +92,6 @@ export const VendorReviewsPage: React.FC = () => {
   const replyMutation = useReplyToReview(sellerId);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [ratingFilter, setRatingFilter] = useState('all');
@@ -205,9 +206,7 @@ export const VendorReviewsPage: React.FC = () => {
 
   const handleOpenReplyModal = (rev: ReviewItem) => {
     setReplyingReview(rev);
-    setReplyModalText(
-      `Thank you for your review, ${rev.author}! We appreciate your feedback and are always here to help.`,
-    );
+    setReplyModalText(`Thank you for the review, ${rev.author}. `);
   };
 
   const replyError = replyMutation.error instanceof Error ? replyMutation.error.message : null;
@@ -215,7 +214,6 @@ export const VendorReviewsPage: React.FC = () => {
   return (
     <WorkspaceLayout
       role="vendor"
-      roleBadgeText="VENDOR PARTNER"
       sidebar={<VendorNav onOpenAddProduct={() => setIsProductModalOpen(true)} />}
     >
       <div className="space-y-6">
@@ -229,7 +227,7 @@ export const VendorReviewsPage: React.FC = () => {
               Reviews &amp; Ratings
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              Monitor customer feedback, product ratings, sentiment trends, and manage merchant replies.
+              Read the ratings customers left on your listings and post a public reply to each one.
             </p>
           </div>
 
@@ -243,27 +241,20 @@ export const VendorReviewsPage: React.FC = () => {
                     { header: 'Author', key: 'author' },
                     { header: 'Rating', key: 'rating' },
                     { header: 'Product', key: 'productTitle' },
-                    { header: 'SKU', key: 'sku' },
+                    { header: 'Listing', key: 'sku' },
                     { header: 'Title', key: 'title' },
                     { header: 'Body', key: 'body' },
                     { header: 'Helpful Votes', key: 'helpfulCount' },
                     { header: 'Verified Purchase', key: 'isVerified' },
-                    { header: 'Replied', key: 'merchantReply' },
+                    { header: 'Merchant Reply', key: 'replyBody' },
                   ],
                   data: visibleReviews,
                 });
               }}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <Download className="h-4 w-4 text-slate-500" />
+              <Download className="h-4 w-4 text-slate-500" aria-hidden="true" />
               Export CSV
-            </button>
-            <button
-              onClick={() => setIsTemplatesModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition-colors"
-            >
-              <Zap className="h-4 w-4 fill-amber-400 text-amber-400" />
-              Reply Templates &amp; Automation
             </button>
           </div>
         </div>
@@ -290,9 +281,10 @@ export const VendorReviewsPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 pt-2 text-xs text-slate-500 flex items-center gap-1 border-t border-slate-100">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
               <span>
-                Based on {stats.verified} verified customer {stats.verified === 1 ? 'rating' : 'ratings'}
+                Average covers all {stats.total} rating{stats.total === 1 ? '' : 's'};{' '}
+                {stats.verified} {stats.verified === 1 ? 'is' : 'are'} a verified purchase
               </span>
             </div>
           </div>
@@ -432,7 +424,7 @@ export const VendorReviewsPage: React.FC = () => {
           {/* Search Row */}
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Filter reviews by keyword, product name, SKU..."
@@ -481,7 +473,7 @@ export const VendorReviewsPage: React.FC = () => {
         {sellerId && reviewsQuery.isError && (
           <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-5 text-xs shadow-xs space-y-2">
             <div className="flex items-center gap-2 font-bold text-rose-700">
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               Could not load your reviews
             </div>
             <p className="text-rose-600">
@@ -550,7 +542,8 @@ export const VendorReviewsPage: React.FC = () => {
                         )}
                       </div>
                       <div className="text-[11px] text-slate-500 mt-0.5">
-                        Purchased: <strong className="text-slate-800">{rev.productTitle}</strong> • SKU: {rev.sku}
+                        On listing: <strong className="text-slate-800">{rev.productTitle}</strong> ·{' '}
+                        {rev.sku}
                       </div>
                     </div>
                   </div>
@@ -568,7 +561,7 @@ export const VendorReviewsPage: React.FC = () => {
                 {/* Title & Body */}
                 <div className="space-y-1.5 text-xs">
                   <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                    {rev.needsAction && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
+                    {rev.needsAction && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />}
                     <span>{rev.title}</span>
                   </h3>
                   <p className="text-slate-700 leading-relaxed text-xs">{rev.body}</p>
@@ -595,7 +588,7 @@ export const VendorReviewsPage: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-100">
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1.5 text-slate-500">
-                      <ThumbsUp className="h-3.5 w-3.5" />
+                      <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>{rev.helpfulCount} customers found this helpful</span>
                     </span>
                     <span>•</span>
@@ -639,7 +632,7 @@ export const VendorReviewsPage: React.FC = () => {
                         </span>
                       </div>
                       <span className="text-[11px] text-slate-400">
-                        Replied {rev.merchantReply.timeAgo}
+                        Reply posted · no reply time is stored
                       </span>
                     </div>
                     <p className="text-slate-700 leading-relaxed text-xs pl-7">
@@ -671,7 +664,7 @@ export const VendorReviewsPage: React.FC = () => {
 
                     <div className="flex items-center justify-between pt-1 text-xs">
                       <span className="text-[11px] text-slate-400">
-                        Response will be indexed publicly on Vendora product catalog.
+                        Your reply appears publicly beside the review on that listing.
                       </span>
 
                       <div className="flex items-center gap-2">
@@ -689,7 +682,7 @@ export const VendorReviewsPage: React.FC = () => {
                           className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span>{replyMutation.isPending ? 'Posting...' : 'Post Merchant Reply'}</span>
-                          <Send className="h-3 w-3" />
+                          <Send className="h-3 w-3" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -703,11 +696,17 @@ export const VendorReviewsPage: React.FC = () => {
         {/* ── Guidelines Callout Box & Pagination ──────────────────── */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs">
           <div className="flex items-start gap-2.5">
-            <ShieldCheck className="h-5 w-5 text-slate-700 shrink-0 mt-0.5" />
+            <ShieldCheck className="h-5 w-5 text-slate-700 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <div className="font-bold text-slate-900 text-xs">Vendora Review Guidelines</div>
               <p className="mt-0.5 text-slate-500 text-[11px] leading-relaxed">
-                Keep responses professional and objective. Merchant replies must never solicit off-platform contact, disclose buyer PII, or offer monetary rewards in exchange for rating alterations. Read Merchant Response Policy ↗
+                A reply is one public text field on the review. Replying again replaces the earlier
+                text - there is no threaded conversation, no edit history and no private channel to
+                the buyer, and the rating itself is written by the customer, not by you.
+              </p>
+              <p className="mt-1 text-slate-500 text-[11px] leading-relaxed">
+                The queue reads the 200 most recent reviews across your listings, so the averages
+                here are over that window rather than the store's whole history.
               </p>
             </div>
           </div>
@@ -734,54 +733,6 @@ export const VendorReviewsPage: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* ── Templates & Automation Modal ─────────────────────────── */}
-        <Dialog open={isTemplatesModalOpen} onOpenChange={setIsTemplatesModalOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-                <Zap className="h-5 w-5 fill-amber-500 text-amber-500" />
-                Reply Templates &amp; Automated Rules
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Suggested response snippets. Editing and storing templates is not connected to the backend yet.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 py-2 text-xs">
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
-                <div className="font-bold text-slate-900">5-Star Express Delivery Praise</div>
-                <p className="text-[11px] text-slate-600">
-                  "Thank you for trusting our store! We take immense pride in our protective warehouse packaging and rapid carrier dispatches..."
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
-                <div className="font-bold text-slate-900">Technical Spec Clarification &amp; Support</div>
-                <p className="text-[11px] text-slate-600">
-                  "Hi [Customer], our engineers have reviewed your report. Operating tolerances and firmware updates are detailed here..."
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
-                <div className="font-bold text-slate-900">Immediate RMA Replacement Concierge</div>
-                <p className="text-[11px] text-slate-600">
-                  "We sincerely apologize for the inconvenience. A prepaid express replacement has been initiated for your order..."
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsTemplatesModalOpen(false)}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
-              >
-                Done
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* ── Product Form Modal ───────────────────────────────────── */}
         <ProductFormModal
@@ -846,7 +797,7 @@ export const VendorReviewsPage: React.FC = () => {
         {/* ── Floating Toast Notification ───────────────────────────── */}
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}

@@ -16,13 +16,18 @@ export function groupCartBySeller(items: CartItem[]): SellerCartGroup[] {
   const groupMap = new Map<string, SellerCartGroup>();
 
   for (const item of items) {
-    let group = groupMap.get(item.sellerId);
+    const isPlatform =
+      item.sellerType === 'platform' ||
+      item.sellerId === 'platform' ||
+      item.sellerName?.toLowerCase() === 'vendora';
+    const groupId = isPlatform ? 'platform' : item.sellerId;
+
+    let group = groupMap.get(groupId);
     if (!group) {
-      const isPlatform = item.sellerType === 'platform';
       group = {
-        sellerId: item.sellerId,
-        sellerName: item.sellerName,
-        sellerType: item.sellerType,
+        sellerId: groupId,
+        sellerName: isPlatform ? 'Vendora' : item.sellerName,
+        sellerType: isPlatform ? 'platform' : item.sellerType,
         items: [],
         subtotal: 0,
         estimatedShipping: 0,
@@ -30,7 +35,7 @@ export function groupCartBySeller(items: CartItem[]): SellerCartGroup[] {
           ? 'Fulfilled directly by Vendora · Prime Express Shipping'
           : `Ships from ${item.sellerName} warehouse`,
       };
-      groupMap.set(item.sellerId, group);
+      groupMap.set(groupId, group);
     }
 
     group.items.push(item);

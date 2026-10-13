@@ -11,6 +11,7 @@ const config: Config = {
       fontFamily: {
         sans: ['"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         outfit: ['"Outfit"', 'sans-serif'],
+        serif: ['"Playfair Display"', 'Georgia', 'serif'],
       },
       colors: {
         // Sun Orange - Primary CTA, accent & brand highlights

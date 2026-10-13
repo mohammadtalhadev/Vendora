@@ -264,21 +264,29 @@ export const VendorReturnsPage: React.FC = () => {
             onClick={() => setIsPolicyModalOpen(true)}
             className="inline-flex items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 sm:self-auto"
           >
-            <SlidersHorizontal className="h-4 w-4 text-slate-500" />
+            <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden="true" />
             Return policy on your store record
           </button>
         </div>
 
         {toastMessage && (
-          <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
             <span>{toastMessage}</span>
           </div>
         )}
 
         {decisionError && (
-          <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
             <span>{decisionError}</span>
           </div>
         )}
@@ -289,14 +297,14 @@ export const VendorReturnsPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>WAITING ON YOU</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-100 bg-amber-50 text-amber-600">
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
               </div>
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
               {queue.isPending ? '—' : requested.length}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-              <Clock className="h-3.5 w-3.5 text-slate-400" />
+              <Clock className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
               <span>Requests nothing has decided yet</span>
             </div>
           </div>
@@ -305,7 +313,7 @@ export const VendorReturnsPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>APPROVED · RMA ISSUED</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4" aria-hidden="true" />
               </div>
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -320,7 +328,7 @@ export const VendorReturnsPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>REFUNDS RECORDED</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 text-slate-600">
-                <ShieldQuestion className="h-4 w-4" />
+                <ShieldQuestion className="h-4 w-4" aria-hidden="true" />
               </div>
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">{money(refundsBooked)}</div>
@@ -333,7 +341,7 @@ export const VendorReturnsPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>RETURNS PER PACKAGE</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-600">
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
               </div>
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">{returnRate.toFixed(1)}%</div>
@@ -344,7 +352,11 @@ export const VendorReturnsPage: React.FC = () => {
         </div>
 
         {/* ── Tabs ────────────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100/90 p-1 text-xs font-bold text-slate-600">
+        <div
+          role="group"
+          aria-label="Filter returns by decision state"
+          className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100/90 p-1 text-xs font-bold text-slate-600"
+        >
           {(
             [
               ['all', `All (${rows.length})`],
@@ -357,6 +369,7 @@ export const VendorReturnsPage: React.FC = () => {
             <button
               key={key}
               type="button"
+              aria-pressed={activeTab === key}
               onClick={() => {
                 setActiveTab(key);
                 setCurrentPage(1);
@@ -372,8 +385,12 @@ export const VendorReturnsPage: React.FC = () => {
 
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <label htmlFor="returns-search" className="sr-only">
+              Search package id, RMA, buyer email or item title
+            </label>
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             <input
+              id="returns-search"
               type="text"
               value={searchQuery}
               onChange={(e) => {
@@ -389,14 +406,18 @@ export const VendorReturnsPage: React.FC = () => {
             onClick={handleExportCsv}
             className="inline-flex h-9 items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 sm:self-auto"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
             Export queue
           </button>
         </div>
 
         {/* ── Restock receipts ────────────────────────────────────── */}
         {restockReports.length > 0 && (
-          <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <div
+            role="status"
+            aria-live="polite"
+            className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"
+          >
             <div className="text-xs font-bold uppercase tracking-wider text-emerald-800">
               Stock put back by this session
             </div>
@@ -413,15 +434,15 @@ export const VendorReturnsPage: React.FC = () => {
         {/* ── Queue table ─────────────────────────────────────────── */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
           {queue.isError && (
-            <div className="flex items-start gap-2 p-5 text-xs text-rose-700">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div role="alert" aria-live="assertive" className="flex items-start gap-2 p-5 text-xs text-rose-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{(queue.error as Error).message}</span>
             </div>
           )}
 
           {!queue.isError && rows.length === 0 && (
             <div className="space-y-2 p-8 text-center">
-              <RotateCcw className="mx-auto h-8 w-8 text-slate-300" />
+              <RotateCcw className="mx-auto h-8 w-8 text-slate-300" aria-hidden="true" />
               <div className="text-sm font-bold text-slate-900">No returns on this store right now</div>
               <p className="mx-auto max-w-xl text-xs text-slate-500">
                 Buyers open a return from their order page once a package of yours is delivered. Until
@@ -441,15 +462,15 @@ export const VendorReturnsPage: React.FC = () => {
                 </p>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs" aria-label="Return queue">
                   <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th className="px-4 py-3.5">PACKAGE &amp; RMA</th>
-                      <th className="px-4 py-3.5">BUYER</th>
-                      <th className="px-4 py-3.5">WHAT COMES BACK</th>
-                      <th className="px-4 py-3.5">REQUESTED / REASON</th>
-                      <th className="px-4 py-3.5">REFUND</th>
-                      <th className="px-4 py-3.5 text-right">ACTION</th>
+                      <th scope="col" className="px-4 py-3.5">PACKAGE &amp; RMA</th>
+                      <th scope="col" className="px-4 py-3.5">BUYER</th>
+                      <th scope="col" className="px-4 py-3.5">WHAT COMES BACK</th>
+                      <th scope="col" className="px-4 py-3.5">REQUESTED / REASON</th>
+                      <th scope="col" className="px-4 py-3.5">REFUND</th>
+                      <th scope="col" className="px-4 py-3.5 text-right">ACTION</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -489,7 +510,7 @@ export const VendorReturnsPage: React.FC = () => {
                                 />
                               ) : (
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
-                                  <Boxes className="h-4 w-4" />
+                                  <Boxes className="h-4 w-4" aria-hidden="true" />
                                 </div>
                               )}
                               <div>
@@ -716,10 +737,11 @@ export const VendorReturnsPage: React.FC = () => {
               </p>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label htmlFor="refund-amount" className="mb-1 block font-bold text-slate-700">
                   Refund amount (optional)
                 </label>
                 <input
+                  id="refund-amount"
                   type="text"
                   inputMode="decimal"
                   value={refundInput}
@@ -775,8 +797,11 @@ export const VendorReturnsPage: React.FC = () => {
               </p>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">Reason for the buyer</label>
+                <label htmlFor="decline-reason" className="mb-1 block font-bold text-slate-700">
+                  Reason for the buyer
+                </label>
                 <textarea
+                  id="decline-reason"
                   value={declineReason}
                   onChange={(e) => setDeclineReason(e.target.value)}
                   rows={3}
@@ -799,7 +824,7 @@ export const VendorReturnsPage: React.FC = () => {
                   disabled={decline.isPending}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                   Record the decline
                 </button>
               </div>
@@ -886,16 +911,23 @@ function PolicyModal({
 
         <div className="space-y-4 pt-2 text-xs">
           {error && (
-            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-rose-800">
-              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-rose-800"
+            >
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>{error}</span>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block font-bold text-slate-700">Return window (days)</label>
+              <label htmlFor="policy-return-window" className="mb-1 block font-bold text-slate-700">
+                Return window (days)
+              </label>
               <input
+                id="policy-return-window"
                 type="text"
                 inputMode="numeric"
                 value={windowDays}
@@ -904,8 +936,11 @@ function PolicyModal({
               />
             </div>
             <div>
-              <label className="mb-1 block font-bold text-slate-700">Restocking fee</label>
+              <label htmlFor="policy-restocking-fee" className="mb-1 block font-bold text-slate-700">
+                Restocking fee
+              </label>
               <input
+                id="policy-restocking-fee"
                 type="text"
                 inputMode="decimal"
                 value={fee}
@@ -916,8 +951,11 @@ function PolicyModal({
           </div>
 
           <div>
-            <label className="mb-1 block font-bold text-slate-700">Who pays return postage</label>
+            <label htmlFor="policy-return-payer" className="mb-1 block font-bold text-slate-700">
+              Who pays return postage
+            </label>
             <select
+              id="policy-return-payer"
               value={payer}
               onChange={(e) => setPayer(e.target.value as 'buyer' | 'seller')}
               className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-slate-900 focus:outline-none"

@@ -209,7 +209,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                 onClick={() => setIsPackingSlipOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
               >
-                <Printer className="h-3.5 w-3.5 text-slate-500" />
+                <Printer className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                 Print Packing Slip &amp; Label
               </button>
             )}
@@ -219,7 +219,7 @@ export const VendorOrderDetailPage: React.FC = () => {
               onClick={() => setIsMessageCustomerOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              <MessageSquare className="h-3.5 w-3.5 text-slate-500" />
+              <MessageSquare className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
               Message Customer
             </button>
 
@@ -231,7 +231,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                 onClick={() => setIsCancelModalOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
               >
-                <Ban className="h-3.5 w-3.5" />
+                <Ban className="h-3.5 w-3.5" aria-hidden="true" />
                 Cancel Order
               </button>
             )}
@@ -240,14 +240,14 @@ export const VendorOrderDetailPage: React.FC = () => {
 
         {messageSentToast && (
           <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             Message successfully sent to customer!
           </div>
         )}
 
         {actionError && (
           <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs font-bold text-rose-800 flex items-center gap-2">
-            <Ban className="h-4 w-4" />
+            <Ban className="h-4 w-4" aria-hidden="true" />
             {actionError}
           </div>
         )}
@@ -269,7 +269,7 @@ export const VendorOrderDetailPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             {subOrder.type === 'digital' && (
               <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                <Package className="h-4 w-4 text-slate-400" />
+                <Package className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 {subOrder.licenseKey
                   ? 'License key delivered to the buyer.'
                   : 'Nothing to pack or ship - this is a digital package, and the platform issues the key.'}
@@ -302,28 +302,28 @@ export const VendorOrderDetailPage: React.FC = () => {
                 onClick={() => handleAdvanceStatus('ready_for_pickup')}
                 className="rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-700 transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <Truck className="h-4 w-4" />
+                <Truck className="h-4 w-4" aria-hidden="true" />
                 Ready for Rider Pickup
               </button>
             )}
 
             {subOrder.status === 'ready_for_pickup' && (
               <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                <Truck className="h-4 w-4 text-slate-400" />
+                <Truck className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 Waiting for the courier to scan this package in. Handover is recorded by the rider, not by the store.
               </span>
             )}
 
             {(subOrder.status === 'shipped' || subOrder.status === 'out_for_delivery') && (
               <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                <Truck className="h-4 w-4 text-slate-400" />
+                <Truck className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 In the courier&rsquo;s hands &mdash; the rider records every milestone from here to delivery.
               </span>
             )}
 
             {subOrder.status === 'delivered' && (
               <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
                 Fulfillment Complete: the courier confirmed delivery.
               </span>
             )}
@@ -336,7 +336,7 @@ export const VendorOrderDetailPage: React.FC = () => {
               || subOrder.status === 'delivery_failed'
               || subOrder.status === 'cancelled') && (
               <span className="text-xs text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                <Ban className="h-4 w-4 text-slate-400" />
+                <Ban className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 {subOrder.status === 'return_requested'
                   ? 'A return decision is made on the Returns page, not here.'
                   : subOrder.status === 'cancelled'
@@ -354,7 +354,7 @@ export const VendorOrderDetailPage: React.FC = () => {
             {/* Line Items Card */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
               <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Package className="h-4 w-4 text-slate-500" />
+                <Package className="h-4 w-4 text-slate-500" aria-hidden="true" />
                 Package Line Items ({subOrder.items.length})
               </h3>
 
@@ -428,7 +428,7 @@ export const VendorOrderDetailPage: React.FC = () => {
             {/* Courier & Tracking Assignment */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
               <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <Truck className="h-4 w-4 text-slate-500" />
+                <Truck className="h-4 w-4 text-slate-500" aria-hidden="true" />
                 {subOrder.type === 'physical' ? 'Shipping & Carrier Details' : 'Digital Delivery'}
               </h3>
 
@@ -484,7 +484,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                       type="submit"
                       className="w-full flex items-center justify-center gap-1.5 rounded-full bg-slate-900 text-white py-2.5 font-bold hover:bg-slate-800 transition-colors cursor-pointer text-xs"
                     >
-                      <Save className="h-3.5 w-3.5" />
+                      <Save className="h-3.5 w-3.5" aria-hidden="true" />
                       Save Tracking
                     </button>
                     {trackingSaved && (
@@ -503,7 +503,7 @@ export const VendorOrderDetailPage: React.FC = () => {
             {/* Customer Details & Delivery Address */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs text-xs space-y-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-slate-500" />
+                <MapPin className="h-4 w-4 text-slate-500" aria-hidden="true" />
                 Customer Destination & Notes
               </h3>
 
@@ -542,7 +542,7 @@ export const VendorOrderDetailPage: React.FC = () => {
             <div className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl animate-in zoom-in-95">
               <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                 <div className="flex items-center gap-2">
-                  <Barcode className="h-6 w-6 text-slate-900" />
+                  <Barcode className="h-6 w-6 text-slate-900" aria-hidden="true" />
                   <div>
                     <h3 className="text-base font-black text-slate-900">
                       Official Packing Slip & Shipping Label
@@ -640,7 +640,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                   onClick={() => window.print()}
                   className="flex items-center gap-1.5 rounded-xl bg-[#FF7A1A] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#EA580C]"
                 >
-                  <Printer className="h-4 w-4" />
+                  <Printer className="h-4 w-4" aria-hidden="true" />
                   Print Document
                 </button>
               </div>
