@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Star, ShoppingBag, Heart, Zap } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
-import type { ProductItem } from '../../products';
+import { domainProductToCardItem, type ProductItem } from '../../products';
+import { useProducts } from '../../catalog/hooks/useProducts';
 
 export interface BestSellersRailProps {
   onAddToCart?: (product: ProductItem) => void;
@@ -10,129 +11,15 @@ export interface BestSellersRailProps {
   isInWishlist?: (id: string) => boolean;
 }
 
-const BEST_SELLER_ITEMS: (ProductItem & { rank: number; unitsSold: string })[] = [
-  {
-    id: 'bs-sony-wh',
-    rank: 1,
-    title: 'Sony WH-1000XM5 Wireless Industry Leading Noise-Canceling Headphones',
-    category: 'AUDIO',
-    price: 298.0,
-    compareAtPrice: 399.99,
-    discountPercent: 25,
-    rating: 4.95,
-    reviewCount: 2840,
-    stock: 24,
-    maxStock: 50,
-    sellerId: 'sony-official',
-    sellerName: 'Sony Authorized Store',
-    sellerType: 'vendor',
-    type: 'physical',
-    image: '/images/bevesi/1-13.jpg',
-    unitsSold: '3.4k sold',
-  },
-  {
-    id: 'bs-airpods-max',
-    rank: 2,
-    title: 'Apple AirPods Max Wireless Over-Ear Active Noise Cancellation - Pink',
-    category: 'AUDIO',
-    price: 499.0,
-    compareAtPrice: 549.0,
-    discountPercent: 9,
-    rating: 4.9,
-    reviewCount: 1950,
-    stock: 14,
-    maxStock: 30,
-    sellerId: 'apple-flagship',
-    sellerName: 'Apple Authorized Partner',
-    sellerType: 'vendor',
-    type: 'physical',
-    image: '/images/products/airpods_max_pink.png',
-    unitsSold: '2.8k sold',
-  },
-  {
-    id: 'bs-titanium-phone',
-    rank: 3,
-    title: 'iPhone 15 Pro Max 256GB Natural Titanium Unlocked Global Version',
-    category: 'ELECTRONICS',
-    price: 1199.0,
-    compareAtPrice: 1299.0,
-    discountPercent: 8,
-    rating: 4.92,
-    reviewCount: 4210,
-    stock: 19,
-    maxStock: 40,
-    sellerId: 'apple-flagship',
-    sellerName: 'Apple Authorized Partner',
-    sellerType: 'vendor',
-    type: 'physical',
-    image: '/images/products/iphone_15_pro_natural.png',
-    unitsSold: '2.1k sold',
-  },
-  {
-    id: 'bs-lumina-cream',
-    rank: 4,
-    title: 'Coastal Glow Bio-Hydra Night Treatment Peptide Cream 50ml',
-    category: 'BEAUTY',
-    price: 36.0,
-    compareAtPrice: 48.0,
-    discountPercent: 25,
-    rating: 4.88,
-    reviewCount: 1680,
-    stock: 32,
-    maxStock: 80,
-    sellerId: 'lumina-lab',
-    sellerName: 'Lumina Skincare Lab',
-    sellerType: 'vendor',
-    type: 'physical',
-    image: '/images/products/prod_lumina_cream.jpg',
-    unitsSold: '1.9k sold',
-  },
-  {
-    id: 'bs-amber-serum',
-    rank: 5,
-    title: 'Pure Amber Niacinamide + HA Radiance Glow Serum 30ml',
-    category: 'BEAUTY',
-    price: 28.5,
-    compareAtPrice: 38.0,
-    discountPercent: 25,
-    rating: 4.85,
-    reviewCount: 1420,
-    stock: 22,
-    maxStock: 60,
-    sellerId: 'lumina-lab',
-    sellerName: 'Lumina Skincare Lab',
-    sellerType: 'vendor',
-    type: 'physical',
-    image: '/images/products/prod_amber_serum.jpg',
-    unitsSold: '1.6k sold',
-  },
-  {
-    id: 'bs-smart-fridge',
-    rank: 6,
-    title: 'Smart Inverter Multi-Door Refrigerator with Digital Eco-Cool',
-    category: 'HOME',
-    price: 749.0,
-    compareAtPrice: 899.0,
-    discountPercent: 17,
-    rating: 4.8,
-    reviewCount: 890,
-    stock: 8,
-    maxStock: 20,
-    sellerId: 'haier-official',
-    sellerName: 'Haier Official Store',
-    sellerType: 'vendor',
-    type: 'physical',
-    image: '/images/products/prod_smart_fridge.jpg',
-    unitsSold: '1.2k sold',
-  },
-];
+type RankedItem = ProductItem & { rank: number };
 
+/** Tab ids are the mapped card categories (upper-cased catalogue category names). */
 const CATEGORY_TABS = [
   { id: 'all', label: 'All Best Sellers' },
-  { id: 'AUDIO', label: 'Audio & Wearables' },
+  { id: 'AUDIO & WEARABLES', label: 'Audio & Wearables' },
   { id: 'ELECTRONICS', label: 'Smartphones & Tech' },
-  { id: 'BEAUTY', label: 'Beauty & Skincare' },
-  { id: 'HOME', label: 'Home Appliances' },
+  { id: 'BEAUTY & PERSONAL CARE', label: 'Beauty & Skincare' },
+  { id: 'HOME & KITCHEN', label: 'Home Appliances' },
 ];
 
 export const BestSellersRail: React.FC<BestSellersRailProps> = ({
@@ -143,10 +30,26 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
   const { formatPrice } = useCurrency();
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const filteredItems = BEST_SELLER_ITEMS.filter((item) => {
+  // Real best sellers: the catalogue's best_selling sort (review volume).
+  // The rail used to rank six invented products with fabricated "units sold"
+  // strings (QA frontend-Critical-2); rank is now the product's position in
+  // the real list and the velocity pill shows its genuine review count.
+  const { data } = useProducts({ sort: 'best_selling', page: 1, limit: 12 });
+  const rankedItems: RankedItem[] = useMemo(
+    () =>
+      (data?.items ?? []).map((product, index) => ({
+        ...domainProductToCardItem(product),
+        rank: index + 1,
+      })),
+    [data],
+  );
+
+  const filteredItems = rankedItems.filter((item) => {
     if (selectedCategory === 'all') return true;
     return item.category === selectedCategory;
   });
+
+  if (rankedItems.length === 0) return null;
 
   const getRankBadgeClass = (rank: number) => {
     if (rank === 1) return 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 shadow-md shadow-amber-500/30';
@@ -172,7 +75,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
             Best-Sellers Rail
           </h2>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Top customer-verified products ranked by nationwide weekly sales velocity
+            Top-rated products ranked by genuine customer review volume
           </p>
         </div>
 
@@ -238,11 +141,13 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
                   <Heart className={`h-3.5 w-3.5 ${wishlisted ? 'fill-rose-500' : ''}`} />
                 </button>
 
-                {/* Sales Velocity Pill */}
-                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center rounded-lg bg-slate-900/80 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
-                  <Zap className="mr-1 h-3 w-3 text-amber-400" />
-                  {item.unitsSold}
-                </div>
+                {/* Review Volume Pill */}
+                {item.reviewCount > 0 && (
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center rounded-lg bg-slate-900/80 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
+                    <Zap className="mr-1 h-3 w-3 text-amber-400" />
+                    {item.reviewCount} reviews
+                  </div>
+                )}
               </div>
 
               {/* Title & Info */}
