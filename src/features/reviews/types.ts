@@ -41,6 +41,8 @@ export interface ProductReview {
   orderNumber: string | null;
   createdAt: string;
   sellerReply: { author: string; timeAgo: string; body: string } | null;
+  /** Moderation state: a hidden review is invisible to everyone but its author and staff. */
+  hidden: boolean;
 }
 
 export interface NewReviewInput {

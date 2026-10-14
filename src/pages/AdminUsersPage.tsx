@@ -16,7 +16,14 @@ import { formatPrice } from '../store/currency-store';
 import { useUserQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import type { AdminUserRow } from '../features/admin/api/users';
+import { setUserStatus, type AdminUserRow } from '../features/admin/api/users';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -66,6 +73,9 @@ export const AdminUsersPage: React.FC = () => {
   const [role, setRole] = useState('all');
   const [status, setStatus] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<'active' | 'suspended' | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkSummary, setBulkSummary] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -128,43 +138,12 @@ export const AdminUsersPage: React.FC = () => {
   const { counts } = queue;
   const pct = (n: number): number => (counts.all > 0 ? Math.round((n / counts.all) * 100) : 0);
 
-  const toggleSelectAll = () => {
-    setSelectedIds((prev) => (prev.length === rows.length ? [] : rows.map((u) => u.id)));
-  };
-
-  const toggleSelectUser = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
-  };
-
   const handleToggleStatus = (userId: string, current: string) => {
     const next: 'active' | 'suspended' = current === 'active' ? 'suspended' : 'active';
     actions.setUserStatus.mutate({ userId, status: next, reason: 'Action via admin console' });
   };
 
   const userColumns: DataTableColumn<AdminUserRow>[] = [
-    {
-      key: 'select',
-      headerClassName: 'w-10 text-center',
-      className: 'text-center',
-      header: (
-        <input
-          type="checkbox"
-          aria-label="Select all accounts on this page"
-          checked={rows.length > 0 && selectedIds.length === rows.length}
-          onChange={toggleSelectAll}
-          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-        />
-      ),
-      cell: (user) => (
-        <input
-          type="checkbox"
-          aria-label={`Select ${user.name}`}
-          checked={selectedIds.includes(user.id)}
-          onChange={() => toggleSelectUser(user.id)}
-          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-        />
-      ),
-    },
     {
       key: 'user',
       header: 'User',
@@ -261,11 +240,40 @@ export const AdminUsersPage: React.FC = () => {
     },
   ];
 
-  const handleBatchSuspend = () => {
-    selectedIds.forEach((userId) =>
-      actions.setUserStatus.mutate({ userId, status: 'suspended', reason: 'Bulk suspension via admin console' }),
-    );
-    setSelectedIds([]);
+  /**
+   * Bulk status change: one `admin_set_user_status` call per selected account
+   * (the RPC is per-account — it refuses self-suspension and audits each
+   * change), settled independently so one refusal does not strand the rest.
+   * Accounts that failed stay selected so the admin can retry just those.
+   */
+  const runBulkStatus = async (status: 'active' | 'suspended') => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkRunning(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((userId) =>
+          setUserStatus(userId, status, `Bulk ${status === 'suspended' ? 'suspension' : 'activation'} via admin console`),
+        ),
+      );
+      const failedIds = ids.filter((_, index) => results[index].status === 'rejected');
+      const succeeded = ids.length - failedIds.length;
+      const firstFailure = results.find((r) => r.status === 'rejected') as
+        | PromiseRejectedResult
+        | undefined;
+      setBulkSummary(
+        failedIds.length === 0
+          ? `${succeeded} account${succeeded === 1 ? '' : 's'} ${status === 'suspended' ? 'suspended' : 'activated'}.`
+          : `${succeeded} of ${ids.length} accounts updated; ${failedIds.length} failed${
+              firstFailure?.reason instanceof Error ? ` — ${firstFailure.reason.message}` : ''
+            }. The failed accounts are still selected so you can retry them.`,
+      );
+      setSelectedIds(failedIds);
+    } finally {
+      setBulkRunning(false);
+      setBulkStatus(null);
+      await refetch();
+    }
   };
 
   const handleExportPage = () => {
@@ -328,6 +336,13 @@ export const AdminUsersPage: React.FC = () => {
             <span className="text-white">Export accounts</span>
           </Button>
         </div>
+
+        {/* The outcome of the last bulk action, including partial failures. */}
+        {bulkSummary && (
+          <div role="status" className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-700 shadow-2xs">
+            {bulkSummary}
+          </div>
+        )}
 
         {/* A refused write surfaces the database's reason and leaves the queue untouched. */}
         {actions.setUserStatus.isError && (
@@ -501,14 +516,24 @@ export const AdminUsersPage: React.FC = () => {
             </Select>
 
             {selectedIds.length > 0 && (
-              <button
-                type="button"
-                onClick={handleBatchSuspend}
-                disabled={actions.setUserStatus.isPending}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 text-white px-3 py-1.5 text-xs font-semibold shadow-2xs hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-              >
-                <span>Suspend Selected ({selectedIds.length})</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setBulkStatus('suspended')}
+                  disabled={bulkRunning}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 text-white px-3 py-1.5 text-xs font-semibold shadow-2xs hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                >
+                  <span>Suspend Selected ({selectedIds.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkStatus('active')}
+                  disabled={bulkRunning}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-xs font-semibold shadow-2xs hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                >
+                  <span>Activate Selected ({selectedIds.length})</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -521,6 +546,10 @@ export const AdminUsersPage: React.FC = () => {
             columns={userColumns}
             rows={rows}
             getRowKey={(user) => user.id}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
+            getRowId={(user) => user.id}
+            selectionLabel={(user) => `Select ${user.name}`}
             ariaLabel="User accounts"
             rowClassName={(user) => (selectedIds.includes(user.id) ? 'bg-slate-50/90' : '')}
             emptyState={
@@ -540,6 +569,39 @@ export const AdminUsersPage: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Bulk status confirmation — suspending locks accounts out of the
+          marketplace, so the count is confirmed before any call is made. */}
+      <Dialog open={bulkStatus !== null} onOpenChange={(open) => !open && setBulkStatus(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">
+              {bulkStatus === 'suspended'
+                ? `Suspend ${selectedIds.length} account${selectedIds.length === 1 ? '' : 's'}?`
+                : `Activate ${selectedIds.length} account${selectedIds.length === 1 ? '' : 's'}?`}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              {bulkStatus === 'suspended'
+                ? 'Suspended accounts cannot sign in or trade until they are activated again. Each change is written to the audit log; your own account cannot be suspended this way.'
+                : 'Activated accounts can sign in and trade again. Each change is written to the audit log.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-end gap-2.5 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={() => setBulkStatus(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              disabled={bulkRunning}
+              onClick={() => bulkStatus && void runBulkStatus(bulkStatus)}
+            >
+              {bulkStatus === 'suspended' ? 'Suspend accounts' : 'Activate accounts'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </WorkspaceLayout>
   );
 };

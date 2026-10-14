@@ -1413,7 +1413,9 @@ export type Database = {
         "photos": string[],
         "helpful_count": number,
         "seller_reply": Json | null,
-        "created_at": string
+        "created_at": string,
+        "hidden": boolean,
+        "moderation_note": string | null
       }
       Insert: {
         "id"?: string,
@@ -1430,7 +1432,9 @@ export type Database = {
         "photos"?: string[],
         "helpful_count"?: number,
         "seller_reply"?: Json | null,
-        "created_at"?: string
+        "created_at"?: string,
+        "hidden"?: boolean,
+        "moderation_note"?: string | null
       }
       Update: {
         "id"?: string,
@@ -1447,7 +1451,9 @@ export type Database = {
         "photos"?: string[],
         "helpful_count"?: number,
         "seller_reply"?: Json | null,
-        "created_at"?: string
+        "created_at"?: string,
+        "hidden"?: boolean,
+        "moderation_note"?: string | null
       }
       Relationships: [
         {
@@ -2242,6 +2248,15 @@ export type Database = {
       }
       Returns: Record<string, unknown>
     },
+    "admin_review_queue": {
+      Args: {
+        "p_status"?: string,
+        "p_search"?: string,
+        "p_page"?: number,
+        "p_page_size"?: number
+      }
+      Returns: Json
+    },
     "admin_save_platform_settings": {
       Args: {
         "p_settings": Json
@@ -2258,6 +2273,14 @@ export type Database = {
     "admin_set_global_commission": {
       Args: {
         "p_rate": number
+      }
+      Returns: Json
+    },
+    "admin_set_review_hidden": {
+      Args: {
+        "p_review_id": string,
+        "p_hidden": boolean,
+        "p_note"?: string | null
       }
       Returns: Json
     },

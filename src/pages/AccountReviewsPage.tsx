@@ -114,6 +114,11 @@ export const AccountReviewsPage: React.FC = () => {
                         Verified purchase
                       </span>
                     )}
+                    {review.hidden && (
+                      <span className="ml-2 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+                        Hidden by moderators
+                      </span>
+                    )}
                   </div>
                   {review.headline && (
                     <h3 className="mt-2 text-sm font-bold text-slate-900 dark:text-white">

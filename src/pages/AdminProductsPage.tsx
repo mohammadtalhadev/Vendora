@@ -167,18 +167,6 @@ export const AdminProductsPage: React.FC = () => {
     });
   };
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === rows.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(rows.map((r) => r.id));
-    }
-  };
-
-  const toggleSelectItem = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
-  };
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3200);
@@ -269,32 +257,6 @@ export const AdminProductsPage: React.FC = () => {
   };
 
   const productColumns: DataTableColumn<ModerationRow>[] = [
-    {
-      key: 'select',
-      headerClassName: 'w-10 text-center',
-      className: 'text-center',
-      header: (
-        <>
-          <label htmlFor="select-all-products" className="sr-only">Select all products on this page</label>
-          <input
-            id="select-all-products"
-            type="checkbox"
-            checked={rows.length > 0 && selectedIds.length === rows.length}
-            onChange={toggleSelectAll}
-            className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-          />
-        </>
-      ),
-      cell: (row) => (
-        <input
-          type="checkbox"
-          aria-label={`Select ${row.title} for bulk moderation`}
-          checked={selectedIds.includes(row.id)}
-          onChange={() => toggleSelectItem(row.id)}
-          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-        />
-      ),
-    },
     {
       key: 'product',
       header: 'PRODUCT / LISTING',
@@ -406,6 +368,10 @@ export const AdminProductsPage: React.FC = () => {
       columns={productColumns}
       rows={rows}
       getRowKey={(row) => row.id}
+      selectedIds={selectedIds}
+      onSelectionChange={setSelectedIds}
+      getRowId={(row) => row.id}
+      selectionLabel={(row) => `Select ${row.title} for bulk moderation`}
       ariaLabel="Product moderation queue"
       rowClassName={(row) => (selectedIds.includes(row.id) ? 'bg-slate-50/90' : '')}
       emptyState={
@@ -430,6 +396,21 @@ export const AdminProductsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
     );
+  };
+
+  // Bulk approval confirmation state (row-level approve stays one click;
+  // a bulk approval publishes many listings at once, so it confirms first).
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [approveTargetIds, setApproveTargetIds] = useState<string[]>([]);
+
+  const handleOpenApproveModal = (ids: string[]) => {
+    setApproveTargetIds(ids);
+    setIsApproveModalOpen(true);
+  };
+
+  const handleConfirmApprove = () => {
+    void handleApprove(approveTargetIds);
+    setIsApproveModalOpen(false);
   };
 
   // Rejection state
@@ -588,7 +569,7 @@ export const AdminProductsPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => handleApprove(selectedIds)}
+              onClick={() => handleOpenApproveModal(selectedIds)}
               disabled={selectedIds.length === 0 || isMutatingModerate}
               className="text-emerald-700 hover:underline disabled:opacity-40"
             >
@@ -661,6 +642,19 @@ export const AdminProductsPage: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* Bulk Approval Confirmation Modal */}
+        <ModalWrapper
+          open={isApproveModalOpen}
+          onClose={() => setIsApproveModalOpen(false)}
+          title="Approve Selected Listings"
+          description={`Publish ${approveTargetIds.length} listing(s) to the live catalog. Listings already approved are skipped and do not count toward the result.`}
+        >
+          <div className="flex items-center justify-end gap-2.5 pt-3 text-xs">
+            <button type="button" onClick={() => setIsApproveModalOpen(false)} className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
+            <button type="button" onClick={handleConfirmApprove} disabled={isMutatingModerate} className="px-4 py-2 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700 shadow-xs cursor-pointer disabled:opacity-40">Confirm Approval</button>
+          </div>
+        </ModalWrapper>
 
         {/* Rejection Modal */}
         <ModalWrapper

@@ -67,16 +67,20 @@ export interface DataTableProps<T> {
   /**
    * Optional row selection. When `onSelectionChange` is provided, a checkbox
    * column is prepended: one checkbox per row plus a header checkbox that
-   * selects/deselects the rows currently rendered (the page, when paginated).
-   * Selection is fully controlled — `selectedIds` holds the ids of the
-   * selected rows as produced by `getRowId` (default: `getRowKey`). Pages
-   * that do not pass these props render exactly as before.
+   * selects/deselects the rows currently rendered (the page, when paginated;
+   * indeterminate when only part of the page is selected). Rows carry
+   * `aria-selected` while selection is on. Selection is fully controlled —
+   * `selectedIds` holds the ids of the selected rows as produced by
+   * `getRowId` (default: `getRowKey`); `selectionLabel` names each row's
+   * checkbox. Pages that do not pass these props render exactly as before.
    */
   selectedIds?: readonly string[];
   /** Called with the full next selection whenever a checkbox changes. */
   onSelectionChange?: (selectedIds: string[]) => void;
   /** Row id used for selection bookkeeping. Defaults to `String(getRowKey(row))`. */
   getRowId?: (row: T) => string;
+  /** Accessible name for a row's checkbox. Defaults to `Select row`. */
+  selectionLabel?: (row: T) => string;
   /**
    * When provided, the shared TablePagination footer renders below the table.
    * DataTable is presentational about paging: it forwards the flat
@@ -117,6 +121,7 @@ export function DataTable<T>({
   selectedIds,
   onSelectionChange,
   getRowId,
+  selectionLabel,
   pagination,
   caption,
   ariaLabel,
@@ -136,6 +141,8 @@ export function DataTable<T>({
   );
   const allRenderedSelected =
     renderedIds.length > 0 && renderedIds.every((id) => selectedSet.has(id));
+  const someRenderedSelected =
+    !allRenderedSelected && renderedIds.some((id) => selectedSet.has(id));
   const columnCount = columns.length + (selectionEnabled ? 1 : 0);
 
   const toggleRowSelection = (row: T) => {
@@ -189,6 +196,9 @@ export function DataTable<T>({
                     type="checkbox"
                     aria-label="Select all rows on this page"
                     checked={allRenderedSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someRenderedSelected;
+                    }}
                     onChange={toggleRenderedSelection}
                     className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                   />
@@ -248,6 +258,9 @@ export function DataTable<T>({
                 return (
                   <tr
                     key={getRowKey(row)}
+                    aria-selected={
+                      selectionEnabled ? selectedSet.has(rowIdOf(row)) : undefined
+                    }
                     {...rowAttributes}
                     onClick={handleClick}
                     className={cn(
@@ -261,7 +274,7 @@ export function DataTable<T>({
                       <td className="py-3 px-4 w-10 text-center">
                         <input
                           type="checkbox"
-                          aria-label="Select row"
+                          aria-label={selectionLabel ? selectionLabel(row) : 'Select row'}
                           checked={selectedSet.has(rowIdOf(row))}
                           onChange={() => toggleRowSelection(row)}
                           onClick={(event) => event.stopPropagation()}

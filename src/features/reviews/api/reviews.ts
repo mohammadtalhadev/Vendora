@@ -6,7 +6,7 @@ type ReviewRow = Database['public']['Tables']['reviews']['Row'];
 
 const REVIEW_SELECT =
   'id, product_id, author_id, author_name, author_avatar, author_country, verified_purchase, ' +
-  'order_number, rating, headline, body, photos, helpful_count, seller_reply, created_at';
+  'order_number, rating, headline, body, photos, helpful_count, seller_reply, created_at, hidden';
 
 /** How many reviews one product page aggregates; the rollup needs the whole set. */
 const REVIEWS_PER_PRODUCT = 200;
@@ -37,6 +37,7 @@ function toReview(row: ReviewRow): ProductReview {
     orderNumber: row.order_number,
     createdAt: row.created_at,
     sellerReply: row.seller_reply as ProductReview['sellerReply'],
+    hidden: row.hidden === true,
   };
 }
 
@@ -91,6 +92,9 @@ export async function fetchProductReviews(
     .from('reviews')
     .select(REVIEW_SELECT)
     .eq('product_id', productId)
+    // Moderated reviews never reach the storefront, even if a stale RLS
+    // policy or a cached row would otherwise let one through.
+    .eq('hidden', false)
     .order(column, { ascending })
     .order('created_at', { ascending: false })
     .limit(REVIEWS_PER_PRODUCT);
@@ -110,7 +114,11 @@ export interface MyReview extends ProductReview {
   productImage: string | null;
 }
 
-/** The signed-in customer's own reviews, newest first (Account → My Reviews). */
+/**
+ * The signed-in customer's own reviews, newest first (Account → My Reviews).
+ * Deliberately NOT filtered on `hidden`: the author keeps seeing their own
+ * review, and the page marks it "Hidden by moderators" from the flag.
+ */
 export async function fetchMyReviews(signal?: AbortSignal): Promise<MyReview[]> {
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;
@@ -234,6 +242,7 @@ export async function fetchVendorReviews(sellerId: string, signal?: AbortSignal)
   let reviewsQuery = supabase
     .from('reviews')
     .select(REVIEW_SELECT)
+    .eq('hidden', false)
     .in('product_id', [...productById.keys()])
     .order('created_at', { ascending: false })
     .limit(REVIEWS_PER_PRODUCT);

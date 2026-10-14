@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   PlusCircle,
   ShoppingBag,
+  Star,
   Users,
   Layers,
   Percent,
@@ -74,6 +75,12 @@ const NAV_ITEMS: NavItem[] = [
     to: '/admin/orders',
     label: 'Orders',
     icon: ShoppingBag,
+  },
+  {
+    to: '/admin/reviews',
+    label: 'Reviews',
+    accessibleSubtitle: 'Review Moderation',
+    icon: Star,
   },
   {
     to: '/admin/users',

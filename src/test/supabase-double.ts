@@ -2180,6 +2180,75 @@ export function createSupabaseDouble() {
       });
       return { data: { id: profile.id, status }, error: null };
     }
+    // ---------------------------------------------- review moderation
+    if (fn === 'admin_review_queue') {
+      const denied = refuse('read the review moderation queue');
+      if (denied) return denied;
+      const status = String(args.p_status ?? 'all');
+      const matched = tables.reviews.filter((row) => {
+        const product = tables.products.find((p) => p.id === row.product_id);
+        return (
+          (status === 'all' ||
+            (status === 'visible' && row.hidden !== true) ||
+            (status === 'hidden' && row.hidden === true)) &&
+          ilikeAny(args.p_search, row.author_name, row.headline, row.body, product?.title)
+        );
+      });
+      const sorted = orderRows(matched, [byValue((row) => String(row.created_at), true)]);
+      const { page, pageSize, from, to } = pageWindow(args.p_page, args.p_page_size, 20);
+      return {
+        data: {
+          page,
+          pageSize,
+          total: matched.length,
+          counts: {
+            total: tables.reviews.length,
+            visible: countWhere(tables.reviews, (row) => row.hidden !== true),
+            hidden: countWhere(tables.reviews, (row) => row.hidden === true),
+          },
+          rows: sorted.slice(from, to).map((row) => {
+            const product = tables.products.find((p) => p.id === row.product_id);
+            const store = tables.vendor_profiles.find((s) => s.id === product?.seller_id);
+            return {
+              id: row.id,
+              productId: row.product_id,
+              productTitle: product?.title ?? '',
+              productSlug: product?.slug ?? '',
+              storeName: store?.store_name ?? null,
+              authorId: row.author_id ?? null,
+              authorName: row.author_name,
+              rating: row.rating,
+              headline: row.headline,
+              body: row.body,
+              verifiedPurchase: row.verified_purchase === true,
+              helpfulCount: row.helpful_count,
+              hasSellerReply: row.seller_reply !== null && row.seller_reply !== undefined,
+              hidden: row.hidden === true,
+              moderationNote: row.moderation_note ?? null,
+              createdAt: row.created_at,
+            };
+          }),
+        },
+        error: null,
+      };
+    }
+    if (fn === 'admin_set_review_hidden') {
+      const denied = refuse('moderate reviews');
+      if (denied) return denied;
+      const review = tables.reviews.find((row) => row.id === args.p_review_id);
+      if (!review) return { data: null, error: { message: 'Review not found' } };
+      const before = review.hidden === true;
+      review.hidden = args.p_hidden === true;
+      review.moderation_note = args.p_note ?? null;
+      audit(
+        review.hidden ? 'review.hidden' : 'review.restored',
+        'review',
+        String(review.id),
+        { hidden: before },
+        { hidden: review.hidden, note: review.moderation_note },
+      );
+      return { data: { id: review.id, hidden: review.hidden }, error: null };
+    }
     if (fn === 'admin_set_user_roles') {
       const denied = refuse('change an account’s roles');
       if (denied) return denied;
@@ -3158,6 +3227,8 @@ export function reviewRow(overrides: Partial<Row> = {}): Row {
     photos: [],
     helpful_count: 3,
     seller_reply: null,
+    hidden: false,
+    moderation_note: null,
     created_at: '2026-10-05T00:00:00.000Z',
     ...overrides,
   };

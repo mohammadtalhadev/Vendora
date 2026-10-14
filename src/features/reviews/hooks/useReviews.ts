@@ -7,6 +7,11 @@ import {
   submitReview,
   type NewReview,
 } from '../api/reviews';
+import {
+  fetchAdminReviewQueue,
+  setReviewHidden,
+  type AdminReviewStatusFilter,
+} from '../api/admin-reviews';
 import type { ReviewSort } from '../types';
 import { isProductId } from '../../catalog/api/product-row';
 
@@ -15,7 +20,35 @@ export const reviewsKeys = {
   product: (productId: string, sort: ReviewSort) => ['reviews', 'product', productId, sort] as const,
   vendor: (sellerId: string) => ['reviews', 'vendor', sellerId] as const,
   mine: ['reviews', 'mine'] as const,
+  adminQueue: (params: Record<string, unknown>) => ['reviews', 'admin', params] as const,
 };
+
+export function useAdminReviewQueue(params: {
+  status?: AdminReviewStatusFilter;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  return useQuery({
+    queryKey: reviewsKeys.adminQueue(params),
+    queryFn: ({ signal }) => fetchAdminReviewQueue(params, signal),
+    staleTime: 1000 * 30,
+  });
+}
+
+export function useSetReviewHidden() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, hidden, note }: { reviewId: string; hidden: boolean; note?: string | null }) =>
+      setReviewHidden(reviewId, hidden, note),
+    onSuccess: () => {
+      // Visibility feeds the queue, the storefront list and both rating
+      // rollups, so every review read is re-read from the database.
+      queryClient.invalidateQueries({ queryKey: reviewsKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['catalog', 'product'] });
+    },
+  });
+}
 
 export function useProductReviews(productId: string | undefined, sort: ReviewSort = 'recent') {
   return useQuery({

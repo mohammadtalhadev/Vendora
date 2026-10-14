@@ -263,6 +263,9 @@ const AdminReportsPage = lazyWithRetry(() =>
 const AdminUsersPage = lazyWithRetry(() =>
   import('../pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
 );
+const AdminReviewsPage = lazyWithRetry(() =>
+  import('../pages/AdminReviewsPage').then((m) => ({ default: m.AdminReviewsPage })),
+);
 const AdminOrdersPage = lazyWithRetry(() =>
   import('../pages/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage })),
 );
@@ -844,6 +847,10 @@ export const router = createBrowserRouter([
       {
         path: 'users',
         element: lazyWrap(<AdminUsersPage />),
+      },
+      {
+        path: 'reviews',
+        element: lazyWrap(<AdminReviewsPage />),
       },
       {
         path: 'add-product',
