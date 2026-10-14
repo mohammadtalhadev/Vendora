@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { useParams } from 'react-router-dom';
 import {
   Search,
@@ -8,7 +10,6 @@ import {
   Inbox,
   Clock,
   AlertTriangle,
-  CheckCircle2,
   X,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
@@ -120,7 +121,6 @@ export const VendorMessagesPage: React.FC = () => {
   const [filter, setFilter] = useState<Filter>('all');
   const [draft, setDraft] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const threads = threadsQuery.data ?? [];
@@ -128,10 +128,8 @@ export const VendorMessagesPage: React.FC = () => {
   const messagesQuery = useThreadMessages(active?.id ?? '');
   const messages = messagesQuery.data ?? [];
 
-  const showToast = (message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(null), 3000);
-  };
+  // Shared toast (Batch 47) — replaces this page's private pill state.
+  const { toast, showToast, hideToast } = useToast(3000);
 
   // Opening a thread clears the buyer's unread marks; the mutation refreshes both queries.
   useEffect(() => {
@@ -632,12 +630,8 @@ export const VendorMessagesPage: React.FC = () => {
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-          <span>{toast}</span>
-        </div>
-      )}
+      {/* Shared toast (Batch 47). */}
+      <Toast toast={toast} onDismiss={hideToast} />
     </WorkspaceLayout>
   );
 };

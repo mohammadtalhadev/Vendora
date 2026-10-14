@@ -152,6 +152,118 @@
   --shadow-glass-hover: 0 12px 36px 0 rgba(15, 23, 42, 0.12);
   --shadow-orange-glow: 0 4px 20px 0 color-mix(in srgb, var(--color-sun-orange) 35%, transparent);
   --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+
+  /* Entrance/exit animations (Batch 47). Until this batch the `animate-in` /
+     `animate-out` classes used across dialogs, menus and toasts generated NO
+     CSS at all — the tailwindcss-animate plugin they came with was never
+     installed, so every dialog simply appeared. These tokens recreate that
+     contract natively in Tailwind v4: `animate-in` / `animate-out` run the
+     enter/exit keyframes, and the modifier utilities below (fade-in,
+     zoom-in-95, slide-in-from-*, …) feed them through the --tw-enter-* /
+     --tw-exit-* variables. Duration/easing stay composable via the usual
+     duration-* / ease-* utilities. */
+  --animate-in: enter 0.2s ease-out;
+  --animate-out: exit 0.15s ease-in;
+  --animate-fade-in: fade-in 0.2s ease-out;
+
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform:
+        translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+        scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), 1);
+    }
+  }
+
+  @keyframes exit {
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      transform:
+        translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0)
+        scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), 1);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+/* Entrance/exit modifier utilities (Batch 47) — companions to the
+   --animate-in / --animate-out tokens above. Each one only sets the
+   --tw-enter-* / --tw-exit-* variable the keyframes read. */
+@utility fade-in {
+  --tw-enter-opacity: 0;
+}
+
+@utility fade-in-0 {
+  --tw-enter-opacity: 0;
+}
+
+@utility fade-out-0 {
+  --tw-exit-opacity: 0;
+}
+
+@utility zoom-in-95 {
+  --tw-enter-scale: 0.95;
+}
+
+@utility zoom-in-75 {
+  --tw-enter-scale: 0.75;
+}
+
+@utility zoom-out-95 {
+  --tw-exit-scale: 0.95;
+}
+
+@utility slide-in-from-bottom-2 {
+  --tw-enter-translate-y: 0.5rem;
+}
+
+@utility slide-in-from-top-1 {
+  --tw-enter-translate-y: -0.25rem;
+}
+
+@utility slide-in-from-top-2 {
+  --tw-enter-translate-y: -0.5rem;
+}
+
+@utility slide-in-from-right {
+  --tw-enter-translate-x: 100%;
+}
+
+@utility slide-in-from-left-1/2 {
+  --tw-enter-translate-x: -50%;
+}
+
+@utility slide-in-from-top-* {
+  --tw-enter-translate-y: calc(--value([*]) * -1);
+}
+
+@utility slide-out-to-left-1/2 {
+  --tw-exit-translate-x: -50%;
+}
+
+@utility slide-out-to-top-* {
+  --tw-exit-translate-y: calc(--value([*]) * -1);
+}
+
+/* The one hover recipe (Batch 47, extending the Batch 30 icon standard):
+   colour shift (supplied by the element's own hover:text-* / hover:bg-*
+   classes) + a 2px lift, always 200ms. Tabs, wishlist hearts and View-All
+   links use this instead of each hand-rolling scale/ring/translate mixes. */
+@utility hover-lift {
+  transition-property:
+    color, background-color, border-color, text-decoration-color, fill, stroke, transform,
+    box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 }
 
 /* ==========================================================================

@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import {
   Package,
@@ -8,7 +10,6 @@ import {
   Box,
   Plus,
   AlertCircle,
-  CheckCircle2,
   ArrowLeft,
   Upload,
   UploadCloud,
@@ -112,12 +113,8 @@ export const VendorAddProductPage: React.FC = () => {
 
   // Toast & Validation
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
+  const { toast, showToast, hideToast } = useToast(3500);
 
   // Edit mode: prefill every field from the loaded listing, exactly once.
   const [prefilled, setPrefilled] = useState(false);
@@ -424,12 +421,8 @@ export const VendorAddProductPage: React.FC = () => {
     >
       <div className="space-y-6 pb-20 font-sans text-slate-900">
         {/* Floating Toast Notification */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
 
         {/* Top Header & Action Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-5">

@@ -35,6 +35,7 @@ import type { PaymentMethod } from '../features/checkout/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { FormField } from '../components/ui/form-field';
+import { PageHeader } from '../components/common/PageHeader';
 
 interface AddressOption extends ShippingAddress {
   id: string;
@@ -381,12 +382,10 @@ export const CheckoutPage: React.FC = () => {
           <span className="text-slate-900 dark:text-white font-semibold">Checkout</span>
         </nav>
 
-        {/* Top Header Title */}
-        <div className="mb-6">
-          <h1 className="font-outfit text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Your Cart &amp; Secure Checkout
-          </h1>
-        </div>
+        {/* Top Header Title — shared PageHeader (Batch 47): the page's one h1
+            in this state; the sign-in gate and empty-cart states above carry
+            their own single h1 and never render together with this one. */}
+        <PageHeader title="Your Cart & Secure Checkout" />
 
         {/* Main 2-Column Content Layout */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">

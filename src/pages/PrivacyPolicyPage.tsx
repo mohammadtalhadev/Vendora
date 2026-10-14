@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import {
   Lock,
   ShieldCheck,
@@ -6,7 +8,6 @@ import {
   FileText,
   Sliders,
   Printer,
-  CheckCircle2,
   Server,
   Mail,
   UserCheck,
@@ -27,12 +28,8 @@ export const PrivacyPolicyPage: React.FC = () => {
   const [isDsarModalOpen, setIsDsarModalOpen] = useState(false);
   const [dsarType, setDsarType] = useState<'export' | 'delete'>('export');
   const [dsarEmail, setDsarEmail] = useState('');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
+  const { toast, showToast, hideToast } = useToast(3500);
 
   const handleSaveCookiePreferences = () => {
     showToast('Your privacy and cookie preferences have been saved and applied.');
@@ -505,12 +502,8 @@ export const PrivacyPolicyPage: React.FC = () => {
       </Dialog>
 
       {/* ── Toast Notification ─────────────────────────────────────── */}
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 rounded-2xl border border-white/50 bg-white/75 px-5 py-3 text-xs font-semibold text-slate-800 shadow-2xl backdrop-blur-xl flex items-center gap-2.5 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 animate-in fade-in slide-in-from-bottom-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+      <Toast toast={toast} onDismiss={hideToast} />
     </div>
   );
 };

@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ChevronRight,
-  ChevronLeft,
-  CheckCircle2,
-} from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
@@ -30,6 +26,10 @@ import {
 } from '../features/home';
 import { useHeroPortrait, useHeroSlides } from '../features/home/api/hero-banners';
 import { TrustStrip } from '../components/common/TrustStrip';
+import { Toast } from '../components/common/Toast';
+import { CountdownTimer } from '../components/common/CountdownTimer';
+import { GridSkeleton, Skeleton } from '../components/common/QueryState';
+import { useToast } from '../hooks/useToast';
 
 
 // Hero slides come from the CMS: the published `homepage_hero` banners the
@@ -91,64 +91,15 @@ const SALE_CATEGORY_DEFS: SaleCategoryDef[] = [
   { id: 'cat-cameras', name: 'Cameras & Photo', slug: 'cameras-photo' },
 ];
 
-interface CountdownPillsProps {
-  initialDays?: number;
-  initialHours?: number;
-  initialMinutes?: number;
-  initialSeconds?: number;
-  days?: number;
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
-}
-
-/** Live "Remaining Time" widget used on the promo banners (self-contained timer to prevent page re-renders). */
-const CountdownPills: React.FC<CountdownPillsProps> = ({
-  initialDays = 39,
-  initialHours = 5,
-  initialMinutes = 4,
-  initialSeconds = 57,
-  days: propDays,
-  hours: propHours,
-  minutes: propMinutes,
-  seconds: propSeconds,
-}) => {
-  const [time, setTime] = useState(() => ({
-    days: propDays ?? initialDays,
-    hours: propHours ?? initialHours,
-    minutes: propMinutes ?? initialMinutes,
-    seconds: propSeconds ?? initialSeconds,
-  }));
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        return prev;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return (
-    <div>
-      <p className="font-outfit mb-1.5 text-[11px] font-medium text-[#5A5148]">Remaining Time:</p>
-      <div className="font-outfit inline-flex items-center gap-2 rounded-lg bg-white px-3.5 py-2 text-xs font-bold tabular-nums shadow-sm sm:text-sm">
-        <span className="text-slate-400">{pad(time.days)}</span>
-        <span className="text-slate-400">:</span>
-        <span className="text-slate-400">{pad(time.hours)}</span>
-        <span className="text-slate-400">:</span>
-        <span className="text-slate-400">{pad(time.minutes)}</span>
-        <span className="text-slate-400">:</span>
-        <span className="text-slate-900">{pad(time.seconds)}</span>
-      </div>
-    </div>
-  );
-};
+/** Page-shaped placeholder for a product rail whose query is still in flight
+ * (Batch 47): a heading bar over a card grid, so the section holds its space
+ * instead of popping in when the data lands. */
+const HomeRailSkeleton: React.FC = () => (
+  <div className="mb-14" role="status" aria-label="Loading products">
+    <Skeleton className="mb-6 h-8 w-56" />
+    <GridSkeleton count={4} />
+  </div>
+);
 
 
 export const HomePage: React.FC = () => {
@@ -159,7 +110,8 @@ export const HomePage: React.FC = () => {
   useReveal();
 
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Shared toast (Batch 47) — this page used to run its own private pill.
+  const { toast, showToast, hideToast } = useToast(3200);
 
   // Hero Section Carousel state. The slide list can change length when the CMS
   // read lands, so the rendered index is always taken modulo the list.
@@ -205,7 +157,7 @@ export const HomePage: React.FC = () => {
   // Wearables, Cameras & Photo); the shared mapper's title-driven inference
   // feeds the sub-category tab filter, with category-derived ids normalised
   // onto the tab ids.
-  const { data: electronicsData } = useProducts({ category: 'electronics', sort: 'best_selling', page: 1, limit: 24 });
+  const { data: electronicsData, isLoading: electronicsLoading } = useProducts({ category: 'electronics', sort: 'best_selling', page: 1, limit: 24 });
   const { data: audioData } = useProducts({ category: 'audio-wearables', sort: 'best_selling', page: 1, limit: 12 });
   const { data: camerasData } = useProducts({ category: 'cameras-photo', sort: 'best_selling', page: 1, limit: 12 });
 
@@ -228,7 +180,7 @@ export const HomePage: React.FC = () => {
     return merged;
   }, [electronicsData, audioData, camerasData]);
 
-  const { data: beautyData } = useProducts({ category: 'beauty-personal-care', sort: 'best_selling', page: 1, limit: 20 });
+  const { data: beautyData, isLoading: beautyLoading } = useProducts({ category: 'beauty-personal-care', sort: 'best_selling', page: 1, limit: 20 });
   const beautyItems = useMemo<ProductItem[]>(
     () => (beautyData?.items ?? []).map(domainProductToCardItem),
     [beautyData],
@@ -242,7 +194,7 @@ export const HomePage: React.FC = () => {
     [recentlyViewed],
   );
 
-  const { data: homeData } = useProducts({ category: 'home-kitchen', sort: 'best_selling', page: 1, limit: 20 });
+  const { data: homeData, isLoading: homeLoading } = useProducts({ category: 'home-kitchen', sort: 'best_selling', page: 1, limit: 20 });
   const homeItems = useMemo<ProductItem[]>(
     () => (homeData?.items ?? []).map(domainProductToCardItem),
     [homeData],
@@ -276,13 +228,6 @@ export const HomePage: React.FC = () => {
 
   const prevHeroSlide = () => {
     setHeroSlideIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
-  };
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 3200);
   };
 
   const handleAddToCart = useCallback((item: ProductItem) => {
@@ -330,6 +275,11 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="w-full text-[#1F2937] dark:text-slate-100">
+      {/* The page's one h1 (Batch 47). The hero is image-only by the owner's
+          decision (Batch 29), so the h1 is visually hidden rather than
+          painted over the banners — but the page now has the standard
+          single-h1 outline every other storefront page carries. */}
+      <h1 className="sr-only">Vendora — Electronics, Beauty, Home &amp; More</h1>
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6">
         {/* =========================================================================
             1. Hero Featured Carousel & Highlights
@@ -425,7 +375,7 @@ export const HomePage: React.FC = () => {
             action={
               <Link
                 to="/products"
-                className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 transition-colors hover:bg-orange-100"
+                className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 hover-lift hover:bg-orange-100"
               >
                 <span>View All</span>
                 <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -523,7 +473,7 @@ export const HomePage: React.FC = () => {
             action={
               <Link
                 to={`/products?category=${currentSaleCategory?.slug || 'electronics'}`}
-                className="group hidden items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 transition-colors hover:bg-orange-100 sm:inline-flex shrink-0"
+                className="group hidden items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 hover-lift hover:bg-orange-100 sm:inline-flex shrink-0"
               >
                 <span>View All</span>
                 <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -571,7 +521,7 @@ export const HomePage: React.FC = () => {
                     Shop Electronics
                   </BannerCta>
                 </div>
-                <CountdownPills
+                <CountdownTimer
                   initialDays={39}
                   initialHours={5}
                   initialMinutes={4}
@@ -658,6 +608,7 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             3B. Product Cards Carousel 1: Electronics (with sub-category tabs)
             ========================================================================= */}
+        {electronicsLoading && electronicsItems.length === 0 && <HomeRailSkeleton />}
         {electronicsItems.length > 0 && (
           <div className="reveal">
             <ProductCarouselWithTabs
@@ -706,7 +657,7 @@ export const HomePage: React.FC = () => {
                     Shop Beauty
                   </BannerCta>
                 </div>
-                <CountdownPills
+                <CountdownTimer
                   initialDays={37}
                   initialHours={17}
                   initialMinutes={4}
@@ -735,7 +686,7 @@ export const HomePage: React.FC = () => {
                     Shop Beauty
                   </BannerCta>
                 </div>
-                <CountdownPills
+                <CountdownTimer
                   initialDays={38}
                   initialHours={17}
                   initialMinutes={4}
@@ -758,6 +709,7 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             3D. Product Cards Carousel 2: Beauty & Personal Care (without tabs)
             ========================================================================= */}
+        {beautyLoading && beautyItems.length === 0 && <HomeRailSkeleton />}
         {beautyItems.length > 0 && (
           <div className="reveal">
             <ProductCarouselWithoutTabs
@@ -781,7 +733,7 @@ export const HomePage: React.FC = () => {
               action={
                 <Link
                   to="/recently-viewed"
-                  className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 transition-colors hover:bg-orange-100"
+                  className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 hover-lift hover:bg-orange-100"
                 >
                   <span>View All</span>
                   <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -858,7 +810,7 @@ export const HomePage: React.FC = () => {
                     Shop Now
                   </BannerCta>
                 </div>
-                <CountdownPills
+                <CountdownTimer
                   initialDays={37}
                   initialHours={13}
                   initialMinutes={4}
@@ -914,6 +866,7 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             3F. Product Cards Carousel 3: Home & Kitchen (without tabs)
             ========================================================================= */}
+        {homeLoading && homeItems.length === 0 && <HomeRailSkeleton />}
         {homeItems.length > 0 && (
           <div className="reveal">
             <ProductCarouselWithoutTabs
@@ -949,13 +902,8 @@ export const HomePage: React.FC = () => {
       {/* Floating Back-To-Top Button */}
       <BackToTopButton />
 
-      {/* Floating Toast Notification Pill */}
-      {toastMessage && (
-        <div className="fixed bottom-20 right-6 z-50 flex items-center gap-2.5 rounded-2xl border border-white/50 bg-white/75 px-5 py-3 text-xs font-semibold text-slate-800 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 animate-in fade-in slide-in-from-bottom-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+      <Toast toast={toast} onDismiss={hideToast} />
     </div>
   );
 };

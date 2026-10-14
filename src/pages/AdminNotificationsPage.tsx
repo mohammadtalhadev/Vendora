@@ -10,6 +10,7 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { Button } from '../components/ui/button';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { useBroadcastLog } from '../features/admin/hooks/useAdminQueries';
 import { useNotificationActions } from '../features/notifications/hooks/useNotifications';
@@ -69,8 +70,13 @@ export const AdminNotificationsPage = () => {
     { kind: 'queued'; count: number } | { kind: 'error'; message: string } | null
   >(null);
   const [page, setPage] = useState(1);
+  // A broadcast lands in every account in the audience at once — it confirms
+  // first (Batch 47), and the send button stays gated until the required
+  // fields (title + message) are actually filled.
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { broadcast, broadcastEmail } = useNotificationActions();
+  const canSend = title.trim() !== '' && message.trim() !== '' && !broadcast.isPending;
   const log = useBroadcastLog({ page, pageSize: PAGE_SIZE });
 
   const rows = log.data?.rows ?? [];
@@ -155,6 +161,12 @@ export const AdminNotificationsPage = () => {
 
   const send = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canSend) return;
+    setConfirmOpen(true);
+  };
+
+  const doSend = () => {
+    setConfirmOpen(false);
     const path = href.trim();
     const submitted = {
       audience,
@@ -276,6 +288,7 @@ export const AdminNotificationsPage = () => {
               <input
                 id="broadcast-title"
                 type="text"
+                required
                 maxLength={120}
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -291,6 +304,7 @@ export const AdminNotificationsPage = () => {
               <textarea
                 id="broadcast-message"
                 rows={3}
+                required
                 maxLength={500}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
@@ -334,12 +348,7 @@ export const AdminNotificationsPage = () => {
             </div>
 
             <div className="flex items-center gap-3 sm:col-span-2">
-              <Button
-                type="submit"
-                variant="default"
-                size="sm"
-                disabled={broadcast.isPending}
-              >
+              <Button type="submit" variant="default" size="sm" disabled={!canSend}>
                 {broadcast.isPending ? 'Sending…' : 'Send announcement'}
               </Button>
               <p className="text-[11px] text-slate-400">
@@ -347,6 +356,24 @@ export const AdminNotificationsPage = () => {
               </p>
             </div>
           </form>
+
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            title={`Send this announcement to ${labelOf(AUDIENCES, audience)}?`}
+            description={
+              <>
+                “{title.trim()}” will be delivered as an in-app announcement to every account in
+                the audience{alsoEmail ? ', with an email copy queued per account' : ''}. There is
+                no preview and no undo.
+              </>
+            }
+            confirmLabel="Send announcement"
+            destructive={false}
+            isPending={broadcast.isPending}
+            pendingLabel="Sending…"
+            onConfirm={doSend}
+          />
 
           {/* The count the RPC returned, not a delivery rate this database cannot measure. */}
           {broadcast.isSuccess && (

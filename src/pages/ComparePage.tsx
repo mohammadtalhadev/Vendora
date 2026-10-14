@@ -8,7 +8,6 @@ import {
   Check,
   Package,
   Layers,
-  Sparkles,
   ArrowRight,
   Truck,
   RotateCcw,
@@ -16,6 +15,8 @@ import {
 import { useCompareStore } from '../store/compare-store';
 import { useCartStore } from '../store/cart-store';
 import { useCurrency } from '../store/currency-store';
+import { PageHeader } from '../components/common/PageHeader';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 
 export const ComparePage: React.FC = () => {
   const { items, removeItem, clearCompare } = useCompareStore();
@@ -24,6 +25,7 @@ export const ComparePage: React.FC = () => {
 
   const [highlightDiff, setHighlightDiff] = useState(false);
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
+  const [clearOpen, setClearOpen] = useState(false);
 
   const handleAddToCart = (product: any) => {
     addItem({
@@ -116,51 +118,58 @@ export const ComparePage: React.FC = () => {
       </div>
 
       <div className="relative z-10 mx-auto max-w-[1600px]">
-        {/* Top Header */}
-        <div className="glass-panel rounded-3xl p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border border-white/80 dark:border-white/10">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange dark:text-orange-400 mb-2">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Side-by-Side Product Comparison</span>
-            </div>
-            <h1 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              Product Analysis Matrix ({items.length}/4)
-            </h1>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Evaluate hardware specs, seller credentials, and pricing across multi-vendor inventory.
-            </p>
-          </div>
+        {/* Top Header — shared PageHeader inside the page's glass panel */}
+        <div className="glass-panel rounded-3xl p-6 mb-8 border border-white/80 dark:border-white/10">
+          <PageHeader
+            className="mb-0"
+            eyebrow="Side-by-Side Product Comparison"
+            title={`Product Analysis Matrix (${items.length}/4)`}
+            description="Evaluate hardware specs, seller credentials, and pricing across multi-vendor inventory."
+            action={
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setHighlightDiff(!highlightDiff)}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer border ${
+                    highlightDiff
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20 ring-2 ring-amber-500/30'
+                      : 'bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  <span>{highlightDiff ? 'Differences Highlighted' : 'Highlight Differences'}</span>
+                </button>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setHighlightDiff(!highlightDiff)}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all cursor-pointer border ${
-                highlightDiff
-                  ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20 ring-2 ring-amber-500/30'
-                  : 'bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-slate-800'
-              }`}
-            >
-              <Layers className="h-3.5 w-3.5" />
-              <span>{highlightDiff ? 'Differences Highlighted' : 'Highlight Differences'}</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setClearOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/40 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100/60 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Clear Matrix</span>
+                </button>
 
-            <button
-              type="button"
-              onClick={clearCompare}
-              className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/40 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100/60 transition-colors cursor-pointer"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span>Clear Matrix</span>
-            </button>
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-1 rounded-full bg-sun-orange px-5 py-2 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-sun-orange-600 transition-colors active:scale-95"
+                >
+                  <span>+ Add Product</span>
+                </Link>
+              </div>
+            }
+          />
 
-            <Link
-              to="/products"
-              className="inline-flex items-center gap-1 rounded-full bg-sun-orange px-5 py-2 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-sun-orange-600 transition-colors active:scale-95"
-            >
-              <span>+ Add Product</span>
-            </Link>
-          </div>
+          <ConfirmDialog
+            open={clearOpen}
+            onOpenChange={setClearOpen}
+            title="Clear the comparison matrix?"
+            description={`This removes all ${items.length} ${items.length === 1 ? 'product' : 'products'} from the comparison. This cannot be undone.`}
+            confirmLabel="Clear Matrix"
+            onConfirm={() => {
+              clearCompare();
+              setClearOpen(false);
+            }}
+          />
         </div>
 
         {/* Comparison Matrix Table */}

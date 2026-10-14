@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -68,7 +70,6 @@ export const AdminDisputesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [selectedForRuling, setSelectedForRuling] = useState<AdminDisputeRow | null>(null);
   const [rulingOutcome, setRulingOutcome] = useState<'refund' | 'denied'>('refund');
@@ -92,10 +93,7 @@ export const AdminDisputesPage: React.FC = () => {
   const resolveAction = actions.resolveDispute;
   const escalateAction = actions.escalateDispute;
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    window.setTimeout(() => setToastMessage(null), 3500);
-  };
+  const { toast, showToast, hideToast } = useToast(3500);
 
   const handleOpenRulingModal = (dispute: AdminDisputeRow) => {
     setSelectedForRuling(dispute);
@@ -210,12 +208,8 @@ export const AdminDisputesPage: React.FC = () => {
       sidebar={<AdminNav />}
     >
       <div className="space-y-6">
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

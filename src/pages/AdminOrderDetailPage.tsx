@@ -36,6 +36,7 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Input } from '../components/ui/input';
 import {
   Select,
@@ -71,6 +72,8 @@ export const AdminOrderDetailPage: React.FC = () => {
   const { data: order, isLoading, isError, error, refetch } = useAdminOrderDetail(id ?? '');
   const board = useLogisticsBoard();
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  // Force Refund / Administrative Cancel confirm before firing (Batch 47).
+  const [adminConfirm, setAdminConfirm] = useState<'refund' | 'cancel' | null>(null);
   const [adminActionMsg, setAdminActionMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -250,7 +253,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   disabled={refundMutation.isPending}
-                  onClick={() => refundMutation.mutate()}
+                  onClick={() => setAdminConfirm('refund')}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 cursor-pointer disabled:opacity-50"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
@@ -260,7 +263,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   disabled={cancelMutation.isPending}
-                  onClick={() => cancelMutation.mutate()}
+                  onClick={() => setAdminConfirm('cancel')}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
                 >
                   <Ban className="h-3.5 w-3.5 text-rose-500" />
@@ -709,6 +712,30 @@ export const AdminOrderDetailPage: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Force Refund / Administrative Cancel confirmation (Batch 47) */}
+            <ConfirmDialog
+              open={adminConfirm !== null}
+              onOpenChange={(open) => !open && setAdminConfirm(null)}
+              title={
+                adminConfirm === 'refund'
+                  ? 'Force a full refund for this order?'
+                  : 'Administratively cancel this order?'
+              }
+              description={
+                adminConfirm === 'refund'
+                  ? `Every refundable package on order #${order.id} will be refunded to the customer. This cannot be undone.`
+                  : `Every open package on order #${order.id} will be cancelled. This cannot be undone.`
+              }
+              confirmLabel={adminConfirm === 'refund' ? 'Force Full Refund' : 'Administrative Cancel'}
+              isPending={adminConfirm === 'refund' ? refundMutation.isPending : cancelMutation.isPending}
+              pendingLabel={adminConfirm === 'refund' ? 'Refunding…' : 'Cancelling…'}
+              onConfirm={() => {
+                if (adminConfirm === 'refund') refundMutation.mutate();
+                else if (adminConfirm === 'cancel') cancelMutation.mutate();
+                setAdminConfirm(null);
+              }}
+            />
 
             {/* Invoice Modal */}
             <Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen}>

@@ -4,6 +4,7 @@ import { RootLayout } from '../components/layout/RootLayout';
 import { AccountLayout } from '../components/layout/AccountLayout';
 import { PublicLayout, AdminLayout, VendorLayout, RiderLayout, SupportLayout } from '../components/layout/PanelLayout';
 import { RouteErrorScreen } from '../components/common/RouteErrorScreen';
+import { GridSkeleton, Skeleton } from '../components/common/QueryState';
 import { isChunkLoadError, reloadOnceForNewVersion } from '../lib/chunk-recovery';
 import { 
   AdminOnlyRoute, 
@@ -326,10 +327,20 @@ const SupportTicketDetailPage = lazyWithRetry(() =>
   import('../pages/SupportTicketDetailPage').then((m) => ({ default: m.SupportTicketDetailPage })),
 );
 
+/**
+ * Lazy-route fallback (Batch 47): a page-shaped skeleton — header bar over a
+ * card grid — instead of the old centred spinner, so a chunk loading in
+ * looks like the page it is about to become and the layout does not jump.
+ */
 const PageLoader: React.FC = () => (
-  <div className="min-h-[60vh] flex flex-col items-center justify-center p-8">
-    <div className="h-10 w-10 animate-spin rounded-full border-4 border-sun-orange border-t-transparent mb-3" />
-    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Loading Vendora...</span>
+  <div
+    className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8"
+    role="status"
+    aria-label="Loading page"
+  >
+    <Skeleton className="mb-3 h-4 w-40" />
+    <Skeleton className="mb-8 h-10 w-72 max-w-full" />
+    <GridSkeleton count={4} />
   </div>
 );
 

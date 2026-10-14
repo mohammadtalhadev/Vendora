@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { Link } from 'react-router-dom';
 import {
   FileText,
   Download,
   Search,
-  CheckCircle2,
   AlertCircle,
   ArrowRight,
 } from 'lucide-react';
@@ -69,16 +70,12 @@ export const VendorEarningsPage: React.FC = () => {
   const itemsPerPage = 8;
   const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
   const [statementMonth, setStatementMonth] = useState<string>('window');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const months = RANGE_MONTHS[timeRange];
   const earnings = useVendorEarnings(months);
   const balance = useVendorBalance();
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  const { toast, showToast, hideToast } = useToast(3000);
 
   const totals = earnings.data?.totals;
   const series = earnings.data?.months ?? [];
@@ -833,12 +830,8 @@ export const VendorEarningsPage: React.FC = () => {
         </Dialog>
 
         {/* ── Toast ─────────────────────────────────────────────── */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>
   );

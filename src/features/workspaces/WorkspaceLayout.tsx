@@ -1370,7 +1370,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           ref={mainScrollRef}
           data-lenis-prevent
           data-scroll-reset
-          className="flex-1 h-full min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 relative z-10 dark:[&_h1]:text-slate-50 dark:[&_h2]:text-slate-50"
+          className="flex-1 h-full min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 relative z-10 dark:[&_h1]:text-slate-50 dark:[&_h2]:text-slate-50 dark:[&_h3]:text-slate-50 dark:[&_h4]:text-slate-50"
         >
           {/* Lenis wrapper mode measures this content element for its
               scroll limit; it must wrap everything the scroller holds. */}

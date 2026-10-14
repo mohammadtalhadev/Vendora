@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import {
   Download,
   Search,
@@ -99,7 +101,6 @@ export const VendorReviewsPage: React.FC = () => {
   const [ratingFilter, setRatingFilter] = useState('all');
   const [timeFilter, setTimeFilter] = useState('30d');
   const [sortBy, setSortBy] = useState<ReviewSort>('recent');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
   const [replyingReview, setReplyingReview] = useState<ReviewItem | null>(null);
@@ -188,10 +189,7 @@ export const VendorReviewsPage: React.FC = () => {
     currentPage * itemsPerPage,
   );
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  const { toast, showToast, hideToast } = useToast(3000);
 
   const postReply = async (review: ReviewItem, text: string) => {
     const reply = text.trim();
@@ -813,12 +811,8 @@ export const VendorReviewsPage: React.FC = () => {
         </Dialog>
 
         {/* ── Floating Toast Notification ───────────────────────────── */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>
   );

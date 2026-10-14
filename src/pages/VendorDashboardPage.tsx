@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   RefreshCcw,
@@ -158,7 +160,6 @@ export const VendorDashboardPage: React.FC = () => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [salesTimeRange, setSalesTimeRange] = useState<'30D' | '3M' | 'YTD'>('3M');
   const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
-  const [toast, setToast] = useState<{ kind: 'ok' | 'bad'; message: string } | null>(null);
 
   const dashboard = useVendorDashboard();
   useVendorLive();
@@ -166,24 +167,13 @@ export const VendorDashboardPage: React.FC = () => {
   const shipping = useShippingSettings();
   const tiles = dashboard.data;
 
-  // One toast at a time, and no timer setting state on a page that has already unmounted.
-  const toastTimer = useRef<number | null>(null);
-  useEffect(
-    () => () => {
-      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
-    },
-    [],
-  );
+  // Shared toast (Batch 47) — this page's private pill is gone; the hook owns
+  // the timer and unmount cleanup the hand-rolled version used to carry.
+  const { toast, showToast: showSharedToast, hideToast } = useToast(3500);
 
-  /** A failure never wears a success's icon: the kind decides the colour and the glyph. */
-  const pushToast = (kind: 'ok' | 'bad', message: string) => {
-    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
-    setToast({ kind, message });
-    toastTimer.current = window.setTimeout(() => {
-      toastTimer.current = null;
-      setToast(null);
-    }, 3500);
-  };
+  /** A failure never wears a success's icon: the kind decides the tone. */
+  const pushToast = (kind: 'ok' | 'bad', message: string) =>
+    showSharedToast(message, kind === 'bad' ? 'error' : 'success');
   const showToast = (message: string) => pushToast('ok', message);
   const showFailure = (message: string) => pushToast('bad', message);
 
@@ -701,25 +691,8 @@ export const VendorDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Floating Toast Notification */}
-        {toast && (
-          <div
-            role="status"
-            aria-live={toast.kind === 'bad' ? 'assertive' : 'polite'}
-            className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 border ${
-              toast.kind === 'bad'
-                ? 'bg-rose-700 dark:bg-rose-800 border-rose-600'
-                : 'bg-slate-900 dark:bg-slate-800 border-slate-700'
-            }`}
-          >
-            {toast.kind === 'bad' ? (
-              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
-            )}
-            <span>{toast.message}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces the Floating Toast Notification pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
 
         {/* =====================================================================
             2. Quick Actions Row (Admin 5-Column Unified Cards)

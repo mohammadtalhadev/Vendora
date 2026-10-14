@@ -68,7 +68,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('new-arrivals')}
-          className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
+          className={`cursor-pointer font-outfit text-base sm:text-lg font-bold hover-lift ${
             activeTab === 'new-arrivals'
               ? 'text-sun-orange border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
               : 'text-slate-500 hover:text-sun-orange'
@@ -79,7 +79,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('best-sellers')}
-          className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
+          className={`cursor-pointer font-outfit text-base sm:text-lg font-bold hover-lift ${
             activeTab === 'best-sellers'
               ? 'text-sun-orange border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
               : 'text-slate-500 hover:text-sun-orange'
@@ -90,7 +90,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('best-offers')}
-          className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
+          className={`cursor-pointer font-outfit text-base sm:text-lg font-bold hover-lift ${
             activeTab === 'best-offers'
               ? 'text-sun-orange border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
               : 'text-slate-500 hover:text-sun-orange'

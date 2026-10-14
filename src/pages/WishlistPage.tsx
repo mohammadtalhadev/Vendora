@@ -6,7 +6,6 @@ import {
   Trash2,
   ArrowRight,
   Star,
-  Check,
   ArrowLeft,
 } from 'lucide-react';
 import { useWishlistStore } from '../store/wishlist-store';
@@ -14,20 +13,21 @@ import { useCartStore } from '../store/cart-store';
 import { useCurrency } from '../store/currency-store';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { PageHeader } from '../components/common/PageHeader';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import type { Product } from '../types/domain';
 
 export const WishlistPage: React.FC = () => {
   const { items, toggleWishlist, clearWishlist } = useWishlistStore();
   const { addItem } = useCartStore();
   const { formatPrice } = useCurrency();
-  const [notification, setNotification] = useState<string | null>(null);
+  // Shared toast (Batch 47) — this page used to run its own private banner.
+  const { toast, showToast, hideToast } = useToast(3000);
+  const [clearOpen, setClearOpen] = useState(false);
 
-  const showNotification = (message: string) => {
-    setNotification(message);
-    setTimeout(() => {
-      setNotification((current) => (current === message ? null : current));
-    }, 3000);
-  };
+  const showNotification = (message: string) => showToast(message);
 
   const handleMoveToCart = (product: Product) => {
     addItem({
@@ -114,62 +114,55 @@ export const WishlistPage: React.FC = () => {
       </div>
 
       {/* Header and Controls */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-              Saved Wishlist
-            </h1>
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-2.5">
+            Saved Wishlist
             <Badge variant="secondary" size="default">
               {items.length} {items.length === 1 ? 'item' : 'items'}
             </Badge>
-          </div>
-          <p className="mt-1 text-xs text-slate-500">
-            Keep track of items you love and move them directly to your order when ready.
-          </p>
-        </div>
+          </span>
+        }
+        description="Keep track of items you love and move them directly to your order when ready."
+        action={
+          <>
+            <Button
+              variant="glass-pill"
+              size="sm"
+              onClick={handleMoveAllToCart}
+              disabled={items.every((i) => i.stock <= 0)}
+            >
+              <ShoppingCart className="h-3.5 w-3.5 text-sun-orange" />
+              <span>Move All to Cart</span>
+            </Button>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="glass-pill"
-            size="sm"
-            onClick={handleMoveAllToCart}
-            disabled={items.every((i) => i.stock <= 0)}
-          >
-            <ShoppingCart className="h-3.5 w-3.5 text-sun-orange" />
-            <span>Move All to Cart</span>
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setClearOpen(true)}
+              className="text-coral hover:bg-rose-50 hover:text-coral"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Clear All</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearWishlist}
-            className="text-coral hover:bg-rose-50 hover:text-coral"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Clear All</span>
-          </Button>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={clearOpen}
+        onOpenChange={setClearOpen}
+        title="Clear your wishlist?"
+        description={`This removes all ${items.length} saved ${items.length === 1 ? 'item' : 'items'}. This cannot be undone.`}
+        confirmLabel="Clear Wishlist"
+        onConfirm={() => {
+          clearWishlist();
+          setClearOpen(false);
+        }}
+      />
 
-      {/* Notification Toast */}
-      {notification && (
-        <div
-          role="status"
-          className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-xs font-medium text-emerald-800 shadow-sm animate-in fade-in"
-        >
-          <div className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-600" />
-            <span>{notification}</span>
-          </div>
-          <Link
-            to="/cart"
-            className="font-bold underline decoration-emerald-500 hover:text-emerald-950"
-          >
-            View Cart
-          </Link>
-        </div>
-      )}
+      {/* Shared toast (Batch 47) — replaces this page's private banner. */}
+      <Toast toast={toast} onDismiss={hideToast} />
 
       {/* Responsive Product Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

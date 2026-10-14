@@ -4,6 +4,8 @@ import { Trash2, Plus, Minus, ArrowRight, ShieldCheck, Tag } from 'lucide-react'
 import { useCartStore, useCartGroups, useCartCalculations } from '../store/cart-store';
 import { useCurrency } from '../store/currency-store';
 import { Badge } from '../components/ui/badge';
+import { PageHeader } from '../components/common/PageHeader';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { fetchCouponByCode } from '../features/cart/api/promotions';
 
 export const CartPage: React.FC = () => {
@@ -16,6 +18,7 @@ export const CartPage: React.FC = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponBusy, setCouponBusy] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
 
   // The same promotions path the cart drawer and checkout use: only live
   // codes from the database are accepted, and checkout_pricing re-checks
@@ -50,7 +53,7 @@ export const CartPage: React.FC = () => {
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-sun-orange">
           <Tag className="h-10 w-10" />
         </div>
-        <h2 className="mt-6 text-2xl font-bold text-slate-900">Your shopping cart is empty</h2>
+        <h1 className="mt-6 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Your shopping cart is empty</h1>
         <p className="mt-2 text-xs text-slate-500">
           Explore products from Vendora and independent sellers to start building your order.
         </p>
@@ -67,20 +70,30 @@ export const CartPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Shopping Cart ({itemCount} items)
-          </h1>
-          <p className="text-xs text-slate-500">Items partitioned by seller for fulfillment</p>
-        </div>
-        <button
-          onClick={clearCart}
-          className="text-xs font-semibold text-rose-600 hover:underline"
-        >
-          Clear Cart
-        </button>
-      </div>
+      <PageHeader
+        title={`Shopping Cart (${itemCount} items)`}
+        description="Items partitioned by seller for fulfillment"
+        action={
+          <button
+            onClick={() => setClearOpen(true)}
+            className="text-xs font-semibold text-rose-600 hover:underline"
+          >
+            Clear Cart
+          </button>
+        }
+      />
+
+      <ConfirmDialog
+        open={clearOpen}
+        onOpenChange={setClearOpen}
+        title="Clear your cart?"
+        description={`This removes all ${itemCount} ${itemCount === 1 ? 'item' : 'items'} from your cart. This cannot be undone.`}
+        confirmLabel="Clear Cart"
+        onConfirm={() => {
+          clearCart();
+          setClearOpen(false);
+        }}
+      />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {/* Left Column: Seller-Grouped Items (8 cols) */}

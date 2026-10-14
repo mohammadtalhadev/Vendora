@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { Link } from 'react-router-dom';
 import {
   DollarSign,
@@ -48,7 +50,6 @@ const deltaLabel = (pct: number | null) =>
 const stageLabel = (status: string) => status.replace(/_/g, ' ');
 
 export const AdminDashboardPage: React.FC = () => {
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'30d' | '3m' | '6m' | '1y'>('3m');
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
 
@@ -57,10 +58,7 @@ export const AdminDashboardPage: React.FC = () => {
   const dashboard = useAdminDashboard(days);
   const data = dashboard.data;
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
+  const { toast, showToast, hideToast } = useToast(3500);
 
   const handleExportReport = () => {
     if (!data) {
@@ -178,16 +176,8 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Floating Toast Notification */}
-        {toastMessage && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2"
-          >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
 
         {errorBanner}
 

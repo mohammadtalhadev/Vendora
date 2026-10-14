@@ -47,6 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/database';
 import type { ShippingAddress, SubOrder, SubOrderStatus } from '../types/domain';
@@ -417,6 +418,13 @@ export const AccountProfilePage: React.FC = () => {
   const [disputeError, setDisputeError] = useState<string | null>(null);
 
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+
+  // Destructive deletes (address / payment method) confirm first (Batch 47).
+  const [pendingRemoval, setPendingRemoval] = useState<
+    | { kind: 'address'; id: string; label: string }
+    | { kind: 'payment'; id: string; label: string }
+    | null
+  >(null);
 
   // Saved addresses and payment methods live in `user_addresses` /
   // `user_payment_methods` now. Until the customer's own rows land - and forever
@@ -1653,7 +1661,13 @@ export const AccountProfilePage: React.FC = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => addressActions.remove.mutate(addr.id)}
+                                  onClick={() =>
+                                    setPendingRemoval({
+                                      kind: 'address',
+                                      id: addr.id,
+                                      label: `${addr.fullName} — ${addr.street}, ${addr.city}`,
+                                    })
+                                  }
                                   title="Delete address"
                                   className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                                 >
@@ -1851,7 +1865,16 @@ export const AccountProfilePage: React.FC = () => {
 
                             <button
                               type="button"
-                              onClick={() => paymentActions.remove.mutate(pm.id)}
+                              onClick={() =>
+                                setPendingRemoval({
+                                  kind: 'payment',
+                                  id: pm.id,
+                                  label:
+                                    pm.type === 'cod'
+                                      ? 'Cash on delivery'
+                                      : `${pm.brand} •••• ${pm.last4}`,
+                                })
+                              }
                               title="Delete payment method"
                               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                             >
@@ -2234,6 +2257,35 @@ export const AccountProfilePage: React.FC = () => {
       {/* ========================================================================= */}
       {/* DIALOG: REQUEST A RETURN - selects a real package, writes a real status   */}
       {/* ========================================================================= */}
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        onOpenChange={(open) => !open && setPendingRemoval(null)}
+        title={
+          pendingRemoval?.kind === 'address' ? 'Delete this address?' : 'Delete this payment method?'
+        }
+        description={
+          pendingRemoval
+            ? `${pendingRemoval.label} will be removed from your account. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        isPending={
+          pendingRemoval?.kind === 'address'
+            ? addressActions.remove.isPending
+            : paymentActions.remove.isPending
+        }
+        pendingLabel="Deleting…"
+        onConfirm={() => {
+          if (!pendingRemoval) return;
+          if (pendingRemoval.kind === 'address') {
+            addressActions.remove.mutate(pendingRemoval.id);
+          } else {
+            paymentActions.remove.mutate(pendingRemoval.id);
+          }
+          setPendingRemoval(null);
+        }}
+      />
+
       <Dialog open={isReturnOpen} onOpenChange={(open) => !open && setIsReturnOpen(false)}>
         <DialogContent aria-labelledby="return-title">
           <DialogHeader>

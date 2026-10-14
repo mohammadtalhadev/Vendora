@@ -14,7 +14,7 @@ vi.mock('../lib/supabase', async () => {
   };
 });
 
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { AdminNotificationsPage } from './AdminNotificationsPage';
 import { renderWorkspace } from '../test/vendor-render';
 import { useAuthStore } from '../store/auth-store';
@@ -118,6 +118,10 @@ describe('AdminNotificationsPage', () => {
 
     fillComposer();
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
+    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
+    );
 
     await waitFor(() =>
       expect(lastRpc('broadcast_notification')?.args).toMatchObject({
@@ -141,6 +145,10 @@ describe('AdminNotificationsPage', () => {
 
     fillComposer();
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
+    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
+    );
 
     await waitFor(() =>
       expect(screen.getByTestId('broadcast-result')).toHaveTextContent('Reached 2 accounts'),
@@ -190,6 +198,10 @@ describe('AdminNotificationsPage', () => {
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Maintenance window' } });
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Read-only from 02:00.' } });
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
+    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
+    );
 
     await waitFor(() => expect(lastRpc('broadcast_notification')).toBeDefined());
     expect(lastRpc('broadcast_notification')?.args.p_href).toBeNull();

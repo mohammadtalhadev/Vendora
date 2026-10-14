@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { Link } from 'react-router-dom';
 import {
   Download,
@@ -11,7 +13,6 @@ import {
   X,
   ArrowUpRight,
   Check,
-  CheckCircle2,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
@@ -117,17 +118,13 @@ export const VendorOrdersPage: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [ageFilter, setAgeFilter] = useState<'all' | '7' | '30'>('all');
   const [carrierFilter, setCarrierFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'card' | 'cod'>('all');
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  const { toast, showToast, hideToast } = useToast(3000);
 
   const handleAdvanceStatus = async (subOrderId: string, currentStatus: SubOrderStatus) => {
     let nextStatus: SubOrderStatus | null = null;
@@ -814,12 +811,8 @@ export const VendorOrdersPage: React.FC = () => {
         </div>
 
         {/* ── Floating Toast Notification ───────────────────────────── */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>
   );

@@ -94,7 +94,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <button
             type="button"
             onClick={() => onToggleWishlist(product)}
-            className="absolute right-2 top-2 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full bg-white/75 backdrop-blur-md border border-white/60 shadow-xs transition-all text-slate-500 hover:bg-white hover:scale-110 hover:text-sun-orange hover:ring-2 hover:ring-sun-orange"
+            className="absolute right-2 top-2 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full bg-white/75 backdrop-blur-md border border-white/60 shadow-xs text-slate-500 hover:bg-white hover:text-sun-orange hover-lift"
             title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
@@ -104,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             type="button"
             onClick={handleToggleCompare}
             aria-pressed={isCompared}
-            className={`absolute right-2 top-11 sm:top-12 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full backdrop-blur-md border shadow-xs transition-all hover:bg-white hover:scale-110 hover:text-sun-orange hover:ring-2 hover:ring-sun-orange ${
+            className={`absolute right-2 top-11 sm:top-12 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full backdrop-blur-md border shadow-xs hover:bg-white hover:text-sun-orange hover-lift ${
               isCompared
                 ? 'bg-sun-orange text-white border-sun-orange hover:text-white'
                 : 'bg-white/75 border-white/60 text-slate-500'

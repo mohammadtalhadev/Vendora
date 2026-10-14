@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { Link } from 'react-router-dom';
 import {
   Layers,
@@ -30,7 +32,6 @@ export const AdminProductsPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 12;
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Server-side queue read: debounce the search term so typing does not fire a
   // request per keystroke.
@@ -167,10 +168,7 @@ export const AdminProductsPage: React.FC = () => {
     });
   };
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3200);
-  };
+  const { toast, showToast, hideToast } = useToast(3200);
 
   const renderKpiCards = () => {
     const totalSubmissions = total;
@@ -728,12 +726,8 @@ export const AdminProductsPage: React.FC = () => {
         </ModalWrapper>
 
         {/* Floating Toast Notification */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>
   );

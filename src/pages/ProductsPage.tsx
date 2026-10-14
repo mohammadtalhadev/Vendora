@@ -22,6 +22,7 @@ import { useCurrency } from '../store/currency-store';
 import { useToast } from '../hooks/useToast';
 import { useReveal } from '../hooks/useReveal';
 import { Toast } from '../components/common/Toast';
+import { PageHeader } from '../components/common/PageHeader';
 import { Button } from '../components/ui/button';
 import {
   Select,
@@ -451,14 +452,11 @@ export const ProductsPage: React.FC = () => {
         {/* =========================================================================
             2. Page Title & Real Result Count
             ========================================================================= */}
-        <div className="reveal flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-1">
-          <div className="max-w-3xl">
-            <h1 className="font-outfit text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]">
-              {heading}
-            </h1>
-          </div>
-
-          {/* Right: real count of approved products for this query (no invented numbers) */}
+        <PageHeader
+          className="reveal pb-1"
+          title={heading}
+          action={
+          /* Right: real count of approved products for this query (no invented numbers) */
           <div className="flex items-center gap-6 sm:gap-8 self-start lg:self-center bg-white/70 dark:bg-slate-900/70 border border-slate-200/70 dark:border-white/10 px-6 py-3.5 rounded-2xl shadow-xs backdrop-blur-md shrink-0">
             {!isLoading && data ? (
               <div>
@@ -473,7 +471,8 @@ export const ProductsPage: React.FC = () => {
               <div aria-hidden="true" />
             )}
           </div>
-        </div>
+          }
+        />
 
         {/* =========================================================================
             5. Main 2-Column Content: Sidebar (Left) & Products Grid (Right)

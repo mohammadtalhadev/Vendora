@@ -7,6 +7,7 @@ import { useProducts } from '../../catalog/hooks/useProducts';
 import { useReveal } from '../../../hooks/useReveal';
 import { SectionHeading } from './SectionHeading';
 import { RailEmptyState } from '../../products/components/RailEmptyState';
+import { GridSkeleton, Skeleton } from '../../../components/common/QueryState';
 
 export interface BestSellersRailProps {
   onAddToCart?: (product: ProductItem) => void;
@@ -64,7 +65,16 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
   });
 
   if (rankedItems.length === 0) {
-    if (isLoading) return null;
+    if (isLoading) {
+      // Page-shaped skeleton while the ranking query is in flight (Batch 47)
+      // — the rail used to vanish and pop in.
+      return (
+        <section className="reveal mb-14" role="status" aria-label="Loading best sellers">
+          <Skeleton className="mb-6 h-8 w-56" />
+          <GridSkeleton count={4} />
+        </section>
+      );
+    }
     return (
       <section className="reveal mb-14">
         <SectionHeading
