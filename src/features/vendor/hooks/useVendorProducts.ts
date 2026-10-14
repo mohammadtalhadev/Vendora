@@ -58,11 +58,23 @@ export function useCreateVendorProduct() {
 
 export function useUpdateVendorProduct() {
   const invalidate = useInvalidateCatalog();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ productId, updates }: { productId: string; updates: VendorProductUpdate }) =>
       updateVendorProduct(productId, updates),
-    onSuccess: (product: Product) => invalidate(product.id),
+    onSuccess: (product: Product) => {
+      // Prime the detail cache with the row the server just returned, THEN
+      // invalidate. Invalidation alone left a window the edit form fell
+      // into: reopening it served the pre-save cache first, the form
+      // pre-filled from that stale copy, and the background refetch that
+      // invalidation triggered arrived after the form had locked its
+      // fields — so a save that had reached the database still "looked"
+      // unsaved. With the fresh row already cached there is no stale
+      // first paint to pre-fill from.
+      queryClient.setQueryData(vendorKeys.product(product.id), product);
+      invalidate(product.id);
+    },
   });
 }
 

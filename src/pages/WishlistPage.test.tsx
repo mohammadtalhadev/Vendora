@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { WishlistPage } from './WishlistPage';
 import { useWishlistStore } from '../store/wishlist-store';
@@ -66,7 +66,7 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
     expect(screen.getByRole('button', { name: /Remove/i })).toBeInTheDocument();
   });
 
-  it('moves item to cart and removes from wishlist on Move to Cart click', () => {
+  it('moves item to cart and removes from wishlist on Move to Cart click', async () => {
     useWishlistStore.getState().toggleWishlist(mockProduct);
 
     render(
@@ -78,17 +78,37 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
     const moveToCartBtn = screen.getByRole('button', { name: /Move to Cart/i });
     fireEvent.click(moveToCartBtn);
 
-    // Cart store should have the item
-    const cartItems = useCartStore.getState().items;
-    expect(cartItems).toHaveLength(1);
-    expect(cartItems[0].productId).toBe(mockProduct.id);
-
-    // Wishlist should now be empty
-    expect(useWishlistStore.getState().items).toHaveLength(0);
-    expect(screen.getByText('Your wishlist is empty')).toBeInTheDocument();
+    // Batch 57: the move AWAITS both persisted writes before it reports, so
+    // the outcome settles asynchronously even for a guest's local writes.
+    await waitFor(() => {
+      expect(useCartStore.getState().items).toHaveLength(1);
+      expect(useWishlistStore.getState().items).toHaveLength(0);
+    });
+    expect(useCartStore.getState().items[0].productId).toBe(mockProduct.id);
+    expect(await screen.findByText('Your wishlist is empty')).toBeInTheDocument();
   });
 
-  it('removes item from wishlist on Remove click', () => {
+  it('does not claim a move succeeded when the cart write failed', async () => {
+    useWishlistStore.getState().toggleWishlist(mockProduct);
+    // The stores report a failed write through their `error` state rather
+    // than throwing; seed the cart failure the handler reads back.
+    useCartStore.setState({ error: 'Your cart could not be saved.' });
+
+    render(
+      <MemoryRouter>
+        <WishlistPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Move to Cart/i }));
+
+    // The failure is surfaced as an error toast, and the item is NOT
+    // removed from the wishlist — no false "moved to cart" success.
+    expect(await screen.findByText('Your cart could not be saved.')).toBeInTheDocument();
+    expect(useWishlistStore.getState().items).toHaveLength(1);
+  });
+
+  it('removes item from wishlist on Remove click', async () => {
     useWishlistStore.getState().toggleWishlist(mockProduct);
 
     render(
@@ -100,11 +120,11 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
     const removeBtn = screen.getByRole('button', { name: /Remove/i });
     fireEvent.click(removeBtn);
 
-    expect(useWishlistStore.getState().items).toHaveLength(0);
-    expect(screen.getByText('Your wishlist is empty')).toBeInTheDocument();
+    await waitFor(() => expect(useWishlistStore.getState().items).toHaveLength(0));
+    expect(await screen.findByText('Your wishlist is empty')).toBeInTheDocument();
   });
 
-  it('clears all items on Clear All click', () => {
+  it('clears all items on Clear All click', async () => {
     useWishlistStore.getState().toggleWishlist(mockProduct);
 
     render(
@@ -118,7 +138,7 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
     // Batch 47: clearing confirms first — the dialog's Clear Wishlist button performs it.
     fireEvent.click(screen.getByRole('button', { name: /clear wishlist/i }));
 
-    expect(useWishlistStore.getState().items).toHaveLength(0);
-    expect(screen.getByText('Your wishlist is empty')).toBeInTheDocument();
+    await waitFor(() => expect(useWishlistStore.getState().items).toHaveLength(0));
+    expect(await screen.findByText('Your wishlist is empty')).toBeInTheDocument();
   });
 });

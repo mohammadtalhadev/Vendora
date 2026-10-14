@@ -7,13 +7,23 @@ import { Badge } from '../components/ui/badge';
 import { PageHeader } from '../components/common/PageHeader';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { fetchCouponByCode } from '../features/cart/api/promotions';
+import { useCartServerQuote } from '../features/checkout/hooks/useCheckout';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { removeItem, updateQuantity, clearCart, applyCoupon, removeCoupon, appliedCoupon } = useCartStore();
   const groups = useCartGroups();
-  const { subtotal, shippingTotal, discountTotal, grandTotal, itemCount } = useCartCalculations();
+  const { subtotal, discountTotal, grandTotal, itemCount } = useCartCalculations();
   const { formatPrice } = useCurrency();
+
+  // Shipping and the final total come from the server quote — the same
+  // `checkout_quote` checkout books with — never from a local estimate.
+  // Without a quote (guest, or the quote failed) the summary shows the
+  // before-shipping total and says shipping is calculated at checkout.
+  const quote = useCartServerQuote().data;
+  const displaySubtotal = quote?.subtotal ?? subtotal;
+  const displayDiscount = quote?.discountTotal ?? discountTotal;
+  const displayGrandTotal = quote?.grandTotal ?? grandTotal;
 
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
@@ -195,13 +205,25 @@ export const CartPage: React.FC = () => {
                 {/* Seller Group Subtotal Footer */}
                 <div className="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 p-3 text-xs">
                   <span className="text-slate-500">
-                    Group Subtotal ({group.items.length} items):
+                    {`Group Subtotal (${group.items.reduce((n, i) => n + i.quantity, 0)} items):`}
                   </span>
                   <span className="font-bold text-slate-900">
                     {formatPrice(group.subtotal)}{' '}
-                    {group.estimatedShipping > 0
-                      ? `+ ${formatPrice(group.estimatedShipping)} shipping`
-                      : '· Free shipping'}
+                    {(() => {
+                      const quoteGroup = quote?.groups.find(
+                        (g) =>
+                          g.sellerId === group.sellerId ||
+                          (group.sellerType === 'platform' && g.sellerType === 'platform'),
+                      );
+                      if (quoteGroup) {
+                        return quoteGroup.shippingFee > 0
+                          ? `+ ${formatPrice(quoteGroup.shippingFee)} shipping`
+                          : '· Free shipping';
+                      }
+                      return group.items.every((i) => i.type !== 'physical')
+                        ? '· No shipping — digital delivery'
+                        : '· Shipping calculated at checkout';
+                    })()}
                   </span>
                 </div>
               </div>
@@ -218,26 +240,35 @@ export const CartPage: React.FC = () => {
             <div className="mt-4 space-y-2.5 text-xs text-slate-600">
               <div className="flex justify-between">
                 <span>Items Subtotal</span>
-                <span className="font-semibold text-slate-900">{formatPrice(subtotal)}</span>
+                <span className="font-semibold text-slate-900">{formatPrice(displaySubtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Estimated Shipping</span>
+                <span>Shipping</span>
                 <span className="font-semibold text-slate-900">
-                  {shippingTotal > 0 ? formatPrice(shippingTotal) : 'FREE'}
+                  {quote
+                    ? quote.shippingTotal > 0
+                      ? formatPrice(quote.shippingTotal)
+                      : 'FREE'
+                    : 'Calculated at checkout'}
                 </span>
               </div>
 
-              {discountTotal > 0 && (
+              {displayDiscount > 0 && (
                 <div className="flex justify-between text-emerald-600 font-semibold">
                   <span>Coupon Discount ({appliedCoupon?.code})</span>
-                  <span>-{formatPrice(discountTotal)}</span>
+                  <span>-{formatPrice(displayDiscount)}</span>
                 </div>
               )}
 
               <div className="border-t border-slate-100 pt-3 flex justify-between text-base font-extrabold text-slate-900">
-                <span>Grand Total</span>
-                <span>{formatPrice(grandTotal)}</span>
+                <span>{quote ? 'Grand Total' : 'Total (before shipping)'}</span>
+                <span>{formatPrice(displayGrandTotal)}</span>
               </div>
+              {!quote && (
+                <p className="text-[11px] text-slate-400">
+                  Grand total is before shipping — the final shipping fee is quoted at checkout.
+                </p>
+              )}
             </div>
 
             {/* Coupon Code Input */}

@@ -40,7 +40,14 @@ export interface TicketThreadProps {
   allowInternalNote?: boolean;
   pending?: boolean;
   error?: string | null;
-  onSend: (body: string, internalNote: boolean) => void;
+  /**
+   * Sends the reply; resolves TRUE only when the message was accepted.
+   * The draft is cleared on success and KEPT on failure — the previous
+   * contract (fire-and-forget `void`) cleared the composer in the same
+   * tick it handed the text over, so a refused send silently destroyed
+   * everything the agent or customer had typed.
+   */
+  onSend: (body: string, internalNote: boolean) => Promise<boolean>;
   className?: string;
 }
 
@@ -56,14 +63,24 @@ export const TicketThread: React.FC<TicketThreadProps> = ({
 }) => {
   const [draft, setDraft] = useState('');
   const [internalNote, setInternalNote] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const send = (event: React.FormEvent) => {
+  const send = async (event: React.FormEvent) => {
     event.preventDefault();
     const body = draft.trim();
-    if (!body || pending) return;
-    onSend(body, allowInternalNote ? internalNote : false);
-    setDraft('');
-    setInternalNote(false);
+    if (!body || pending || sending) return;
+    setSending(true);
+    try {
+      const sent = await onSend(body, allowInternalNote ? internalNote : false);
+      if (sent) {
+        setDraft('');
+        setInternalNote(false);
+      }
+      // Not sent: the draft (and the internal-note choice) stay exactly as
+      // typed, and the parent's error renders above the composer.
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -170,10 +187,10 @@ export const TicketThread: React.FC<TicketThreadProps> = ({
             />
             <button
               type="submit"
-              disabled={pending || draft.trim() === ''}
+              disabled={pending || sending || draft.trim() === ''}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {pending ? (
+              {pending || sending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Send className="h-3.5 w-3.5" />

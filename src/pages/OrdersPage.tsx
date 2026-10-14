@@ -365,7 +365,7 @@ export const OrdersPage: React.FC = () => {
                 </div>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-                  Signed in as {user?.email || 'guest'}
+                  {`Signed in as ${user?.email || 'guest'}`}
                 </p>
             </div>
           </div>

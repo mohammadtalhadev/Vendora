@@ -54,29 +54,32 @@ describe('Multi-Vendor Cart Grouping & Calculations', () => {
     expect(platformGroup).toBeDefined();
     expect(platformGroup?.items).toHaveLength(1);
     expect(platformGroup?.subtotal).toBe(120);
-    // Over $100 -> Free shipping
-    expect(platformGroup?.estimatedShipping).toBe(0);
 
     const vendorGroup = groups.find((g) => g.sellerId === 'vendor-tech');
     expect(vendorGroup).toBeDefined();
     expect(vendorGroup?.subtotal).toBe(40);
-    // Under $100 -> $8.50 shipping
-    expect(vendorGroup?.estimatedShipping).toBe(8.5);
 
     const digitalGroup = groups.find((g) => g.sellerId === 'vendor-design');
     expect(digitalGroup).toBeDefined();
-    // Digital -> $0 shipping
-    expect(digitalGroup?.estimatedShipping).toBe(0);
     expect(digitalGroup?.fulfilmentNote).toContain('Instant Digital Download');
+
+    // Groups carry no shipping figure of their own: shipping comes from the
+    // server quote (`checkout_quote`), never from a client-side rule. The
+    // old estimator ("over $100 free, otherwise $8.50 per vendor") priced
+    // every PKR cart as free shipping while checkout charged real fees.
+    for (const group of groups) {
+      expect(group).not.toHaveProperty('estimatedShipping');
+    }
   });
 
   it('calculates derived cart totals accurately without coupons', () => {
     const totals = calculateCartTotals(mockItems);
     expect(totals.itemCount).toBe(3);
     expect(totals.subtotal).toBe(210); // 120 + 40 + 50
-    expect(totals.shippingTotal).toBe(8.5); // 0 + 8.5 + 0
+    // Shipping is the server quote's job; the local total is before shipping.
+    expect(totals.shippingTotal).toBe(0);
     expect(totals.discountTotal).toBe(0);
-    expect(totals.grandTotal).toBe(218.5);
+    expect(totals.grandTotal).toBe(210);
   });
 
   it('applies a platform-wide percentage coupon properly', () => {
@@ -88,7 +91,7 @@ describe('Multi-Vendor Cart Grouping & Calculations', () => {
     const totals = calculateCartTotals(mockItems, coupon);
     expect(totals.subtotal).toBe(210);
     expect(totals.discountTotal).toBe(21); // 10% of 210
-    expect(totals.grandTotal).toBe(197.5); // 210 + 8.5 - 21
+    expect(totals.grandTotal).toBe(189); // 210 - 21, before shipping
   });
 
   it('honors minimum spend conditions for coupons', () => {
@@ -100,7 +103,7 @@ describe('Multi-Vendor Cart Grouping & Calculations', () => {
     };
     const totals = calculateCartTotals(mockItems, coupon);
     expect(totals.discountTotal).toBe(0);
-    expect(totals.grandTotal).toBe(218.5);
+    expect(totals.grandTotal).toBe(210);
   });
 
   it('restricts vendor-specific coupon to that vendor subtotal only', () => {
@@ -112,6 +115,6 @@ describe('Multi-Vendor Cart Grouping & Calculations', () => {
     };
     const totals = calculateCartTotals(mockItems, coupon);
     expect(totals.discountTotal).toBe(8); // 20% of 40 = 8
-    expect(totals.grandTotal).toBe(210.5); // 210 + 8.5 - 8
+    expect(totals.grandTotal).toBe(202); // 210 - 8, before shipping
   });
 });

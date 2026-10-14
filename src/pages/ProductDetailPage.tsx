@@ -159,36 +159,60 @@ export const ProductDetailPage: React.FC = () => {
   const hasRealSavings = compareAtPrice !== undefined && compareAtPrice > unitPrice;
   const totalAmount = unitPrice * quantity;
 
-  const handleAddToCart = (openDrawer = true) => {
-    if (!product) return;
+  /** The cart line this page's current selection (variant / accepted offer) names. */
+  const buildSelectedLine = () => {
+    if (!product) return null;
     // An offer line belongs to another seller's listing, whose variants are
     // not this page's — it carries no variant id rather than this seller's.
     const lineVariant = selectedOffer ? null : selectedVariant;
-    addItem(
-      {
-        id: lineVariant ? `${product.id}-${lineVariant.id}` : product.id,
-        productId: product.id,
-        variantId: lineVariant?.id,
-        title: lineVariant ? `${product.title} (${lineVariant.name})` : product.title,
-        price: unitPrice,
-        compareAtPrice: product.compareAtPrice,
-        maxStock: effectiveStock,
-        image: displayImages[selectedImageIndex] || displayImages[0],
-        sellerId: product.sellerId,
-        sellerName: currentSellerName,
-        sellerType: product.sellerType || 'vendor',
-        type: product.type || 'physical',
-      },
-      quantity,
-    );
+    return {
+      id: lineVariant ? `${product.id}-${lineVariant.id}` : product.id,
+      productId: product.id,
+      variantId: lineVariant?.id,
+      title: lineVariant ? `${product.title} (${lineVariant.name})` : product.title,
+      price: unitPrice,
+      compareAtPrice: product.compareAtPrice,
+      maxStock: effectiveStock,
+      image: displayImages[selectedImageIndex] || displayImages[0],
+      sellerId: product.sellerId,
+      sellerName: currentSellerName,
+      sellerType: product.sellerType || 'vendor',
+      type: product.type || 'physical',
+    };
+  };
+
+  const handleAddToCart = (openDrawer = true) => {
+    const line = buildSelectedLine();
+    if (!line) return;
+    addItem(line, quantity);
     setAddedAnimation(true);
     setTimeout(() => setAddedAnimation(false), 2000);
     if (openDrawer) openCartDrawer();
   };
 
+  /**
+   * Buy Now goes straight to checkout with the selection at exactly the
+   * quantity picked here. It must never stack onto a line the cart already
+   * holds (the old handler re-added, turning 2 units into 4, and then
+   * detoured through the cart page): an existing line is SET to the picked
+   * quantity, a missing one is added at it. Note checkout itself books
+   * the stored cart — `place_order` prices `cart_lines_for(auth.uid())`
+   * and takes no line items — so "exactly this item alone" cannot be
+   * booked without replacing the customer's cart, which Buy Now must not
+   * do; what it guarantees is this line, at this quantity, and no detour.
+   */
   const handleBuyNow = () => {
-    handleAddToCart(false);
-    navigate('/cart');
+    const line = buildSelectedLine();
+    if (!line) return;
+    const existing = useCartStore.getState().items.find((item) => item.id === line.id);
+    if (existing) {
+      if (existing.quantity !== quantity) {
+        void useCartStore.getState().updateQuantity(line.id, quantity);
+      }
+    } else {
+      void addItem(line, quantity);
+    }
+    navigate('/checkout');
   };
 
   const handleShare = () => {

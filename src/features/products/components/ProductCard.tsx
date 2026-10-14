@@ -211,7 +211,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       {/* Stock Availability & Progress Bar */}
       <div className="mt-2.5 sm:mt-3 border-t border-slate-100 pt-2 sm:pt-2.5">
         <div className="flex items-center justify-between text-[10px] text-slate-600">
-          <span className="truncate pr-1">
+          {/* No truncate here: the clipped span is what used to render this
+              line as a bare "left" or an "Only 60" with the word cut off. */}
+          <span className="pr-1">
             {product.stock > 0 ? (
               <>
                 Only <strong className="text-slate-900">{product.stock}</strong> left

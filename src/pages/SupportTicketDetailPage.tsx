@@ -201,9 +201,16 @@ export const SupportTicketDetailPage: React.FC = () => {
                   allowInternalNote
                   pending={actions.replyTicket.isPending}
                   error={actions.replyTicket.isError ? errorText : null}
-                  onSend={(body, internalNote) =>
-                    actions.replyTicket.mutate({ ticketId: ticket.id, body, internalNote })
-                  }
+                  onSend={async (body, internalNote) => {
+                    try {
+                      await actions.replyTicket.mutateAsync({ ticketId: ticket.id, body, internalNote });
+                      return true;
+                    } catch {
+                      // The mutation's own error state renders above the
+                      // composer; returning false keeps the draft alive.
+                      return false;
+                    }
+                  }}
                   className="min-h-[480px]"
                 />
               </section>

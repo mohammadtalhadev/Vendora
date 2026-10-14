@@ -49,12 +49,19 @@ interface FacetSectionsProps {
   categoryParam: string;
   brandParam: string;
   ratingParam: string;
+  typeParam: string;
   inStockOnly: boolean;
   onSaleOnly: boolean;
   /** False when the page itself is the sale shelf (Deals): the facet is then locked on by the page and not offered as a toggle. */
   showSaleFacet: boolean;
   onSelect: (changes: Record<string, string | null>) => void;
 }
+
+const TYPE_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: 'All products', value: '' },
+  { label: 'Physical', value: 'physical' },
+  { label: 'Digital', value: 'digital' },
+];
 
 /**
  * The catalogue facets beyond price — category, brand, rating, availability —
@@ -68,6 +75,7 @@ const FacetSections: React.FC<FacetSectionsProps> = ({
   categoryParam,
   brandParam,
   ratingParam,
+  typeParam,
   inStockOnly,
   onSaleOnly,
   showSaleFacet,
@@ -147,6 +155,30 @@ const FacetSections: React.FC<FacetSectionsProps> = ({
           </div>
         </div>
       )}
+
+      {/* Product type — the facet behind /products?type=digital (the link
+          My Downloads sends shoppers to). Backed by the same server-side
+          `type` filter the catalog query has always supported. */}
+      <div className="space-y-1.5 pt-2">
+        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+          Product Type
+        </h4>
+        {TYPE_OPTIONS.map((option) => {
+          const active = typeParam === option.value;
+          return (
+            <button
+              key={option.label}
+              type="button"
+              onClick={() => onSelect({ type: option.value || null })}
+              aria-pressed={active}
+              className={optionClass(active)}
+            >
+              <span>{option.label}</span>
+              {active && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Minimum rating */}
       <div className="space-y-1.5 pt-2">
@@ -250,6 +282,10 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
   const categoryParam = searchParams.get('category') ?? '';
   const brandParam = searchParams.get('brand') ?? '';
   const ratingParam = searchParams.get('rating') ?? '';
+  // Only the two values the products table actually stores mean anything;
+  // any other `type` in the URL is ignored rather than filtering to zero.
+  const typeParamRaw = searchParams.get('type') ?? '';
+  const typeParam = typeParamRaw === 'digital' || typeParamRaw === 'physical' ? typeParamRaw : '';
   const inStockOnly = searchParams.get('stock') === '1';
   const onSaleOnly = searchParams.get('sale') === '1';
   const sort = searchParams.get('sort') ?? defaultSort;
@@ -308,7 +344,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
   // and sort are the shopper's context, not filters, and stay.
   const handleResetFilters = () =>
     updateParams(
-      { min: null, max: null, category: null, brand: null, rating: null, stock: null, sale: null },
+      { min: null, max: null, category: null, brand: null, rating: null, stock: null, sale: null, type: null },
       { resetPage: true },
     );
 
@@ -364,6 +400,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
     minRating,
     inStock: inStockOnly || undefined,
     onSale: lockedOnSale ? true : onSaleOnly || undefined,
+    type: typeParam || undefined,
     sort,
     minPrice,
     maxPrice,
@@ -554,6 +591,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
               categoryParam={categoryParam}
               brandParam={brandParam}
               ratingParam={ratingParam}
+              typeParam={typeParam}
               inStockOnly={inStockOnly}
               onSaleOnly={onSaleOnly}
               showSaleFacet={!lockedOnSale}
@@ -969,6 +1007,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
                   categoryParam={categoryParam}
                   brandParam={brandParam}
                   ratingParam={ratingParam}
+                  typeParam={typeParam}
                   inStockOnly={inStockOnly}
                   onSaleOnly={onSaleOnly}
                   showSaleFacet={!lockedOnSale}

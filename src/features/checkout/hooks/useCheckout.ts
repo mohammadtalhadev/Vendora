@@ -62,3 +62,21 @@ export function useCheckoutTotals() {
 
   return useCheckoutQuote(signature, deliveryOptions, couponCode, Boolean(userId));
 }
+
+/**
+ * The cart page / drawer's shipping quote: the same `checkout_quote` RPC
+ * checkout books with, priced at the standard delivery option for every
+ * package (the cart has no per-package delivery choice — that is made at
+ * checkout, where the quote is re-read with the chosen options). Guests
+ * get no query, because the quote prices the *stored* cart and a guest's
+ * cart lives only in their browser; their surfaces say shipping is
+ * calculated at checkout instead of estimating it locally.
+ */
+export function useCartServerQuote() {
+  const signature = useCartStore((state) => cartSignature(state.items));
+  const couponCode = useCartStore((state) => state.appliedCoupon?.code ?? null);
+  const hasItems = useCartStore((state) => state.items.length > 0);
+  const userId = useAuthStore((state) => state.user?.id);
+
+  return useCheckoutQuote(signature, {}, couponCode, Boolean(userId) && hasItems);
+}

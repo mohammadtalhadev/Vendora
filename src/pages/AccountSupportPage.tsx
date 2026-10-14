@@ -338,9 +338,16 @@ export const AccountSupportPage: React.FC = () => {
                               ? actions.replyTicket.error.message
                               : null
                           }
-                          onSend={(replyBody) =>
-                            actions.replyTicket.mutate({ ticketId: selected.id, body: replyBody })
-                          }
+                          onSend={async (replyBody) => {
+                            try {
+                              await actions.replyTicket.mutateAsync({ ticketId: selected.id, body: replyBody });
+                              return true;
+                            } catch {
+                              // The mutation's error renders above the
+                              // composer; false keeps the draft alive.
+                              return false;
+                            }
+                          }}
                           className="border-slate-200/80 shadow-none"
                         />
                       )}

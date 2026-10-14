@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TrackingTimeline } from './TrackingTimeline';
 import type { SubOrder } from '../../../types/domain';
@@ -120,6 +121,13 @@ const mockDigitalSubOrder: SubOrder = {
   createdAt: '2026-10-06T08:00:00Z',
 };
 
+const renderTimeline = (subOrder: SubOrder) =>
+  render(
+    <MemoryRouter>
+      <TrackingTimeline subOrder={subOrder} />
+    </MemoryRouter>,
+  );
+
 describe('TrackingTimeline Component', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -127,7 +135,7 @@ describe('TrackingTimeline Component', () => {
 
   describe('Physical Sub-Orders: 7-Stage Stepper', () => {
     it('renders all 7 physical stages in correct order', () => {
-      render(<TrackingTimeline subOrder={mockPhysicalSubOrder} />);
+      renderTimeline(mockPhysicalSubOrder);
 
       const expectedStages = [
         'stepper-stage-placed',
@@ -146,7 +154,7 @@ describe('TrackingTimeline Component', () => {
     });
 
     it('highlights the current stage with an active pulse indicator', () => {
-      render(<TrackingTimeline subOrder={mockPhysicalSubOrder} />);
+      renderTimeline(mockPhysicalSubOrder);
 
       // The status is 'shipped' (5th stage, index 4)
       const pulseIndicator = screen.getByTestId('active-pulse-indicator');
@@ -158,7 +166,7 @@ describe('TrackingTimeline Component', () => {
     });
 
     it('toggles between horizontal and vertical stepper views', () => {
-      render(<TrackingTimeline subOrder={mockPhysicalSubOrder} />);
+      renderTimeline(mockPhysicalSubOrder);
 
       // Initially horizontal
       expect(screen.getByTestId('horizontal-stepper')).toBeInTheDocument();
@@ -174,7 +182,7 @@ describe('TrackingTimeline Component', () => {
     });
 
     it('renders rider assignment badge and simulated delivery code', () => {
-      render(<TrackingTimeline subOrder={mockPhysicalSubOrder} />);
+      renderTimeline(mockPhysicalSubOrder);
 
       // Rider Assignment Card
       const riderCard = screen.getByTestId('rider-assignment-card');
@@ -195,7 +203,7 @@ describe('TrackingTimeline Component', () => {
         },
       });
 
-      render(<TrackingTimeline subOrder={mockPhysicalSubOrder} />);
+      renderTimeline(mockPhysicalSubOrder);
 
       const copyButton = screen.getByTestId('copy-delivery-code-button');
       expect(copyButton).toBeInTheDocument();
@@ -209,7 +217,7 @@ describe('TrackingTimeline Component', () => {
     });
 
     it('renders the timestamped event log with actors and notes', () => {
-      render(<TrackingTimeline subOrder={mockPhysicalSubOrder} />);
+      renderTimeline(mockPhysicalSubOrder);
 
       const eventLog = screen.getByTestId('tracking-event-log');
       expect(eventLog).toBeInTheDocument();
@@ -223,7 +231,7 @@ describe('TrackingTimeline Component', () => {
 
   describe('Digital Sub-Orders: License Key Card', () => {
     it('renders digital license key card and hides physical stepper', () => {
-      render(<TrackingTimeline subOrder={mockDigitalSubOrder} />);
+      renderTimeline(mockDigitalSubOrder);
 
       // Should render digital license card
       const licenseCard = screen.getByTestId('digital-license-card');
@@ -237,6 +245,13 @@ describe('TrackingTimeline Component', () => {
       expect(screen.queryByTestId('horizontal-stepper')).not.toBeInTheDocument();
       expect(screen.queryByTestId('vertical-stepper')).not.toBeInTheDocument();
       expect(screen.queryByTestId('delivery-code-card')).not.toBeInTheDocument();
+
+      // Batch 57: the asset link goes to the real delivery path (My
+      // Downloads). The old button generated a plain-text note while
+      // labelling itself "Download Package (.ZIP)" — gone for good.
+      const assetLink = screen.getByTestId('download-asset-link');
+      expect(assetLink).toHaveAttribute('href', '/downloads');
+      expect(screen.queryByText(/\.ZIP/)).not.toBeInTheDocument();
     });
 
     it('copies digital license key to clipboard and provides feedback', async () => {
@@ -247,7 +262,7 @@ describe('TrackingTimeline Component', () => {
         },
       });
 
-      render(<TrackingTimeline subOrder={mockDigitalSubOrder} />);
+      renderTimeline(mockDigitalSubOrder);
 
       const copyKeyButton = screen.getByTestId('copy-key-button');
       expect(copyKeyButton).toBeInTheDocument();
@@ -269,7 +284,7 @@ describe('TrackingTimeline Component', () => {
         status: 'delivered',
       };
 
-      render(<TrackingTimeline subOrder={deliveredSubOrder} />);
+      renderTimeline(deliveredSubOrder);
 
       const statusBadge = screen.getByTestId('current-status-badge');
       expect(statusBadge).toHaveTextContent('Delivered');
@@ -284,7 +299,7 @@ describe('TrackingTimeline Component', () => {
         returnReason: 'Customer requested cancellation prior to pickup',
       };
 
-      render(<TrackingTimeline subOrder={cancelledSubOrder} />);
+      renderTimeline(cancelledSubOrder);
 
       expect(screen.getByText(/this sub-order was cancelled/i)).toBeInTheDocument();
       expect(

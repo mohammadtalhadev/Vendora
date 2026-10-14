@@ -154,6 +154,30 @@ export async function fetchProducts(
   return primary;
 }
 
+/**
+ * Live rows for a known set of product ids — the read behind Recently
+ * Viewed, whose localStorage snapshots go stale the moment stock or price
+ * moves. Only approved rows come back, in no promised order; callers
+ * re-order against their own list. Non-UUID ids (legacy mock-catalogue
+ * leftovers in old snapshots) cannot exist server-side and are dropped
+ * before the query, the same guard the cart sync applies.
+ */
+export async function fetchProductsByIds(ids: string[], signal?: AbortSignal): Promise<Product[]> {
+  const valid = Array.from(new Set(ids.filter((id) => UUID.test(id))));
+  if (valid.length === 0) return [];
+
+  let query = supabase
+    .from('products')
+    .select(PRODUCT_SELECT)
+    .eq('status', 'approved')
+    .in('id', valid);
+  if (signal) query = query.abortSignal(signal);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to load products: ${error.message}`);
+  return ((data ?? []) as unknown as ProductWithRefs[]).map(mapProduct);
+}
+
 export async function fetchProductDetail(idOrSlug: string, signal?: AbortSignal): Promise<Product> {
   const lookupColumn = UUID.test(idOrSlug) ? 'id' : 'slug';
   let query = supabase

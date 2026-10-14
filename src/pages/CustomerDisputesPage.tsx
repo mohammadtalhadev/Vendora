@@ -26,6 +26,14 @@ export const CustomerDisputesPage: React.FC = () => {
 
   const [selectedDisputeId, setSelectedDisputeId] = useState<string>(disputeIdParam || '');
 
+  // The route is the source of truth for a deep link: following
+  // /disputes/:id from a notification or a shared link must select THAT
+  // dispute (the state used to be initialised from the param once and
+  // never re-synced, so in-app navigation kept showing the old case).
+  useEffect(() => {
+    if (disputeIdParam) setSelectedDisputeId(disputeIdParam);
+  }, [disputeIdParam]);
+
   const [replyMessage, setReplyMessage] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isFilingNew, setIsFilingNew] = useState(false);
@@ -47,7 +55,20 @@ export const CustomerDisputesPage: React.FC = () => {
   const [newSubOrderId, setNewSubOrderId] = useState('');
   const [newNotes, setNewNotes] = useState('');
 
-  const activeDispute = disputes.find((d) => d.id === selectedDisputeId) || disputes[0];
+  // An id the route names but the account does not have is a NOT-FOUND,
+  // never a silent swap to another case: a shared or stale link used to
+  // present the first dispute as if it were the linked one. The fallback
+  // to the first dispute is kept only for the plain list route (no id in
+  // the URL), where "open the newest case" is the honest default.
+  const routeDisputeMissing =
+    Boolean(disputeIdParam) &&
+    !disputesQuery.isLoading &&
+    disputesQuery.isSuccess &&
+    !disputes.some((d) => d.id === disputeIdParam);
+
+  const activeDispute = routeDisputeMissing
+    ? undefined
+    : disputes.find((d) => d.id === selectedDisputeId) || disputes[0];
 
   const replyMutation = useMutation({
     mutationFn: ({ disputeId, content }: { disputeId: string; content: string }) =>
@@ -209,9 +230,13 @@ export const CustomerDisputesPage: React.FC = () => {
                   </h4>
 
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
-                    <span>
-                      Vendor: <strong className="text-slate-700 dark:text-slate-300">{dispute.vendorName || 'Apex Tech'}</strong>
-                    </span>
+                    {dispute.vendorName ? (
+                      <span>
+                        Vendor: <strong className="text-slate-700 dark:text-slate-300">{dispute.vendorName}</strong>
+                      </span>
+                    ) : (
+                      <span />
+                    )}
                     <span className="font-mono text-[11px] text-slate-400">
                       {new Date(dispute.createdAt).toLocaleDateString()}
                     </span>
@@ -235,8 +260,13 @@ export const CustomerDisputesPage: React.FC = () => {
                       {getStatusBadge(activeDispute.status)}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Order Reference: <strong className="font-mono text-slate-700 dark:text-slate-300">{activeDispute.subOrderId}</strong> • Seller:{' '}
-                      <strong className="text-slate-700 dark:text-slate-300">{activeDispute.vendorName}</strong>
+                      Order Reference: <strong className="font-mono text-slate-700 dark:text-slate-300">{activeDispute.subOrderId}</strong>
+                      {activeDispute.vendorName && (
+                        <>
+                          {' '}• Seller:{' '}
+                          <strong className="text-slate-700 dark:text-slate-300">{activeDispute.vendorName}</strong>
+                        </>
+                      )}
                     </p>
                   </div>
 
@@ -320,6 +350,27 @@ export const CustomerDisputesPage: React.FC = () => {
                     <span>Send</span>
                   </button>
                 </form>
+              </div>
+            ) : routeDisputeMissing ? (
+              <div
+                className="glass-panel h-full rounded-3xl flex flex-col items-center justify-center gap-3 p-12 text-center"
+                data-testid="dispute-not-found"
+              >
+                <Scale className="h-8 w-8 text-slate-300" aria-hidden="true" />
+                <h3 className="font-outfit text-base font-black text-slate-900 dark:text-white">
+                  This dispute could not be found
+                </h3>
+                <p className="max-w-sm text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  No dispute with the reference <strong className="font-mono">{disputeIdParam}</strong> belongs
+                  to your account. The link may be out of date, or the case may have been filed under a
+                  different account.
+                </p>
+                <Link
+                  to="/disputes"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-sun-orange px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-sun-orange-600 transition-all"
+                >
+                  View your disputes
+                </Link>
               </div>
             ) : (
               <div className="glass-panel h-full rounded-3xl flex items-center justify-center p-12 text-center text-slate-400">

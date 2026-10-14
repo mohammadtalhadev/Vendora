@@ -1,9 +1,11 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Printer, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useOrderDetail } from '../features/orders/hooks/useOrders';
 import { QueryState } from '../components/common/QueryState';
 import { useCurrency } from '../store/currency-store';
+import { fetchPlatformSettings } from '../features/admin/api/settings';
 
 /** What the server recorded at booking. Nothing here is inferred from the payment method. */
 function settlementLine(status: string | undefined): { label: string; tone: string } {
@@ -29,6 +31,18 @@ export const InvoicePage: React.FC = () => {
   const effectiveOrderId = orderId ?? '';
 
   const { data, isLoading, isError, error, refetch } = useOrderDetail(effectiveOrderId);
+
+  // The letterhead is read from the platform settings row — the settings
+  // model carries a platform name and a support email, and nothing else
+  // letterhead-shaped. (The block this replaces printed an invented
+  // street address and VAT ID; there is no such data to print.)
+  const settingsQuery = useQuery({
+    queryKey: ['platform-settings'],
+    queryFn: ({ signal }) => fetchPlatformSettings(signal),
+    staleTime: 1000 * 60 * 10,
+  });
+  const platformName = settingsQuery.data?.platformName || 'Vendora';
+  const supportEmail = settingsQuery.data?.supportEmail || '';
 
   const order = data?.orderGroup;
   const subOrders = data?.subOrders ?? [];
@@ -101,10 +115,13 @@ export const InvoicePage: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 print:text-slate-600 leading-relaxed">
-                    Vendora Multi-Vendor Commerce Platform Inc.<br />
-                    100 Market Street, Suite 400<br />
-                    San Francisco, CA 94105 USA<br />
-                    VAT / Tax ID: US-948210492
+                    {platformName} — multi-vendor marketplace
+                    {supportEmail && (
+                      <>
+                        <br />
+                        Support: {supportEmail}
+                      </>
+                    )}
                   </p>
                 </div>
 

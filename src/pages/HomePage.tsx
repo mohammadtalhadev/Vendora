@@ -12,7 +12,7 @@ import {
   type ProductItem,
 } from '../features/products';
 import { useProducts } from '../features/catalog/hooks/useProducts';
-import { recentlyViewedToProduct, useRecentlyViewed } from '../features/catalog/recently-viewed';
+import { useLiveRecentlyViewed } from '../features/catalog/recently-viewed';
 import {
   SectionHeading,
   DealsStrip,
@@ -188,11 +188,14 @@ export const HomePage: React.FC = () => {
   );
 
   // Recently Viewed rail: the shopper's own browser-local history,
-  // rendered through the same card mapping as the live catalogue shelves.
-  const recentlyViewed = useRecentlyViewed();
+  // hydrated with the LIVE product rows (stock, price) before it reaches
+  // the shared card mapping — a raw snapshot renders its view-time stock
+  // (which the snapshot never even recorded, so cards claimed
+  // "Out of stock" for products the PDP showed as In Stock).
+  const { products: recentlyViewedLive } = useLiveRecentlyViewed();
   const recentlyViewedItems = useMemo<ProductItem[]>(
-    () => recentlyViewed.map((item) => domainProductToCardItem(recentlyViewedToProduct(item))),
-    [recentlyViewed],
+    () => recentlyViewedLive.map(domainProductToCardItem),
+    [recentlyViewedLive],
   );
 
   const { data: homeData, isLoading: homeLoading } = useProducts({ category: 'home-kitchen', sort: 'best_selling', page: 1, limit: 20 });

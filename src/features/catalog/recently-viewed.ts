@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Product } from '../../types/domain';
+import { useProductsByIds } from './hooks/useProducts';
 
 /**
  * Recently Viewed — a per-browser history kept in localStorage.
@@ -107,6 +108,29 @@ export function useRecentlyViewed(): RecentlyViewedItem[] {
   }, []);
 
   return items;
+}
+
+/**
+ * The snapshot list hydrated with LIVE product rows, in view order.
+ *
+ * A snapshot is a browsing trail, not a price/stock record: it goes stale
+ * the moment a product sells out or is repriced, and rendering it raw is
+ * how the rail came to show "Out of stock" with a dead Add-to-Cart for a
+ * product the PDP showed as In Stock (the snapshot mapper had no stock
+ * to carry, so it defaulted to 0). Cards therefore render the live rows
+ * fetched by id — the same data path the catalogue itself uses — and a
+ * snapshot whose product is no longer approved drops out of the rail
+ * instead of advertising a product that cannot be bought.
+ */
+export function useLiveRecentlyViewed(): { products: Product[]; isLoading: boolean } {
+  const snapshots = useRecentlyViewed();
+  const ids = snapshots.map((item) => item.id);
+  const query = useProductsByIds(ids);
+  const byId = new Map((query.data ?? []).map((product) => [product.id, product]));
+  const products = snapshots
+    .map((item) => byId.get(item.id))
+    .filter((product): product is Product => Boolean(product));
+  return { products, isLoading: query.isLoading && snapshots.length > 0 };
 }
 
 /**

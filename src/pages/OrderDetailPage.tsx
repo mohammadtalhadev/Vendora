@@ -278,7 +278,7 @@ export const OrderDetailPage: React.FC = () => {
                   </div>
                   <p className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                     <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                    <span>Placed on {formatTimestamp(orderGroup.createdAt)}</span>
+                    <span>{`Placed on ${formatTimestamp(orderGroup.createdAt)}`}</span>
                     <span>·</span>
                     <span>Contact: {orderGroup.customerEmail}</span>
                   </p>
@@ -483,7 +483,10 @@ export const OrderDetailPage: React.FC = () => {
                             type="button"
                             variant="destructive"
                             size="sm"
-                            onClick={() => setSubOrderToCancel(subOrder)}
+                            onClick={() => {
+                              updateStatusMutation.reset();
+                              setSubOrderToCancel(subOrder);
+                            }}
                             disabled={updateStatusMutation.isPending}
                             className="text-xs font-bold"
                             data-testid={`cancel-sub-order-${subOrder.id}`}
@@ -499,7 +502,10 @@ export const OrderDetailPage: React.FC = () => {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setSubOrderToReturn(subOrder)}
+                            onClick={() => {
+                              updateStatusMutation.reset();
+                              setSubOrderToReturn(subOrder);
+                            }}
                             disabled={updateStatusMutation.isPending}
                             className="text-xs font-bold text-slate-800"
                             data-testid={`return-sub-order-${subOrder.id}`}
@@ -603,17 +609,16 @@ export const OrderDetailPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Package Financial subtotal */}
+                      {/* Package Financial subtotal — one string per side, so
+                          the count, the fee and the line total can never be
+                          separated by markup (the rendered line used to lose
+                          its total after the "="). */}
                       <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/70 p-3 text-xs">
                         <span className="text-slate-600">
-                          Package Subtotal ({subOrder.items.length} items) + Shipping:
+                          {`Package Subtotal (${subOrder.items.length} ${subOrder.items.length === 1 ? 'item' : 'items'}) + Shipping:`}
                         </span>
                         <span className="font-bold text-slate-900">
-                          {formatPrice(subOrder.subtotal)} +{' '}
-                          {subOrder.shippingFee > 0
-                            ? formatPrice(subOrder.shippingFee)
-                            : 'FREE'}{' '}
-                          ={' '}
+                          {`${formatPrice(subOrder.subtotal)} + ${subOrder.shippingFee > 0 ? formatPrice(subOrder.shippingFee) : 'FREE'} = `}
                           <strong className="text-slate-900">
                             {formatPrice(subOrder.subtotal + subOrder.shippingFee)}
                           </strong>
@@ -668,6 +673,14 @@ export const OrderDetailPage: React.FC = () => {
               <option value="Item no longer required">Item no longer required</option>
             </select>
           </div>
+
+          {updateStatusMutation.isError && (
+            <p role="alert" className="text-xs font-semibold text-rose-700" data-testid="cancel-order-error">
+              {updateStatusMutation.error instanceof Error
+                ? updateStatusMutation.error.message
+                : 'The cancellation could not be completed. Please try again.'}
+            </p>
+          )}
 
           <DialogFooter>
             <DialogClose asChild>
@@ -739,6 +752,14 @@ export const OrderDetailPage: React.FC = () => {
                 className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
               />
             </div>
+
+            {updateStatusMutation.isError && (
+              <p role="alert" className="text-xs font-semibold text-rose-700" data-testid="return-order-error">
+                {updateStatusMutation.error instanceof Error
+                  ? updateStatusMutation.error.message
+                  : 'The return request could not be submitted. Please try again.'}
+              </p>
+            )}
           </div>
 
           <DialogFooter>

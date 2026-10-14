@@ -29,50 +29,78 @@ export const WishlistPage: React.FC = () => {
 
   const showNotification = (message: string) => showToast(message);
 
-  const handleMoveToCart = (product: Product) => {
-    addItem({
-      id: product.id,
-      productId: product.id,
-      title: product.title,
-      price: product.price,
-      compareAtPrice: product.compareAtPrice,
-      maxStock: product.stock,
-      image: product.images[0] || '',
-      sellerId: product.sellerId,
-      sellerName: product.sellerName,
-      sellerType: product.sellerType,
-      type: product.type,
-    });
-    toggleWishlist(product);
-    showNotification(`"${product.title}" moved to cart`);
+  const cartLineFor = (product: Product) => ({
+    id: product.id,
+    productId: product.id,
+    title: product.title,
+    price: product.price,
+    compareAtPrice: product.compareAtPrice,
+    maxStock: product.stock,
+    image: product.images[0] || '',
+    sellerId: product.sellerId,
+    sellerName: product.sellerName,
+    sellerType: product.sellerType,
+    type: product.type,
+  });
+
+  /**
+   * A move is two persisted writes (cart add, then wishlist remove) and the
+   * success toast waits for BOTH. The stores never throw — a failed write
+   * lands in the store's `error` state and re-reads the server list — so
+   * the outcome is read back from that state after each await. (These
+   * handlers used to fire the writes un-awaited and toast success
+   * unconditionally, so a failed save still announced "moved to cart"
+   * while the item stayed saved.)
+   */
+  const moveOneToCart = async (product: Product): Promise<boolean> => {
+    await addItem(cartLineFor(product));
+    if (useCartStore.getState().error) return false;
+    await toggleWishlist(product);
+    return !useWishlistStore.getState().error;
   };
 
-  const handleMoveAllToCart = () => {
+  const handleMoveToCart = async (product: Product) => {
+    if (await moveOneToCart(product)) {
+      showNotification(`"${product.title}" moved to cart`);
+      return;
+    }
+    const failure =
+      useCartStore.getState().error ??
+      useWishlistStore.getState().error ??
+      'The move could not be completed.';
+    showToast(failure, 'error');
+  };
+
+  const handleMoveAllToCart = async () => {
     const inStockItems = items.filter((item) => item.stock > 0);
     if (inStockItems.length === 0) return;
 
-    inStockItems.forEach((product) => {
-      addItem({
-        id: product.id,
-        productId: product.id,
-        title: product.title,
-        price: product.price,
-        compareAtPrice: product.compareAtPrice,
-        maxStock: product.stock,
-        image: product.images[0] || '',
-        sellerId: product.sellerId,
-        sellerName: product.sellerName,
-        sellerType: product.sellerType,
-        type: product.type,
-      });
-      toggleWishlist(product);
-    });
+    let moved = 0;
+    for (const product of inStockItems) {
+      if (await moveOneToCart(product)) moved += 1;
+    }
 
-    showNotification(`Moved ${inStockItems.length} items to cart`);
+    if (moved === inStockItems.length) {
+      showNotification(`Moved ${moved} items to cart`);
+      return;
+    }
+    const failure =
+      useCartStore.getState().error ??
+      useWishlistStore.getState().error ??
+      'Some items could not be moved.';
+    showToast(
+      moved > 0 ? `Moved ${moved} of ${inStockItems.length} items. ${failure}` : failure,
+      'error',
+    );
   };
 
-  const handleRemove = (product: Product) => {
-    toggleWishlist(product);
+  const handleRemove = async (product: Product) => {
+    await toggleWishlist(product);
+    const failure = useWishlistStore.getState().error;
+    if (failure) {
+      showToast(failure, 'error');
+      return;
+    }
     showNotification(`Removed "${product.title}" from wishlist`);
   };
 
@@ -155,8 +183,13 @@ export const WishlistPage: React.FC = () => {
         title="Clear your wishlist?"
         description={`This removes all ${items.length} saved ${items.length === 1 ? 'item' : 'items'}. This cannot be undone.`}
         confirmLabel="Clear Wishlist"
-        onConfirm={() => {
-          clearWishlist();
+        onConfirm={async () => {
+          await clearWishlist();
+          const failure = useWishlistStore.getState().error;
+          if (failure) {
+            showToast(failure, 'error');
+            return;
+          }
           setClearOpen(false);
         }}
       />

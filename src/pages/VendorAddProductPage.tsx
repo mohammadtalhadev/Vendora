@@ -363,7 +363,12 @@ export const VendorAddProductPage: React.FC = () => {
 
   // In edit mode the listing must load before the form renders at all —
   // an empty form here is how the old page silently created duplicates.
-  if (isEdit && existingQuery.isLoading) {
+  // The same gate covers a REOPEN while the detail query revalidates: the
+  // cache can still hold the pre-save copy at first paint, and pre-filling
+  // from it is how a saved edit used to come back showing the old price.
+  // The form waits for the fetch to settle, then pre-fills once, from the
+  // fresh row.
+  if (isEdit && (existingQuery.isLoading || (existingQuery.isFetching && !prefilled))) {
     return (
       <WorkspaceLayout
         role="vendor"

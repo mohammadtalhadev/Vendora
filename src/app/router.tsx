@@ -483,6 +483,34 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        // Aliases for the account sections whose canonical homes live
+        // outside the `account/` prefix. Bookmarks, receipt emails and
+        // muscle memory all try /account/orders (and its siblings) for
+        // pages that actually live at /orders, /wishlist, /downloads,
+        // /disputes and /notifications — redirect instead of 404ing.
+        // (/account/returns, /account/addresses, /account/profile,
+        // /account/reviews, /account/settings, /account/rewards and
+        // /account/support ARE canonical and are defined above.)
+        path: 'account/orders',
+        element: <Navigate to="/orders" replace />,
+      },
+      {
+        path: 'account/wishlist',
+        element: <Navigate to="/wishlist" replace />,
+      },
+      {
+        path: 'account/downloads',
+        element: <Navigate to="/downloads" replace />,
+      },
+      {
+        path: 'account/disputes',
+        element: <Navigate to="/disputes" replace />,
+      },
+      {
+        path: 'account/notifications',
+        element: <Navigate to="/notifications" replace />,
+      },
+      {
         path: 'gift-cards',
         element: lazyWrap(<GiftCardsPage />),
       },

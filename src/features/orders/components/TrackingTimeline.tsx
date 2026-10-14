@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { SubOrder, PhysicalSubOrderStatus, TrackingEvent } from '../../../types/domain';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -113,7 +114,6 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(defaultOrientation);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [downloadStarted, setDownloadStarted] = useState(false);
   const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null);
 
   const isDigital = subOrder.type === 'digital';
@@ -130,7 +130,10 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
-  // Handle Copy Delivery PIN Code — only the PIN issued for this order.
+  // Handle Copy Delivery PIN Code. There is no fallback PIN: a code exists
+  // only when one was actually issued for this package (shown once at
+  // booking, or minted later from the order page). Inventing digits here
+  // would hand the customer a code the rider's check can never accept.
   const handleCopyDeliveryCode = () => {
     if (!subOrder.deliveryCode) return;
     if (navigator?.clipboard?.writeText) {
@@ -168,9 +171,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
   const activeStage = PHYSICAL_STAGES[resolvedActiveIndex] ?? PHYSICAL_STAGES[0];
   const highlightedStage = selectedStageIndex !== null ? PHYSICAL_STAGES[selectedStageIndex] : activeStage;
 
-  // The order's own delivery PIN, split into boxes; rendered only when the
-  // order actually carries a code (see the PIN card below).
-  const deliveryDigits = (subOrder.deliveryCode ?? '').split('');
+  const deliveryDigits = subOrder.deliveryCode ? subOrder.deliveryCode.split('') : [];
 
   return (
     <div className={`space-y-6 ${className}`} data-testid="tracking-timeline">
@@ -356,24 +357,19 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
               </span>
               <div className="flex items-center gap-2">
                 <Download className="h-4 w-4 text-sun-orange" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDownloadStarted(true);
-                    const element = document.createElement('a');
-                    const content = `Vendora Verified Digital License Package\nOrder: ${subOrder.id}\nLicense Key: ${subOrder.licenseKey}\nAsset: ${subOrder.items[0]?.title || 'Vendora Digital Product'}\nGenerated: ${new Date().toISOString()}`;
-                    const file = new Blob([content], { type: 'text/plain' });
-                    element.href = URL.createObjectURL(file);
-                    element.download = `license-${subOrder.id}.txt`;
-                    document.body.appendChild(element);
-                    element.click();
-                    document.body.removeChild(element);
-                    setTimeout(() => setDownloadStarted(false), 2000);
-                  }}
+                {/* The purchased asset itself is delivered from My Downloads,
+                    where the seller's real delivery link lives. This panel
+                    used to generate a plain-text note and label the button
+                    "Download Package (.ZIP)" — a .txt is never a ZIP, so the
+                    fake package download is gone and the link goes to the
+                    real delivery path instead. */}
+                <Link
+                  to="/downloads"
                   className="font-semibold text-sun-orange hover:underline"
+                  data-testid="download-asset-link"
                 >
-                  {downloadStarted ? 'Downloading Package...' : 'Download Package (.ZIP)'}
-                </button>
+                  Download the asset in My Downloads
+                </Link>
               </div>
             </div>
           )}
@@ -626,43 +622,55 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                 </Badge>
               </div>
 
-              <p className="mt-1 text-[11px] text-slate-600">
-                Share this PIN with the courier on delivery to complete receipt verification.
-              </p>
+              {subOrder.deliveryCode ? (
+                <>
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    Share this PIN with the courier on delivery to complete receipt verification.
+                  </p>
 
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5" data-testid="delivery-code-digits">
-                  {deliveryDigits.map((digit, i) => (
-                    <span
-                      key={i}
-                      className="flex h-10 w-8 items-center justify-center rounded-xl border border-orange-200 bg-white font-mono text-lg font-black text-slate-900 shadow-xs"
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-1.5" data-testid="delivery-code-digits">
+                      {deliveryDigits.map((digit, i) => (
+                        <span
+                          key={i}
+                          className="flex h-10 w-8 items-center justify-center rounded-xl border border-orange-200 bg-white font-mono text-lg font-black text-slate-900 shadow-xs"
+                        >
+                          {digit}
+                        </span>
+                      ))}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyDeliveryCode}
+                      className="gap-1.5 bg-white text-xs font-bold"
+                      data-testid="copy-delivery-code-button"
                     >
-                      {digit}
-                    </span>
-                  ))}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyDeliveryCode}
-                  className="gap-1.5 bg-white text-xs font-bold"
-                  data-testid="copy-delivery-code-button"
-                >
-                  {copiedCode ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      <span>Copy PIN</span>
-                    </>
-                  )}
-                </Button>
-              </div>
+                      {copiedCode ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Copy PIN</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-600" data-testid="delivery-code-unavailable">
+                  No PIN is showing for this package. Your delivery PIN is created for the
+                  handover and shown once when your order is placed — only its hash is kept,
+                  so it cannot be read back here. If you no longer have it, open this order
+                  from your orders list and choose “New handover code”: a fresh PIN is
+                  minted and the old one stops working.
+                </p>
+              )}
             </div>
             ) : (
               <div

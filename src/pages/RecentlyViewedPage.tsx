@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, Eye, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { ProductCard, domainProductToCardItem } from '../features/products';
-import { clearRecentlyViewed, recentlyViewedToProduct, useRecentlyViewed } from '../features/catalog/recently-viewed';
+import { clearRecentlyViewed, useLiveRecentlyViewed, useRecentlyViewed } from '../features/catalog/recently-viewed';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
 import type { ProductItem } from '../features/products';
@@ -15,6 +15,9 @@ import type { ProductItem } from '../features/products';
  */
 export const RecentlyViewedPage: React.FC = () => {
   const items = useRecentlyViewed();
+  // Cards render the LIVE product rows behind the history (real stock and
+  // price), not the view-time snapshots — see useLiveRecentlyViewed.
+  const { products: liveProducts, isLoading: liveLoading } = useLiveRecentlyViewed();
   const { addItem } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -111,17 +114,26 @@ export const RecentlyViewedPage: React.FC = () => {
             Browse products
           </Link>
         </div>
+      ) : liveLoading ? (
+        <p className="mt-10 text-center text-xs text-slate-500" role="status">
+          Loading the current details for your viewed products…
+        </p>
+      ) : liveProducts.length === 0 ? (
+        <p className="mt-10 text-center text-xs text-slate-500">
+          None of the products in this history are on sale right now — they stay in your
+          history in case they come back.
+        </p>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {items.map((item) => {
-            const card = domainProductToCardItem(recentlyViewedToProduct(item));
+          {liveProducts.map((product) => {
+            const card = domainProductToCardItem(product);
             return (
               <ProductCard
-                key={item.id}
+                key={product.id}
                 product={card}
                 onAddToCart={handleAddToCart}
                 onToggleWishlist={handleToggleWishlist}
-                isWishlisted={isInWishlist(item.id)}
+                isWishlisted={isInWishlist(product.id)}
               />
             );
           })}

@@ -1204,8 +1204,7 @@ export const AccountProfilePage: React.FC = () => {
                           {addressEntries[0].phone ? ` • ${addressEntries[0].phone}` : ''}
                         </p>
                         <p className="text-xs text-slate-500">
-                          Used on {addressEntries[0].orders} order{addressEntries[0].orders === 1 ? '' : 's'}, last on{' '}
-                          {dateOf(addressEntries[0].lastUsedAt)}
+                          {`Used on ${addressEntries[0].orders} order${addressEntries[0].orders === 1 ? '' : 's'}, last on ${dateOf(addressEntries[0].lastUsedAt)}`}
                         </p>
                       </>
                     ) : (
@@ -1240,8 +1239,7 @@ export const AccountProfilePage: React.FC = () => {
                             : `${paymentEntries[0].brand || 'Card'}${paymentEntries[0].last4 ? ` ending ${paymentEntries[0].last4}` : ''}`}
                         </h4>
                         <p className="text-xs text-slate-500">
-                          Used on {paymentEntries[0].orders} order{paymentEntries[0].orders === 1 ? '' : 's'}, last on{' '}
-                          {dateOf(paymentEntries[0].lastUsedAt)}
+                          {`Used on ${paymentEntries[0].orders} order${paymentEntries[0].orders === 1 ? '' : 's'}, last on ${dateOf(paymentEntries[0].lastUsedAt)}`}
                         </p>
                       </>
                     ) : (
@@ -1703,10 +1701,22 @@ export const AccountProfilePage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => addressActions.setDefault.mutate(addr.id)}
-                                  className="text-xs font-bold text-sun-orange hover:underline cursor-pointer"
+                                  disabled={addressActions.setDefault.isPending}
+                                  className="text-xs font-bold text-sun-orange hover:underline cursor-pointer disabled:cursor-wait disabled:opacity-60"
                                 >
-                                  Set as default address
+                                  {addressActions.setDefault.isPending &&
+                                  addressActions.setDefault.variables === addr.id
+                                    ? 'Setting as default…'
+                                    : 'Set as default address'}
                                 </button>
+                                {addressActions.setDefault.isError &&
+                                  addressActions.setDefault.variables === addr.id && (
+                                    <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
+                                      {addressActions.setDefault.error instanceof Error
+                                        ? addressActions.setDefault.error.message
+                                        : 'The default address could not be changed.'}
+                                    </p>
+                                  )}
                               </div>
                             )}
                           </li>
@@ -1758,7 +1768,7 @@ export const AccountProfilePage: React.FC = () => {
                               {[entry.city, entry.state, entry.zipCode, entry.country].filter(Boolean).join(', ')}
                             </p>
                             <p className="text-xs text-slate-500">
-                              Used on {entry.orders} order{entry.orders === 1 ? '' : 's'} • last {dateOf(entry.lastUsedAt)}
+                              {`Used on ${entry.orders} order${entry.orders === 1 ? '' : 's'} • last ${dateOf(entry.lastUsedAt)}`}
                             </p>
                           </li>
                         ))}
@@ -1907,12 +1917,24 @@ export const AccountProfilePage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => paymentActions.setDefault.mutate(pm.id)}
-                                  className="font-bold text-sun-orange hover:underline cursor-pointer"
+                                  disabled={paymentActions.setDefault.isPending}
+                                  className="font-bold text-sun-orange hover:underline cursor-pointer disabled:cursor-wait disabled:opacity-60"
                                 >
-                                  Make default
+                                  {paymentActions.setDefault.isPending &&
+                                  paymentActions.setDefault.variables === pm.id
+                                    ? 'Making default…'
+                                    : 'Make default'}
                                 </button>
                               )}
                             </div>
+                            {paymentActions.setDefault.isError &&
+                              paymentActions.setDefault.variables === pm.id && (
+                                <p role="alert" className="mt-1 text-xs font-semibold text-rose-600">
+                                  {paymentActions.setDefault.error instanceof Error
+                                    ? paymentActions.setDefault.error.message
+                                    : 'The default payment method could not be changed.'}
+                                </p>
+                              )}
                           </div>
                         </div>
                       ))}
@@ -1948,7 +1970,7 @@ export const AccountProfilePage: React.FC = () => {
                                     : `${entry.brand || 'Card'}${entry.last4 ? ` ending ${entry.last4}` : ''}`}
                                 </span>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                  Used on {entry.orders} order{entry.orders === 1 ? '' : 's'} • last {dateOf(entry.lastUsedAt)}
+                                  {`Used on ${entry.orders} order${entry.orders === 1 ? '' : 's'} • last ${dateOf(entry.lastUsedAt)}`}
                                 </p>
                               </div>
                             </div>
@@ -2271,14 +2293,34 @@ export const AccountProfilePage: React.FC = () => {
       {/* ========================================================================= */}
       <ConfirmDialog
         open={pendingRemoval !== null}
-        onOpenChange={(open) => !open && setPendingRemoval(null)}
+        onOpenChange={(open) => {
+          if (open) return;
+          // Leaving the dialog clears any failure it was showing, so the
+          // next delete does not open with a stale error inside it.
+          addressActions.remove.reset();
+          paymentActions.remove.reset();
+          setPendingRemoval(null);
+        }}
         title={
           pendingRemoval?.kind === 'address' ? 'Delete this address?' : 'Delete this payment method?'
         }
         description={
-          pendingRemoval
-            ? `${pendingRemoval.label} will be removed from your account. This cannot be undone.`
-            : undefined
+          pendingRemoval ? (
+            <>
+              {`${pendingRemoval.label} will be removed from your account. This cannot be undone.`}
+              {(() => {
+                const removal =
+                  pendingRemoval.kind === 'address' ? addressActions.remove : paymentActions.remove;
+                return removal.isError ? (
+                  <span role="alert" className="mt-2 block font-semibold text-rose-700 dark:text-rose-400">
+                    {removal.error instanceof Error
+                      ? removal.error.message
+                      : 'The delete could not be completed. Please try again.'}
+                  </span>
+                ) : null;
+              })()}
+            </>
+          ) : undefined
         }
         confirmLabel="Delete"
         isPending={
@@ -2289,12 +2331,14 @@ export const AccountProfilePage: React.FC = () => {
         pendingLabel="Deleting…"
         onConfirm={() => {
           if (!pendingRemoval) return;
-          if (pendingRemoval.kind === 'address') {
-            addressActions.remove.mutate(pendingRemoval.id);
-          } else {
-            paymentActions.remove.mutate(pendingRemoval.id);
-          }
-          setPendingRemoval(null);
+          // The dialog closes ONLY on success. It used to close in the
+          // same click that fired the mutation, so a refused delete
+          // looked exactly like a completed one.
+          const removal =
+            pendingRemoval.kind === 'address' ? addressActions.remove : paymentActions.remove;
+          removal.mutate(pendingRemoval.id, {
+            onSuccess: () => setPendingRemoval(null),
+          });
         }}
       />
 

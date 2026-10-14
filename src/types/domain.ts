@@ -118,7 +118,6 @@ export interface SellerCartGroup {
   sellerType: 'platform' | 'vendor';
   items: CartItem[];
   subtotal: number;
-  estimatedShipping: number;
   fulfilmentNote: string;
 }
 

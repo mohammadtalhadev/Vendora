@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchProducts,
+  fetchProductsByIds,
   fetchProductDetail,
   fetchCategories,
   fetchProductBrands,
@@ -25,6 +26,17 @@ export function useProducts(params: ProductQueryParams = {}, enabled = true) {
     queryFn: ({ signal }) => fetchProducts(params, signal),
     enabled,
     staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/** Live rows for a fixed set of ids (Recently Viewed hydration). */
+export function useProductsByIds(ids: string[]) {
+  const key = [...ids].sort().join(',');
+  return useQuery({
+    queryKey: ['catalog', 'products-by-ids', key] as const,
+    queryFn: ({ signal }) => fetchProductsByIds(ids, signal),
+    enabled: ids.length > 0,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

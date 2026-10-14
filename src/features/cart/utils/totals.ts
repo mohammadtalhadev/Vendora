@@ -10,7 +10,14 @@ export interface Coupon {
 
 /**
  * Groups flat cart items by their seller (platform or independent vendor).
- * Derives subtotal and shipping estimates per seller group.
+ * Derives each group's subtotal. Shipping is deliberately NOT estimated
+ * here: the only honest shipping figure is the server quote
+ * (`checkout_quote`, the same function checkout books with), so a group
+ * carries no shipping number of its own — the cart UI reads the quote,
+ * and without one it says shipping is calculated at checkout. (This
+ * replaces a legacy client rule — "over $100 free, otherwise $8.50 per
+ * vendor" — that priced every PKR cart as free shipping while checkout
+ * charged the real per-seller fees.)
  */
 export function groupCartBySeller(items: CartItem[]): SellerCartGroup[] {
   const groupMap = new Map<string, SellerCartGroup>();
@@ -30,7 +37,6 @@ export function groupCartBySeller(items: CartItem[]): SellerCartGroup[] {
         sellerType: isPlatform ? 'platform' : item.sellerType,
         items: [],
         subtotal: 0,
-        estimatedShipping: 0,
         fulfilmentNote: isPlatform
           ? 'Fulfilled directly by Vendora · Prime Express Shipping'
           : `Ships from ${item.sellerName} warehouse`,
@@ -42,16 +48,9 @@ export function groupCartBySeller(items: CartItem[]): SellerCartGroup[] {
     group.subtotal += item.price * item.quantity;
   }
 
-  // Calculate shipping per group
   for (const group of groupMap.values()) {
-    // If all items in this group are digital, shipping is $0
-    const hasPhysicalItems = group.items.some((i) => i.type === 'physical');
-    if (!hasPhysicalItems) {
-      group.estimatedShipping = 0;
+    if (group.items.every((i) => i.type !== 'physical')) {
       group.fulfilmentNote = 'Instant Digital Download · No shipping required';
-    } else {
-      // Standard rule: orders over $100 get free shipping, otherwise $8.50 per vendor
-      group.estimatedShipping = group.subtotal >= 100 ? 0 : 8.5;
     }
   }
 
@@ -59,7 +58,13 @@ export function groupCartBySeller(items: CartItem[]): SellerCartGroup[] {
 }
 
 /**
- * Calculates derived cart totals: itemCount, subtotal, shippingTotal, discount, grandTotal.
+ * Calculates the cart totals the browser can know on its own: itemCount,
+ * subtotal and the coupon discount. Shipping is NOT one of them — pricing
+ * it is the server quote's job (`checkout_quote`), so `shippingTotal`
+ * stays 0 here and `grandTotal` is the total BEFORE shipping. Surfaces
+ * that can make the quote (a signed-in cart) display the quote's own
+ * shipping and grand total; the rest say shipping is calculated at
+ * checkout rather than inventing a figure.
  * Invariant: Never stored in database; always computed dynamically.
  */
 export function calculateCartTotals(
@@ -70,15 +75,11 @@ export function calculateCartTotals(
 
   let itemCount = 0;
   let subtotal = 0;
-  let shippingTotal = 0;
+  const shippingTotal = 0;
 
   for (const item of items) {
     itemCount += item.quantity;
     subtotal += item.price * item.quantity;
-  }
-
-  for (const group of sellerGroups) {
-    shippingTotal += group.estimatedShipping;
   }
 
   let discountTotal = 0;
