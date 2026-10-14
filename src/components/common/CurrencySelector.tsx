@@ -196,11 +196,11 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
 
           {/* Footer note */}
           <div className="mt-2 pt-2 border-t border-slate-100 px-2 flex items-center justify-between text-[10px] text-slate-400">
-            <span>Base: 1 USD</span>
+            <span>Base: 1 PKR</span>
             <span>
               {lastUpdated
                 ? `Updated ${new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                : 'Realtime rates'}
+                : 'Reference rates'}
             </span>
           </div>
         </div>

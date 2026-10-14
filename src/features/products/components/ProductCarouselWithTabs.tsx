@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { ProductCard, type ProductItem } from './ProductCard';
+import { RailEmptyState } from './RailEmptyState';
 
 export interface CarouselChildCategory {
   id: string;
@@ -62,12 +63,15 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
   const isControlled = controlledActiveTabId !== undefined;
   const currentTabId = isControlled ? controlledActiveTabId : internalActiveTabId;
 
-  // Filter out any "all" tab defensively if passed accidentally, and strictly limit to 4 tabs
+  // Filter out any "all" tab defensively if passed accidentally, strictly
+  // limit to 4 tabs, and drop tabs whose sub-category has no products in this
+  // rail — a tab that can only show an empty track is a dead end (Batch 22J).
   const sanitizedTabs = useMemo(() => {
     return tabs
       .filter((t) => t.id.toLowerCase() !== 'all' && t.name.toLowerCase() !== 'all products')
+      .filter((t) => products.some((p) => p.subCategoryId === t.id))
       .slice(0, 4);
-  }, [tabs]);
+  }, [tabs, products]);
 
   const activeSub = useMemo(() => sanitizedTabs.find((t) => t.id === currentTabId), [sanitizedTabs, currentTabId]);
   const activeChildCategories = activeSub?.children || [];
@@ -239,7 +243,10 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
         </div>
       )}
 
-      {/* Product Cards Track */}
+      {/* Product Cards Track — a designed empty state, never a blank gap */}
+      {displayedProducts.length === 0 ? (
+        <RailEmptyState />
+      ) : (
       <div
         ref={carouselRef}
         className="flex gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto no-scrollbar py-2 -mx-1 px-1 cursor-grab active:cursor-grabbing select-none"
@@ -260,6 +267,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
           </div>
         ))}
       </div>
+      )}
     </section>
   );
 };

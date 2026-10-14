@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, ChevronLeft, Store, ArrowUpRight, Star } from 'lucide-react';
 import { fetchStoreDirectory } from '../../vendor/api/store';
+import { StoreLogo } from '../../vendor/components/StoreLogo';
 import { SectionHeading } from './SectionHeading';
 import { useReveal } from '../../../hooks/useReveal';
 
@@ -52,14 +53,10 @@ export const BrandSpotlight: React.FC = () => {
       {/* Header */}
       <SectionHeading
         eyebrow={
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-700">
-              <Store className="h-4 w-4" />
-            </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-700">
-              Stores on Vendora
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange-700">
+            <Store className="h-3.5 w-3.5 text-sun-orange" />
+            Stores on Vendora
+          </span>
         }
         title="Shop by Store"
         subtitle="The sellers currently active on Vendora — every card is a real storefront."
@@ -101,17 +98,11 @@ export const BrandSpotlight: React.FC = () => {
             >
               {/* Top row: Store logo / icon */}
               <div className="flex items-start justify-between">
-                {store.logo ? (
-                  <img
-                    src={store.logo}
-                    alt=""
-                    className="h-12 w-12 rounded-2xl object-cover shadow-xs"
-                  />
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0C1046] to-[#1E1B4B] text-white shadow-xs group-hover:scale-105 transition-transform">
-                    <Store className="h-6 w-6 text-amber-300" />
-                  </div>
-                )}
+                <StoreLogo
+                  name={store.storeName}
+                  logo={store.logo}
+                  className="h-12 w-12 rounded-2xl shadow-xs ring-1 ring-slate-900/5"
+                />
                 {store.vacationMode && (
                   <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200/70">
                     On a break

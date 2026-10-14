@@ -121,15 +121,10 @@ export const CustomerDisputesPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50/70 dark:bg-[#0b1120] py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
-      {/* Ambient background glow orbs */}
-      <div className="ambient-glow-wrapper" aria-hidden="true">
-        <div className="ambient-orb-orange -top-24 -left-24 opacity-60" />
-        <div className="ambient-orb-aqua top-1/3 -right-32 opacity-50" />
-        <div className="ambient-orb-indigo bottom-10 left-1/3 opacity-30" />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-[1400px]">
+    <div className="relative">
+      {/* Content column only: AccountLayout carries the account sidebar and
+          the full-width container; RootLayout paints the ambient background. */}
+      <div className="relative z-10">
         {/* Header */}
         <div className="glass-panel rounded-3xl p-6 sm:p-7 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 border border-white/80 dark:border-white/10">
           <div>
@@ -381,7 +376,7 @@ export const CustomerDisputesPage: React.FC = () => {
                     id="dispute-reason"
                     value={newReason}
                     onChange={(e) => setNewReason(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 dark:border-white/15 bg-white dark:bg-slate-800 p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sun-orange"
+                    className="native-select w-full rounded-2xl border border-slate-200 dark:border-white/15 bg-white dark:bg-slate-800 p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sun-orange"
                   >
                     <option value="Item arrived defective or damaged">Item arrived defective or damaged</option>
                     <option value="Item not as described / wrong item received">Item not as described / wrong item received</option>

@@ -27,7 +27,17 @@ import { formatPrice } from '../../store/currency-store';
 import { CartDrawer } from '../../features/cart/components/CartDrawer';
 import { MegaMenu } from './MegaMenu';
 import { NotificationDropdown } from '../common/NotificationDropdown';
-import { CurrencySelector } from '../common/CurrencySelector';
+
+/**
+ * THE navbar icon-button treatment (Batch 22L). Every icon button in the
+ * header — menu, wishlist, notifications, compare, cart — shares this one
+ * hover/focus recipe: frosted white wash, soft shadow, sun-orange icon,
+ * visible focus ring, and the icon scales via `group`. The notification bell
+ * used to be the odd one out (no focus ring, no icon motion, and a different
+ * default inside NotificationDropdown); there are no exceptions now.
+ */
+const NAV_ICON_BUTTON_CLASS =
+  'relative h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-all group shrink-0 cursor-pointer hover:bg-white/80 hover:shadow-sm hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -257,29 +267,45 @@ export const Navbar: React.FC = () => {
             isScrolled ? 'is-collapsed' : ''
           }`}
         >
-          {/* Left links */}
+          {/* Left links — the marketplace shortcuts (Batch 22K): sell, deals,
+              tracking and help, the set big marketplaces put on this strip.
+              Every target is a real route in the router. */}
           <div className="flex items-center gap-4 sm:gap-6">
+            <Link to="/become-a-seller" className="font-semibold text-sun-orange-700 hover:text-sun-orange transition-colors">
+              Sell on Vendora
+            </Link>
+            <Link to="/deals" className="hover:text-sun-orange transition-colors">
+              Flash Deals
+            </Link>
+            <Link to="/track-order" className="hidden md:inline hover:text-sun-orange transition-colors">
+              Track Order
+            </Link>
             <Link to="/faq" className="hover:text-sun-orange transition-colors">
-              FAQ
-            </Link>
-            <Link to="/account/profile" className="hover:text-sun-orange transition-colors">
-              My account
-            </Link>
-            <Link to="/downloads" className="hover:text-sun-orange transition-colors">
-              Downloads
-            </Link>
-            <Link to="/contact" className="hover:text-sun-orange transition-colors">
-              Contact
+              Help
             </Link>
           </div>
 
           {/* Right Utility Links */}
           <div className="flex items-center gap-3 sm:gap-5">
-            <Link to="/track-order" className="hidden sm:inline hover:text-sun-orange transition-colors">
-              Order Tracking
+            <Link to="/account/profile" className="hover:text-sun-orange transition-colors">
+              My account
+            </Link>
+            <Link to="/downloads" className="hidden sm:inline hover:text-sun-orange transition-colors">
+              Downloads
+            </Link>
+            <Link to="/contact" className="hidden sm:inline hover:text-sun-orange transition-colors">
+              Contact
             </Link>
             <span className="hidden sm:inline text-slate-300">|</span>
-            <CurrencySelector variant="topbar" className="hidden sm:inline-block" />
+            {/* PKR-only lock: the currency selector is unmounted while the lock
+                is on (see CURRENCY_LOCKED_TO_PKR); a static market label takes
+                its slot so shoppers still see where prices are quoted. */}
+            <span className="hidden sm:inline-flex items-center gap-1.5 font-semibold text-slate-600">
+              <span className="text-sm leading-none">🇵🇰</span>
+              <span>
+                Pakistan · PKR <span className="font-medium text-slate-400">(Rs)</span>
+              </span>
+            </span>
           </div>
         </div>
 
@@ -294,10 +320,10 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:bg-white/80 hover:shadow-sm transition-all"
+                className={`lg:hidden flex ${NAV_ICON_BUTTON_CLASS}`}
                 aria-label="Toggle menu"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-5 w-5 transition-transform group-hover:scale-110" />
               </button>
 
               {/* Logo: "Vendora" in bold navy with interactive dot */}
@@ -403,14 +429,14 @@ export const Navbar: React.FC = () => {
                     }}
                     onFocus={() => setIsSearchOpen(true)}
                     onKeyDown={handleSearchKeyDown}
-                    placeholder="Search everything at vendora online and in store..."
+                    placeholder="Search products, brands and stores…"
                     className="w-full bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden px-4"
                   />
 
                   {/* Orange Search Button */}
                   <button
                     type="submit"
-                    className="flex h-full w-12 sm:w-14 shrink-0 items-center justify-center bg-sun-orange hover:bg-sun-orange-600 text-white m-1 rounded-full transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+                    className="flex h-full w-12 sm:w-14 shrink-0 items-center justify-center bg-sun-orange hover:bg-sun-orange-600 text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                     title="Search"
                     aria-label="Search"
                   >
@@ -487,7 +513,7 @@ export const Navbar: React.FC = () => {
               {/* Wishlist */}
               <Link
                 to="/wishlist"
-                className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-sun-orange transition-all group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+                className={`flex ${NAV_ICON_BUTTON_CLASS}`}
                 title="Wishlist"
                 aria-label="Wishlist"
               >
@@ -500,16 +526,16 @@ export const Navbar: React.FC = () => {
               </Link>
 
               {/* In-App Notification Center Dropdown */}
-              <NotificationDropdown triggerClassName="relative hidden sm:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer focus:outline-hidden" />
+              <NotificationDropdown triggerClassName={`hidden sm:flex ${NAV_ICON_BUTTON_CLASS}`} />
 
               {/* Compare / Exchange Icon */}
               <Link
                 to="/compare"
-                className="relative hidden lg:flex h-10 w-10 items-center justify-center rounded-full text-slate-700 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+                className={`hidden lg:flex ${NAV_ICON_BUTTON_CLASS}`}
                 title="Compare Products"
                 aria-label="Compare Products"
               >
-                <ArrowLeftRight className="h-5 w-5" />
+                <ArrowLeftRight className="h-5 w-5 transition-transform group-hover:scale-110" />
                 {compareCount > 0 && (
                   <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white shadow-xs">
                     {compareCount}
@@ -527,8 +553,12 @@ export const Navbar: React.FC = () => {
                   aria-controls="navbar-account-menu"
                   aria-label="Account and personas menu"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/5 group-hover:bg-sun-orange/10 group-hover:text-sun-orange text-slate-700 transition-colors">
-                    <User className="h-4.5 w-4.5" />
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-900/5 group-hover:bg-sun-orange/10 group-hover:text-sun-orange text-slate-700 transition-colors">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <User className="h-4.5 w-4.5" />
+                    )}
                   </div>
                   <div className="hidden xl:flex flex-col text-left leading-tight">
                     <span className="text-[10px] text-slate-400 font-normal">
@@ -600,7 +630,7 @@ export const Navbar: React.FC = () => {
                       className="flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
                     >
                       <span>My Wishlist</span>
-                      <span className="text-[10px] text-rose-500 font-bold">{wishlistCount} items</span>
+                      <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{wishlistCount} items</span>
                     </Link>
                     <Link
                       to="/downloads"
@@ -608,7 +638,7 @@ export const Navbar: React.FC = () => {
                       className="flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
                     >
                       <span>My Downloads</span>
-                      <span className="text-[10px] text-purple-600 font-bold">Licenses</span>
+                      <span className="text-[10px] text-slate-400">Licenses</span>
                     </Link>
                     <Link
                       to="/disputes"
@@ -616,7 +646,7 @@ export const Navbar: React.FC = () => {
                       className="flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
                     >
                       <span>Disputes &amp; Claims</span>
-                      <span className="text-[10px] text-blue-600 font-bold">Support</span>
+                      <span className="text-[10px] text-slate-400">Support</span>
                     </Link>
                   </div>
 
@@ -745,7 +775,7 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={openCart}
-              className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-800 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all shrink-0 group"
+              className={`flex ${NAV_ICON_BUTTON_CLASS}`}
               title="Shopping Cart"
               aria-label="Open shopping cart"
             >
@@ -859,7 +889,21 @@ export const Navbar: React.FC = () => {
                 Contact Us
               </Link>
               <div className="pt-2 border-t border-slate-200/60">
-                <CurrencySelector variant="mobile" />
+                {/* PKR-only lock: static market row instead of the selector. */}
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Market Currency
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                      <span className="text-base leading-none">🇵🇰</span>
+                      PKR <span className="font-medium text-slate-500">(Rs)</span>
+                    </span>
+                  </div>
+                  <p className="px-1 pt-1.5 text-[11px] font-medium text-slate-500">
+                    All prices on Vendora are quoted in Pakistani Rupees.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

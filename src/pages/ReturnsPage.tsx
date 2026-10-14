@@ -490,7 +490,7 @@ export const ReturnsPage: React.FC = () => {
                   id="return-reason"
                   value={returnReason}
                   onChange={(e) => setReturnReason(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-xs text-slate-800 dark:text-white"
+                  className="native-select w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-xs text-slate-800 dark:text-white"
                 >
                   <option>Item defective / does not turn on</option>
                   <option>Item damaged or cracked during transit</option>

@@ -301,7 +301,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                   1. Information We Collect
                 </h2>
                 <p>
-                  We collect information necessary to fulfill your orders, ensure delivery logistics, prevent marketplace fraud, and provide concierge customer support:
+                  We collect information necessary to fulfill your orders, ensure delivery logistics, prevent marketplace fraud, and provide customer support:
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-600">
                   <li><strong>Account Credentials:</strong> Full name, verified email address, phone number, and password hashes (bcrypt/argon2).</li>
@@ -506,8 +506,8 @@ export const PrivacyPolicyPage: React.FC = () => {
 
       {/* ── Toast Notification ─────────────────────────────────────── */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 rounded-2xl bg-slate-900 px-5 py-3 text-xs font-semibold text-white shadow-2xl flex items-center gap-2.5 border border-slate-800 animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+        <div className="fixed bottom-5 right-5 z-50 rounded-2xl border border-white/50 bg-white/75 px-5 py-3 text-xs font-semibold text-slate-800 shadow-2xl backdrop-blur-xl flex items-center gap-2.5 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 animate-in fade-in slide-in-from-bottom-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
           <span>{toastMessage}</span>
         </div>
       )}

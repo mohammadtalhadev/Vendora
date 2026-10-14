@@ -36,10 +36,10 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
   const factsToRender = keyFacts && keyFacts.length > 0 ? keyFacts : defaultKeyFacts;
 
   return (
-    <section className="mt-12 rounded-3xl border border-slate-200/80 bg-white/90 p-6 sm:p-9 shadow-2xs backdrop-blur-md space-y-8">
+    <section className="reveal mt-12 rounded-3xl border border-slate-200/80 bg-white/90 p-6 sm:p-9 shadow-2xs backdrop-blur-md space-y-8">
       {/* ── Section Header ────────────────────────────────────────── */}
       <div className="border-b border-slate-100 pb-6">
-        <h3 className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+        <h3 className="font-outfit text-2xl font-black text-slate-900 tracking-tight">
           {title}
         </h3>
       </div>
@@ -58,7 +58,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
       {/* ── Sub-Section 2: Vendora 3-Step Buyer Assurance ──────────── */}
       <div className="space-y-4">
         <h4 className="font-outfit flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 tracking-tight">
-          <Shield className="h-4 w-4 text-emerald-600" />
+          <Shield className="h-4 w-4 text-sun-orange" />
           <span>Vendora 3–Step Buyer Assurance</span>
         </h4>
 

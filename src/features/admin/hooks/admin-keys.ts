@@ -41,6 +41,8 @@ export const adminKeys = {
     ['admin', userId ?? 'anon', 'logistics'] as const,
   settings: (userId: string | null | undefined) =>
     ['admin', userId ?? 'anon', 'settings'] as const,
+  media: (userId: string | null | undefined) =>
+    ['admin', userId ?? 'anon', 'media'] as const,
 };
 
 export function useAdminScope(): string | null | undefined {

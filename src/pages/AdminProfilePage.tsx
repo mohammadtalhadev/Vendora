@@ -193,9 +193,9 @@ export const AdminProfilePage: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-bold animate-in fade-in slide-in-from-bottom-2"
         >
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
           <span>{toastMessage}</span>
         </div>
       )}
@@ -482,7 +482,7 @@ export const AdminProfilePage: React.FC = () => {
                       id="admin-profile-timezone"
                       value={timezone}
                       onChange={(e) => setTimezone(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                      className="native-select w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
                     >
                       <option>UTC-05:00 (Eastern Time - US &amp; Canada)</option>
                       <option>UTC-08:00 (Pacific Time - US &amp; Canada)</option>
@@ -499,7 +499,7 @@ export const AdminProfilePage: React.FC = () => {
                       id="admin-profile-language"
                       value={language}
                       onChange={(e) => setLanguage(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                      className="native-select w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
                     >
                       <option>English (US)</option>
                       <option>English (UK)</option>

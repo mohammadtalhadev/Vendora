@@ -27,35 +27,13 @@ import {
   AppPromoSection,
   BackToTopButton,
 } from '../features/home';
+import { useHeroSlides } from '../features/home/api/hero-banners';
+import { TrustStrip } from '../components/common/TrustStrip';
 
 
-// Hero Carousel Slides matching User Upscaled Images
-const HERO_CAROUSEL_SLIDES = [
-  {
-    id: 'hero-smartphones',
-    title: 'Smartphones & Flagship Tech',
-    subtitle: 'Latest phones and wearables from verified sellers, with genuine warranty picks.',
-    image: '/images/products/iphone_15_pro_natural.png',
-    link: '/products?category=electronics',
-    alt: 'Smartphones and flagship tech',
-  },
-  {
-    id: 'hero-wearables',
-    title: 'Smartwatches & Wearables',
-    subtitle: 'Fitness, health and notifications — on your wrist.',
-    image: '/images/products/prod_smart_watch.jpg',
-    link: '/products?category=electronics',
-    alt: 'Smartwatches and wearables',
-  },
-  {
-    id: 'hero-tech',
-    title: 'Phones, Cameras & More Tech',
-    subtitle: 'Compare top brands side by side and shop the real catalogue.',
-    image: '/images/bevesi/art_elec_phones.png',
-    link: '/products?category=electronics',
-    alt: 'Phones, cameras and more tech',
-  },
-];
+// Hero slides come from the CMS: the published `homepage_hero` banners the
+// admin console writes, with the built-in slides as the fallback until one is
+// published. See features/home/api/hero-banners.ts.
 
 // The 12 Parent Categories with High-Resolution 2K Thumbnails
 const POPULAR_CATEGORIES = [
@@ -182,8 +160,11 @@ export const HomePage: React.FC = () => {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Hero Section Carousel state
+  // Hero Section Carousel state. The slide list can change length when the CMS
+  // read lands, so the rendered index is always taken modulo the list.
+  const heroSlides = useHeroSlides();
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
+  const activeHeroIndex = heroSlides.length > 0 ? heroSlideIndex % heroSlides.length : 0;
 
   // Section 3: Limited Campaign (Sale Offers by Parent Category)
   // Real catalogue data: one broad fetch, grouped by category and filtered
@@ -263,12 +244,12 @@ export const HomePage: React.FC = () => {
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
 
   useEffect(() => {
-    if (isCarouselPaused) return;
+    if (isCarouselPaused || heroSlides.length === 0) return;
     const timer = setInterval(() => {
-      setHeroSlideIndex((prev) => (prev + 1) % HERO_CAROUSEL_SLIDES.length);
+      setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
     }, 6500);
     return () => clearInterval(timer);
-  }, [isCarouselPaused]);
+  }, [isCarouselPaused, heroSlides.length]);
 
   const scrollContainer = useCallback((ref: React.RefObject<HTMLDivElement | null>, offset: number) => {
     const el = ref.current;
@@ -280,11 +261,11 @@ export const HomePage: React.FC = () => {
   }, []);
 
   const nextHeroSlide = () => {
-    setHeroSlideIndex((prev) => (prev + 1) % HERO_CAROUSEL_SLIDES.length);
+    setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
   };
 
   const prevHeroSlide = () => {
-    setHeroSlideIndex((prev) => (prev - 1 + HERO_CAROUSEL_SLIDES.length) % HERO_CAROUSEL_SLIDES.length);
+    setHeroSlideIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
   };
 
   const showToast = (msg: string) => {
@@ -350,11 +331,11 @@ export const HomePage: React.FC = () => {
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >
-              {HERO_CAROUSEL_SLIDES.map((slide, idx) => (
+              {heroSlides.map((slide, idx) => (
                 <div
                   key={slide.id}
                   className={`absolute inset-0 transition-opacity duration-700 ${
-                    heroSlideIndex === idx ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                    activeHeroIndex === idx ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
                   }`}
                 >
                   <img
@@ -363,7 +344,7 @@ export const HomePage: React.FC = () => {
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <Link to={slide.link} className="absolute inset-0 z-20" title={slide.title} />
-                  {heroSlideIndex === idx && (
+                  {activeHeroIndex === idx && (
                     <div className="pointer-events-none absolute inset-0 z-30 flex items-center bg-gradient-to-r from-slate-950/75 via-slate-950/30 to-transparent">
                       <div className="hero-copy-in max-w-xl px-6 pl-14 sm:px-12 sm:pl-16 lg:px-16">
                         <h2 className="font-outfit text-3xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-4xl lg:text-5xl">
@@ -374,7 +355,7 @@ export const HomePage: React.FC = () => {
                         </p>
                         <div className="pointer-events-auto mt-6 flex flex-wrap items-center gap-3">
                           <Button asChild variant="gradient" size="lg">
-                            <Link to={slide.link}>Shop Now</Link>
+                            <Link to={slide.link}>{slide.ctaText}</Link>
                           </Button>
                           <Button asChild variant="outline" size="lg">
                             <Link to="/products">View All</Link>
@@ -422,20 +403,28 @@ export const HomePage: React.FC = () => {
 
           {/* Interactive Carousel Pagination Dots */}
           <div className="mt-4 flex items-center justify-center gap-2">
-            {HERO_CAROUSEL_SLIDES.map((_, idx) => (
+            {heroSlides.map((_, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => setHeroSlideIndex(idx)}
                 aria-label={`Go to hero slide ${idx + 1}`}
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
-                  heroSlideIndex === idx
+                  activeHeroIndex === idx
                     ? 'h-2 w-7 bg-sun-orange'
                     : 'h-2 w-2 bg-slate-300 hover:bg-slate-400'
                 }`}
               />
             ))}
           </div>
+        </section>
+
+        {/* =========================================================================
+            1B. Trust Strip — the canonical placement (Batch 22H): the four
+            assurance cards live on the homepage, nowhere else.
+            ========================================================================= */}
+        <section className="reveal mb-14" aria-label="Why shop with Vendora">
+          <TrustStrip />
         </section>
 
         {/* =========================================================================
@@ -447,7 +436,7 @@ export const HomePage: React.FC = () => {
             action={
               <Link
                 to="/products"
-                className="group flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-sun-orange transition-colors"
+                className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 transition-colors hover:bg-orange-100"
               >
                 <span>View All</span>
                 <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -545,7 +534,7 @@ export const HomePage: React.FC = () => {
             action={
               <Link
                 to={`/products?category=${currentSaleCategory?.slug || 'electronics'}`}
-                className="group hidden items-center gap-1 text-xs font-bold text-sun-orange hover:underline sm:flex shrink-0"
+                className="group hidden items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 transition-colors hover:bg-orange-100 sm:inline-flex shrink-0"
               >
                 <span>View All</span>
                 <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -591,7 +580,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=electronics"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 px-6 py-2.5 text-xs font-bold text-slate-900 shadow-sm transition-colors hover:bg-slate-900 hover:text-white sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-slate-800 sm:text-sm"
                   >
                     Shop Electronics
                   </Link>
@@ -729,7 +718,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=beauty"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 px-6 py-2.5 text-xs font-bold text-slate-900 transition-colors hover:bg-slate-900 hover:text-white sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-6 py-2.5 text-xs font-bold text-white transition-colors hover:bg-slate-800 sm:text-sm"
                   >
                     Shop Beauty
                   </Link>
@@ -761,7 +750,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=beauty"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 px-6 py-2.5 text-xs font-bold text-slate-900 transition-colors hover:bg-slate-900 hover:text-white sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-6 py-2.5 text-xs font-bold text-white transition-colors hover:bg-slate-800 sm:text-sm"
                   >
                     Shop Beauty
                   </Link>
@@ -953,8 +942,8 @@ export const HomePage: React.FC = () => {
 
       {/* Floating Toast Notification Pill */}
       {toastMessage && (
-        <div className="fixed bottom-20 right-6 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900/95 backdrop-blur-md px-5 py-3 text-xs font-semibold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+        <div className="fixed bottom-20 right-6 z-50 flex items-center gap-2.5 rounded-2xl border border-white/50 bg-white/75 px-5 py-3 text-xs font-semibold text-slate-800 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 animate-in fade-in slide-in-from-bottom-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
           <span>{toastMessage}</span>
         </div>
       )}

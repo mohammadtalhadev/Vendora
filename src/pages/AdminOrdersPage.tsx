@@ -6,12 +6,14 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { formatPrice } from '../store/currency-store';
 import { useAdminOrderQueue } from '../features/admin/hooks/useAdminQueries';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { AdminOrderRow } from '../features/admin/api/orders';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { StatusBadge } from '../components/ui/status-badge';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { OrderActionsMenu } from '../features/admin/components/OrderActionsMenu';
 
 /**
  * The queue read is the page's only source: Postgres sums the money and pages the rows,
@@ -54,10 +56,14 @@ export const AdminOrdersPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
 
+  // The queue read is server-side, so the search term is debounced: typing must
+  // not fire one widest-read-in-the-console request per keystroke.
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const { data: queue, refetch, isPending, isError, error } = useAdminOrderQueue({
     status,
     payment,
-    search,
+    search: debouncedSearch,
     page,
     pageSize,
   });
@@ -175,6 +181,14 @@ export const AdminOrdersPage: React.FC = () => {
       align: 'right',
       className: 'text-[11px] text-slate-500 font-medium',
       cell: (order) => formatDateTime(order.createdAt),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      cell: (order) => (
+        <OrderActionsMenu order={order} onChanged={() => void refetch()} />
+      ),
     },
   ];
 

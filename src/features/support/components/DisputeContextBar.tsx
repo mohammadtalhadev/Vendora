@@ -331,7 +331,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
               event.target.value = '';
               if (chosen) onAssign(chosen);
             }}
-            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            className="native-select w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
           >
             <option value="" disabled>Choose an agent</option>
             {agents

@@ -920,7 +920,7 @@ export const VendorPayoutsPage: React.FC = () => {
                   id="payout-method"
                   value={payoutMethod}
                   onChange={(e) => setPayoutMethod(e.target.value as 'instant' | 'standard')}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                  className="native-select w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
                 >
                   <option value="instant">Instant · 1.5% fee</option>
                   <option value="standard">Standard ACH · no fee</option>
@@ -1072,7 +1072,7 @@ export const VendorPayoutsPage: React.FC = () => {
                   id="account-type"
                   value={accountType}
                   onChange={(e) => setAccountType(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
+                  className="native-select w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:border-slate-900"
                 >
                   <option>Business Checking</option>
                   <option>Corporate Treasury</option>

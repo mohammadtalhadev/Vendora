@@ -4,6 +4,7 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { useAuditQueue } from '../features/admin/hooks/useAdminQueries';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { AuditRow } from '../features/admin/api/audit';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -43,9 +44,13 @@ export const AdminAuditLogsPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(25);
   const [activeDiffLog, setActiveDiffLog] = useState<AuditRow | null>(null);
 
+  // Server-side queue read: debounce the search term so typing does not fire a
+  // request per keystroke.
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const { data: queue, refetch, isPending, isError, error } = useAuditQueue({
     action: actionFilter,
-    search,
+    search: debouncedSearch,
     page,
     pageSize,
   });
@@ -298,14 +303,15 @@ export const AdminAuditLogsPage: React.FC = () => {
           />
         </div>
 
-        {/* Modal: Before / After Diff */}
+        {/* Modal: the full stored detail for one row — who, what, when, from
+            where, and the before/after payload the writing RPC recorded. */}
         {activeDiffLog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
             <div
               role="dialog"
               aria-modal="true"
               aria-label={`State diff for ${activeDiffLog.action}`}
-              className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95 text-xs"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95 text-xs"
             >
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
@@ -322,25 +328,72 @@ export const AdminAuditLogsPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="py-4 grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <span className="font-bold text-rose-700 uppercase tracking-wider text-[10px] block">
-                    Before State (Pre-Execution)
-                  </span>
-                  <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-[11px]">
-                    {JSON.stringify(activeDiffLog.before, null, 2)}
-                  </pre>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 pt-4 md:grid-cols-3">
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Staff actor</dt>
+                  <dd className="mt-0.5 font-bold text-slate-900">
+                    {activeDiffLog.actorName || '—'}
+                    <span className="block text-[10px] font-medium text-slate-400">
+                      {activeDiffLog.actorRole}
+                    </span>
+                  </dd>
                 </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Entity</dt>
+                  <dd className="mt-0.5 font-bold text-slate-900">
+                    {activeDiffLog.entityType ?? '—'}
+                    <span className="block break-all font-mono text-[10px] font-medium text-slate-400">
+                      {activeDiffLog.entityId ?? ''}
+                    </span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recorded at</dt>
+                  <dd className="mt-0.5 font-bold text-slate-900">{formatStamp(activeDiffLog.createdAt)}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">IP address</dt>
+                  <dd className="mt-0.5 font-mono font-bold text-slate-900">
+                    {activeDiffLog.ipAddress ?? 'Not recorded'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Entry ID</dt>
+                  <dd className="mt-0.5 break-all font-mono text-[10px] font-medium text-slate-500">
+                    {activeDiffLog.id}
+                  </dd>
+                </div>
+              </dl>
 
-                <div className="space-y-1.5">
-                  <span className="font-bold text-emerald-700 uppercase tracking-wider text-[10px] block">
-                    After State (Committed)
-                  </span>
-                  <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-[11px]">
-                    {JSON.stringify(activeDiffLog.after, null, 2)}
-                  </pre>
+              {activeDiffLog.before === null && activeDiffLog.after === null ? (
+                <p className="py-4 text-slate-500">
+                  No state payload was recorded for this action.
+                </p>
+              ) : (
+                <div className="py-4 grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <span className="font-bold text-rose-700 uppercase tracking-wider text-[10px] block">
+                      Before State (Pre-Execution)
+                    </span>
+                    <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-[11px]">
+                      {activeDiffLog.before === null
+                        ? 'Nothing recorded'
+                        : JSON.stringify(activeDiffLog.before, null, 2)}
+                    </pre>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="font-bold text-emerald-700 uppercase tracking-wider text-[10px] block">
+                      After State (Committed)
+                    </span>
+                    <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-[11px]">
+                      {activeDiffLog.after === null
+                        ? 'Nothing recorded'
+                        : JSON.stringify(activeDiffLog.after, null, 2)}
+                    </pre>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="pt-3 border-t border-slate-100 flex justify-end">
                 <Button

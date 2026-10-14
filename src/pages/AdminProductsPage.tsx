@@ -15,6 +15,7 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useModerationQueue, useUserQueue } from '../features/admin/hooks/useAdminQueries';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type { ModerationRow } from '../features/admin/api/moderation';
 import type { AdminUserRow } from '../features/admin/api/users';
@@ -31,9 +32,13 @@ export const AdminProductsPage: React.FC = () => {
   const pageSize = 12;
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Server-side queue read: debounce the search term so typing does not fire a
+  // request per keystroke.
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+
   const { data: queue, error: queueError, isLoading: queueLoading, refetch: refetchQueue } = useModerationQueue({
     status: activeStatusTab === 'all' ? undefined : activeStatusTab,
-    search: searchQuery || undefined,
+    search: debouncedSearchQuery || undefined,
     page: currentPage,
     pageSize,
   });
@@ -730,8 +735,8 @@ export const AdminProductsPage: React.FC = () => {
 
         {/* Floating Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
             <span>{toastMessage}</span>
           </div>
         )}

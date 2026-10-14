@@ -193,10 +193,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         onClick={() => setIsOpen((prev) => !prev)}
         className={
           triggerClassName ||
-          'relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-700 hover:text-sun-orange hover:bg-slate-100 transition-colors cursor-pointer focus:outline-hidden'
+          // Same recipe as every other navbar icon button (Batch 22L) — the
+          // bell is not a special case anymore.
+          'relative flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-all group shrink-0 cursor-pointer hover:bg-white/80 hover:shadow-sm hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60'
         }
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-5 w-5 transition-transform group-hover:scale-110" />
 
         {!firstReadPending &&
           unread > 0 &&

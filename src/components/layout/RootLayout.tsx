@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
 import { Footer } from './Footer';
 import { ScrollManager } from '../ScrollManager';
+import { CURRENCY_LOCKED_TO_PKR, useCurrencyStore } from '../../store/currency-store';
 
 // All pages across the website include the global Navbar, Footer, and ambient chrome.
 // (The legacy client-side store sync that used to run here is gone: every page now
@@ -13,6 +14,15 @@ const CHROMELESS_PATHS: string[] = [];
 export const RootLayout: React.FC = () => {
   const { pathname } = useLocation();
   const isChromeless = CHROMELESS_PATHS.includes(pathname);
+
+  // PKR-only lock: no storefront UI can change the display currency while the
+  // lock is on, so the only way a non-PKR value can appear is a persisted
+  // choice from before the lock — settle it back to PKR once on app start.
+  useEffect(() => {
+    if (CURRENCY_LOCKED_TO_PKR && useCurrencyStore.getState().currency !== 'PKR') {
+      useCurrencyStore.setState({ currency: 'PKR' });
+    }
+  }, []);
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-900 dark:text-slate-100">

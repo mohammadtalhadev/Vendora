@@ -32,6 +32,7 @@ import { DataTable, type DataTableColumn } from '../components/patterns/data-tab
 import { Button } from '../components/ui/button';
 import { StatusBadge } from '../components/ui/status-badge';
 import { useVendorDashboard } from '../features/vendor/hooks/useVendorDashboard';
+import { UpdatedAgo } from '../components/common/UpdatedAgo';
 import { useVendorLive } from '../features/vendor/hooks/useLive';
 import { useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
 import { useShippingSettings } from '../features/vendor/hooks/useVendorStore';
@@ -666,6 +667,14 @@ export const VendorDashboardPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* The tiles re-read themselves every 30 seconds (see useVendorDashboard /
+                useVendorEarnings); this says how fresh they are. Sync stays for a
+                manual re-read of every queue at once. */}
+            <UpdatedAgo
+              updatedAt={dashboard.dataUpdatedAt}
+              className="hidden text-[11px] font-medium text-slate-400 sm:inline"
+            />
 
             {/* Refresh Metrics Button */}
             <button

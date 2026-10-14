@@ -22,9 +22,17 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { useAuth } from '../lib/auth-context';
 import { useCartStore } from '../store/cart-store';
 import { submitVendorApplication } from '../features/vendor/api/applications';
+import { resendSignupConfirmation } from '../features/auth/api/session';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -62,8 +70,26 @@ export const RegisterPage: React.FC = () => {
 
   // Submission UI States
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  // Set when sign-up succeeded but the account waits on email verification:
+  // the page swaps the form for an unmistakable check-your-inbox panel
+  // (Batch 24) instead of a small dismissible notice.
+  const [confirmation, setConfirmation] = useState<{ email: string; kind: 'customer' | 'seller' } | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [resendError, setResendError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleResendConfirmation = async () => {
+    if (!confirmation) return;
+    setResendState('sending');
+    setResendError(null);
+    try {
+      await resendSignupConfirmation(confirmation.email);
+      setResendState('sent');
+    } catch (err: unknown) {
+      setResendError(err instanceof Error ? err.message : 'Could not resend the confirmation email.');
+      setResendState('error');
+    }
+  };
 
   // Auto-slugify when store name changes
   const handleStoreNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,7 +138,6 @@ export const RegisterPage: React.FC = () => {
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setNotice(null);
 
     if (!customerName.trim()) {
       setError('Please provide your full name');
@@ -140,7 +165,7 @@ export const RegisterPage: React.FC = () => {
       const { user } = await signUp(customerName.trim(), customerEmail.trim(), customerPassword);
 
       if (!user) {
-        setNotice(`A confirmation email was sent to ${customerEmail.trim()}. Please verify your email to log in.`);
+        setConfirmation({ email: customerEmail.trim(), kind: 'customer' });
         setIsSubmitting(false);
         return;
       }
@@ -159,7 +184,6 @@ export const RegisterPage: React.FC = () => {
   const handleSellerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setNotice(null);
 
     if (!storeName.trim()) {
       setError('Please provide your store / brand name');
@@ -210,9 +234,7 @@ export const RegisterPage: React.FC = () => {
       }, user?.id);
 
       if (!user) {
-        setNotice(
-          `Application submitted! A verification link was sent to ${businessEmail.trim()}. Please verify to enter your merchant onboarding console.`
-        );
+        setConfirmation({ email: businessEmail.trim(), kind: 'seller' });
         setIsSubmitting(false);
         return;
       }
@@ -243,7 +265,7 @@ export const RegisterPage: React.FC = () => {
       {/* No page-level background: RootLayout paints the one ambient
           gradient + orbs for the whole storefront tree. */}
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
         <div className="mb-6 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
@@ -266,9 +288,6 @@ export const RegisterPage: React.FC = () => {
             2. Main Glassmorphism Registration Card
            ========================================================================= */}
         <div className="relative w-full rounded-3xl overflow-hidden backdrop-blur-xl [backdrop-filter:blur(24px)_saturate(160%)] bg-white/80 dark:bg-slate-900/80 border border-white/90 dark:border-white/10 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.08)]">
-          {/* Top Brand Spectrum Rim */}
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sun-orange via-aqua to-lemon" />
-
           <div className="relative grid grid-cols-1 lg:grid-cols-12 min-h-[720px]">
             {/* =========================================================================
                 MAIN FORM COLUMN (7 Cols — same split as the sign-in card)
@@ -337,24 +356,65 @@ export const RegisterPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Notice Banner */}
-                {notice && (
+                {/* Confirmation Panel — replaces the form once a sign-up is
+                    waiting on email verification, so the "we emailed you"
+                    state cannot be missed or dismissed by accident. */}
+                {confirmation && (
                   <div
                     role="status"
                     aria-live="polite"
-                    className="mb-5 rounded-2xl bg-sun-orange-50/90 dark:bg-orange-950/40 border border-sun-orange/30 p-3.5 text-xs text-sun-orange-700 dark:text-orange-300 font-semibold flex items-center justify-between backdrop-blur-md animate-in fade-in"
+                    className="mb-7 rounded-3xl border border-sun-orange/30 bg-sun-orange-50/80 dark:bg-orange-950/30 p-6 sm:p-8 text-center animate-in fade-in"
                   >
-                    <span className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 shrink-0 text-sun-orange" />
-                      {notice}
-                    </span>
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-sun-orange text-white shadow-[0_8px_24px_color-mix(in_srgb,var(--color-sun-orange)_35%,transparent)]">
+                      <Mail className="h-7 w-7" />
+                    </div>
+                    <h2 className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">
+                      Check your inbox to finish
+                    </h2>
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                      We sent a confirmation email to{' '}
+                      <span className="font-bold text-slate-900 dark:text-white">{confirmation.email}</span>. Open
+                      that email and click the verification link to{' '}
+                      {confirmation.kind === 'seller'
+                        ? 'activate your account — your merchant application has been received and is queued for review.'
+                        : 'activate your account, then sign in with the password you just chose.'}
+                    </p>
+                    <p className="mx-auto mt-3 max-w-md text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      No email after a few minutes? Check your spam or junk folder — and note the link expires, so
+                      use the newest email if you resend.
+                    </p>
+
+                    {resendState === 'sent' ? (
+                      <p className="mt-5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        A new confirmation email is on its way to {confirmation.email}.
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendConfirmation}
+                        disabled={resendState === 'sending'}
+                        className="mt-5 inline-flex items-center gap-2 rounded-full border border-sun-orange bg-white/70 px-5 py-2.5 font-outfit text-xs font-bold text-sun-orange transition-all hover:bg-white disabled:opacity-50 dark:bg-white/5 dark:hover:bg-white/10 cursor-pointer"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        {resendState === 'sending' ? 'Resending...' : 'Resend confirmation email'}
+                      </button>
+                    )}
+                    {resendState === 'error' && resendError && (
+                      <p role="alert" className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                        {resendError}
+                      </p>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => setNotice(null)}
-                      aria-label="Dismiss notice"
-                      className="text-sun-orange-700 dark:text-orange-300 hover:opacity-70 ml-2 cursor-pointer shrink-0"
+                      onClick={() => {
+                        setConfirmation(null);
+                        setResendState('idle');
+                        setResendError(null);
+                      }}
+                      className="mx-auto mt-4 block text-xs font-semibold text-slate-500 underline transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white cursor-pointer"
                     >
-                      <X className="h-4 w-4" />
+                      Wrong address? Go back and fix it
                     </button>
                   </div>
                 )}
@@ -362,6 +422,7 @@ export const RegisterPage: React.FC = () => {
                 {/* =========================================================================
                     INTERACTIVE TWO-ROLE SWITCHER CARDS
                    ========================================================================= */}
+                {!confirmation && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-7">
                   {/* Customer Card */}
                   <button
@@ -374,12 +435,16 @@ export const RegisterPage: React.FC = () => {
                         : 'bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-slate-300 hover:bg-white/80'
                     }`}
                   >
-                    <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-orange-100 dark:bg-orange-900/40 text-sun-orange">
-                        Shop & Save
-                      </span>
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className="w-10 h-10 shrink-0 rounded-xl bg-orange-500/10 flex items-center justify-center text-sun-orange">
+                        <ShoppingBag className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-outfit font-bold text-base leading-snug text-slate-900 dark:text-white">Customer (Shopper)</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Personal buying account</p>
+                      </div>
                       <div
-                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                        className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center transition-all ${
                           activeRole === 'customer'
                             ? 'bg-sun-orange text-white shadow-2xs'
                             : 'bg-slate-200 dark:bg-white/10 text-transparent'
@@ -388,18 +453,12 @@ export const RegisterPage: React.FC = () => {
                         <Check className={`h-3 w-3 stroke-[3] ${activeRole === 'customer' ? 'opacity-100' : 'opacity-0'}`} />
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-sun-orange">
-                        <ShoppingBag className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-outfit font-bold text-base text-slate-900 dark:text-white">Customer (Shopper)</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Personal buying account</p>
-                      </div>
-                    </div>
                     <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 mt-2">
-                      Access 500+ verified Pakistani brands with doorstep cash-on-delivery and escrow refund guarantee.
+                      Access verified Pakistani brands with doorstep cash-on-delivery and escrow buyer protection.
                     </p>
+                    <span className="mt-3 inline-flex px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-orange-100 dark:bg-orange-900/40 text-sun-orange">
+                      Shop & Save
+                    </span>
                   </button>
 
                   {/* Seller Card */}
@@ -413,12 +472,16 @@ export const RegisterPage: React.FC = () => {
                         : 'bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-slate-300 hover:bg-white/80'
                     }`}
                   >
-                    <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-cyan-100 dark:bg-cyan-900/40 text-aqua">
-                        Sell & Grow
-                      </span>
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className="w-10 h-10 shrink-0 rounded-xl bg-aqua/10 flex items-center justify-center text-aqua">
+                        <Store className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-outfit font-bold text-base leading-snug text-slate-900 dark:text-white">Seller (Merchant Store)</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Commercial vendor portal</p>
+                      </div>
                       <div
-                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                        className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center transition-all ${
                           activeRole === 'seller'
                             ? 'bg-sun-orange text-white shadow-2xs'
                             : 'bg-slate-200 dark:bg-white/10 text-transparent'
@@ -427,25 +490,20 @@ export const RegisterPage: React.FC = () => {
                         <Check className={`h-3 w-3 stroke-[3] ${activeRole === 'seller' ? 'opacity-100' : 'opacity-0'}`} />
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-aqua/10 flex items-center justify-center text-aqua">
-                        <Store className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-outfit font-bold text-base text-slate-900 dark:text-white">Seller (Merchant Store)</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Commercial vendor portal</p>
-                      </div>
-                    </div>
                     <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 mt-2">
                       0% introductory commission, dedicated brand storefront, nationwide automated courier pickups.
                     </p>
+                    <span className="mt-3 inline-flex px-2 py-0.5 rounded-full text-[11px] font-outfit font-semibold bg-cyan-100 dark:bg-cyan-900/40 text-aqua">
+                      Sell & Grow
+                    </span>
                   </button>
                 </div>
+                )}
 
                 {/* =========================================================================
                     FORM 1: CUSTOMER (SHOPPER) FORM
                    ========================================================================= */}
-                {activeRole === 'customer' && (
+                {!confirmation && activeRole === 'customer' && (
                   <form onSubmit={handleCustomerSubmit} className="space-y-4">
                     {/* Full Name & Email */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -516,23 +574,26 @@ export const RegisterPage: React.FC = () => {
                         </label>
                         <div className="relative flex items-center">
                           <MapPin className="absolute left-4 text-slate-400 h-5 w-5 pointer-events-none" />
-                          <select
-                            id="customerCity"
-                            value={customerCity}
-                            onChange={(e) => setCustomerCity(e.target.value)}
-                            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white/70 dark:bg-white/5 text-slate-900 dark:text-white text-sm border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-sun-orange/30 focus:border-sun-orange shadow-2xs transition-all appearance-none cursor-pointer"
-                            required
-                          >
-                            <option value="Karachi">Karachi</option>
-                            <option value="Lahore">Lahore</option>
-                            <option value="Islamabad">Islamabad</option>
-                            <option value="Rawalpindi">Rawalpindi</option>
-                            <option value="Faisalabad">Faisalabad</option>
-                            <option value="Multan">Multan</option>
-                            <option value="Peshawar">Peshawar</option>
-                            <option value="Quetta">Quetta</option>
-                            <option value="Other">Other Cities (Nationwide)</option>
-                          </select>
+                          <Select value={customerCity} onValueChange={setCustomerCity}>
+                            <SelectTrigger
+                              id="customerCity"
+                              aria-label="Delivery City / Region"
+                              className="h-12 rounded-2xl border-slate-200 bg-white/70 pl-12 pr-4 text-sm text-slate-900 shadow-2xs dark:border-white/10 dark:bg-white/5 dark:text-white"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Karachi">Karachi</SelectItem>
+                              <SelectItem value="Lahore">Lahore</SelectItem>
+                              <SelectItem value="Islamabad">Islamabad</SelectItem>
+                              <SelectItem value="Rawalpindi">Rawalpindi</SelectItem>
+                              <SelectItem value="Faisalabad">Faisalabad</SelectItem>
+                              <SelectItem value="Multan">Multan</SelectItem>
+                              <SelectItem value="Peshawar">Peshawar</SelectItem>
+                              <SelectItem value="Quetta">Quetta</SelectItem>
+                              <SelectItem value="Other">Other Cities (Nationwide)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
@@ -692,7 +753,7 @@ export const RegisterPage: React.FC = () => {
                 {/* =========================================================================
                     FORM 2: SELLER (MERCHANT STORE) FORM
                    ========================================================================= */}
-                {activeRole === 'seller' && (
+                {!confirmation && activeRole === 'seller' && (
                   <form onSubmit={handleSellerSubmit} className="space-y-4">
                     {/* Store Name & Slug */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -719,14 +780,14 @@ export const RegisterPage: React.FC = () => {
                           Custom Store Slug URL
                         </label>
                         <div className="relative flex items-center">
-                          <span className="absolute left-4 text-xs text-slate-400 font-mono pointer-events-none">vendora.market/store/</span>
+                          <span className="absolute left-4 text-xs text-slate-400 font-mono pointer-events-none">/vendors/</span>
                           <input
                             id="storeSlug"
                             type="text"
                             value={storeSlug}
                             onChange={(e) => setStoreSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                             placeholder="brand-slug"
-                            className="w-full h-12 pl-[172px] pr-4 rounded-2xl bg-white/70 dark:bg-white/5 text-sm text-sun-orange font-semibold placeholder:text-slate-400 border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-sun-orange/30 focus:border-sun-orange shadow-2xs transition-all"
+                            className="w-full h-12 pl-[92px] pr-4 rounded-2xl bg-white/70 dark:bg-white/5 text-sm text-sun-orange font-semibold placeholder:text-slate-400 border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-sun-orange/30 focus:border-sun-orange shadow-2xs transition-all"
                             required
                           />
                         </div>
@@ -741,20 +802,23 @@ export const RegisterPage: React.FC = () => {
                         </label>
                         <div className="relative flex items-center">
                           <Building2 className="absolute left-4 text-slate-400 h-5 w-5 pointer-events-none" />
-                          <select
-                            id="categoryFocus"
-                            value={categoryFocus}
-                            onChange={(e) => setCategoryFocus(e.target.value)}
-                            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white/70 dark:bg-white/5 text-slate-900 dark:text-white text-sm border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-sun-orange/30 focus:border-sun-orange shadow-2xs transition-all appearance-none cursor-pointer"
-                            required
-                          >
-                            <option value="electronics">Electronics & Gadgets</option>
-                            <option value="fashion">Fashion & Apparel</option>
-                            <option value="beauty">Beauty & Personal Care</option>
-                            <option value="home">Home & Living</option>
-                            <option value="health">Health & Nutrition</option>
-                            <option value="computing">Computers & Audio</option>
-                          </select>
+                          <Select value={categoryFocus} onValueChange={setCategoryFocus}>
+                            <SelectTrigger
+                              id="categoryFocus"
+                              aria-label="Primary Business Category"
+                              className="h-12 rounded-2xl border-slate-200 bg-white/70 pl-12 pr-4 text-sm text-slate-900 shadow-2xs dark:border-white/10 dark:bg-white/5 dark:text-white"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="electronics">Electronics &amp; Gadgets</SelectItem>
+                              <SelectItem value="fashion">Fashion &amp; Apparel</SelectItem>
+                              <SelectItem value="beauty">Beauty &amp; Personal Care</SelectItem>
+                              <SelectItem value="home">Home &amp; Living</SelectItem>
+                              <SelectItem value="health">Health &amp; Nutrition</SelectItem>
+                              <SelectItem value="computing">Computers &amp; Audio</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 
@@ -1013,7 +1077,7 @@ export const RegisterPage: React.FC = () => {
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                     {activeRole === 'customer'
-                      ? 'Every customer receives immediate verified protection across 500+ stores.'
+                      ? 'Every customer receives verified protection on every order.'
                       : "Join 500+ verified Pakistani retailers scaling on Vendora's infrastructure."}
                   </p>
                 </div>
@@ -1064,7 +1128,7 @@ export const RegisterPage: React.FC = () => {
                               Easy 7-Day Doorstep Returns
                             </h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                              Free zero-hassle courier pickup from your doorstep if items don't match expectations.
+                              Free courier pickup from your doorstep if items don't match expectations.
                             </p>
                           </div>
                         </div>
@@ -1077,10 +1141,10 @@ export const RegisterPage: React.FC = () => {
                           </div>
                           <div>
                             <h4 className="font-outfit font-bold text-sm text-slate-900 dark:text-white">
-                              24/7 Verified Customer Concierge
+                              24/7 Customer Support
                             </h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                              Direct live chat assistance with local human dispute mediators.
+                              Live chat help for orders, returns and disputes.
                             </p>
                           </div>
                         </div>

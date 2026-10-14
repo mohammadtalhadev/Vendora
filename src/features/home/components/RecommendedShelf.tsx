@@ -12,7 +12,7 @@ export interface RecommendedShelfProps {
 }
 
 /**
- * "Curated Picks" shelf. This used to render two invented product lists —
+ * Recommended shelf. This used to render two invented product lists —
  * including a "Recently Viewed" tab populated with products the visitor had
  * never seen, which no real tracking backed (QA frontend-Critical-2). The
  * shelf now shows the catalogue's top-rated real products; the fabricated
@@ -38,16 +38,12 @@ export const RecommendedShelf: React.FC<RecommendedShelfProps> = ({
       {/* Header */}
       <SectionHeading
         eyebrow={
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500/10 text-sun-orange">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
-              Personalized Discovery
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange-700">
+            <Sparkles className="h-3.5 w-3.5 text-sun-orange" />
+            Top Rated
+          </span>
         }
-        title="Curated Picks For You"
+        title="Top-Rated Picks"
         subtitle="Top-rated products from verified sellers across the marketplace"
       />
 

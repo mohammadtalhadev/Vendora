@@ -277,7 +277,7 @@ export const RefundPolicyPage: React.FC = () => {
                     <select
                       value={returnType}
                       onChange={(e) => setReturnType(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
+                      className="native-select w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="defective">Defective / Damaged / Seller Error ($0 Return Fee)</option>
                       <option value="remorse">Changed Mind / Remorse ($4.99 Courier Fee)</option>
@@ -290,7 +290,7 @@ export const RefundPolicyPage: React.FC = () => {
                     <select
                       value={payoutDest}
                       onChange={(e) => setPayoutDest(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
+                      className="native-select w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="credit">Vendora Store Credit (+5% Cash Bonus)</option>
                       <option value="card">Original Credit / Debit Card (Standard)</option>

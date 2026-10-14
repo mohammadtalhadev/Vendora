@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -8,7 +8,6 @@ import {
   Check,
   CheckCircle2,
   CreditCard,
-  Download,
   Edit3,
   Heart,
   Home,
@@ -38,7 +37,8 @@ import type { AddressType, UserSavedAddress } from '../features/account/types';
 import { detectCardBrand } from '../features/checkout/utils/luhn';
 import { useAuth } from '../lib/auth-context';
 import { useOrders, useUpdateSubOrderStatus } from '../features/orders/hooks/useOrders';
-import { updatePassword, updateProfileIdentity } from '../features/auth/api/session';
+import { requestEmailChange, updatePassword, updateProfileIdentity } from '../features/auth/api/session';
+import { uploadAvatar } from '../features/account/api/avatar';
 import {
   Dialog,
   DialogContent,
@@ -253,16 +253,21 @@ const AsyncBlock: React.FC<{
 export const AccountProfilePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   // A ?tab= value from the URL is only honoured when it names a real section.
+  const { pathname } = useLocation();
   const requestedTab = ACCOUNT_TABS.find((tab) => tab === searchParams.get('tab'));
-  const initialTab: AccountTab = requestedTab ?? 'profile';
+  // The URL is the single source of truth for the open section: ?tab= names
+  // it (handleTabChange writes it on every switch), and the dedicated
+  // /account/addresses URL opens the addresses section when no ?tab= is
+  // given. Deriving — rather than mirroring into state — keeps deep links,
+  // sidebar links and browser back/forward in step with no sync effect.
+  const activeTab: AccountTab =
+    requestedTab ?? (pathname.endsWith('/addresses') ? 'addresses' : 'profile');
 
   const { user } = useAuthStore();
   const { refreshUser } = useAuth();
   const { formatPrice } = useCurrency();
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const queryClient = useQueryClient();
-
-  const [activeTab, setActiveTab] = useState<AccountTab>(initialTab);
 
   const ordersQuery = useOrders();
   const orderGroups = useMemo(() => ordersQuery.data?.orderGroups ?? [], [ordersQuery.data]);
@@ -381,6 +386,13 @@ export const AccountProfilePage: React.FC = () => {
   const nameValue = nameDraft ?? user?.name ?? '';
   const [profileBusy, setProfileBusy] = useState(false);
   const [profileBanner, setProfileBanner] = useState<string | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarNotice, setAvatarNotice] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState('');
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
 
   // The password change is a real Supabase auth call; there is no timer faking success.
@@ -583,9 +595,12 @@ export const AccountProfilePage: React.FC = () => {
 
   const displayName = user?.name || user?.email || 'there';
   const ordersUnavailable = !user;
+  // Email-change policy gates on what the account IS — its profile roles and
+  // store ownership — never on which page the account happens to be on.
+  const isVendorAccount = Boolean(user && (user.roles.includes('vendor') || user.vendorId));
 
   const handleTabChange = (tab: AccountTab) => {
-    setActiveTab(tab);
+    // The section is derived from the URL, so writing the URL is the switch.
     setSearchParams({ tab });
   };
 
@@ -608,6 +623,46 @@ export const AccountProfilePage: React.FC = () => {
       setProfileError(messageOf(cause));
     } finally {
       setProfileBusy(false);
+    }
+  };
+
+  const handleAvatarPick = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Reset the input so picking the same file again after an error re-fires.
+    event.target.value = '';
+    if (!file) return;
+    setAvatarBusy(true);
+    setAvatarError(null);
+    setAvatarNotice(null);
+    try {
+      await uploadAvatar(file);
+      // Re-read the profile so the header, the account sidebar and the navbar
+      // all show the new photo from the same session user.
+      await refreshUser();
+      setAvatarNotice('Your profile photo is updated — it now appears everywhere your account does.');
+    } catch (cause) {
+      setAvatarError(messageOf(cause));
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const submitEmailChange = async () => {
+    const next = emailDraft.trim();
+    if (!next) {
+      setEmailError('Enter the new email address first.');
+      return;
+    }
+    setEmailBusy(true);
+    setEmailError(null);
+    try {
+      await requestEmailChange(next);
+      setEmailSentTo(next);
+      setEmailDraft('');
+    } catch (cause) {
+      setEmailError(messageOf(cause));
+    } finally {
+      setEmailBusy(false);
     }
   };
 
@@ -723,11 +778,10 @@ export const AccountProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
-      {/* No page-level background: RootLayout paints the one ambient
-          gradient + orbs for the whole storefront tree. Content sits in
-          the sanctioned account container (max-w-7xl — see base.css). */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
+    <div className="space-y-6">
+      {/* Content column only: AccountLayout carries the account sidebar and
+          the full-width storefront container (max-w-[1600px]) — this page no
+          longer narrows itself to max-w-7xl or paints its own shell. */}
         {/* ========================================================================= */}
         {/* Top Header Card - identity and counts read from the session and the orders */}
         {/* ========================================================================= */}
@@ -759,7 +813,7 @@ export const AccountProfilePage: React.FC = () => {
               <div>
                 <h4 className="font-outfit text-xs font-bold text-slate-900 dark:text-white">Returns, refunds &amp; disputes</h4>
                 <p className="text-[11px] text-slate-500">
-                  Manage eligible returns and track refund progress seamlessly.{' '}
+                  Manage eligible returns and track refund progress.{' '}
                   <Link to="/refund-policy" className="font-bold text-sun-orange hover:underline">
                     Refund policy
                   </Link>
@@ -852,11 +906,15 @@ export const AccountProfilePage: React.FC = () => {
         {/* ========================================================================= */}
         {/* 2-Column Grid                                                           */}
         {/* ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Sidebar Menu (3 cols) */}
-          <div className="lg:col-span-3 space-y-6">
-            <nav aria-label="Account sections" className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 shadow-sm space-y-1.5">
-              <div role="tablist" aria-orientation="vertical" aria-label="Account sections" onKeyDown={onTabListKeyDown} className="space-y-1.5">
+        {/* Section tabs: this page’s own sections as a horizontal tab bar.
+            The account sidebar itself belongs to AccountLayout now. */}
+        <div
+          role="tablist"
+          aria-orientation="horizontal"
+          aria-label="Account sections"
+          onKeyDown={onTabListKeyDown}
+          className="flex gap-1.5 overflow-x-auto rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-2 shadow-sm"
+        >
                 {tabMeta.map((tab) => {
                   const selected = activeTab === tab.key;
                   return (
@@ -869,7 +927,7 @@ export const AccountProfilePage: React.FC = () => {
                       aria-controls={`account-panel-${tab.key}`}
                       tabIndex={selected ? 0 : -1}
                       onClick={() => handleTabChange(tab.key)}
-                      className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
+                      className={`flex shrink-0 items-center justify-between gap-3 rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
                         selected
                           ? 'bg-gradient-to-r from-sun-orange to-[#FF9040] text-white font-bold shadow-md shadow-orange-500/20'
                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
@@ -893,53 +951,8 @@ export const AccountProfilePage: React.FC = () => {
                 })}
               </div>
 
-              <Link
-                to="/wishlist"
-                className="flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <span className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-rose-500" aria-hidden="true" />
-                  <span>My Wishlist</span>
-                </span>
-                <span className="text-[10px] text-rose-500 dark:text-rose-400 font-bold">{wishlistCount} items</span>
-              </Link>
 
-              <Link
-                to="/downloads"
-                className="flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <span className="flex items-center gap-2">
-                  <Download className="h-4 w-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-                  <span>My Downloads</span>
-                </span>
-                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">Licenses</span>
-              </Link>
-            </nav>
-
-            <div className="rounded-3xl border border-indigo-200/80 bg-indigo-50/70 dark:border-indigo-900/40 dark:bg-indigo-950/30 p-5 space-y-3">
-              <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
-                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                <h4 className="font-outfit text-xs font-bold">Buyer Protection &amp; Returns</h4>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                Need help with an item? You can request a return, exchange, or submit an inquiry directly from your
-                order details. Our buyer protection ensures prompt resolution and hassle-free refunds.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/returns" className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-                  <span>Returns hub</span>
-                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                </Link>
-                <Link to="/shipping-policy" className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-                  <span>Shipping policy</span>
-                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Tab View Panels (9 cols) */}
-          <div className="lg:col-span-9 space-y-6">
+          <div className="space-y-6">
             {/* TAB: OVERVIEW & PROFILE */}
             {activeTab === 'profile' && (
               <section
@@ -965,6 +978,49 @@ export const AccountProfilePage: React.FC = () => {
                     <Banner tone="info">Sign in to edit the profile attached to your account.</Banner>
                   ) : (
                     <>
+                      {/* Profile photo: uploads to the user-avatars bucket under
+                          the caller's own uid prefix, then avatar_url is saved
+                          on the profile row (see features/account/api/avatar). */}
+                      <div className="flex flex-wrap items-center gap-4 max-w-xl">
+                        <div className="relative h-16 w-16 shrink-0 rounded-2xl overflow-hidden border-2 border-sun-orange/70 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                          {user.avatar ? (
+                            <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <UserIcon className="h-8 w-8 text-slate-400 dark:text-slate-500" aria-hidden="true" />
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className={labelClass}>Profile Photo</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label
+                              htmlFor="account-avatar-input"
+                              className={`rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors ${avatarBusy ? 'opacity-60 pointer-events-none' : 'cursor-pointer'}`}
+                            >
+                              {avatarBusy ? 'Uploading…' : 'Change photo'}
+                            </label>
+                            <input
+                              id="account-avatar-input"
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              className="sr-only"
+                              onChange={handleAvatarPick}
+                              disabled={avatarBusy}
+                            />
+                            <span className="text-[11px] text-slate-500">JPG, PNG or WebP, up to 2 MB.</span>
+                          </div>
+                          {avatarError && (
+                            <p role="alert" className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                              {avatarError}
+                            </p>
+                          )}
+                          {avatarNotice && (
+                            <p role="status" className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                              {avatarNotice}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
                       <form onSubmit={saveProfile} className="space-y-4 max-w-xl">
                         <div>
                           <label htmlFor="account-name" className={labelClass}>
@@ -987,7 +1043,7 @@ export const AccountProfilePage: React.FC = () => {
 
                         <div>
                           <label htmlFor="account-email" className={labelClass}>
-                            Sign-in Email (read-only)
+                            Sign-in Email
                           </label>
                           <input
                             id="account-email"
@@ -999,10 +1055,79 @@ export const AccountProfilePage: React.FC = () => {
                             disabled
                             className={`${inputClass} opacity-70 cursor-not-allowed`}
                           />
-                          <p className="mt-1 text-[11px] text-slate-500">
-                            This app has no email-change path, so the field is shown rather than edited. The value is the
-                            one your session signed in with.
-                          </p>
+                          {isVendorAccount ? (
+                            <>
+                              <p className="mt-1 text-[11px] text-slate-500">
+                                Seller accounts can&apos;t change their sign-in email here — the address is tied to
+                                your store, payouts and order records, so an admin has to make this change for you.
+                              </p>
+                              <Link
+                                to="/contact"
+                                className="mt-2 inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors"
+                              >
+                                Contact an admin
+                              </Link>
+                            </>
+                          ) : emailSentTo ? (
+                            <div
+                              role="status"
+                              className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/30 p-3.5 space-y-1.5"
+                            >
+                              <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+                                Confirmation sent to {emailSentTo}
+                              </p>
+                              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                                Open the link in that inbox to finish. Your sign-in email only changes once you do —
+                                until then, keep signing in with {user.email}.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setEmailSentTo(null)}
+                                className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 underline"
+                              >
+                                Use a different email
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="mt-1 text-[11px] text-slate-500">
+                                To change it, enter the new address below. We email it a confirmation link, and the
+                                change only takes effect once that link is opened.
+                              </p>
+                              <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                                <input
+                                  id="account-email-new"
+                                  name="accountEmailNew"
+                                  aria-label="New email address"
+                                  type="email"
+                                  autoComplete="email"
+                                  placeholder="New email address"
+                                  value={emailDraft}
+                                  onChange={(event) => setEmailDraft(event.target.value)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                      event.preventDefault();
+                                      void submitEmailChange();
+                                    }
+                                  }}
+                                  className={inputClass}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => void submitEmailChange()}
+                                  disabled={emailBusy}
+                                  className="shrink-0 rounded-xl bg-sun-orange text-white px-4 py-2.5 text-xs font-bold hover:bg-sun-orange-600 shadow-md shadow-orange-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                  {emailBusy ? 'Sending…' : 'Send confirmation link'}
+                                </button>
+                              </div>
+                              {emailError && (
+                                <p role="alert" className="mt-1.5 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                                  {emailError}
+                                </p>
+                              )}
+                            </>
+                          )}
                         </div>
 
                         <div className="pt-2 flex items-center gap-3">
@@ -2084,6 +2209,25 @@ export const AccountProfilePage: React.FC = () => {
               </section>
             )}
           </div>
+
+      <div className="rounded-3xl border border-indigo-200/80 bg-indigo-50/70 dark:border-indigo-900/40 dark:bg-indigo-950/30 p-5 space-y-3">
+        <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+          <h4 className="font-outfit text-xs font-bold">Buyer Protection &amp; Returns</h4>
+        </div>
+        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+          Need help with an item? You can request a return, exchange, or submit an inquiry directly from your
+          order details. Our buyer protection ensures prompt resolution and hassle-free refunds.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/returns" className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+            <span>Returns hub</span>
+            <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          </Link>
+          <Link to="/shipping-policy" className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+            <span>Shipping policy</span>
+            <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          </Link>
         </div>
       </div>
 
@@ -2109,7 +2253,7 @@ export const AccountProfilePage: React.FC = () => {
                 name="returnPackage"
                 value={returnSubOrderId}
                 onChange={(event) => setReturnSubOrderId(event.target.value)}
-                className={inputClass}
+                className={`${inputClass} native-select`}
               >
                 <option value="">Select a delivered package</option>
                 {returnablePackages.map((pkg) => (
@@ -2135,7 +2279,7 @@ export const AccountProfilePage: React.FC = () => {
                 name="returnReason"
                 value={returnReason}
                 onChange={(event) => setReturnReason(event.target.value)}
-                className={inputClass}
+                className={`${inputClass} native-select`}
               >
                 {RETURN_REASONS.map((reason) => (
                   <option key={reason} value={reason}>
@@ -2220,7 +2364,7 @@ export const AccountProfilePage: React.FC = () => {
                 name="disputePackage"
                 value={disputeSubOrderId}
                 onChange={(event) => setDisputeSubOrderId(event.target.value)}
-                className={inputClass}
+                className={`${inputClass} native-select`}
               >
                 <option value="">Select one of your packages</option>
                 {subOrders.map((pkg) => (
@@ -2241,7 +2385,7 @@ export const AccountProfilePage: React.FC = () => {
                 name="disputeUrgency"
                 value={disputeUrgency}
                 onChange={(event) => setDisputeUrgency(event.target.value === 'urgent' ? 'urgent' : 'standard')}
-                className={inputClass}
+                className={`${inputClass} native-select`}
               >
                 <option value="standard">Standard</option>
                 <option value="urgent">Urgent</option>
@@ -2604,7 +2748,7 @@ export const AccountProfilePage: React.FC = () => {
                       id="card-exp-month"
                       value={expiryMonth}
                       onChange={(e) => setExpiryMonth(e.target.value)}
-                      className={inputClass}
+                      className={`${inputClass} native-select`}
                     >
                       {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((m) => (
                         <option key={m} value={m}>
@@ -2622,7 +2766,7 @@ export const AccountProfilePage: React.FC = () => {
                       id="card-exp-year"
                       value={expiryYear}
                       onChange={(e) => setExpiryYear(e.target.value)}
-                      className={inputClass}
+                      className={`${inputClass} native-select`}
                     >
                       {Array.from({ length: 10 }, (_, i) => String(25 + i)).map((y) => (
                         <option key={y} value={y}>

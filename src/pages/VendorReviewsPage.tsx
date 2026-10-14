@@ -421,7 +421,7 @@ export const VendorReviewsPage: React.FC = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as ReviewSort)}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
+                className="native-select rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
               >
                 {(Object.keys(SORT_LABELS) as ReviewSort[]).map((key) => (
                   <option key={key} value={key}>
@@ -448,7 +448,7 @@ export const VendorReviewsPage: React.FC = () => {
             <select
               value={ratingFilter}
               onChange={(e) => setRatingFilter(e.target.value)}
-              className="w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
+              className="native-select w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
             >
               <option value="all">All Ratings (1 - 5)</option>
               <option value="5">5 Stars Only</option>
@@ -459,7 +459,7 @@ export const VendorReviewsPage: React.FC = () => {
             <select
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value)}
-              className="w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
+              className="native-select w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
             >
               <option value="30d">Last 30 Days</option>
               <option value="90d">Last 90 Days</option>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useReveal } from '../hooks/useReveal';
 
 import {
   ChevronRight,
@@ -8,7 +9,6 @@ import {
   TrendingUp,
   Zap,
   Leaf,
-  Award,
   Package,
   MapPin,
   Lock,
@@ -22,61 +22,28 @@ import {
 
 
 export const AboutPage: React.FC = () => {
-  const leadershipTeam = [
-    {
-      name: 'Tariq Ali - Manzoor',
-      role: 'Co-Founder, Chief Executive Officer',
-      badge: 'Co-Founder',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-      bio: '"We created Vendora to prove that an e-commerce platform can scale exponentially without extractive fees or broken seller trust."',
-      credentials: 'Ex-Regional Head of Marketplaces',
-    },
-    {
-      name: 'Elena Rostova',
-      role: 'Chief Experience Officer',
-      badge: 'Experience Design',
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
-      bio: '"Every UI element, escrow guarantee, and tracking telemetry node is crafted around radical user transparency."',
-      credentials: 'Sustainable Design Pioneer',
-    },
-    {
-      name: 'Zainab Khalid',
-      role: 'Head of Trust & Escrow Tech',
-      badge: 'Trust & Safety',
-      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&auto=format&fit=crop&q=80',
-      bio: '"The future of commerce belongs to automated escrow settlements, non-custodial dispute arbitration, and biometric verified couriers."',
-      credentials: 'Fintech Escrow Architect',
-    },
-    {
-      name: 'Marcus Vance',
-      role: 'VP, Global Merchant Ecosystem',
-      badge: 'Merchant Growth',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
-      bio: '"When independent manufacturers thrive, local economies prosper. We provide the institutional rails they deserve."',
-      credentials: 'Global Merchant Community Lead',
-    },
-  ];
+  useReveal();
 
   const milestones = [
     {
       year: '2021',
       title: 'Founded in Karachi & Dubai',
-      description: 'Launched with 50 curated consumer tech and audio accessories brand stores; pioneers of 0% base listing fees.',
+      description: 'Launched with 50 consumer tech and audio accessories stores, with 0% base listing fees.',
     },
     {
       year: '2023',
-      title: 'Scale to 14,000+ Vendors & 3-Hour Dispatch',
-      description: 'Inaugurated dedicated micro-fulfillment hubs across Karachi, Lahore, and Islamabad; introduced sub-6-hour municipal express delivery.',
+      title: 'Fulfilment Hubs in Three Cities',
+      description: 'Inaugurated dedicated micro-fulfilment hubs across Karachi, Lahore, and Islamabad, with municipal express delivery.',
     },
     {
       year: '2024',
-      title: 'Zero-Commission Tier & Global Escrow',
-      description: 'Introduced cryptographic escrow protection for buyer deposits and cross-border trade settlements across 160+ territories.',
+      title: 'Zero-Commission Tier & Escrow',
+      description: 'Introduced escrow protection for buyer deposits on every order.',
     },
     {
       year: '2025',
-      title: '2.4 Million Active Buyers Reached',
-      description: 'Solidifying our position as the fastest-growing multi-vendor marketplace in the Middle East & South Asia.',
+      title: 'A Growing Buyer Community',
+      description: 'Continued growth across Pakistan, with new seller categories joining the marketplace.',
     },
   ];
 
@@ -99,21 +66,21 @@ export const AboutPage: React.FC = () => {
         {/* =========================================================================
             3. Hero Section: Empowering Independent Creators
            ========================================================================= */}
-        <div className="text-center max-w-4xl mx-auto space-y-5">
+        <div className="reveal text-center max-w-4xl mx-auto space-y-5">
           <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-sun-orange shadow-2xs">
             <span className="h-2 w-2 rounded-full bg-sun-orange animate-pulse" />
             <span>OUR MISSION &amp; CREED</span>
           </div>
 
           <h1 className="font-outfit text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
-            Empowering Independent Creators, Brands &amp; Conscious Shoppers Across{' '}
+            Empowering Independent Creators, Brands &amp; Shoppers Across{' '}
             <span className="bg-gradient-to-r from-sun-orange via-pink-500 to-indigo-600 bg-clip-text text-transparent">
-              160+ Countries
+              Pakistan
             </span>
           </h1>
 
           <p className="text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Founded to dismantle monopolistic e-commerce fees and give genuine artisans, high-performance tech brands, and verified merchants direct, fair access to global consumers.
+            Founded to give artisans, tech brands, and verified merchants a fairer way to sell — without the heavy fees of legacy e-commerce platforms.
           </p>
 
           {/* 4 KPI Metric Badges in Frosted Card */}
@@ -121,53 +88,53 @@ export const AboutPage: React.FC = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-5 sm:p-7 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl">
               <div className="text-center p-2 sm:p-3">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
-                  TOTAL TRANSACTED
+                  PAYMENT PROTECTION
                 </span>
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
-                  $450M+
+                  Escrow
                 </div>
                 <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-sun-orange mt-1">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>100% Escrow Protected</span>
+                  <span>Held Until Delivery</span>
                 </div>
               </div>
 
               <div className="text-center p-2 sm:p-3 sm:border-l border-slate-200/80 dark:border-white/10">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
-                  ACTIVE MERCHANTS
+                  SELLER FEES
                 </span>
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
-                  45,000+
+                  0%
                 </div>
                 <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-1">
                   <Store className="h-3.5 w-3.5" />
-                  <span>Verified Flagship Stores</span>
+                  <span>Base Listing Fees</span>
                 </div>
               </div>
 
               <div className="text-center p-2 sm:p-3 border-t sm:border-t-0 sm:border-l border-slate-200/80 dark:border-white/10">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
-                  COUNTRIES SERVED
+                  DELIVERY
                 </span>
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
-                  160+
+                  Nationwide
                 </div>
                 <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                   <Globe2 className="h-3.5 w-3.5" />
-                  <span>Markets Served Direct</span>
+                  <span>Across Pakistan</span>
                 </div>
               </div>
 
               <div className="text-center p-2 sm:p-3 border-t lg:border-t-0 sm:border-l border-slate-200/80 dark:border-white/10">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
-                  ON-TIME PERFORMANCE
+                  SUPPORT
                 </span>
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
-                  99.8%
+                  24/7
                 </div>
                 <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1">
                   <Zap className="h-3.5 w-3.5" />
-                  <span>Fulfilled SLA Benchmark</span>
+                  <span>Help for Buyers &amp; Sellers</span>
                 </div>
               </div>
             </div>
@@ -177,7 +144,7 @@ export const AboutPage: React.FC = () => {
         {/* =========================================================================
             4. ARCHITECTURAL PRINCIPLES: The Vendora Operating Philosophy
            ========================================================================= */}
-        <section className="space-y-6">
+        <section className="reveal space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 pb-4">
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
@@ -411,71 +378,14 @@ export const AboutPage: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            6. THE LEADERSHIP: Pioneering Fair Commerce
-           ========================================================================= */}
-        <section className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
-              THE LEADERSHIP
-            </span>
-            <h2 className="font-outfit text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
-              Pioneering Fair Commerce
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              Architects, operators, and engineers united to rebuild global marketplaces on fair foundations.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {leadershipTeam.map((leader, index) => (
-              <div
-                key={index}
-                className="group rounded-3xl border border-white/80 dark:border-white/10 bg-white/75 dark:bg-slate-900/75 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl hover:shadow-[0_20px_45px_rgba(15,23,42,0.08)] transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-4">
-                  <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-slate-100">
-                    <img
-                      src={leader.image}
-                      alt={leader.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <span className="absolute bottom-2.5 left-2.5 rounded-full bg-slate-900/80 backdrop-blur-md px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
-                      {leader.badge}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h4 className="font-outfit text-base font-black text-slate-900 dark:text-white">
-                      {leader.name}
-                    </h4>
-                    <p className="text-[11px] font-bold text-sun-orange mt-0.5">
-                      {leader.role}
-                    </p>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed">
-                    {leader.bio}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
-                  <Award className="h-3 w-3 text-sun-orange" />
-                  <span>{leader.credentials}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* =========================================================================
             7. Global Logistics Flow & Decentralization Milestones
            ========================================================================= */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <section className="reveal grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left: Direct Cross-Border Flow Map graphic */}
           <div className="lg:col-span-5 space-y-4">
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
-                GLOBAL LOGISTICS FLOW
+                LOGISTICS FLOW
               </span>
               <h3 className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
                 Direct Cross–Border Flow
@@ -539,7 +449,7 @@ export const AboutPage: React.FC = () => {
                   <span>Primary Port Axis &amp; MENA Corridor</span>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Sub-48 hour bonded air freight routes seamlessly connect suppliers across South Asia, the GCC, and Western Europe.
+                  Sub-48 hour bonded air freight routes connect suppliers across South Asia, the GCC, and Western Europe.
                 </p>
               </div>
             </div>

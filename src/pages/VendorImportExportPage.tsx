@@ -661,7 +661,7 @@ export const VendorImportExportPage: React.FC = () => {
                   id="filter-by-category"
                   value={categoryFilter}
                   onChange={(event) => setCategoryFilter(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-800 bg-slate-50"
+                  className="native-select w-full rounded-xl border border-slate-200 p-2.5 text-slate-800 bg-slate-50"
                 >
                   <option value="all">All categories ({products.length})</option>
                   {exportCategories.map((name) => (
@@ -680,7 +680,7 @@ export const VendorImportExportPage: React.FC = () => {
                   id="filter-by-status"
                   value={exportStatus}
                   onChange={(event) => setExportStatus(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-800 bg-slate-50"
+                  className="native-select w-full rounded-xl border border-slate-200 p-2.5 text-slate-800 bg-slate-50"
                 >
                   <option value="all">All statuses ({products.length})</option>
                   {Object.entries(STATUS_LABEL).map(([value, label]) => (

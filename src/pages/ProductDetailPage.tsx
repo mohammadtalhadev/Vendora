@@ -6,7 +6,6 @@ import {
   ShoppingCart,
   Check,
   Heart,
-  Bookmark,
   Share2,
   Search,
   MessageSquare,
@@ -33,6 +32,7 @@ import { SendOfferModal } from '../features/products/components/SendOfferModal';
 import { LiveChatModal } from '../features/products/components/LiveChatModal';
 import { OtherOffersSection, type MerchantOffer } from '../features/products/components/OtherOffersSection';
 import { ProductDossierSection } from '../features/products/components/ProductDossierSection';
+import { useReveal } from '../hooks/useReveal';
 import { CustomerReviewsShowcase } from '../features/products/components/CustomerReviewsShowcase';
 import { CustomersAlsoViewedGrid } from '../features/products/components/CustomersAlsoViewedGrid';
 
@@ -45,6 +45,7 @@ interface VariantChoice {
 
 export const ProductDetailPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
+  useReveal();
   const navigate = useNavigate();
   const { data: product, isLoading, isError, error, refetch } = useProductDetail(productId || '');
   const { addItem } = useCartStore();
@@ -126,7 +127,6 @@ export const ProductDetailPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [shippingOption, setShippingOption] = useState<'delivery' | 'pickup'>('delivery');
   const [hasProtectionPlan, setHasProtectionPlan] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
@@ -317,26 +317,6 @@ export const ProductDetailPage: React.FC = () => {
                 <span>{product && isInWishlist(product.id) ? 'Saved' : 'Save'}</span>
               </button>
 
-              {/* Bookmark pill */}
-              <button
-                type="button"
-                onClick={() => setIsBookmarked((prev) => !prev)}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
-                  isBookmarked
-                    ? 'border-orange-200 bg-orange-50 text-sun-orange'
-                    : 'border-slate-200/80 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-                title="Bookmark item"
-                aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark item'}
-              >
-                <Bookmark
-                  className={`h-3.5 w-3.5 ${
-                    isBookmarked ? 'fill-sun-orange text-sun-orange' : 'text-slate-400'
-                  }`}
-                />
-                <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
-              </button>
-
               {/* Share button */}
               <button
                 type="button"
@@ -357,13 +337,17 @@ export const ProductDetailPage: React.FC = () => {
             {/* ========================================================= */}
             {/* MAIN 3-COLUMN PRODUCT HERO                                */}
             {/* ========================================================= */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:items-start">
               {/* ========================================================= */}
               {/* COLUMN 1: Gallery & Seller Card (4 cols)                  */}
+              {/* On mobile the wrapper dissolves (max-lg:contents) so the      */}
+              {/* gallery, details column and seller card order as flex items:  */}
+              {/* gallery -> title/details -> seller card. Desktop grid is      */}
+              {/* untouched.                                                    */}
               {/* ========================================================= */}
-              <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+              <div className="max-lg:contents lg:col-span-5 xl:col-span-4 lg:space-y-4">
                 {/* Main Image Showcase Frame */}
-                <div className="glass-panel relative aspect-square w-full overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 p-6 flex items-center justify-center shadow-xl">
+                <div className="order-1 lg:order-none glass-panel relative aspect-square w-full overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 p-6 flex items-center justify-center shadow-xl">
                   {/* Top Badges Overlay */}
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
                     <span
@@ -405,7 +389,7 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
 
                 {/* 4-Thumbnail Strip */}
-                <div className="grid grid-cols-4 gap-2.5">
+                <div className="order-2 lg:order-none grid grid-cols-4 gap-2.5">
                   {displayImages.slice(0, 3).map((img, idx) => (
                     <button
                       key={idx}
@@ -443,7 +427,7 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
 
                 {/* Seller Store Card */}
-                <div className="glass-panel rounded-3xl border border-white/80 dark:border-white/10 p-5 shadow-xl space-y-3">
+                <div className="order-4 lg:order-none glass-panel rounded-3xl border border-white/80 dark:border-white/10 p-5 shadow-xl space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sun-orange">
                       <Store className="h-5 w-5" />
@@ -510,7 +494,7 @@ export const ProductDetailPage: React.FC = () => {
               {/* ========================================================= */}
               {/* COLUMN 2: Details & Configuration (5 cols)                */}
               {/* ========================================================= */}
-              <div className="lg:col-span-7 xl:col-span-5 space-y-4">
+              <div className="order-3 lg:order-none lg:col-span-7 xl:col-span-5 space-y-4">
                 {/* Brand Accent */}
                 <div>
                   <Link
@@ -560,8 +544,8 @@ export const ProductDetailPage: React.FC = () => {
 
                 {/* ── Marketing Summary / Highlight Section ── */}
                 <div className="rounded-2xl border border-orange-200/70 bg-gradient-to-r from-orange-50/70 via-amber-50/30 to-white p-4 shadow-2xs space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-sun-orange">
-                    <Sparkles className="h-3.5 w-3.5 text-sun-orange shrink-0" />
+                  <div className="flex items-center gap-1.5 font-outfit text-sm font-black tracking-tight text-slate-900">
+                    <Sparkles className="h-4 w-4 text-sun-orange shrink-0" />
                     <span>{marketingHeadline}</span>
                   </div>
                   <p className="text-xs sm:text-[13px] leading-relaxed text-slate-700 font-medium">
@@ -667,7 +651,7 @@ export const ProductDetailPage: React.FC = () => {
               {/* ========================================================= */}
               {/* COLUMN 3: Buy Box & Delivery */}
               {/* ========================================================= */}
-              <div className="lg:col-span-12 xl:col-span-3 space-y-4">
+              <div className="order-5 lg:order-none lg:col-span-12 xl:col-span-3 space-y-4">
                 <div className="glass-panel-elevated rounded-3xl border border-white/90 dark:border-white/15 p-5 shadow-2xl space-y-4">
                   {/* Delivery Option Cards */}
                   <div className="space-y-2.5" role="group" aria-label="Delivery options">

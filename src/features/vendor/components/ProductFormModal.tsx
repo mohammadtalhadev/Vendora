@@ -304,7 +304,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
                   id="listing-category"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="flex h-11 w-full rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
+                  className="native-select flex h-11 w-full rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
                 >
                   <option value="">Choose a category</option>
                   {categories.map((cat) => (

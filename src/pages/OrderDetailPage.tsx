@@ -624,7 +624,7 @@ export const OrderDetailPage: React.FC = () => {
               id="cancel-reason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
+              className="native-select w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
             >
               <option value="Found better price / Ordered by mistake">
                 Found better price / Ordered by mistake
@@ -681,7 +681,7 @@ export const OrderDetailPage: React.FC = () => {
                 id="return-reason"
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
+                className="native-select w-full rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-800 focus:border-sun-orange focus:outline-none"
               >
                 <option value="Defective or not functioning as described">
                   Defective or not functioning as described

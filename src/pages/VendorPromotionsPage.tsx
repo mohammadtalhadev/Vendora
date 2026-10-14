@@ -886,7 +886,7 @@ export const VendorPromotionsPage: React.FC = () => {
                     id="promo-discount-type"
                     value={formDiscountType}
                     onChange={(e) => setFormDiscountType(e.target.value as 'percentage' | 'fixed')}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
+                    className="native-select w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-slate-900 focus:outline-none"
                   >
                     <option value="percentage">Percentage off</option>
                     <option value="fixed">Fixed amount off</option>

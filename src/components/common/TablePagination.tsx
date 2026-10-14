@@ -46,7 +46,7 @@ export function TablePagination<T>({
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 focus:outline-hidden cursor-pointer"
+              className="native-select rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 focus:outline-hidden cursor-pointer"
               aria-label="Rows per page"
             >
               {pageSizeOptions.map((size) => (

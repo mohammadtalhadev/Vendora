@@ -44,7 +44,7 @@ const OPEN_POSITIONS: JobPosition[] = [
     responsibilities: [
       'Architect performant, accessible React interfaces with Tailwind CSS and Zustand',
       'Optimize Web Vitals, micro-interactions, and offline-first cart synchronizations',
-      'Collaborate directly with designers to craft world-class UX matching global tier-1 standards',
+      'Collaborate directly with designers on the marketplace storefront experience',
     ],
   },
   {

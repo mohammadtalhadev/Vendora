@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RootLayout } from '../components/layout/RootLayout';
+import { AccountLayout } from '../components/layout/AccountLayout';
 import { PublicLayout, AdminLayout, VendorLayout, RiderLayout, SupportLayout } from '../components/layout/PanelLayout';
 import { 
   AdminOnlyRoute, 
@@ -54,6 +55,9 @@ const CustomerDisputesPage = lazy(() =>
 );
 const LoginPage = lazy(() =>
   import('../pages/LoginPage').then((m) => ({ default: m.LoginPage })),
+);
+const AdminLoginPage = lazy(() =>
+  import('../pages/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage })),
 );
 const RegisterPage = lazy(() =>
   import('../pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
@@ -295,8 +299,40 @@ export const router = createBrowserRouter([
         element: lazyWrap(<CheckoutPage />),
       },
       {
-        path: 'orders',
-        element: lazyWrap(<OrdersPage />),
+        // The customer account area: one shared shell (sidebar + user
+        // summary) stays mounted while the section content swaps. Every
+        // URL below is the URL these pages have always had.
+        element: <AccountLayout />,
+        children: [
+          {
+            path: 'orders',
+            element: lazyWrap(<OrdersPage />),
+          },
+          {
+            path: 'downloads',
+            element: lazyWrap(<DownloadsPage />),
+          },
+          {
+            path: 'wishlist',
+            element: lazyWrap(<WishlistPage />),
+          },
+          {
+            path: 'account/profile',
+            element: lazyWrap(<AccountProfilePage />),
+          },
+          {
+            path: 'account/addresses',
+            element: lazyWrap(<AccountProfilePage />),
+          },
+          {
+            path: 'disputes',
+            element: lazyWrap(<CustomerDisputesPage />),
+          },
+          {
+            path: 'disputes/:id',
+            element: lazyWrap(<CustomerDisputesPage />),
+          },
+        ],
       },
       {
         path: 'orders/:orderId',
@@ -323,16 +359,8 @@ export const router = createBrowserRouter([
         element: lazyWrap(<TrackOrderPage />),
       },
       {
-        path: 'downloads',
-        element: lazyWrap(<DownloadsPage />),
-      },
-      {
         path: 'compare',
         element: lazyWrap(<ComparePage />),
-      },
-      {
-        path: 'wishlist',
-        element: lazyWrap(<WishlistPage />),
       },
       {
         path: 'notifications',
@@ -353,22 +381,6 @@ export const router = createBrowserRouter([
       {
         path: 'merchants',
         element: <Navigate to="/become-a-seller" replace />,
-      },
-      {
-        path: 'account/profile',
-        element: lazyWrap(<AccountProfilePage />),
-      },
-      {
-        path: 'account/addresses',
-        element: lazyWrap(<AccountProfilePage />),
-      },
-      {
-        path: 'disputes',
-        element: lazyWrap(<CustomerDisputesPage />),
-      },
-      {
-        path: 'disputes/:id',
-        element: lazyWrap(<CustomerDisputesPage />),
       },
       {
         path: 'customer/messages',
@@ -626,11 +638,17 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  // Staff Sign-In (its own URL, outside the storefront chrome): the admin
+  // workspace's guard sends unauthenticated visitors here, not to /login.
+  {
+    path: '/admin/login',
+    element: lazyWrap(<AdminLoginPage />),
+  },
   // Admin Workspace Routes (Catmin Design System)
   {
     path: '/admin',
     element: (
-      <AdminOnlyRoute>
+      <AdminOnlyRoute loginPath="/admin/login" deniedPath="/admin/login?denied=1">
         <AdminLayout />
       </AdminOnlyRoute>
     ),

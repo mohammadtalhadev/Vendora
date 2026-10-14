@@ -677,7 +677,7 @@ export const VendorOrderDetailPage: React.FC = () => {
                   <select
                     value={cancelReason}
                     onChange={(e) => setCancelReason(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5"
+                    className="native-select w-full rounded-xl border border-slate-200 p-2.5"
                   >
                     <option value="Out of stock">Out of stock</option>
                     <option value="Pricing error">Pricing error</option>

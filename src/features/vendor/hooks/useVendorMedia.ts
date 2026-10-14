@@ -9,12 +9,13 @@ import {
 } from '../api/media';
 import { vendorKeys, useVendorScope } from './vendor-keys';
 
-export function useMediaLibrary() {
+/** The signed-in store's own library; `enabled` lets the shared media view keep this read out of the admin console. */
+export function useMediaLibrary(enabled = true) {
   const userId = useVendorScope();
   return useQuery({
     queryKey: vendorKeys.media(userId),
     queryFn: ({ signal }) => fetchMediaLibrary(signal),
-    enabled: Boolean(userId),
+    enabled: enabled && Boolean(userId),
   });
 }
 

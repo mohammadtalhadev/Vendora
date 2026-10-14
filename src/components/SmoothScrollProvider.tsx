@@ -43,7 +43,12 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
       autoRaf: true,
       lerp: 0.1, // True responsive linear damping: silky smooth, zero floaty input lag
       smoothWheel: true,
-      syncTouch: true, // Touch gets the same smoothed feel as wheel/trackpad
+      // Touch is deliberately NOT synced (Lenis's own recommendation): with
+      // syncTouch on, Lenis intercepts native touch scrolling and replays it
+      // through the lerp loop, which fights the platform's momentum and
+      // rubber-banding — the classic "mobile scroll feels broken" defect.
+      // Touch keeps the native scroller; only wheel/trackpad is smoothed.
+      syncTouch: false,
       touchMultiplier: 1,
       wheelMultiplier: 1,
       overscroll: true,

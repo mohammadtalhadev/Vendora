@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductCard, domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
@@ -24,7 +24,6 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
 }) => {
   useReveal();
   const [activeTab, setActiveTab] = useState<'best-sellers' | 'new-arrivals' | 'best-offers'>('best-sellers');
-  const [timeLeft, setTimeLeft] = useState({ hours: 20, minutes: 45, seconds: 9 });
 
   const { data: bestSellerData } = useProducts({ sort: 'best_selling', page: 1, limit: 8 });
   const { data: newArrivalData } = useProducts({ sort: 'featured', page: 1, limit: 8 });
@@ -53,19 +52,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
     [bestOffers],
   );
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        return { hours: 24, minutes: 0, seconds: 0 };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
-  const formatDigits = (n: number) => n.toString().padStart(2, '0');
 
   const products =
     activeTab === 'best-sellers'
@@ -115,35 +102,17 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
 
       {/* Main Grid: Left Tall Promo Card + Right 4x2 Grid of Standard ProductCards */}
       <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12">
-        {/* Left Column: Tall Promo Card with Countdown */}
+        {/* Left Column: Tall Promo Card */}
         <div className="group relative flex min-h-[440px] flex-col justify-between overflow-hidden rounded-[26px] bg-black p-6 sm:p-7 text-white shadow-lg lg:col-span-3">
           {/* Subtle Ambient Glow */}
           <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-500/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-orange-500/20 blur-3xl" />
 
-          {/* Top: Limited time only + Countdown Pills */}
-          <div className="relative z-10 text-center">
-            <p className="font-outfit text-xs font-semibold text-slate-300">Limited time only!</p>
-            <div className="mt-3 flex items-center justify-center gap-1.5 font-mono">
-              <span className="rounded-xl bg-white px-3 py-1.5 text-base font-black text-slate-900 shadow-sm">
-                {formatDigits(timeLeft.hours)}
-              </span>
-              <span className="font-black text-white text-lg">:</span>
-              <span className="rounded-xl bg-white px-3 py-1.5 text-base font-black text-slate-900 shadow-sm">
-                {formatDigits(timeLeft.minutes)}
-              </span>
-              <span className="font-black text-white text-lg">:</span>
-              <span className="rounded-xl bg-white px-3 py-1.5 text-base font-black text-slate-900 shadow-sm">
-                {formatDigits(timeLeft.seconds)}
-              </span>
-            </div>
-          </div>
-
           {/* Middle: Hero Graphic Preview */}
           <div className="relative z-10 my-auto flex items-center justify-center py-4">
             <img
               src="/images/bevesi/art_elec_phones.png"
-              alt="Limited drop smartphones and audio"
+              alt="Smartphones and audio on sale"
               className="max-h-56 w-auto object-contain transition-transform duration-500 group-hover:scale-105"
             />
           </div>

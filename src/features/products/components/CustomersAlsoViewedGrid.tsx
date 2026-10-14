@@ -22,13 +22,13 @@ export const CustomersAlsoViewedGrid: React.FC<CustomersAlsoViewedGridProps> = (
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-14 space-y-6">
+    <section className="reveal mt-14 space-y-6">
       {/* Header */}
       <div>
-        <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
+        <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
           ALTERNATIVE FLAGSHIPS
         </span>
-        <h3 className="mt-1 text-2xl font-black text-slate-900 tracking-tight">
+        <h3 className="mt-1 font-outfit text-2xl font-black text-slate-900 tracking-tight">
           Customers Also Viewed
         </h3>
       </div>
@@ -42,7 +42,7 @@ export const CustomersAlsoViewedGrid: React.FC<CustomersAlsoViewedGridProps> = (
           >
             <div>
               {/* Product Image Frame */}
-              <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-50 p-2 flex items-center justify-center">
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-white p-2.5 flex items-center justify-center">
                 <img
                   src={item.images[0] ?? ''}
                   alt={item.title}

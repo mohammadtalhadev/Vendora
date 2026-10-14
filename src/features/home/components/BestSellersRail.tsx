@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Star, ShoppingBag, Heart, Zap } from 'lucide-react';
+import { Trophy, Star, ShoppingBag, Heart } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
 import { domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
 import { useReveal } from '../../../hooks/useReveal';
 import { SectionHeading } from './SectionHeading';
+import { RailEmptyState } from '../../products/components/RailEmptyState';
 
 export interface BestSellersRailProps {
   onAddToCart?: (product: ProductItem) => void;
@@ -37,7 +38,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
   // The rail used to rank six invented products with fabricated "units sold"
   // strings (QA frontend-Critical-2); rank is now the product's position in
   // the real list and the velocity pill shows its genuine review count.
-  const { data } = useProducts({ sort: 'best_selling', page: 1, limit: 12 });
+  const { data, isLoading } = useProducts({ sort: 'best_selling', page: 1, limit: 12 });
   const rankedItems: RankedItem[] = useMemo(
     () =>
       (data?.items ?? []).map((product, index) => ({
@@ -47,12 +48,39 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
     [data],
   );
 
+  // Tabs only ever name categories that HAVE products in this rail — a tab
+  // that filters to zero is a dead end (Batch 22J). If the selected tab's
+  // category empties out, the rail falls back to "all" rather than a hole.
+  const visibleTabs = CATEGORY_TABS.filter(
+    (tab) => tab.id === 'all' || rankedItems.some((item) => item.category === tab.id),
+  );
+  const effectiveCategory = visibleTabs.some((tab) => tab.id === selectedCategory)
+    ? selectedCategory
+    : 'all';
+
   const filteredItems = rankedItems.filter((item) => {
-    if (selectedCategory === 'all') return true;
-    return item.category === selectedCategory;
+    if (effectiveCategory === 'all') return true;
+    return item.category === effectiveCategory;
   });
 
-  if (rankedItems.length === 0) return null;
+  if (rankedItems.length === 0) {
+    if (isLoading) return null;
+    return (
+      <section className="reveal mb-14">
+        <SectionHeading
+          eyebrow={
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange-700">
+              <Trophy className="h-3.5 w-3.5 text-sun-orange" />
+              Official Leaderboard
+            </span>
+          }
+          title="Best-Sellers Rail"
+          subtitle="Top-rated products ranked by genuine customer review volume"
+        />
+        <RailEmptyState message="No best sellers to rank yet — check back after the next restock." />
+      </section>
+    );
+  }
 
   const getRankBadgeClass = (rank: number) => {
     if (rank === 1) return 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 shadow-md shadow-amber-500/30';
@@ -66,21 +94,17 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
       {/* Header with Title and Category Filters */}
       <SectionHeading
         eyebrow={
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-              <Trophy className="h-4 w-4" />
-            </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
-              Official Leaderboard
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange-700">
+            <Trophy className="h-3.5 w-3.5 text-sun-orange" />
+            Official Leaderboard
+          </span>
         }
         title="Best-Sellers Rail"
         subtitle="Top-rated products ranked by genuine customer review volume"
         action={
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {CATEGORY_TABS.map((tab) => {
-            const isActive = selectedCategory === tab.id;
+          {visibleTabs.map((tab) => {
+            const isActive = effectiveCategory === tab.id;
             return (
               <button
                 key={tab.id}
@@ -101,6 +125,9 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
       />
 
       {/* Grid of Best Sellers */}
+      {filteredItems.length === 0 ? (
+        <RailEmptyState />
+      ) : (
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {filteredItems.map((item) => {
           const wishlisted = isInWishlist ? isInWishlist(item.id) : false;
@@ -110,11 +137,13 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
               className="group relative flex flex-col justify-between rounded-2xl border border-white/80 bg-white/75 p-3.5 backdrop-blur-md shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-orange-300 hover:bg-white/95 hover:shadow-xl hover:shadow-orange-500/10"
             >
               {/* Product Thumbnail & Rank Pill */}
-              <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-50">
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-white p-2.5">
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
                 />
 
                 {/* Rank Badge */}
@@ -140,10 +169,12 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
                   <Heart className={`h-3.5 w-3.5 ${wishlisted ? 'fill-rose-500' : ''}`} />
                 </button>
 
-                {/* Review Volume Pill */}
+                {/* Review Volume Pill — the standard card badge: small frosted
+                    white pill with a star (the old full-width dark bar with a
+                    lightning bolt broke the badge system, Batch 22M) */}
                 {item.reviewCount > 0 && (
-                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center rounded-lg bg-slate-900/80 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
-                    <Zap className="mr-1 h-3 w-3 text-amber-400" />
+                  <div className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/85 px-2 py-0.5 text-[10px] font-bold text-slate-700 shadow-xs backdrop-blur-md">
+                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                     {item.reviewCount} reviews
                   </div>
                 )}
@@ -194,6 +225,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
           );
         })}
       </div>
+      )}
     </section>
   );
 };

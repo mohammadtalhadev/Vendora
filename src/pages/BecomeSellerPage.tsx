@@ -149,7 +149,7 @@ export const BecomeSellerPage: React.FC = () => {
         {/* 1c. Dynamic Onboarding / Status Decision Engine                           */}
         {/* ========================================================================= */}
         <section
-          className="mt-16 max-w-2xl mx-auto"
+          className="mt-16 w-full"
           role="status"
           aria-label="Merchant application status"
         >
@@ -157,7 +157,7 @@ export const BecomeSellerPage: React.FC = () => {
           {vendorStatus === 'approved' && (
             <div
               data-testid="approved-vendor-status"
-              className="rounded-3xl border border-emerald-200/80 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 text-center shadow-lg sm:p-8"
+              className="mx-auto w-full max-w-2xl rounded-3xl border border-emerald-200/80 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 text-center shadow-lg sm:p-8"
             >
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 mb-4">
                 <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
@@ -193,7 +193,7 @@ export const BecomeSellerPage: React.FC = () => {
 
           {/* State B: Application Under Review (Pending) */}
           {vendorStatus === 'pending' && (
-            <div data-testid="pending-vendor-status">
+            <div data-testid="pending-vendor-status" className="mx-auto w-full max-w-2xl">
               <ApplicationPendingCard
                 businessName={user?.name}
                 estimatedTime="24–48 business hours"
@@ -205,7 +205,7 @@ export const BecomeSellerPage: React.FC = () => {
           {vendorStatus === 'rejected' && (
             <div
               data-testid="rejected-vendor-status"
-              className="rounded-3xl border border-rose-200 dark:border-rose-900/40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 text-center shadow-lg sm:p-8"
+              className="mx-auto w-full max-w-2xl rounded-3xl border border-rose-200 dark:border-rose-900/40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 text-center shadow-lg sm:p-8"
             >
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-950/40 text-rose-600 mb-4">
                 <AlertOctagon className="h-8 w-8" aria-hidden="true" />
@@ -719,9 +719,6 @@ export const BecomeSellerPage: React.FC = () => {
         {/* 6. Bottom Call to Action Banner (Rich Gradient & Glowing Ethereal Orbs)   */}
         {/* ========================================================================= */}
         <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-gradient-to-br from-orange-50/90 via-white/85 to-cyan-50/75 dark:from-slate-900/90 dark:via-slate-800/80 dark:to-slate-900/90 backdrop-blur-2xl p-8 sm:p-14 shadow-xl text-center space-y-5">
-          {/* Top Multi-tone Accent Stripe */}
-          <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-sun-orange via-aqua to-lemon" />
-
           {/* Ambient Glowing Orbs inside CTA */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
             <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-gradient-to-tr from-sun-orange-200/50 via-sun-orange-100/60 to-transparent blur-[90px] dark:from-sun-orange/15 pointer-events-none" />

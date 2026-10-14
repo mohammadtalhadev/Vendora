@@ -779,7 +779,7 @@ export const VendorOrdersPage: React.FC = () => {
                     setItemsPerPage(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 cursor-pointer"
+                  className="native-select rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 cursor-pointer"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>

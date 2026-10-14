@@ -12,6 +12,7 @@ import {
 } from '../api/categories';
 import { setGlobalCommission } from '../api/commission';
 import { savePlatformSettings, type PlatformSettingsPatch } from '../api/settings';
+import { setMediaStatus, type MediaStatus } from '../api/media';
 import { adminKeys, useAdminScope } from './admin-keys';
 
 /**
@@ -192,6 +193,14 @@ export function useAdminActions() {
       onSuccess: () => {
         refresh();
         queryClient.invalidateQueries({ queryKey: adminKeys.settings(userId) });
+      },
+    }),
+    setMediaStatus: useMutation({
+      mutationFn: ({ itemId, status }: { itemId: string; status: MediaStatus }) =>
+        setMediaStatus(itemId, status),
+      onSuccess: () => {
+        refresh();
+        queryClient.invalidateQueries({ queryKey: adminKeys.media(userId) });
       },
     }),
   };

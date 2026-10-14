@@ -27,6 +27,13 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import type { ProductType, Variant } from '../types/domain';
 import { useCategories } from '../features/catalog/hooks/useProducts';
 import { useCreateVendorProduct } from '../features/vendor/hooks/useVendorProducts';
@@ -34,6 +41,7 @@ import type { VendorProductDraft } from '../features/vendor/api/products';
 import { useVendorData } from '../features/vendor/hooks/useVendorData';
 import { useUploadMedia } from '../features/vendor/hooks/useVendorMedia';
 import { cn } from '../lib/utils';
+import { siteOrigin } from '../lib/site-origin';
 
 export const VendorAddProductPage: React.FC = () => {
   const navigate = useNavigate();
@@ -231,23 +239,20 @@ export const VendorAddProductPage: React.FC = () => {
   const grossProfit = priceNum > 0 ? priceNum - costNum : 0;
   const profitMargin = priceNum > 0 ? ((grossProfit / priceNum) * 100).toFixed(1) : '0';
 
-  // Completion calculation for Health Score based on actual filled fields
+  // Listing completeness counts only what the seller actually controls and
+  // what a listing needs to sell: auto-generated fields (slug, SKU, barcode)
+  // and optional extras (collection, SEO overrides) never move this score.
   const completionFields = [
     Boolean(title.trim()),
-    Boolean(slug.trim()),
     Boolean(categoryId.trim()),
     Boolean(brand.trim()),
     Boolean(description.trim()),
     images.length > 0,
     priceNum > 0,
-    Boolean(sku.trim()),
-    Boolean(barcode.trim()),
-    parseInt(stock, 10) > 0,
-    productType === 'digital' ? Boolean(downloadUrl.trim()) : Boolean(weightKg.trim()),
     tags.length > 0,
-    Boolean(collection.trim()),
-    Boolean(seoTitle.trim()),
-    Boolean(seoDescription.trim()),
+    ...(productType === 'digital'
+      ? [Boolean(downloadUrl.trim())]
+      : [parseInt(stock, 10) > 0, Boolean(weightKg.trim())]),
   ];
   const filledFieldsCount = completionFields.filter(Boolean).length;
   const completionScore = Math.round((filledFieldsCount / completionFields.length) * 100);
@@ -336,8 +341,8 @@ export const VendorAddProductPage: React.FC = () => {
       <div className="space-y-6 pb-20 font-sans text-slate-900">
         {/* Floating Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
             <span>{toastMessage}</span>
           </div>
         )}
@@ -443,7 +448,7 @@ export const VendorAddProductPage: React.FC = () => {
                 </label>
                 <div className="flex rounded-xl border border-slate-200 bg-slate-50/80 overflow-hidden text-xs">
                   <span className="bg-slate-100 px-3 py-2 text-slate-500 border-r border-slate-200 select-none">
-                    vendora.shop/products/
+                    {siteOrigin()}/products/
                   </span>
                   <input
                     type="text"
@@ -457,21 +462,21 @@ export const VendorAddProductPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label htmlFor="vendor-product-category" className="block text-xs font-bold text-slate-800 mb-1.5">
                     Category <span className="text-rose-500">*</span>
                   </label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
-                  >
-                    <option value="">Choose a category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={categoryId || undefined} onValueChange={setCategoryId}>
+                    <SelectTrigger id="vendor-product-category" className="h-10 rounded-xl px-3 text-xs">
+                      <SelectValue placeholder="Choose a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id} className="text-xs">
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -1141,12 +1146,12 @@ export const VendorAddProductPage: React.FC = () => {
               </div>
               <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  className="h-full bg-sun-orange rounded-full transition-all duration-300"
                   style={{ width: `${completionScore}%` }}
                 />
               </div>
               <p className="text-[11px] text-slate-400">
-                A 100% score guarantees optimal search ranking and higher conversion rates across marketplace facets.
+                Complete listings rank better in search and convert more visitors into buyers.
               </p>
             </div>
 
@@ -1165,7 +1170,7 @@ export const VendorAddProductPage: React.FC = () => {
               {/* Google Result Preview Snippet */}
               <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 space-y-1 text-xs">
                 <span className="text-[11px] text-slate-500 font-mono block truncate">
-                  https://vendora.shop/products/{slug || 'product-handle'}
+                  {siteOrigin()}/products/{slug || 'product-handle'}
                 </span>
                 <h4 className="text-sm font-semibold text-blue-700 truncate hover:underline cursor-pointer">
                   {seoTitle || title || 'Product Title'} | Vendora Marketplace
@@ -1206,7 +1211,7 @@ export const VendorAddProductPage: React.FC = () => {
                 <select
                   value={collection}
                   onChange={(e) => setCollection(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
+                  className="native-select w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
                 >
                   <option value="Featured Equipment">Featured Equipment</option>
                   <option value="New Arrivals">New Arrivals</option>

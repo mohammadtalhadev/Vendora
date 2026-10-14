@@ -15,6 +15,7 @@ import { exportToCsv } from '../lib/export-csv';
 import { formatPrice } from '../store/currency-store';
 import { useUserQueue } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { AdminUserRow } from '../features/admin/api/users';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -69,10 +70,13 @@ export const AdminUsersPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
 
   const actions = useAdminActions();
+  // Server-side queue read: debounce the search term so typing does not fire a
+  // request per keystroke.
+  const debouncedSearch = useDebouncedValue(search, 300);
   const { data: queue, refetch, isPending, isError, error } = useUserQueue({
     role,
     status,
-    search,
+    search: debouncedSearch,
     page,
     pageSize,
   });

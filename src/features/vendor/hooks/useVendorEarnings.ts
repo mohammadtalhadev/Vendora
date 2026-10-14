@@ -20,13 +20,22 @@ export function useVendorBalance() {
   });
 }
 
-/** @param months of history the chart asks for (clamped 1..24 by the RPC). */
+/**
+ * @param months of history the chart asks for (clamped 1..24 by the RPC).
+ *
+ * The earnings figures poll like the dashboard's do (30s, and on focus) so a sale
+ * shows up without the seller pressing anything; `staleTime` matches the poll so
+ * the app-wide five-minute default cannot swallow the focus refetch.
+ */
 export function useVendorEarnings(months = 6) {
   const userId = useVendorScope();
   return useQuery({
     queryKey: vendorKeys.earnings(userId, months),
     queryFn: ({ signal }) => fetchVendorEarnings(months, signal),
     enabled: Boolean(userId),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   });
 }
 

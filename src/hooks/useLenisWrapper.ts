@@ -66,7 +66,10 @@ export function useLenisWrapper<T extends HTMLElement = HTMLElement>() {
         autoRaf: true,
         lerp: 0.1, // same damping as the window instance
         smoothWheel: true,
-        syncTouch: true,
+        // Same deliberate choice as SmoothScrollProvider: touch stays native
+        // (syncTouch replays touch through the lerp loop and fights native
+        // momentum on mobile); only wheel/trackpad input is smoothed.
+        syncTouch: false,
         touchMultiplier: 1,
         wheelMultiplier: 1,
         overscroll: true,

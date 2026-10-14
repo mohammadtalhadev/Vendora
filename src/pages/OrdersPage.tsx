@@ -339,11 +339,9 @@ export const OrdersPage: React.FC = () => {
         : 'text-[10px] text-slate-400 dark:text-slate-500 font-semibold';
 
   return (
-    <div className="relative min-h-screen text-slate-800 dark:text-slate-100 antialiased overflow-hidden pb-20">
-      {/* No page-level background: RootLayout paints the one ambient
-          gradient + orbs for the whole storefront tree. Content sits in
-          the sanctioned account container (max-w-7xl — see base.css). */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
+    <div className="space-y-6">
+      {/* Content column only: AccountLayout carries the account sidebar and
+          the full-width storefront container (max-w-[1600px]) now. */}
         {/* ========================================================================= */}
         {/* 1. Header Banner                                                          */}
         {/* ========================================================================= */}
@@ -432,18 +430,17 @@ export const OrdersPage: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. Main 2-Column Dashboard Layout                                         */}
+        {/* 2. Section tabs + panels                                                             */}
         {/* ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Sidebar Menu (3 cols) */}
-          <div className="lg:col-span-3 space-y-6">
-            <div
-              role="tablist"
-              aria-orientation="vertical"
-              aria-label="Account sections"
-              onKeyDown={handleTabListKeyDown}
-              className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 shadow-sm space-y-1.5"
-            >
+        {/* Section tabs: this page’s own sections as a horizontal tab bar.
+            The account sidebar itself belongs to AccountLayout now. */}
+        <div
+          role="tablist"
+          aria-orientation="horizontal"
+          aria-label="Account sections"
+          onKeyDown={handleTabListKeyDown}
+          className="flex gap-1.5 overflow-x-auto rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-2 shadow-sm"
+        >
               {SECTION_TABS.map((tab) => {
                 const active = activeSection === tab.key;
                 const chip =
@@ -467,7 +464,7 @@ export const OrdersPage: React.FC = () => {
                     aria-controls={`section-panel-${tab.key}`}
                     tabIndex={active ? 0 : -1}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
+                    className={`flex shrink-0 items-center justify-between gap-3 rounded-2xl px-4 py-3 text-xs font-semibold transition-all ${
                       active
                         ? 'bg-gradient-to-r from-sun-orange to-[#FF9040] text-white font-bold shadow-md shadow-orange-500/20'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
@@ -480,52 +477,8 @@ export const OrdersPage: React.FC = () => {
               })}
             </div>
 
-            <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 shadow-sm space-y-1.5">
-              <button
-                type="button"
-                onClick={() => navigate('/wishlist')}
-                className="w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all cursor-pointer"
-              >
-                <span>My Wishlist</span>
-                <span className="text-[10px] text-rose-500 dark:text-rose-400 font-bold">
-                  {wishlistCount} item{wishlistCount === 1 ? '' : 's'}
-                </span>
-              </button>
 
-              <button
-                type="button"
-                onClick={() => navigate('/downloads')}
-                className="w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all cursor-pointer"
-              >
-                <span>My Downloads</span>
-                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">
-                  {licensedSubs.length} licence{licensedSubs.length === 1 ? '' : 's'}
-                </span>
-              </button>
-            </div>
-
-            {/* Buyer Protection & Guarantees */}
-            <div className="rounded-3xl border border-indigo-200/80 bg-indigo-50/70 dark:border-indigo-900/40 dark:bg-indigo-950/30 p-5 space-y-3">
-              <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
-                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                <h4 className="font-outfit text-xs font-bold">Buyer Protection &amp; Guarantees</h4>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                Every shipment is backed by Vendora Buyer Protection. Orders are securely tracked from vendor dispatch
-                through final doorstep delivery, with full refund coverage on eligible returns.
-              </p>
-              <Link
-                to="/terms"
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                <span>Terms &amp; Refund Policies</span>
-                <ArrowRight className="h-3 w-3" aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Right Main Content (9 cols) */}
-          <div className="lg:col-span-9 space-y-6">
+        <div className="space-y-6">
             {/* ========================================================================= */}
             {/* TAB: MY ORDERS & TRACKING                                                 */}
             {/* ========================================================================= */}
@@ -1420,6 +1373,24 @@ export const OrdersPage: React.FC = () => {
             )}
           </div>
         </div>
+
+      {/* Buyer Protection & Guarantees */}
+      <div className="rounded-3xl border border-indigo-200/80 bg-indigo-50/70 dark:border-indigo-900/40 dark:bg-indigo-950/30 p-5 space-y-3">
+        <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+          <h4 className="font-outfit text-xs font-bold">Buyer Protection &amp; Guarantees</h4>
+        </div>
+        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+          Every shipment is backed by Vendora Buyer Protection. Orders are securely tracked from vendor dispatch
+          through final doorstep delivery, with full refund coverage on eligible returns.
+        </p>
+        <Link
+          to="/terms"
+          className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+        >
+          <span>Terms &amp; Refund Policies</span>
+          <ArrowRight className="h-3 w-3" aria-hidden="true" />
+        </Link>
       </div>
 
       {/* ========================================================================= */}
@@ -1482,7 +1453,6 @@ export const OrdersPage: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
     </div>
   );
 };

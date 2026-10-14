@@ -56,7 +56,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     <div className="group relative flex h-full flex-col justify-between rounded-2xl border border-white/80 hover:border-orange-200/80 bg-white/90 backdrop-blur-md p-3 sm:p-3.5 shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-500/5 hover:bg-white">
       <div>
         {/* Image with discount + wishlist overlays */}
-        <div className="relative flex h-36 sm:h-40 w-full items-center justify-center overflow-hidden rounded-xl bg-white p-2.5 sm:p-3">
+        <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl bg-white p-2.5 sm:p-3">
           {product.discountPercent && (
             <span className="absolute left-2 top-2 z-10 rounded-full bg-[#E11D48]/90 backdrop-blur-xs border border-white/30 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
               -{product.discountPercent}%

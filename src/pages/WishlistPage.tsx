@@ -78,7 +78,7 @@ export const WishlistPage: React.FC = () => {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+      <div className="mx-auto max-w-2xl py-16 text-center">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-sun-orange shadow-inner">
           <Heart className="h-10 w-10 fill-sun-orange/20 text-sun-orange" />
         </div>
@@ -101,7 +101,7 @@ export const WishlistPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+    <div>
       {/* Top Breadcrumb */}
       <div className="mb-4">
         <Link
@@ -190,11 +190,11 @@ export const WishlistPage: React.FC = () => {
             >
               {/* Image & Badges */}
               <div>
-                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-50">
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-white p-2.5">
                   <img
                     src={product.images[0] || ''}
                     alt={product.title}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
 
                   {/* Top badges */}

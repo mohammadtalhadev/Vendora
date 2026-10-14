@@ -38,14 +38,14 @@ export const CustomerReviewsShowcase: React.FC<CustomerReviewsShowcaseProps> = (
   };
 
   return (
-    <section id="reviews-section" className="mt-14 space-y-6">
+    <section id="reviews-section" className="reveal mt-14 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
+          <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
             VERIFIED PURCHASES
           </span>
-          <h3 className="mt-1 text-2xl font-black text-slate-900 tracking-tight">
+          <h3 className="mt-1 font-outfit text-2xl font-black text-slate-900 tracking-tight">
             Customer Reviews & Ratings
           </h3>
         </div>

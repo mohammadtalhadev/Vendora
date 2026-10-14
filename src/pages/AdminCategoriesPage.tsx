@@ -474,13 +474,12 @@ export const AdminCategoriesPage: React.FC = () => {
                         id="category-status"
                         value={statusFilter}
                         onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
-                        className="appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none shadow-2xs cursor-pointer"
+                        className="native-select rounded-lg border border-slate-200 bg-white pl-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none shadow-2xs"
                       >
                         <option value="all">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="inactive">Hidden</option>
                       </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
                     </div>
 
                     <button
@@ -750,7 +749,7 @@ export const AdminCategoriesPage: React.FC = () => {
                                 handleAssign(item.id, e.target.value || null, item.title);
                                 e.currentTarget.value = '';
                               }}
-                              className="flex-1 rounded-md border border-slate-200 bg-white p-1.5 text-xs text-slate-800 focus:outline-none"
+                              className="native-select flex-1 rounded-md border border-slate-200 bg-white p-1.5 text-xs text-slate-800 focus:outline-none"
                             >
                               <option value="" disabled>Select a category…</option>
                               {tree.roots.map((c) => (
@@ -839,7 +838,7 @@ export const AdminCategoriesPage: React.FC = () => {
                     id="cat-parent"
                     value={formParent}
                     onChange={(e) => setFormParent(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-700 focus:outline-none"
+                    className="native-select w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-700 focus:outline-none"
                   >
                     <option value="root">Root Level Tier</option>
                     {tree?.roots.map((c) => (
@@ -999,8 +998,8 @@ export const AdminCategoriesPage: React.FC = () => {
 
         {/* Floating toast */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
             <span>{toastMessage}</span>
           </div>
         )}

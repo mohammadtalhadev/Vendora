@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useReveal } from '../hooks/useReveal';
 import {
   BookOpen,
   Calendar,
@@ -24,11 +25,11 @@ interface ArticleItem {
 const ARTICLES: ArticleItem[] = [
   {
     id: 'art-1',
-    title: 'How Vendora\'s SBP-Regulated Escrow Safeguards Online Buyers Across Pakistan',
-    excerpt: 'Traditional cash on delivery often leaves buyers vulnerable to brick-in-a-box scams. Discover how escrow milestone release creates complete mutual trust between buyers and vendors.',
+    title: 'How Vendora Escrow Protects Online Buyers Across Pakistan',
+    excerpt: 'Traditional cash on delivery often leaves buyers vulnerable to brick-in-a-box scams. Here is how escrow milestone release protects buyers and sellers on every order.',
     category: 'Escrow & Security',
-    author: 'Zainab Khalid',
-    authorRole: 'Head of Trust & Escrow',
+    author: 'Vendora Editorial',
+    authorRole: 'Vendora Team',
     date: 'Oct 10, 2026',
     readTime: '5 min read',
     image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80',
@@ -39,8 +40,8 @@ const ARTICLES: ArticleItem[] = [
     title: 'Flagship Audio Shootout: Ronin R-9 vs. Sony WH-1000XM5 in Active Noise Cancelling',
     excerpt: 'We tested the flagship wireless earbuds and headphones across Karachi\'s bustling urban transit to measure real-world hybrid ANC decibel attenuation.',
     category: 'Tech Reviews',
-    author: 'Hamza Farooq',
-    authorRole: 'Hardware Acoustic Specialist',
+    author: 'Vendora Editorial',
+    authorRole: 'Vendora Team',
     date: 'Oct 08, 2026',
     readTime: '6 min read',
     image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
@@ -50,8 +51,8 @@ const ARTICLES: ArticleItem[] = [
     title: 'From Local Workshop to Nationwide Brand: How StudioCraft Scaled with 0% Listing Fees',
     excerpt: 'An inside look at how Lahore-based minimalist ergonomic furniture maker StudioCraft leveraged Vendora\'s micro-fulfillment hubs to deliver nationwide within 48 hours.',
     category: 'Merchant Spotlight',
-    author: 'Marcus Vance',
-    authorRole: 'VP, Merchant Ecosystem',
+    author: 'Vendora Editorial',
+    authorRole: 'Vendora Team',
     date: 'Oct 04, 2026',
     readTime: '4 min read',
     image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&auto=format&fit=crop&q=80',
@@ -61,8 +62,8 @@ const ARTICLES: ArticleItem[] = [
     title: 'Why Fast GaN Chargers Are Replacing Bulky Power Bricks for Pakistani Remote Workers',
     excerpt: 'Gallium Nitride charging architecture explained: why 65W and 100W PD chargers keep laptops and smartphones cool while slashing recharge times in half.',
     category: 'Tech Guides',
-    author: 'Bilal Mansoor',
-    authorRole: 'Tech Hardware Editor',
+    author: 'Vendora Editorial',
+    authorRole: 'Vendora Team',
     date: 'Sep 29, 2026',
     readTime: '4 min read',
     image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=800&auto=format&fit=crop&q=80',
@@ -70,21 +71,21 @@ const ARTICLES: ArticleItem[] = [
   {
     id: 'art-5',
     title: 'The Ultimate Guide to Safe Unboxing: Documenting Deliveries for Instant Dispute Approvals',
-    excerpt: 'Step-by-step instructions on unboxing high-value electronics with uninterrupted video proof to guarantee 100% swift escrow refund approvals.',
+    excerpt: 'Step-by-step instructions on unboxing high-value electronics with uninterrupted video proof to support fast escrow refund decisions.',
     category: 'Buyer Guide',
-    author: 'Ayesha Khan',
-    authorRole: 'Customer Advocacy Team',
+    author: 'Vendora Editorial',
+    authorRole: 'Vendora Team',
     date: 'Sep 22, 2026',
     readTime: '3 min read',
     image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
   },
   {
     id: 'art-6',
-    title: 'Sub-3-Hour Doorstep Delivery: How Bykea Telematics Revolutionized Karachi Deliveries',
-    excerpt: 'Explore how real-time rider telematics and localized hub inventories eliminate multi-day courier waiting periods.',
+    title: 'How Local Rider Networks Cut Delivery Times in Karachi',
+    excerpt: 'Real-time rider tracking and local hub stock are cutting the multi-day courier wait down to hours.',
     category: 'Logistics',
-    author: 'Tariq Ali',
-    authorRole: 'CEO & Co-Founder',
+    author: 'Vendora Editorial',
+    authorRole: 'Vendora Team',
     date: 'Sep 15, 2026',
     readTime: '5 min read',
     image: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=800&auto=format&fit=crop&q=80',
@@ -94,6 +95,7 @@ const ARTICLES: ArticleItem[] = [
 const CATEGORIES = ['All', 'Escrow & Security', 'Tech Reviews', 'Merchant Spotlight', 'Tech Guides', 'Buyer Guide', 'Logistics'];
 
 export const BlogPage: React.FC = () => {
+  useReveal();
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const filteredArticles = selectedCategory === 'All'
@@ -120,7 +122,7 @@ export const BlogPage: React.FC = () => {
         </nav>
 
         {/* Header */}
-        <div className="max-w-3xl space-y-4">
+        <div className="reveal max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50/80 dark:border-orange-900/40 dark:bg-orange-950/30 px-3.5 py-1 text-xs font-bold text-sun-orange">
             <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
             <span>The Vendora Journal &amp; Editorial</span>
@@ -135,7 +137,7 @@ export const BlogPage: React.FC = () => {
         </div>
 
         {/* Featured Editorial Post */}
-        <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow grid grid-cols-1 lg:grid-cols-12 gap-0">
+        <div className="reveal rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow grid grid-cols-1 lg:grid-cols-12 gap-0">
           <div className="lg:col-span-7 relative h-72 lg:h-auto overflow-hidden bg-slate-100 dark:bg-slate-800">
             <img
               src={featured.image}
@@ -169,7 +171,7 @@ export const BlogPage: React.FC = () => {
             <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-orange-100 text-sun-orange flex items-center justify-center font-bold text-xs">
-                  ZK
+                  VE
                 </div>
                 <div>
                   <div className="text-xs font-bold text-slate-900 dark:text-white">{featured.author}</div>
@@ -205,7 +207,7 @@ export const BlogPage: React.FC = () => {
         </div>
 
         {/* Articles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="reveal grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredArticles.map((art) => (
             <article
               key={art.id}

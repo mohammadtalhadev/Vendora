@@ -44,7 +44,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
       <div>
         {eyebrow !== undefined &&
           (typeof eyebrow === 'string' ? (
-            <p className="text-xs font-bold uppercase tracking-wider text-sun-orange">
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange-700">
               {eyebrow}
             </p>
           ) : (

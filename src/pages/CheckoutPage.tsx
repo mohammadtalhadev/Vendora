@@ -761,7 +761,7 @@ export const CheckoutPage: React.FC = () => {
                           id="addr-country"
                           value={addressDraft.country}
                           onChange={(e) => setAddressDraft((p) => ({ ...p, country: e.target.value }))}
-                          className="flex h-11 w-full cursor-pointer rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink shadow-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:border-sun-orange focus-visible:ring-sun-orange/30 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
+                          className="native-select flex h-11 w-full cursor-pointer rounded-full border border-slate-200 bg-white/95 px-5 py-2 text-sm text-ink shadow-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:border-sun-orange focus-visible:ring-sun-orange/30 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
                         >
                           <option value="Pakistan">Pakistan</option>
                           <option value="United States">United States</option>

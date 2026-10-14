@@ -331,3 +331,22 @@ export async function fetchAdminOrderDetail(
   }
   return mapDetail(data);
 }
+
+/**
+ * Hands one package to a rider. `assign_rider` is admin-only in the database and
+ * refuses an unknown package or rider, so the wrapper only carries the pair across
+ * and surfaces the refusal; which packages may take a rider is the caller's read of
+ * the package's type and status, not something this call invents.
+ */
+export async function assignRider(
+  subOrderId: string,
+  riderId: string,
+): Promise<{ subOrderId: string; riderId: string }> {
+  const { data, error } = await supabase.rpc('assign_rider', {
+    p_sub_order_id: subOrderId,
+    p_rider_id: riderId,
+  });
+  if (error) throw rpcFailed('Could not assign this rider', error.message);
+  const root = asRecord(data);
+  return { subOrderId: text(root.subOrderId), riderId: text(root.riderId) };
+}

@@ -298,7 +298,7 @@ export const VendorEarningsPage: React.FC = () => {
                 setTimeRange(e.target.value as '30d' | '90d' | '1y' | 'ytd');
                 setCurrentPage(1);
               }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
+              className="native-select rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:outline-none"
             >
               <option value="30d">Last 1 month</option>
               <option value="90d">Last 3 months</option>
@@ -788,7 +788,7 @@ export const VendorEarningsPage: React.FC = () => {
                 <select
                   value={statementMonth}
                   onChange={(e) => setStatementMonth(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 p-2 text-xs"
+                  className="native-select w-full rounded-lg border border-slate-200 p-2 text-xs"
                 >
                   <option value="window">
                     Whole selected window ({months} month{months === 1 ? '' : 's'})

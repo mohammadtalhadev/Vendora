@@ -11,6 +11,19 @@ interface ProtectedRouteProps {
   requiredPermissions?: string[];
   /** Redirect path if not authorized */
   fallbackPath?: string;
+  /**
+   * Sign-in page unauthenticated visitors are sent to (the current path is
+   * carried along as ?redirect=). Defaults to the customer /login; the admin
+   * workspace passes /admin/login so staff never land on the shopper page.
+   */
+  loginPath?: string;
+  /**
+   * Where an authenticated user who lacks the required role is sent, when
+   * the workspace owns a clearer denial than the generic /403 — the admin
+   * workspace sends them to /admin/login?denied=1, whose page explains that
+   * the account has no staff access.
+   */
+  deniedPath?: string;
   /** Show loading while checking auth */
   showLoading?: boolean;
 }
@@ -18,12 +31,14 @@ interface ProtectedRouteProps {
 /**
  * Route wrapper that enforces role/permission-based access control
  */
-export function ProtectedRoute({ 
+export function ProtectedRoute({
   children,
-  allowedRoles = [], 
-  requiredPermissions = [], 
+  allowedRoles = [],
+  requiredPermissions = [],
   fallbackPath = '/403',
-  showLoading = true 
+  loginPath = '/login',
+  deniedPath,
+  showLoading = true
 }: ProtectedRouteProps) {
   const { user, loading, hasRole } = useAuth();
   const location = useLocation();
@@ -42,14 +57,14 @@ export function ProtectedRoute({
 
   // Not authenticated
   if (!user) {
-    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to={`${loginPath}?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   // Check roles
   if (allowedRoles.length > 0) {
     const hasAllowedRole = allowedRoles.some(role => hasRole(role));
     if (!hasAllowedRole) {
-      return <Navigate to={fallbackPath} replace />;
+      return <Navigate to={deniedPath ?? fallbackPath} replace />;
     }
   }
 

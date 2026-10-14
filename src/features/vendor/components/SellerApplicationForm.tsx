@@ -9,7 +9,7 @@ import {
   Clock,
   Loader2,
   Globe,
-  Sparkles,
+  ArrowRight,
   Info,
   Building2,
 } from 'lucide-react';
@@ -18,6 +18,7 @@ import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
 import { useAuthStore } from '../../../store/auth-store';
 import { cn } from '../../../lib/utils';
+import { siteOrigin } from '../../../lib/site-origin';
 import type { User } from '../../../types/domain';
 import { submitVendorApplication } from '../api/applications';
 
@@ -363,7 +364,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
         </div>
       )}
 
-      <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {/* 1. Business Name */}
         <div>
           <label
@@ -405,7 +406,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
               Store Slug <span className="text-rose-500">*</span>
             </label>
             <span className="text-[11px] text-slate-400 font-mono">
-              vendora.com/vendors/{formData.storeSlug || '[slug]'}
+              {siteOrigin()}/vendors/{formData.storeSlug || '[slug]'}
             </span>
           </div>
           <Input
@@ -512,7 +513,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
         </div>
 
         {/* 5. Store Description */}
-        <div>
+        <div className="sm:col-span-2">
           <label
             htmlFor="storeDescription"
             className="block text-xs font-semibold text-slate-800 mb-1.5"
@@ -554,7 +555,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
         </div>
 
         {/* 6. Terms Acceptance */}
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:col-span-2">
           <label className="flex items-start gap-3 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -591,7 +592,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
         </div>
 
         {/* Submit Button */}
-        <div className="pt-2">
+        <div className="pt-2 sm:col-span-2">
           <Button
             type="submit"
             variant="orange-cta"
@@ -607,7 +608,7 @@ export const SellerApplicationForm: FC<SellerApplicationFormProps> = ({
             ) : (
               <span className="flex items-center gap-2">
                 <span>Submit Merchant Application</span>
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </span>
             )}
           </Button>

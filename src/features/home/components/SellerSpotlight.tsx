@@ -80,9 +80,6 @@ export const SellerSpotlight: React.FC<SellerSpotlightProps> = ({ vendors }) => 
 
       {/* Become a Seller CTA banner (High-contrast, crystal clear typography) */}
       <div className="relative mt-8 flex flex-col items-start justify-between gap-6 overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-gradient-to-br from-orange-50/90 via-white/85 to-cyan-50/75 dark:from-slate-900/90 dark:via-slate-800/80 dark:to-slate-900/90 backdrop-blur-2xl p-6 sm:p-8 shadow-xl sm:flex-row sm:items-center">
-        {/* Top Multi-tone Accent Stripe */}
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sun-orange via-aqua to-lemon" />
-
         {/* Ambient Glowing Orbs inside CTA */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
           <div className="absolute -left-10 bottom-0 h-44 w-44 rounded-full bg-emerald-400/20 blur-3xl" />

@@ -2,6 +2,7 @@ import React, { useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { ProductCard, type ProductItem } from './ProductCard';
+import { RailEmptyState } from './RailEmptyState';
 
 export interface ProductCarouselWithoutTabsProps {
   /** Parent category title displayed as section heading (e.g. 'Beauty & Personal Care') */
@@ -81,7 +82,10 @@ export const ProductCarouselWithoutTabs: React.FC<ProductCarouselWithoutTabsProp
         </div>
       </div>
 
-      {/* Product Cards Track */}
+      {/* Product Cards Track — a designed empty state, never a blank gap */}
+      {products.length === 0 ? (
+        <RailEmptyState />
+      ) : (
       <div
         ref={carouselRef}
         className="flex gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain overscroll-y-auto no-scrollbar py-2 -mx-1 px-1 cursor-grab active:cursor-grabbing select-none"
@@ -102,6 +106,7 @@ export const ProductCarouselWithoutTabs: React.FC<ProductCarouselWithoutTabsProp
           </div>
         ))}
       </div>
+      )}
     </section>
   );
 };

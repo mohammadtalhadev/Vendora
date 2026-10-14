@@ -254,6 +254,9 @@ export function createSupabaseDouble() {
     disputes: [],
     dispute_messages: [],
     product_qa: [],
+    // CMS blocks: hero banners are the `homepage_hero` placement, read by both the
+    // admin console (all rows) and the storefront (published rows only).
+    content_blocks: [],
     media_items: [],
     vendor_shipping_settings: [],
     vendor_notification_prefs: [],
@@ -280,11 +283,20 @@ export function createSupabaseDouble() {
     signUpError: null as DoubleError | null,
     signOutError: null as DoubleError | null,
     oAuthError: null as DoubleError | null,
+    updateUserError: null as DoubleError | null,
+    resendError: null as DoubleError | null,
     /** Forces a session for this user, even with no matching profile row. */
     signInUser: null as DoubleAuthUser | null,
     /** When true, signUp returns a user but no session, like an email-confirmation project. */
     confirmEmail: false,
   };
+  /** Every `auth.updateUser` payload, in call order. */
+  const updateUserCalls: Array<Record<string, unknown>> = [];
+  /** Every `auth.resend` payload, in call order. */
+  const resendCalls: Array<Record<string, unknown>> = [];
+  /** Every storage upload the client attempted, with the bucket and object path it chose. */
+  const storageUploads: Array<{ bucket: string; path: string; file: unknown }> = [];
+  let storageUploadError: DoubleError | null = null;
   const listeners = new Set<Listener>();
 
   /** A `postgres_changes` binding, as `useRealtimeWatch` registers one. */
@@ -1635,6 +1647,26 @@ export function createSupabaseDouble() {
       return { data: { subOrderId: sub.id, amount, reason: args.p_reason ?? null }, error: null };
     }
 
+    if (fn === 'assign_rider') {
+      // `assign_rider` is admin-only and refuses an unknown package or rider, in that
+      // order; the delivery row follows the package, opening as `assigned`.
+      const denied = refuse('assign a rider');
+      if (denied) return denied;
+      const sub = tables.sub_orders.find((row) => row.id === args.p_sub_order_id);
+      if (!sub) return { data: null, error: { message: 'Sub-order not found' } };
+      const rider = tables.rider_profiles.find((row) => row.id === args.p_rider_id);
+      if (!rider) return { data: null, error: { message: 'Rider not found' } };
+      sub.rider_id = rider.id;
+      for (const delivery of tables.deliveries) {
+        if (delivery.sub_order_id !== sub.id) continue;
+        delivery.rider_id = rider.id;
+        delivery.assigned_at = new Date().toISOString();
+        if (delivery.status === 'pending') delivery.status = 'assigned';
+      }
+      audit('delivery.rider_assigned', 'sub_order', String(sub.id), null, { rider_id: rider.id });
+      return { data: { subOrderId: sub.id, riderId: rider.id }, error: null };
+    }
+
     // ---------------------------------------------- disputes
     if (fn === 'admin_dispute_queue' || fn === 'support_dispute_queue') {
       // One read, two names: `support_dispute_queue` forwards to this body in Postgres, and
@@ -2451,6 +2483,9 @@ export function createSupabaseDouble() {
     authState,
     listeners,
     rpcCalls,
+    updateUserCalls,
+    resendCalls,
+    storageUploads,
     emit,
     realtimeChannels,
     emitRealtime,
@@ -2579,6 +2614,12 @@ export function createSupabaseDouble() {
       if (fn === 'current_vendor_id') {
         return { data: vendorOfSession(), error: null };
       }
+      // The standalone guard the content and media writes open with before their
+      // table writes: same two refusals `requireAdmin` gives the console RPCs.
+      if (fn === 'admin_require_admin') {
+        const denied = requireAdmin(String(args.p_operation ?? 'do that'));
+        return denied ? { data: null, error: denied } : { data: null, error: null };
+      }
       if (fn === 'vendor_dashboard') {
         return { data: dashboardFixture ?? dashboardJson(), error: null };
       }
@@ -2595,6 +2636,19 @@ export function createSupabaseDouble() {
     })),
     auth: {
       getSession: vi.fn(async () => ({ data: { session: authState.session } })),
+      getUser: vi.fn(async () => {
+        const user = authState.session?.user ?? null;
+        return { data: { user }, error: user ? null : { message: 'Auth session missing!' } };
+      }),
+      updateUser: vi.fn(async (updates: Record<string, unknown>) => {
+        if (authState.updateUserError) return { data: { user: null }, error: authState.updateUserError };
+        if (!authState.session?.user) return { data: { user: null }, error: { message: 'Auth session missing!' } };
+        updateUserCalls.push(updates);
+        // An email change stays PENDING here, exactly like Supabase: it applies
+        // only after the confirmation link is opened, so the session's email
+        // deliberately does not move in response to this call.
+        return { data: { user: authState.session.user }, error: null };
+      }),
       signInWithPassword: vi.fn(async ({ email }: { email: string; password: string }) => {
         if (authState.signInError) return { data: { user: null, session: null }, error: authState.signInError };
         const profile =
@@ -2634,6 +2688,11 @@ export function createSupabaseDouble() {
         authState.session = session;
         return { data: { user, session }, error: null };
       }),
+      resend: vi.fn(async (payload: Record<string, unknown>) => {
+        resendCalls.push(payload);
+        if (authState.resendError) return { data: {}, error: authState.resendError };
+        return { data: {}, error: null };
+      }),
       signOut: vi.fn(async () => {
         if (authState.signOutError) return { error: authState.signOutError };
         authState.session = null;
@@ -2648,6 +2707,29 @@ export function createSupabaseDouble() {
         listeners.add(listener);
         return { data: { subscription: { unsubscribe: () => listeners.delete(listener) } } };
       }),
+    },
+    /**
+     * Storage, in memory: uploads are recorded (bucket, path, file) rather than
+     * stored, and `getPublicUrl` is the pure URL composition it is in the real
+     * client. `failStorageUpload` makes uploads refuse, the way an RLS denial
+     * or a missing bucket would surface.
+     */
+    storage: {
+      from: (bucket: string) => ({
+        upload: vi.fn(async (path: string, file: unknown) => {
+          if (storageUploadError) return { data: null, error: storageUploadError };
+          storageUploads.push({ bucket, path, file });
+          return { data: { path }, error: null };
+        }),
+        getPublicUrl: (path: string) => ({
+          data: { publicUrl: `https://double.supabase.co/storage/v1/object/public/${bucket}/${path}` },
+        }),
+        remove: vi.fn(async (paths: string[]) => ({ data: paths.map((name) => ({ name })), error: null })),
+      }),
+    },
+    /** Makes storage uploads fail with this message (or succeed again with null). */
+    failStorageUpload(message: string | null) {
+      storageUploadError = message ? { message } : null;
     },
     /** Seeds the rows a signed-in user will be authorized against. */
     seedProfile(profile: Row) {
@@ -2713,6 +2795,10 @@ export function createSupabaseDouble() {
     seedMediaItem(item: Row) {
       tables.media_items.push(item);
       return item;
+    },
+    seedContentBlock(block: Row) {
+      tables.content_blocks.push(block);
+      return block;
     },
     seedShippingSettings(settings: Row) {
       tables.vendor_shipping_settings.push(settings);
@@ -2868,7 +2954,13 @@ export function createSupabaseDouble() {
       authState.signUpError = null;
       authState.signOutError = null;
       authState.oAuthError = null;
+      authState.updateUserError = null;
+      authState.resendError = null;
       authState.confirmEmail = false;
+      updateUserCalls.length = 0;
+      resendCalls.length = 0;
+      storageUploads.length = 0;
+      storageUploadError = null;
       rpcError = null;
       rpcCalls.length = 0;
       quoteFixture = null;
@@ -3250,6 +3342,32 @@ export function mediaItemRow(overrides: Partial<Row> = {}): Row {
     height: 1024,
     status: 'pending',
     created_at: '2026-10-07T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/**
+ * A `content_blocks` row. Hero banners carry their storefront copy in the `body`
+ * jsonb the admin console and the homepage agree on; the row's own `title` is the
+ * fallback headline when the body has none.
+ */
+export function contentBlockRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000901',
+    slug: 'hero-banner-1',
+    title: 'Flagship phones, honest prices',
+    body: {
+      headline: 'Flagship phones, honest prices',
+      subtitle: 'Verified sellers, genuine warranty picks.',
+      imageUrl: 'https://cdn.example.test/hero-phones.jpg',
+      ctaText: 'Shop Phones',
+      ctaLink: '/products?category=electronics',
+    },
+    placement: 'homepage_hero',
+    published: true,
+    sort_order: 10,
+    created_at: '2026-10-07T00:00:00.000Z',
+    updated_at: '2026-10-07T00:00:00.000Z',
     ...overrides,
   };
 }

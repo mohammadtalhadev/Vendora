@@ -21,68 +21,6 @@ export interface ReviewListProps {
   allowWriteReview?: boolean;
 }
 
-const DEFAULT_REVIEWS: Review[] = [
-  {
-    id: 'rev-1',
-    productId: 'default',
-    authorName: 'Marcus Vance',
-    rating: 5,
-    title: 'Outstanding sound quality and deep bass',
-    comment:
-      'These exceeded my expectations. The active noise cancellation creates total silence in busy transit, and the battery easily lasts multiple days of regular listening. Fast delivery too!',
-    createdAt: '2026-03-28T14:20:00Z',
-    isVerifiedPurchase: true,
-    helpfulCount: 24,
-  },
-  {
-    id: 'rev-2',
-    productId: 'default',
-    authorName: 'Elena Rostova',
-    rating: 5,
-    title: 'Premium build and ultra-comfortable fit',
-    comment:
-      'Cushions are remarkably soft even during 8-hour design work sessions. The physical volume dial and tactile buttons feel solid. Highly recommended!',
-    createdAt: '2026-03-15T09:15:00Z',
-    isVerifiedPurchase: true,
-    helpfulCount: 18,
-  },
-  {
-    id: 'rev-3',
-    productId: 'default',
-    authorName: 'David K.',
-    rating: 4,
-    title: 'Great overall, slight learning curve for companion app',
-    comment:
-      'Hardware is phenomenal. The Bluetooth multipoint switching between phone and laptop works seamlessly. The app EQ was slightly tricky to configure initially, but sounds great now.',
-    createdAt: '2026-02-20T17:45:00Z',
-    isVerifiedPurchase: true,
-    helpfulCount: 9,
-  },
-  {
-    id: 'rev-4',
-    productId: 'default',
-    authorName: 'Chloe Bennett',
-    rating: 5,
-    title: 'Flawless packaging and swift delivery',
-    comment:
-      'Arrived in pristine condition within 48 hours. The travel hardshell case is a great touch. Worth every penny.',
-    createdAt: '2026-01-30T11:00:00Z',
-    isVerifiedPurchase: true,
-    helpfulCount: 6,
-  },
-  {
-    id: 'rev-5',
-    productId: 'default',
-    authorName: 'Julian Miller',
-    rating: 3,
-    title: 'Solid sound, but earcups run a bit warm',
-    comment:
-      'Audio fidelity is crisp with balanced highs. However, after about 2-3 hours of gym usage, the pleather earcups get quite warm. Still a good product for indoor listening.',
-    createdAt: '2026-01-12T16:30:00Z',
-    isVerifiedPurchase: false,
-    helpfulCount: 3,
-  },
-];
 
 export const ReviewList: React.FC<ReviewListProps> = ({
   productId = 'default',
@@ -94,7 +32,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
   const baseReviews = useMemo(() => {
     if (externalReviews) return externalReviews;
     if (initialReviews && initialReviews.length > 0) return initialReviews;
-    return DEFAULT_REVIEWS;
+    return [];
   }, [externalReviews, initialReviews]);
 
   const [userAddedReviews, setUserAddedReviews] = useState<Review[]>([]);
@@ -103,12 +41,10 @@ export const ReviewList: React.FC<ReviewListProps> = ({
   const [sortBy, setSortBy] = useState<ReviewSortOption>('recent');
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
 
-  // Combined reviews
   const reviews = useMemo(() => {
     return [...userAddedReviews, ...baseReviews];
   }, [userAddedReviews, baseReviews]);
 
-  // Breakdown metrics calculation
   const breakdown = useMemo(() => {
     const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     let sum = 0;
@@ -122,7 +58,6 @@ export const ReviewList: React.FC<ReviewListProps> = ({
     return { counts, total, average };
   }, [reviews]);
 
-  // Toggle helpful vote
   const handleToggleHelpful = (reviewId: string) => {
     setVotedReviews((prev) => {
       const next = new Set(prev);
@@ -135,7 +70,6 @@ export const ReviewList: React.FC<ReviewListProps> = ({
     });
   };
 
-  // Add review from modal
   const handleAddReview = (newReview: NewReviewInput) => {
     const created: Review = {
       id: `rev-${Date.now()}`,
@@ -325,7 +259,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as ReviewSortOption)}
-            className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs focus:border-sun-orange focus:outline-none focus:ring-1 focus:ring-sun-orange"
+            className="native-select rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs focus:border-sun-orange focus:outline-none focus:ring-1 focus:ring-sun-orange"
           >
             <option value="recent">Most Recent</option>
             <option value="highest">Highest Rating</option>

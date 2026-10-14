@@ -199,7 +199,7 @@ export const ShippingPolicyPage: React.FC = () => {
                     <select
                       value={destCountry}
                       onChange={(e) => setDestCountry(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
+                      className="native-select w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="US">United States (All 50 States)</option>
                       <option value="CA">Canada</option>
@@ -240,7 +240,7 @@ export const ShippingPolicyPage: React.FC = () => {
                     <select
                       value={packageWeight}
                       onChange={(e) => setPackageWeight(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
+                      className="native-select w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="light">Lightweight (&lt; 1 lb) - Accessories &amp; Small Tech</option>
                       <option value="standard">Standard (1 - 5 lbs) - Clothing, Shoes, Audio</option>
@@ -255,7 +255,7 @@ export const ShippingPolicyPage: React.FC = () => {
                     <select
                       value={shippingTier}
                       onChange={(e) => setShippingTier(e.target.value as any)}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
+                      className="native-select w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs focus:outline-none focus:border-sun-orange"
                     >
                       <option value="ground">Standard Ground (3 - 5 days)</option>
                       <option value="air">Expedited 2-Day Air (48 hours)</option>

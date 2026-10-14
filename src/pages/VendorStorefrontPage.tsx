@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowRight,
   Award,
   CheckCircle2,
-  ChevronDown,
   Clock,
   Eye,
   Heart,
@@ -22,17 +21,26 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
+import { useReveal } from '../hooks/useReveal';
 import { useCurrency } from '../store/currency-store';
 import { useStoreByHandle } from '../features/vendor/hooks/useVendorStore';
+import { StoreLogo } from '../features/vendor/components/StoreLogo';
 import { useProducts } from '../features/catalog/hooks/useProducts';
 import { Badge } from '../components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { useToast } from '../hooks/useToast';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { Toast } from '../components/common/Toast';
 import type { Product } from '../types/domain';
 
 /** One page of the seller's shelf; "Load more" widens this limit and refetches. */
 const PAGE_SIZE = 12;
-/** The slider tops out here (USD, the stored base). At the ceiling the filter lifts entirely. */
 /** Max-price slider ceiling in canonical PKR; at the ceiling the filter is unbounded. */
 const PRICE_CEILING = 1_000_000;
 
@@ -50,22 +58,21 @@ export const VendorStorefrontPage: React.FC = () => {
 
   const { addItem } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+  useReveal();
   const { formatPrice } = useCurrency();
   const { toast, showToast, hideToast } = useToast();
 
   const [searchInput, setSearchInput] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  // The store catalogue is read server-side, so the term that reaches the query
+  // is the shared debounce of the typed input (this page used to hand-roll the
+  // same 300ms timeout; the hook is that timeout, shared).
+  const searchTerm = useDebouncedValue(searchInput, 300).trim();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sort, setSort] = useState('featured');
   const [inStockOnly, setInStockOnly] = useState(false);
   const [priceMax, setPriceMax] = useState(PRICE_CEILING);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const t = setTimeout(() => setSearchTerm(searchInput.trim()), 300);
-    return () => clearTimeout(t);
-  }, [searchInput]);
 
   const storeQuery = useStoreByHandle(handle);
   const store = storeQuery.data;
@@ -105,7 +112,6 @@ export const VendorStorefrontPage: React.FC = () => {
 
   const resetFilters = () => {
     setSearchInput('');
-    setSearchTerm('');
     setActiveCategory(null);
     setSort('featured');
     setInStockOnly(false);
@@ -222,7 +228,7 @@ export const VendorStorefrontPage: React.FC = () => {
             {/* ========================================================================= */}
             {/* 1. Store Header & Cover Banner                                            */}
             {/* ========================================================================= */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-slate-800 shadow-xl bg-slate-900">
+            <div className="reveal relative overflow-hidden rounded-3xl border border-white/80 dark:border-slate-800 shadow-xl bg-slate-900">
               <div className="h-48 sm:h-64 w-full overflow-hidden relative">
                 {store.banner ? (
                   <img
@@ -255,17 +261,11 @@ export const VendorStorefrontPage: React.FC = () => {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     {/* Store Avatar Logo */}
                     <div className="relative h-20 w-20 sm:h-24 sm:w-24 shrink-0 rounded-2xl bg-slate-950 border-2 border-white dark:border-slate-700 shadow-xl flex items-center justify-center text-white overflow-hidden">
-                      {store.logo ? (
-                        <img
-                          src={store.logo}
-                          alt={`${store.storeName} logo`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="font-outfit text-2xl sm:text-3xl font-black">
-                          {store.storeName.slice(0, 1).toUpperCase()}
-                        </span>
-                      )}
+                      <StoreLogo
+                        name={store.storeName}
+                        logo={store.logo}
+                        className="h-full w-full text-3xl"
+                      />
                       <span className="absolute -bottom-2 rounded-full bg-blue-600 px-2 py-0.2 text-[8px] font-bold text-white uppercase tracking-wider">
                         {store.sellerType === 'platform' ? 'Platform' : 'Seller'}
                       </span>
@@ -519,24 +519,22 @@ export const VendorStorefrontPage: React.FC = () => {
                     >
                       Sort by:
                     </label>
-                    <div className="relative">
-                      <select
+                    <Select value={sort} onValueChange={setSort}>
+                      <SelectTrigger
                         id="store-sort"
-                        value={sort}
-                        onChange={(e) => setSort(e.target.value)}
-                        className="appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 pl-3 pr-8 py-1.5 text-xs font-bold text-slate-800 dark:text-white focus:outline-hidden"
+                        aria-label="Sort by"
+                        className="h-auto rounded-xl border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-bold text-slate-800 dark:border-slate-800 dark:bg-slate-900/80 dark:text-white"
                       >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {SORT_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
+                          <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
-                          </option>
+                          </SelectItem>
                         ))}
-                      </select>
-                      <ChevronDown
-                        className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
-                        aria-hidden="true"
-                      />
-                    </div>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

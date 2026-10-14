@@ -995,7 +995,7 @@ function PolicyModal({
               id="policy-return-payer"
               value={payer}
               onChange={(e) => setPayer(e.target.value as 'buyer' | 'seller')}
-              className="w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-slate-900 focus:outline-none"
+              className="native-select w-full rounded-lg border border-slate-200 p-2 text-xs focus:border-slate-900 focus:outline-none"
             >
               <option value="buyer">Buyer</option>
               <option value="seller">Seller</option>

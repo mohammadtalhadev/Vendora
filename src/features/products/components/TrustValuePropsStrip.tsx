@@ -5,7 +5,7 @@ const TRUST_ITEMS = [
   {
     icon: Truck,
     title: 'Free Delivery',
-    subtitle: 'On eligible orders across UAE',
+    subtitle: 'On eligible orders across Pakistan',
   },
   {
     icon: Headphones,
@@ -14,8 +14,8 @@ const TRUST_ITEMS = [
   },
   {
     icon: CreditCard,
-    title: 'Tabby & Tamara',
-    subtitle: 'Split into 4 interest-free payments',
+    title: 'Cards & COD',
+    subtitle: 'Visa, Mastercard or cash on delivery',
   },
   {
     icon: ShieldCheck,

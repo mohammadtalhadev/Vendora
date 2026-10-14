@@ -100,6 +100,21 @@ export async function signUp(name: string, email: string, password: string): Pro
 }
 
 /**
+ * Re-sends the sign-up confirmation email for an address whose registration
+ * is waiting on verification (the "Resend" action on the register page's
+ * check-your-inbox panel). This is Supabase's dedicated resend call — it
+ * re-issues the same activation link, it does not create a second account.
+ */
+export async function resendSignupConfirmation(email: string): Promise<void> {
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email.trim(),
+    options: { emailRedirectTo: `${window.location.origin}/login` },
+  });
+  if (error) throw new Error(`Could not resend the confirmation email: ${error.message}`);
+}
+
+/**
  * The columns `profiles_update_self` lets an owner write. `email` is absent: it mirrors
  * the auth email at signup and changing it here would desync the login credential, since
  * no trigger writes back from `profiles` to `auth.users`. `roles` is frozen by the policy.
@@ -129,6 +144,25 @@ export async function updateProfileIdentity(updates: ProfileIdentityUpdate): Pro
 export async function updatePassword(password: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw new Error(`Failed to update your password: ${error.message}`);
+}
+
+/**
+ * Starts an email change for the signed-in account. Nothing changes yet:
+ * Supabase emails a confirmation link to the NEW address, and the sign-in
+ * credential only moves once that link is opened (with the project's secure
+ * email-change setting, the current inbox is asked to confirm as well).
+ * Until then the old address keeps signing in. `profiles.email` follows via
+ * the on_auth_user_email_changed trigger (migration 20261014010100) — the
+ * client cannot write it, by policy design.
+ */
+export async function requestEmailChange(newEmail: string): Promise<void> {
+  const trimmed = newEmail.trim();
+  const { data } = await supabase.auth.getUser();
+  if (data.user?.email && data.user.email.toLowerCase() === trimmed.toLowerCase()) {
+    throw new Error('That is already your sign-in email.');
+  }
+  const { error } = await supabase.auth.updateUser({ email: trimmed });
+  if (error) throw new Error(`Could not start the email change: ${error.message}`);
 }
 
 export async function signOut(): Promise<void> {

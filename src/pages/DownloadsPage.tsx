@@ -102,8 +102,7 @@ export const DownloadsPage: React.FC = () => {
     }`;
 
   return (
-    <div className="py-10">
-      <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
+    <div>
         {/* Header Section */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange dark:text-orange-400 mb-3 shadow-xs">
@@ -368,7 +367,6 @@ export const DownloadsPage: React.FC = () => {
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-      </div>
     </div>
   );
 };

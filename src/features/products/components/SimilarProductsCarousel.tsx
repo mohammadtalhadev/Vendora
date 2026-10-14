@@ -112,11 +112,11 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
                 className="group flex w-[calc((100%-16px)/2)] sm:w-[calc((100%-32px)/3)] md:w-[calc((100%-48px)/4)] lg:w-[calc((100%-80px)/6)] shrink-0 flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-3.5 shadow-xs transition-all hover:-translate-y-1 hover:shadow-lg"
               >
                 <div>
-                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-50">
+                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-white p-2.5">
                     <img
                       src={item.images[0]}
                       alt={item.title}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none select-none"
+                      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 pointer-events-none select-none"
                       loading="lazy"
                       decoding="async"
                       draggable={false}

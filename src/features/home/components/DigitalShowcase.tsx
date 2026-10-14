@@ -24,22 +24,18 @@ export interface DigitalShowcaseProps {
 /** Decorative card dressing, cycled by position — never a data claim. */
 const CARD_PRESETS = [
   {
-    badgeColor: 'bg-blue-50 text-blue-700 ring-blue-200/80',
     iconBg: 'from-blue-500 to-indigo-600 shadow-blue-500/25',
     icon: <KeyRound className="h-6 w-6 text-white" />,
   },
   {
-    badgeColor: 'bg-purple-50 text-purple-700 ring-purple-200/80',
     iconBg: 'from-purple-500 to-pink-600 shadow-purple-500/25',
     icon: <Layers className="h-6 w-6 text-white" />,
   },
   {
-    badgeColor: 'bg-emerald-50 text-emerald-700 ring-emerald-200/80',
     iconBg: 'from-emerald-500 to-teal-600 shadow-emerald-500/25',
     icon: <Code2 className="h-6 w-6 text-white" />,
   },
   {
-    badgeColor: 'bg-amber-50 text-amber-800 ring-amber-200/80',
     iconBg: 'from-amber-500 to-orange-600 shadow-orange-500/25',
     icon: <FileCheck className="h-6 w-6 text-white" />,
   },
@@ -149,12 +145,10 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({ onAddToCart })
                       {preset.icon}
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${preset.badgeColor}`}
-                      >
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 ring-1 ring-slate-200/80">
                         {badge}
                       </span>
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-mono font-bold text-slate-500">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 ring-1 ring-slate-200/80">
                         {fileType}
                       </span>
                     </div>

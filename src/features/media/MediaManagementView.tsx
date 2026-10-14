@@ -36,6 +36,16 @@ import {
   useUploadMedia,
 } from '../vendor/hooks/useVendorMedia';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { useAdminMediaLibrary } from '../admin/hooks/useAdminQueries';
+import { useAdminActions } from '../admin/hooks/useAdminActions';
+import type { AdminMediaItem } from '../admin/api/media';
+import {
   cleanFolderName,
   DATE_FILTERS,
   dimensionLabel,
@@ -79,13 +89,20 @@ const FIELD =
   'w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900';
 
 /**
- * The asset library of the store the signed-in account owns. Reads, uploads, renames,
- * moves and deletes all go through `src/features/vendor/api/media.ts`, so every row here
- * is a `media_items` record backed by an object in the `vendor-assets` bucket - and a
- * write the server refuses is reported with the server's own words instead of a toast.
+ * The asset library, in two scopes over the same `media_items` rows. Vendor mode is
+ * the store the signed-in account owns: reads, uploads, renames, moves and deletes all
+ * go through `src/features/vendor/api/media.ts`. Admin mode reads every store's rows
+ * through `src/features/admin/api/media.ts` - the select policy admits staff - and the
+ * only write it offers is the moderation verdict, because row deletion stays
+ * owner-only in the table policy. Either way, a write the server refuses is reported
+ * with the server's own words instead of a toast.
  */
 export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }) => {
-  const library = useMediaLibrary();
+  const isAdmin = mode === 'admin';
+  const vendorLibrary = useMediaLibrary(!isAdmin);
+  const adminLibrary = useAdminMediaLibrary(isAdmin);
+  const { setMediaStatus } = useAdminActions();
+  const library = isAdmin ? adminLibrary : vendorLibrary;
   const upload = useUploadMedia();
   const rename = useRenameMedia();
   const move = useMoveMedia();
@@ -170,10 +187,22 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
       if (folderFilter !== 'all' && item.folder !== folderFilter) return false;
       if (kindFilter !== 'all' && mediaKindOf(item.mimeType) !== kindFilter) return false;
       if (window !== null && !withinDays(item.createdAt, window)) return false;
-      if (!matchesQuery(item, searchQuery)) return false;
+      if (!matchesQuery(item, searchQuery)) {
+        // Staff search by the owning store as well as by the file itself.
+        if (!isAdmin) return false;
+        const owner = item as AdminMediaItem;
+        const needle = searchQuery.trim().toLowerCase();
+        if (
+          !needle ||
+          !(owner.storeName.toLowerCase().includes(needle) ||
+            owner.storeSlug.toLowerCase().includes(needle))
+        ) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [items, folderFilter, kindFilter, dateFilter, searchQuery]);
+  }, [items, folderFilter, kindFilter, dateFilter, searchQuery, isAdmin]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / MEDIA_PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -189,6 +218,10 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     () => items.find((item) => item.id === inspectedId) ?? null,
     [items, inspectedId],
   );
+
+  /** The owning store of the inspected row, present only in the admin listing. */
+  const inspectedOwner: AdminMediaItem | null =
+    isAdmin && inspected ? (inspected as AdminMediaItem) : null;
 
   const selected = useMemo(
     () => items.filter((item) => selectedIds.includes(item.id)),
@@ -396,17 +429,19 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
           </h1>
           <p className="mt-0.5 text-xs text-slate-500 max-w-2xl">
             {mode === 'admin'
-              ? 'Asset library as the data layer serves it: one row per stored object, with the moderation verdict recorded against it.'
+              ? 'Every store’s asset library as the data layer serves it: one row per stored object, with the owning store and the moderation verdict recorded against it.'
               : 'Direct media repository for your store. Every row below is a file in your bucket plus the record the platform kept for it.'}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button type="button" onClick={() => setUploadOpen(true)} className={PRIMARY_BUTTON}>
-            <Upload className="h-3.5 w-3.5" />
-            <span>Upload Files</span>
-          </button>
-        </div>
+        {!isAdmin && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button type="button" onClick={() => setUploadOpen(true)} className={PRIMARY_BUTTON}>
+              <Upload className="h-3.5 w-3.5" />
+              <span>Upload Files</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── What this console can read ──────────────────────────────── */}
@@ -417,14 +452,14 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             Scope of this listing
           </div>
           <p className="text-slate-600">
-            Every media call in this app resolves <code className="font-mono">current_vendor_id()</code>{' '}
-            and filters <code className="font-mono">media_items</code> to the store the signed-in account
-            owns, so the rows below are that store&apos;s library — not a cross-store index. A platform-wide
-            listing has no read behind it yet: the insert, update and delete policies are owner-scoped, and
-            the storage policy only lets a writer touch{' '}
-            <code className="font-mono">vendor-assets/&lt;their slug&gt;/</code>. Offering staff a queue of
-            every store&apos;s assets needs a server-side read and policy, which is not something this screen
-            can substitute with a client-side filter.
+            The rows below are every store&apos;s library: the select policy on{' '}
+            <code className="font-mono">media_items</code> admits platform staff alongside each owner, so
+            this listing reads across stores and names the store that owns each row. The one write staff
+            hold over another store&apos;s assets is the moderation verdict (
+            <code className="font-mono">media_moderate_admin</code>), which is why the inspector offers
+            Approve, Flag and back-to-pending — and nothing else. Row deletion stays owner-only in the
+            table policy, so there is deliberately no delete control here: removing the storage object
+            while its row survives would strand the record.
           </p>
         </section>
       )}
@@ -554,48 +589,58 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             <label htmlFor="media-kind-filter" className="sr-only">
               Filter by file type
             </label>
-            <select
-              id="media-kind-filter"
+            <Select
               value={kindFilter}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 changeFilter(() =>
-                  setKindFilter(
-                    KIND_FILTERS.find((option) => option.value === event.target.value)?.value ?? 'all',
-                  ),
+                  setKindFilter(KIND_FILTERS.find((option) => option.value === value)?.value ?? 'all'),
                 )
               }
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900"
             >
-              {KIND_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id="media-kind-filter"
+                aria-label="Filter by file type"
+                className="h-auto rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {KIND_FILTERS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <label htmlFor="media-date-filter" className="sr-only">
               Filter by upload date
             </label>
-            <select
-              id="media-date-filter"
+            <Select
               value={dateFilter}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 changeFilter(() =>
-                  setDateFilter(
-                    DATE_FILTERS.find((option) => option.value === event.target.value)?.value ?? 'all',
-                  ),
+                  setDateFilter(DATE_FILTERS.find((option) => option.value === value)?.value ?? 'all'),
                 )
               }
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900"
             >
-              {DATE_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id="media-date-filter"
+                aria-label="Filter by upload date"
+                className="h-auto rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_FILTERS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {library.isError && (
@@ -717,7 +762,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             {folders.length === 0 && (
               <p className="px-1 text-[11px] text-slate-500">
                 {library.isPending
-                  ? 'Reading your library…'
+                  ? isAdmin
+                    ? 'Reading the platform library…'
+                    : 'Reading your library…'
                   : library.isError
                     ? 'The library read failed, so there are no folder labels to list.'
                     : 'No folder labels yet. A folder only exists once a file carries its name, because the table stores a text label, not a folder row.'}
@@ -739,6 +786,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               </div>
             </div>
 
+            {!isAdmin && (
             <div
               role="group"
               aria-label="Bulk actions for selected files"
@@ -785,17 +833,28 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 <span>{selected.length > 0 ? `Delete (${selected.length})` : 'Delete'}</span>
               </button>
             </div>
+            )}
           </div>
 
           {awaitingSession ? (
             <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-xs font-semibold text-slate-500">
-              This library is read as the signed-in store account, through{' '}
-              <code className="font-mono">current_vendor_id()</code>. No session means no rows to show —
-              sign in as a seller and the same query returns its assets.
+              {isAdmin ? (
+                <>
+                  This library is read as the signed-in staff account; the select policy admits staff
+                  to every store&apos;s rows. No session means no rows to show — sign in as an admin
+                  and the same query returns the platform&apos;s assets.
+                </>
+              ) : (
+                <>
+                  This library is read as the signed-in store account, through{' '}
+                  <code className="font-mono">current_vendor_id()</code>. No session means no rows to show —
+                  sign in as a seller and the same query returns its assets.
+                </>
+              )}
             </div>
           ) : library.isPending ? (
             <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-xs font-semibold text-slate-500">
-              Loading your library from Postgres…
+              {isAdmin ? 'Loading the platform library from Postgres…' : 'Loading your library from Postgres…'}
             </div>
           ) : library.isError ? (
             <div
@@ -825,17 +884,21 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               </h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 {items.length === 0
-                  ? 'Upload an image or document and it will be written to your bucket, then recorded here as pending review.'
+                  ? isAdmin
+                    ? 'No store has uploaded a file yet. Rows appear here as sellers add assets to their libraries, each recorded as pending until staff review it.'
+                    : 'Upload an image or document and it will be written to your bucket, then recorded here as pending review.'
                   : 'Widen the filters above, or pick “All folders” in the directory.'}
               </p>
-              <button
-                type="button"
-                onClick={() => setUploadOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
-              >
-                <Upload className="h-3.5 w-3.5" />
-                <span>Upload a file</span>
-              </button>
+              {!isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setUploadOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>Upload a file</span>
+                </button>
+              )}
             </div>
           ) : layout === 'grid' ? (
             <div role="group" aria-label="Media assets" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -854,14 +917,16 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                         : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      aria-checked={isSelected}
-                      aria-label={`Select ${item.name}`}
-                      onChange={(event) => toggleSelect(item.id, event.target.checked)}
-                      className="absolute top-3 left-3 z-10 h-4 w-4 cursor-pointer rounded accent-slate-900"
-                    />
+                    {!isAdmin && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        aria-checked={isSelected}
+                        aria-label={`Select ${item.name}`}
+                        onChange={(event) => toggleSelect(item.id, event.target.checked)}
+                        className="absolute top-3 left-3 z-10 h-4 w-4 cursor-pointer rounded accent-slate-900"
+                      />
+                    )}
 
                     <button
                       type="button"
@@ -925,27 +990,31 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 </caption>
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <tr>
-                    <th className="px-4 py-3 w-8" scope="col">
-                      <label htmlFor="media-select-all-head" className="sr-only">
-                        Select all {filtered.length} listed files
-                      </label>
-                      <input
-                        id="media-select-all-head"
-                        type="checkbox"
-                        checked={allFilteredSelected}
-                        aria-checked={allFilteredSelected}
-                        onChange={(event) =>
-                          setSelectedIds(event.target.checked ? filtered.map((item) => item.id) : [])
-                        }
-                        className="rounded accent-slate-900"
-                      />
-                    </th>
+                    {!isAdmin && (
+                      <th className="px-4 py-3 w-8" scope="col">
+                        <label htmlFor="media-select-all-head" className="sr-only">
+                          Select all {filtered.length} listed files
+                        </label>
+                        <input
+                          id="media-select-all-head"
+                          type="checkbox"
+                          checked={allFilteredSelected}
+                          aria-checked={allFilteredSelected}
+                          onChange={(event) =>
+                            setSelectedIds(event.target.checked ? filtered.map((item) => item.id) : [])
+                          }
+                          className="rounded accent-slate-900"
+                        />
+                      </th>
+                    )}
                     <th className="px-4 py-3" scope="col">Asset name</th>
                     <th className="px-4 py-3" scope="col">Dimensions / format</th>
                     <th className="px-4 py-3" scope="col">File size</th>
                     <th className="px-4 py-3" scope="col">Folder</th>
                     <th className="px-4 py-3" scope="col">Status</th>
-                    <th className="px-4 py-3 text-right" scope="col">Actions</th>
+                    {!isAdmin && (
+                      <th className="px-4 py-3 text-right" scope="col">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -955,19 +1024,21 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                     const KindIcon = FILE_KIND_ICONS[kind];
                     return (
                       <tr key={item.id} aria-selected={isSelected} className={isSelected ? 'bg-slate-50/90' : 'hover:bg-slate-50/80'}>
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            id={`media-row-${item.id}`}
-                            checked={isSelected}
-                            aria-checked={isSelected}
-                            onChange={(event) => toggleSelect(item.id, event.target.checked)}
-                            className="rounded accent-slate-900"
-                          />
-                          <label htmlFor={`media-row-${item.id}`} className="sr-only">
-                            Select {item.name}
-                          </label>
-                        </td>
+                        {!isAdmin && (
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              id={`media-row-${item.id}`}
+                              checked={isSelected}
+                              aria-checked={isSelected}
+                              onChange={(event) => toggleSelect(item.id, event.target.checked)}
+                              className="rounded accent-slate-900"
+                            />
+                            <label htmlFor={`media-row-${item.id}`} className="sr-only">
+                              Select {item.name}
+                            </label>
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           <button
                             type="button"
@@ -1006,17 +1077,19 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                             {STATUS_LABEL[item.status]}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => askDelete([item])}
-                            aria-label={`Delete ${item.name}`}
-                            title={`Delete ${item.name}`}
-                            className="ml-auto inline-flex items-center rounded-lg border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50 cursor-pointer"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </td>
+                        {!isAdmin && (
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => askDelete([item])}
+                              aria-label={`Delete ${item.name}`}
+                              title={`Delete ${item.name}`}
+                              className="ml-auto inline-flex items-center rounded-lg border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-50 cursor-pointer"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -1080,34 +1153,47 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                       <span className="font-mono">{folderLabel(inspected.folder)}</span>
                       <span>•</span>
                       <span>{formatDate(inspected.createdAt)}</span>
+                      {inspectedOwner && (
+                        <>
+                          <span>•</span>
+                          <span>
+                            {inspectedOwner.storeName || 'Unnamed store'}
+                            {inspectedOwner.storeSlug ? ` (${inspectedOwner.storeSlug})` : ''}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div role="group" aria-label="Actions for the inspected file" className="flex flex-wrap items-center gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => startRename(inspected)}
-                    className={GHOST_BUTTON}
-                  >
-                    <Pencil className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Rename</span>
-                  </button>
+                  {!isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => startRename(inspected)}
+                      className={GHOST_BUTTON}
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Rename</span>
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedIds([inspected.id]);
-                      setMoveError(null);
-                      setMoveFolder(inspected.folder);
-                      setMoveOpen(true);
-                    }}
-                    disabled={move.isPending}
-                    className={GHOST_BUTTON}
-                  >
-                    <Move className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Move</span>
-                  </button>
+                  {!isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedIds([inspected.id]);
+                        setMoveError(null);
+                        setMoveFolder(inspected.folder);
+                        setMoveOpen(true);
+                      }}
+                      disabled={move.isPending}
+                      className={GHOST_BUTTON}
+                    >
+                      <Move className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Move</span>
+                    </button>
+                  )}
 
                   <a
                     href={inspected.cdnUrl}
@@ -1129,18 +1215,60 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                     <span>Copy URL</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => askDelete([inspected])}
-                    className={DANGER_BUTTON}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                    <span>Delete asset</span>
-                  </button>
+                  {isAdmin ? (
+                    <span role="group" aria-label="Moderation for the inspected file" className="flex items-center gap-2">
+                      {(['approved', 'pending', 'flagged'] as const).map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          disabled={inspected.status === status || setMediaStatus.isPending}
+                          onClick={() =>
+                            setMediaStatus.mutate(
+                              { itemId: inspected.id, status },
+                              {
+                                onSuccess: (row) =>
+                                  note(`Recorded the verdict for “${row.name}”: ${row.status}.`),
+                                onError: fail,
+                              },
+                            )
+                          }
+                          className={GHOST_BUTTON}
+                        >
+                          {status === 'approved'
+                            ? 'Approve'
+                            : status === 'flagged'
+                              ? 'Flag'
+                              : 'Mark pending'}
+                        </button>
+                      ))}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => askDelete([inspected])}
+                      className={DANGER_BUTTON}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                      <span>Delete asset</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
               <dl className="grid grid-cols-2 gap-4 text-xs pt-1 md:grid-cols-4">
+                {inspectedOwner && (
+                  <div>
+                    <dt className="text-[10px] font-bold uppercase text-slate-400">Owning store</dt>
+                    <dd className="mt-0.5 font-bold text-slate-900">
+                      {inspectedOwner.storeName || 'Unnamed store'}
+                      {inspectedOwner.storeSlug && (
+                        <span className="ml-1 font-mono text-[10px] font-medium text-slate-400">
+                          {inspectedOwner.storeSlug}
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-[10px] font-bold uppercase text-slate-400">Dimensions</dt>
                   <dd className="mt-0.5 font-bold text-slate-900">{dimensionLabel(inspected)}</dd>
@@ -1163,7 +1291,11 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 <div>
                   <dt className="text-[10px] font-bold uppercase text-slate-400">Storage</dt>
                   <dd className="mt-0.5 font-bold text-slate-900">
-                    {isStoredObject(inspected.cdnUrl) ? 'vendor-assets bucket' : 'External URL, no object in your bucket'}
+                    {isStoredObject(inspected.cdnUrl)
+                      ? 'vendor-assets bucket'
+                      : isAdmin
+                        ? 'External URL, no stored object'
+                        : 'External URL, no object in your bucket'}
                   </dd>
                 </div>
               </dl>
@@ -1249,9 +1381,19 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 it, so nothing here approves itself.
               </li>
               <li>
-                — Delete removes the row and the object in <code className="font-mono">vendor-assets</code>.
-                There is no trash column and no archive table, so there is no trash bin to show and a delete
-                cannot be undone.
+                {isAdmin ? (
+                  <>
+                    — Staff cannot delete another store&apos;s rows: the delete policy on this table is
+                    owner-only, so this console offers the moderation verdict and leaves removal to the
+                    owning store.
+                  </>
+                ) : (
+                  <>
+                    — Delete removes the row and the object in{' '}
+                    <code className="font-mono">vendor-assets</code>. There is no trash column and no
+                    archive table, so there is no trash bin to show and a delete cannot be undone.
+                  </>
+                )}
               </li>
               <li>
                 — A move is a real storage move plus a recorded path. Demo rows whose URL points outside the

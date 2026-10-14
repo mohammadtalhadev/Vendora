@@ -854,7 +854,7 @@ export const VendorSettingsPage: React.FC = () => {
                       id="payout-schedule"
                       value={form.payoutSchedule}
                       onChange={(event) => set('payoutSchedule', event.target.value)}
-                      className={FIELD}
+                      className={`${FIELD} native-select`}
                     >
                       <option value="daily">Daily</option>
                       <option value="weekly">Weekly</option>

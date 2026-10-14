@@ -9,6 +9,7 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
 import { useVendorQueue } from '../features/admin/hooks/useAdminQueries';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type { AdminVendorRow } from '../features/admin/api/vendors';
 import { Button } from '../components/ui/button';
@@ -33,7 +34,10 @@ export const AdminVendorsPage: React.FC = () => {
   const [applicationNotes, setApplicationNotes] = useState<Record<string, string>>({});
 
   const actions = useAdminActions();
-  const { data: queue, refetch, isPending, isError, error } = useVendorQueue({ status, search, page, pageSize });
+  // The queue searches in SQL, not on the loaded page: debounce the term so
+  // typing does not fire a request per keystroke.
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const { data: queue, refetch, isPending, isError, error } = useVendorQueue({ status, search: debouncedSearch, page, pageSize });
 
   const filteredVendors = queue?.rows ?? [];
   const activeOnPage = filteredVendors.filter((vendor) => vendor.status === 'active').length;
@@ -148,7 +152,7 @@ export const AdminVendorsPage: React.FC = () => {
       cell: (vendor) => (
         <div>
           <div className="font-semibold text-slate-900">{vendor.storeName}</div>
-          <div className="text-[11px] text-slate-500 truncate">{vendor.slug}@vendora.shop</div>
+          <div className="text-[11px] text-slate-500 truncate">/vendors/{vendor.slug}</div>
         </div>
       ),
     },
@@ -606,7 +610,7 @@ export const AdminVendorsPage: React.FC = () => {
                   id="vendor-rows-per-page"
                   value={pageSize}
                   onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                  className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 focus:outline-hidden cursor-pointer"
+                  className="native-select rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 focus:outline-hidden cursor-pointer"
                 >
                   <option value={6}>6</option>
                   <option value={12}>12</option>

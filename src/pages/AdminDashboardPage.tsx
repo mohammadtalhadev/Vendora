@@ -23,6 +23,7 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { useAdminDashboard } from '../features/admin/hooks/useAdminQueries';
+import { UpdatedAgo } from '../components/common/UpdatedAgo';
 import { useAdminLive } from '../features/admin/hooks/useLive';
 import { exportToCsv } from '../lib/export-csv';
 
@@ -157,15 +158,21 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* The numbers re-read themselves every 30 seconds (see useAdminDashboard);
+                this only says how fresh they are, with a small manual re-read beside it. */}
+            <UpdatedAgo
+              updatedAt={dashboard.dataUpdatedAt}
+              className="text-[11px] font-medium text-slate-400"
+            />
             <button
               type="button"
               onClick={() => void dashboard.refetch()}
               disabled={dashboard.isFetching}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
+              aria-label="Refresh Numbers"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
               title="Re-read the platform numbers from the database"
             >
               <RotateCw className={`h-3.5 w-3.5 text-sun-orange ${dashboard.isFetching ? 'animate-spin' : ''}`} />
-              <span>{dashboard.isFetching ? 'Refreshing...' : 'Refresh Numbers'}</span>
             </button>
           </div>
         </div>
@@ -175,9 +182,9 @@ export const AdminDashboardPage: React.FC = () => {
           <div
             role="status"
             aria-live="polite"
-            className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2"
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border border-white/50 bg-white/75 text-slate-800 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 px-4 py-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2"
           >
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
             <span>{toastMessage}</span>
           </div>
         )}

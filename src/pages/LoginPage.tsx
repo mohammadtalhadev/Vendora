@@ -8,8 +8,6 @@ import {
   ShieldCheck,
   ArrowRight,
   Truck,
-  RotateCcw,
-  Headphones,
   Sparkles,
   Check,
   Store,
@@ -25,13 +23,16 @@ export const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get('redirect') || '/';
 
-  const { signIn, signInAsDemo, signInWithProvider } = useAuth();
+  const { signIn, signInAsDemo, signInWithProvider, signOut } = useAuth();
   const { mergeGuestCartIntoUser } = useCartStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  // The sign-in path the visitor picked. This is not decoration: handleSubmit
+  // routes by it (Buyer → storefront, Verified Seller → merchant console) and
+  // refuses a seller-path sign-in for an account with no vendor role.
   const [selectedRole, setSelectedRole] = useState<'buyer' | 'seller'>('buyer');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,15 +48,6 @@ export const LoginPage: React.FC = () => {
     if (roleKey === 'vendor') return '/vendor';
     if (roleKey === 'rider') return '/rider';
     if (roleKey === 'support') return '/support';
-    return redirectPath;
-  };
-
-  const landingPath = (roles: string[]) => {
-    if (redirectPath !== '/') return redirectPath;
-    if (roles.includes('admin')) return '/admin';
-    if (roles.includes('vendor')) return '/vendor';
-    if (roles.includes('rider')) return '/rider';
-    if (roles.includes('support')) return '/support';
     return redirectPath;
   };
 
@@ -75,8 +67,31 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const loggedInUser = await signIn(email.trim(), password);
+
+      // The role picked on the toggle IS the sign-in path: Buyer means the
+      // storefront, Verified Seller means the merchant console. This handler
+      // used to ignore the toggle and route by the account's stored roles, so
+      // a vendor signing in under "Buyer" still landed in the seller console
+      // and a customer under "Verified Seller" still landed in the storefront
+      // — the two paths read as swapped. The only exception is an explicit
+      // ?redirect= target, which always wins: a guard sent the visitor here
+      // to continue somewhere specific.
+      if (selectedRole === 'seller' && redirectPath === '/' && !loggedInUser.roles.includes('vendor')) {
+        await signOut();
+        setError(
+          'This account is not a verified seller account, so it cannot sign in through the seller path. Switch to Buyer to shop with this account, or apply to sell on Vendora first.',
+        );
+        return;
+      }
+
       mergeGuestCartIntoUser(loggedInUser.id);
-      navigate(landingPath(loggedInUser.roles));
+      if (redirectPath !== '/') {
+        navigate(redirectPath);
+      } else if (selectedRole === 'seller') {
+        navigate('/vendor');
+      } else {
+        navigate('/');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Invalid login credentials';
       setError(message);
@@ -137,7 +152,7 @@ export const LoginPage: React.FC = () => {
       {/* No page-level background: RootLayout paints the one ambient
           gradient + orbs for the whole storefront tree. */}
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
         <div className="mb-6 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
@@ -187,10 +202,10 @@ export const LoginPage: React.FC = () => {
             <div className="relative z-10 my-8 flex flex-col gap-6">
               <div className="flex flex-col">
                 <h2 className="font-outfit text-3xl lg:text-4xl text-slate-900 dark:text-white tracking-tight font-black leading-tight">
-                  Curated Marketplace for Exceptional Finds
+                  Tech, Fashion and Home Goods from Independent Sellers
                 </h2>
                 <p className="font-sans text-sm lg:text-base text-slate-600 dark:text-slate-300 mt-3 font-normal leading-relaxed">
-                  Discover verified independent sellers, secure escrow checkout, fast doorstep delivery across Pakistan, and guaranteed authentic items.
+                  Discover verified independent sellers, secure escrow checkout, and fast doorstep delivery across Pakistan.
                 </p>
               </div>
 
@@ -201,8 +216,8 @@ export const LoginPage: React.FC = () => {
                     <Store className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-outfit text-sm text-slate-900 dark:text-white font-bold">500+ Verified Stores</span>
-                    <span className="font-sans text-xs text-slate-500 dark:text-slate-400">Handpicked artisan fashion, tech & home creators</span>
+                    <span className="font-outfit text-sm text-slate-900 dark:text-white font-bold">Stores Across Pakistan</span>
+                    <span className="font-sans text-xs text-slate-500 dark:text-slate-400">Independent sellers for fashion, tech & home goods</span>
                   </div>
                 </div>
 
@@ -404,7 +419,19 @@ export const LoginPage: React.FC = () => {
                       )}
                       {resetState === 'sending' && <>Sending your password reset link…</>}
                       {resetState === 'sent' && (
-                        <>Password reset link sent to <span className="font-bold text-sun-orange">{email.trim()}</span>. Check your inbox and follow the link to set a new password.</>
+                        <>
+                          Password reset link sent to <span className="font-bold text-sun-orange">{email.trim()}</span>. Check your inbox and follow the link to set a new password.
+                          <span className="mt-1.5 flex items-center justify-between gap-2">
+                            <span>Didn&apos;t get it? Check your spam or junk folder.</span>
+                            <button
+                              type="button"
+                              onClick={handleForgotPassword}
+                              className="shrink-0 font-bold text-sun-orange hover:text-sun-orange-600 transition-colors cursor-pointer"
+                            >
+                              Resend email
+                            </button>
+                          </span>
+                        </>
                       )}
                       {resetState === 'error' && (
                         <>We could not send the reset email{resetError ? <>: {resetError}</> : ''}. Check the address and try again.</>
@@ -558,50 +585,6 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* =========================================================================
-            3. Bottom Trust Strip
-           ========================================================================= */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-4 shadow-xs">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-sun-orange">
-              <Truck className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">Fast & Free Shipping</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Nationwide courier network</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-4 shadow-xs">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">100% Authentic</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Verified independent sellers</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-4 shadow-xs">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
-              <RotateCcw className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">7-Day Easy Returns</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Zero-hassle door pickups</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-4 shadow-xs">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
-              <Headphones className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">24/7 Dedicated Support</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Live chat & dispute mediation</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

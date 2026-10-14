@@ -21,6 +21,7 @@ import {
   Sparkles,
   ArrowRight,
   HelpCircle,
+  Headphones,
 } from 'lucide-react';
 
 import {
@@ -234,13 +235,13 @@ export const FAQPage: React.FC = () => {
   const [votedFaqs, setVotedFaqs] = useState<Record<string, 'up' | 'down'>>({});
   const [copiedFaqId, setCopiedFaqId] = useState<string | null>(null);
 
-  // Live Concierge Sophia Modal
+  // Live Chat Modal (Vendora Support — no named persona)
   const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'sophia' | 'user'; text: string; time: string }>>([
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'agent' | 'user'; text: string; time: string }>>([
     {
-      sender: 'sophia',
-      text: 'Hello! I am Sophia from Vendora 24/7 Concierge Support. How can I assist your order, escrow dispute, or return today?',
+      sender: 'agent',
+      text: 'Hello, and welcome to Vendora Support! Ask us about an order, a return, or an escrow dispute — we are happy to help.',
       time: 'Just now',
     },
   ]);
@@ -278,8 +279,8 @@ export const FAQPage: React.FC = () => {
       setChatMessages((prev) => [
         ...prev,
         {
-          sender: 'sophia',
-          text: `Thank you for sharing details regarding "${userMsg}". I am scanning your active Vendora telemetry and account ledger now. A senior concierge agent will assist in under 2 minutes!`,
+          sender: 'agent',
+          text: `Thank you for sharing details regarding "${userMsg}". A support agent will pick this up in under 2 minutes.`,
           time: 'Just now',
         },
       ]);
@@ -347,14 +348,14 @@ export const FAQPage: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-sun-orange shadow-2xs">
             <span className="h-2 w-2 rounded-full bg-sun-orange animate-pulse" />
-            <span>24/7 VENDORA CONCIERGE &amp; HELP HUB</span>
+            <span>24/7 HELP &amp; SUPPORT</span>
           </div>
 
           <h1 className="font-outfit text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
             How Can We Help You Today?
           </h1>
 
-          <p className="text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base text-slate-600 dark:text-slate-300 mx-auto leading-relaxed md:whitespace-nowrap">
             Search hundreds of articles, track escrow disputes, or initiate instant live chat with an agent.
           </p>
 
@@ -438,9 +439,6 @@ export const FAQPage: React.FC = () => {
                 Explore by Support Topic
               </h2>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
-              Curated step-by-step documentation, escrow protocols, and self-service buyer &amp; seller workflows.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -493,6 +491,33 @@ export const FAQPage: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* =========================================================================
+            4B. Returns greeting strip — a friendly front door to the returns flow
+           ========================================================================= */}
+        <section className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 text-sun-orange shadow-2xs">
+              <RotateCcw className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h3 className="font-outfit text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                Changed your mind? No hard feelings — returns are easy here.
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                Most items can be returned within 7 days of delivery. Book a free doorstep pickup,
+                drop the parcel, and track your refund step by step — no phone calls, no paperwork.
+              </p>
+            </div>
+            <Link
+              to="/returns"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-sun-orange px-6 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-sun-orange-600 active:scale-[0.98] cursor-pointer"
+            >
+              <span>Start a Return</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
         </section>
 
@@ -702,10 +727,10 @@ export const FAQPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsLiveChatOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white px-6 py-3.5 text-xs sm:text-sm font-extrabold shadow-lg transition-all cursor-pointer active:scale-95 shrink-0"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sun-orange hover:bg-sun-orange-600 text-white px-6 py-3.5 text-xs sm:text-sm font-extrabold shadow-lg shadow-orange-500/25 transition-all cursor-pointer active:scale-95 shrink-0"
                 >
-                  <MessageSquare className="h-4 w-4 text-sun-orange" aria-hidden="true" />
-                  <span>Ask Sophia in Live Chat</span>
+                  <MessageSquare className="h-4 w-4" aria-hidden="true" />
+                  <span>Live Chat</span>
                 </button>
               </div>
             </div>
@@ -714,28 +739,21 @@ export const FAQPage: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          Interactive Live Chat with Sophia Modal
+          Interactive Live Chat Modal (Vendora Support)
          ========================================================================= */}
       <Dialog open={isLiveChatOpen} onOpenChange={setIsLiveChatOpen}>
-        <DialogContent aria-label="Vendora live chat with Sophia" className="sm:max-w-lg p-0 overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white dark:bg-slate-900 shadow-2xl">
+        <DialogContent aria-label="Vendora live chat" className="sm:max-w-lg p-0 overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white dark:bg-slate-900 shadow-2xl">
           <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
-                  alt="Sophia M."
-                  className="h-10 w-10 rounded-full object-cover border-2 border-orange-500"
-                />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun-orange text-white border-2 border-orange-500">
+                  <Headphones className="h-5 w-5" aria-hidden="true" />
+                </div>
                 <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-slate-900" />
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <h4 className="font-outfit font-black text-sm text-white">Sophia M.</h4>
-                  <span className="rounded-full bg-orange-500/20 text-sun-orange border border-orange-500/30 px-2 py-0.2 text-[9px] font-black uppercase">
-                    AI Concierge
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300">Vendora Senior Escalations Specialist • Online</p>
+                <h4 className="font-outfit font-black text-sm text-white">Vendora Support</h4>
+                <p className="text-[11px] text-slate-300">Live Chat • Online — replies in a few minutes</p>
               </div>
             </div>
           </div>
@@ -747,9 +765,9 @@ export const FAQPage: React.FC = () => {
                 key={i}
                 className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {msg.sender === 'sophia' && (
-                  <div className="h-7 w-7 rounded-full bg-sun-orange text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                    S
+                {msg.sender === 'agent' && (
+                  <div className="h-7 w-7 rounded-full bg-sun-orange text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <Headphones className="h-3.5 w-3.5" aria-hidden="true" />
                   </div>
                 )}
                 <div
@@ -771,7 +789,7 @@ export const FAQPage: React.FC = () => {
           {/* Chat input form */}
           <form onSubmit={handleSendChat} className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-white/10 flex items-center gap-2">
             <input
-              id="sophia-chat-input"
+              id="support-chat-input"
               type="text"
               aria-label="Type your message or order inquiry"
               value={chatInput}
@@ -781,7 +799,7 @@ export const FAQPage: React.FC = () => {
             />
             <button
               type="submit"
-              aria-label="Send message to Sophia"
+              aria-label="Send message"
               className="rounded-full bg-sun-orange hover:bg-sun-orange-600 p-2.5 text-white transition-all cursor-pointer shadow-xs active:scale-95"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
@@ -792,8 +810,8 @@ export const FAQPage: React.FC = () => {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div role="status" aria-live="polite" className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900/95 backdrop-blur-md px-5 py-3 text-xs font-semibold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-2 border border-slate-800">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" aria-hidden="true" />
+        <div role="status" aria-live="polite" className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-2xl border border-white/50 bg-white/75 px-5 py-3 text-xs font-semibold text-slate-800 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 animate-in fade-in slide-in-from-bottom-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /></span>
           <span>{toastMessage}</span>
         </div>
       )}

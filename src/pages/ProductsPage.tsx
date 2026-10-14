@@ -17,8 +17,16 @@ import { useWishlistStore } from '../store/wishlist-store';
 import { useCartStore } from '../store/cart-store';
 import { useCurrency } from '../store/currency-store';
 import { useToast } from '../hooks/useToast';
+import { useReveal } from '../hooks/useReveal';
 import { Toast } from '../components/common/Toast';
 import { Button } from '../components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { QueryState } from '../components/common/QueryState';
 import { buildPageWindow } from '../hooks/usePagination';
 import type { Product } from '../types/domain';
@@ -34,6 +42,7 @@ export const ProductsPage: React.FC = () => {
   const { toggleWishlist, isInWishlist } = useWishlistStore();
   const { formatPrice, convertPrice, convertToPKR, config: currencyConfig } = useCurrency();
   const { toast, showToast, hideToast } = useToast();
+  useReveal();
 
   // 1. Read every query input from the URL (source of truth).
   const q = searchParams.get('q') ?? '';
@@ -236,7 +245,7 @@ export const ProductsPage: React.FC = () => {
         {/* =========================================================================
             2. Page Title & Real Result Count
             ========================================================================= */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-1">
+        <div className="reveal flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-1">
           <div className="max-w-3xl">
             <h1 className="font-outfit text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]">
               {heading}
@@ -267,7 +276,7 @@ export const ProductsPage: React.FC = () => {
           {/* =======================================================================
               A. LEFT SIDEBAR — only facets backed by the query (price range) remain
               ======================================================================= */}
-          <aside className="hidden lg:block lg:col-span-3 sticky top-28 space-y-5 rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-5 shadow-xl">
+          <aside className="reveal hidden lg:block lg:col-span-3 sticky top-28 space-y-5 rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-5 shadow-xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
               <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-sm uppercase tracking-wider">
                 <SlidersHorizontal className="h-4 w-4 text-sun-orange" />
@@ -359,7 +368,7 @@ export const ProductsPage: React.FC = () => {
               ======================================================================= */}
           <main className="lg:col-span-9 space-y-5">
             {/* Toolbar Strip: Real Count, Sort, View Switcher & Mobile Filter Trigger */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-white/10 p-3.5 sm:px-5 rounded-2xl shadow-xs backdrop-blur-md">
+            <div className="reveal flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-white/10 p-3.5 sm:px-5 rounded-2xl shadow-xs backdrop-blur-md">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-300" role="status" aria-live="polite">
                   {isLoading ? (
@@ -395,18 +404,25 @@ export const ProductsPage: React.FC = () => {
                   <label htmlFor="sort-select" className="text-xs text-slate-500 font-medium">
                     Sort by:
                   </label>
-                  <select
-                    id="sort-select"
+                  <Select
                     value={sort}
-                    onChange={(e) => updateParams({ sort: e.target.value }, { resetPage: true })}
-                    className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs focus:border-sun-orange focus:outline-none cursor-pointer"
+                    onValueChange={(value) => updateParams({ sort: value }, { resetPage: true })}
                   >
-                    <option value="featured">Featured &amp; Recommended</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="best_selling">Best Selling</option>
-                    <option value="rating">Highest Rated</option>
-                  </select>
+                    <SelectTrigger
+                      id="sort-select"
+                      aria-label="Sort by"
+                      className="h-auto rounded-full border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 shadow-2xs dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="featured">Featured &amp; Recommended</SelectItem>
+                      <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                      <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                      <SelectItem value="best_selling">Best Selling</SelectItem>
+                      <SelectItem value="rating">Highest Rated</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* View Switcher Icons */}
@@ -629,7 +645,7 @@ export const ProductsPage: React.FC = () => {
         {isMobileFilterOpen && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
             <div
-              className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200"
               aria-hidden="true"
               onClick={() => setIsMobileFilterOpen(false)}
             />
@@ -640,7 +656,7 @@ export const ProductsPage: React.FC = () => {
               aria-labelledby="mobile-filters-title"
               tabIndex={-1}
               onKeyDown={(e) => { if (e.key === 'Escape') setIsMobileFilterOpen(false); }}
-              className="relative ml-auto flex h-full w-full max-w-xs flex-col bg-white dark:bg-slate-900 p-6 shadow-2xl overflow-y-auto"
+              className="relative ml-auto flex h-full w-full max-w-xs flex-col bg-white dark:bg-slate-900 p-6 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300"
             >
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <span id="mobile-filters-title" className="font-outfit font-black text-lg">Filters</span>

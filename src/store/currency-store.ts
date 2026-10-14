@@ -7,6 +7,16 @@ export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'PKR' | 'AED' | 'INR' | 'CAD'
 // `formatPrice`, so this is the one place the display currency is decided.
 export const DEFAULT_CURRENCY: CurrencyCode = 'PKR';
 
+/**
+ * Owner decision (Oct 2026): currency conversion is switched OFF "for a while".
+ * The storefront renders PKR only — no selector is mounted anywhere, and a
+ * persisted non-PKR choice from before the lock is settled back to PKR on app
+ * start (see RootLayout). The conversion machinery itself stays in place so
+ * the lock can be lifted by flipping this one flag and remounting the
+ * CurrencySelector in the Navbar.
+ */
+export const CURRENCY_LOCKED_TO_PKR = true;
+
 export interface CurrencyConfig {
   code: CurrencyCode;
   symbol: string;
@@ -262,11 +272,10 @@ export const useCurrencyStore = create<CurrencyState>()(
           // Secondary fallback or silent catch to retain existing/fallback rates
         }
 
-        set({
-          isLoading: false,
-          // If no previous update, set fallback timestamp
-          lastUpdated: get().lastUpdated || new Date().toISOString(),
-        });
+        // A failed fetch must not mint an "Updated" time: lastUpdated only
+        // ever records a fetch that actually landed. While it stays null the
+        // selector says so and the fallback reference rates remain in use.
+        set({ isLoading: false });
       },
 
       formatPrice: (amountInPKR, options) => {

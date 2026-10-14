@@ -494,7 +494,7 @@ export const AdminVendorDetailPage: React.FC = () => {
                 id="violationType"
                 name="violationType"
                 defaultValue="Late Dispatch SLA (> 48h)"
-                className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
+                className="native-select w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
               >
                 <option value="Late Dispatch SLA (> 48h)">Late Dispatch SLA (&gt; 48h)</option>
                 <option value="Counterfeit / Unlicensed Item Claim">Counterfeit / Unlicensed Item Claim</option>

@@ -11,6 +11,7 @@ import { fetchAuditQueue, fetchBroadcastLog } from '../api/audit';
 import { fetchReportSummary } from '../api/reports';
 import { fetchLogisticsBoard } from '../api/logistics';
 import { fetchPlatformSettings } from '../api/settings';
+import { fetchAdminMediaLibrary } from '../api/media';
 import { adminKeys, useAdminScope } from './admin-keys';
 
 /**
@@ -18,12 +19,28 @@ import { adminKeys, useAdminScope } from './admin-keys';
  * renders, so a queue that failed cannot quietly borrow another queue's rows.
  */
 
+/**
+ * Boards an operator watches stay current on their own: a 30-second poll plus a
+ * refetch when the tab regains focus, so nobody has to press a refresh button to
+ * learn the numbers moved. `staleTime` matches the poll - the app-wide default is
+ * five minutes, which would swallow the focus refetch entirely. Realtime
+ * invalidation (useAdminLive) still lands changes sooner when it can; the poll is
+ * the guarantee underneath it, covering the aggregates' reads beyond the watched
+ * tables.
+ */
+const liveBoard = {
+  refetchInterval: 30_000,
+  refetchOnWindowFocus: true,
+  staleTime: 30_000,
+} as const;
+
 export function useAdminDashboard(days = 30) {
   const userId = useAdminScope();
   return useQuery({
     queryKey: adminKeys.dashboard(userId, days),
     queryFn: ({ signal }) => fetchAdminDashboard(days, signal),
     enabled: Boolean(userId),
+    ...liveBoard,
   });
 }
 
@@ -114,6 +131,7 @@ export function useAdminOrderQueue(params: {
     // The order queue is the widest read in the console, so a page change keeps the
     // previous rows on screen rather than blanking the table.
     placeholderData: keepPreviousData,
+    ...liveBoard,
   });
 }
 
@@ -191,6 +209,7 @@ export function useLogisticsBoard() {
     queryKey: adminKeys.logistics(userId),
     queryFn: ({ signal }) => fetchLogisticsBoard(signal),
     enabled: Boolean(userId),
+    ...liveBoard,
   });
 }
 
@@ -200,5 +219,15 @@ export function usePlatformSettings() {
     queryKey: adminKeys.settings(userId),
     queryFn: ({ signal }) => fetchPlatformSettings(signal),
     enabled: Boolean(userId),
+  });
+}
+
+/** The platform-wide media library; `enabled` lets the shared media view keep the vendor read out of the admin console. */
+export function useAdminMediaLibrary(enabled = true) {
+  const userId = useAdminScope();
+  return useQuery({
+    queryKey: adminKeys.media(userId),
+    queryFn: ({ signal }) => fetchAdminMediaLibrary(signal),
+    enabled: enabled && Boolean(userId),
   });
 }

@@ -1,178 +1,132 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
-  Clock,
-  ShieldCheck,
   ChevronRight,
-  ShoppingCart,
-  Check,
-  Star,
-  Zap,
   Tag,
-  Gem,
-  Package,
+  BadgePercent,
+  LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
-import { useCurrency } from '../store/currency-store';
+import { useProducts } from '../features/catalog/hooks/useProducts';
+import { ProductCard, type ProductItem } from '../features/products';
+import { domainProductToCardItem } from '../features/products/mappers';
+import { useWishlistStore } from '../store/wishlist-store';
 import { useCartStore } from '../store/cart-store';
+import { useToast } from '../hooks/useToast';
+import { Toast } from '../components/common/Toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { QueryState } from '../components/common/QueryState';
+import { useReveal } from '../hooks/useReveal';
 
-interface DealItem {
-  id: string;
-  title: string;
-  category: string;
-  price: number;
-  originalPrice: number;
-  discountPercent: number;
-  stockSoldPercent: number;
-  rating: number;
-  reviews: number;
-  image: string;
-  seller: string;
-  dealType: 'flash' | 'clearance' | 'under2k' | 'mega';
-}
+type DealTab = 'all' | 'thirty-plus' | 'under-2k';
 
-const DEALS_PRODUCTS: DealItem[] = [
-  {
-    id: 'deal-1',
-    title: 'Ronin R-9 Platinum Edition ANC Wireless Earbuds',
-    category: 'Audio',
-    price: 4950,
-    originalPrice: 8500,
-    discountPercent: 42,
-    stockSoldPercent: 84,
-    rating: 4.8,
-    reviews: 1420,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80',
-    seller: 'Ronin Official Store',
-    dealType: 'flash',
-  },
-  {
-    id: 'deal-2',
-    title: 'Faster 20,000mAh PD 65W Laptop & Mobile Power Bank',
-    category: 'Charging',
-    price: 5200,
-    originalPrice: 7900,
-    discountPercent: 34,
-    stockSoldPercent: 72,
-    rating: 4.7,
-    reviews: 620,
-    image: 'https://images.unsplash.com/photo-1609592807664-42b781df577a?w=600&auto=format&fit=crop&q=80',
-    seller: 'Faster Pakistan',
-    dealType: 'flash',
-  },
-  {
-    id: 'deal-3',
-    title: 'Ultra-Fast 65W GaN Dual USB-C Fast Wall Charger',
-    category: 'Power',
-    price: 1850,
-    originalPrice: 3200,
-    discountPercent: 42,
-    stockSoldPercent: 91,
-    rating: 4.9,
-    reviews: 980,
-    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&auto=format&fit=crop&q=80',
-    seller: 'VoltCraft PK',
-    dealType: 'under2k',
-  },
-  {
-    id: 'deal-4',
-    title: 'Anker Soundcore Sport X10 Rotatable Earbuds',
-    category: 'Audio',
-    price: 9990,
-    originalPrice: 15500,
-    discountPercent: 35,
-    stockSoldPercent: 65,
-    rating: 4.8,
-    reviews: 430,
-    image: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-    seller: 'Anker Official',
-    dealType: 'mega',
-  },
-  {
-    id: 'deal-5',
-    title: 'Braided 100W 2-Meter Fast PD Charging Cable',
-    category: 'Accessories',
-    price: 950,
-    originalPrice: 1800,
-    discountPercent: 47,
-    stockSoldPercent: 78,
-    rating: 4.7,
-    reviews: 1250,
-    image: 'https://images.unsplash.com/photo-1588508065123-287b28e013da?w=600&auto=format&fit=crop&q=80',
-    seller: 'TechCables PK',
-    dealType: 'under2k',
-  },
-  {
-    id: 'deal-6',
-    title: 'StudioCraft Solid Walnut Ergonomic Monitor Stand',
-    category: 'Workspace',
-    price: 6400,
-    originalPrice: 9500,
-    discountPercent: 33,
-    stockSoldPercent: 55,
-    rating: 4.9,
-    reviews: 310,
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600&auto=format&fit=crop&q=80',
-    seller: 'StudioCraft Nordique',
-    dealType: 'clearance',
-  },
-];
-
-type DealTab = 'all' | 'flash' | 'under2k' | 'mega' | 'clearance';
-
+// Every tab is a plain derivation over the live catalogue — a product is a
+// deal when its compare-at price sits above its selling price. There is no
+// flash-sale or clearance flag in the catalogue data, so those buckets are
+// not offered.
 const DEAL_TABS: ReadonlyArray<{ id: DealTab; label: string; icon: LucideIcon }> = [
-  { id: 'all', label: 'All Deals', icon: Flame },
-  { id: 'flash', label: 'Flash Drops', icon: Zap },
-  { id: 'under2k', label: 'Under Rs. 2,000', icon: Tag },
-  { id: 'mega', label: 'Mega Savings (30%+)', icon: Gem },
-  { id: 'clearance', label: 'Clearance Vault', icon: Package },
+  { id: 'all', label: 'All Deals', icon: LayoutGrid },
+  { id: 'thirty-plus', label: '30% or More Off', icon: BadgePercent },
+  { id: 'under-2k', label: 'Under Rs 2,000', icon: Tag },
 ];
+
+const UNDER_2K_PKR = 2000;
 
 export const DealsPage: React.FC = () => {
-  const { formatPrice } = useCurrency();
+  useReveal();
   const { addItem } = useCartStore();
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
+  const { toast, showToast, hideToast } = useToast();
   const [activeTab, setActiveTab] = useState<DealTab>('all');
-  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
+  const [sort, setSort] = useState('featured');
 
-  // Countdown timer simulation (Hours, Minutes, Seconds)
-  const [timeLeft, setTimeLeft] = useState({ hours: 7, minutes: 24, seconds: 48 });
+  // One pool from the real catalogue; deals are the discounted slice of it.
+  const { data, isLoading, isFetching, isError, error, refetch } = useProducts({
+    sort: 'featured',
+    page: 1,
+    limit: 100,
+  });
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        return { hours: 12, minutes: 0, seconds: 0 };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const deals = useMemo(
+    () =>
+      (data?.items ?? [])
+        .map(domainProductToCardItem)
+        .filter((item) => item.compareAtPrice !== undefined && item.compareAtPrice > item.price),
+    [data],
+  );
 
-  const handleAddToCart = (deal: DealItem) => {
+  const maxDiscount = useMemo(
+    () => deals.reduce((max, item) => Math.max(max, item.discountPercent ?? 0), 0),
+    [deals],
+  );
+
+  const visibleDeals = useMemo(() => {
+    const filtered =
+      activeTab === 'thirty-plus'
+        ? deals.filter((item) => (item.discountPercent ?? 0) >= 30)
+        : activeTab === 'under-2k'
+          ? deals.filter((item) => item.price < UNDER_2K_PKR)
+          : deals;
+    const sorted = [...filtered];
+    if (sort === 'price_asc') sorted.sort((a, b) => a.price - b.price);
+    else if (sort === 'price_desc') sorted.sort((a, b) => b.price - a.price);
+    else if (sort === 'rating') sorted.sort((a, b) => b.rating - a.rating);
+    else if (sort === 'discount') sorted.sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0));
+    return sorted;
+  }, [deals, activeTab, sort]);
+
+  const handleAddToCart = (product: ProductItem) => {
     addItem({
-      id: deal.id,
-      productId: deal.id,
-      title: deal.title,
-      price: deal.price,
-      compareAtPrice: deal.originalPrice,
-      maxStock: 25,
-      image: deal.image,
-      sellerId: 'deals-store',
-      sellerName: deal.seller,
-      sellerType: 'vendor',
-      type: 'physical',
+      id: product.id,
+      productId: product.id,
+      title: product.title,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      maxStock: product.maxStock,
+      image: product.image,
+      sellerId: product.sellerId,
+      sellerName: product.sellerName,
+      sellerType: product.sellerType,
+      type: product.type,
     });
-    setAddedIds((prev) => ({ ...prev, [deal.id]: true }));
-    setTimeout(() => {
-      setAddedIds((prev) => ({ ...prev, [deal.id]: false }));
-    }, 1500);
+    showToast(`Added ${product.title} to cart`);
   };
 
-  const filteredDeals = activeTab === 'all'
-    ? DEALS_PRODUCTS
-    : DEALS_PRODUCTS.filter((d) => d.dealType === activeTab);
+  const handleToggleWishlist = (product: ProductItem) => {
+    const wasSaved = isInWishlist(product.id);
+    toggleWishlist({
+      id: product.id,
+      title: product.title,
+      slug: product.id,
+      description: product.title,
+      category: product.category,
+      brand: product.category,
+      images: [product.image],
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      type: product.type,
+      sellerId: product.sellerId,
+      sellerName: product.sellerName,
+      sellerType: product.sellerType,
+      variants: [],
+      stock: product.stock,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      status: 'approved',
+      createdAt: new Date().toISOString(),
+    });
+    showToast(
+      wasSaved ? `Removed ${product.title} from wishlist` : `Saved ${product.title} to wishlist`,
+      wasSaved ? 'info' : 'success',
+    );
+  };
 
   const handleTabListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const ids = DEAL_TABS.map((tab) => tab.id);
@@ -203,48 +157,39 @@ export const DealsPage: React.FC = () => {
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
           <Link to="/" className="hover:text-sun-orange transition-colors">Home</Link>
           <ChevronRight className="h-3 w-3 text-slate-400" aria-hidden="true" />
-          <span className="font-semibold text-slate-900 dark:text-white">Daily Flash Deals &amp; Discounts</span>
+          <span className="font-semibold text-slate-900 dark:text-white">Deals &amp; Discounts</span>
         </nav>
 
-        {/* Hero Banner with Countdown Timer */}
-        <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-gradient-to-r from-orange-500 via-rose-500 to-sun-orange p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+        {/* Hero Banner */}
+        <div className="reveal rounded-3xl border border-white/80 dark:border-slate-800 bg-gradient-to-r from-orange-500 via-rose-500 to-sun-orange p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
           <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-md px-3.5 py-1 text-xs font-black uppercase tracking-wider">
                 <Flame className="h-4 w-4 text-amber-300" aria-hidden="true" />
-                <span>Super Savings • Up to 50% Off</span>
+                <span>{maxDiscount > 0 ? `Up to ${maxDiscount}% off` : 'On sale now'}</span>
               </div>
               <h1 className="font-outfit text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-                Today's Flash Deals &amp; Mega Drops
+                Deals &amp; Discounts
               </h1>
               <p className="text-sm sm:text-base text-white/90 leading-relaxed">
-                Direct factory-priced deals with full State Bank escrow safety. Funds released to merchants only after you inspect the unboxed parcel.
+                Products with genuine price drops from sellers across Vendora. Every order is
+                covered by buyer protection, with payment held in escrow until your order is
+                delivered.
               </p>
             </div>
 
-            {/* Countdown Box */}
-            <div role="timer" aria-live="off" aria-label="Time remaining in this deals window" className="rounded-2xl bg-black/30 backdrop-blur-xl border border-white/20 p-5 shrink-0 text-center space-y-2">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-300 uppercase tracking-wider">
-                <Clock className="h-4 w-4" aria-hidden="true" />
-                <span>Ends In</span>
+            {/* Live count of discounted products (replaces the old simulated countdown) */}
+            <div className="rounded-2xl bg-black/30 backdrop-blur-xl border border-white/20 p-5 shrink-0 text-center space-y-1">
+              <div className="font-outfit text-3xl sm:text-4xl font-black">
+                {!isLoading && data ? deals.length.toLocaleString() : '—'}
               </div>
-              <div className="flex items-center justify-center gap-2 font-mono font-black text-2xl sm:text-3xl">
-                <div className="bg-black/40 rounded-xl px-3 py-1.5">
-                  {String(timeLeft.hours).padStart(2, '0')}
-                  <span className="block text-[9px] font-sans font-bold text-white/60 tracking-wider">HRS</span>
-                </div>
-                <span>:</span>
-                <div className="bg-black/40 rounded-xl px-3 py-1.5">
-                  {String(timeLeft.minutes).padStart(2, '0')}
-                  <span className="block text-[9px] font-sans font-bold text-white/60 tracking-wider">MIN</span>
-                </div>
-                <span>:</span>
-                <div className="bg-black/40 rounded-xl px-3 py-1.5 text-amber-400">
-                  {String(timeLeft.seconds).padStart(2, '0')}
-                  <span className="block text-[9px] font-sans font-bold text-white/60 tracking-wider">SEC</span>
-                </div>
+              <div className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                Products on sale
+              </div>
+              <div className="text-[10px] text-white/50 max-w-[180px]">
+                Discounts are set by sellers against their original price.
               </div>
             </div>
           </div>
@@ -255,7 +200,7 @@ export const DealsPage: React.FC = () => {
           role="tablist"
           aria-label="Deal categories"
           onKeyDown={handleTabListKeyDown}
-          className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-3 shadow-sm"
+          className="reveal flex flex-wrap items-center gap-2 rounded-2xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-3 shadow-sm"
         >
           {DEAL_TABS.map((tab) => {
             const selected = activeTab === tab.id;
@@ -282,106 +227,95 @@ export const DealsPage: React.FC = () => {
           })}
         </div>
 
-        {/* Deals Grid */}
-        <div
-          id="deals-panel"
-          role="tabpanel"
-          aria-labelledby={`deals-tab-${activeTab}`}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {filteredDeals.map((deal) => {
-            const isAdded = !!addedIds[deal.id];
-            return (
-              <div
-                key={deal.id}
-                className="group rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-5 shadow-sm hover:shadow-xl hover:border-sun-orange/40 transition-all duration-300 flex flex-col justify-between"
+        {/* Toolbar: real count + sort, the same strip the catalogue page uses */}
+        <div className="reveal flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-white/10 p-3.5 sm:px-5 rounded-2xl shadow-xs backdrop-blur-md">
+          <span className="text-xs font-bold text-slate-600 dark:text-slate-300" role="status" aria-live="polite">
+            {isLoading ? (
+              'Loading deals…'
+            ) : isError ? (
+              'Could not load deals'
+            ) : (
+              <>
+                Showing <strong className="text-slate-900 dark:text-white">{visibleDeals.length}</strong> of{' '}
+                <strong className="text-slate-900 dark:text-white">{deals.length}</strong> deals
+              </>
+            )}
+          </span>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <label htmlFor="deals-sort" className="text-xs text-slate-500 font-medium">
+              Sort by:
+            </label>
+            <Select value={sort} onValueChange={setSort}>
+              <SelectTrigger
+                id="deals-sort"
+                aria-label="Sort by"
+                className="h-auto rounded-full border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 shadow-2xs dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
               >
-                <div>
-                  {/* Image with discount badge */}
-                  <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4">
-                    <img
-                      src={deal.image}
-                      alt={deal.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {/* Discount Tag */}
-                    <div className="absolute top-3 left-3 rounded-full bg-rose-600 text-white px-2.5 py-1 text-[11px] font-black tracking-wider uppercase shadow-md">
-                      -{deal.discountPercent}% OFF
-                    </div>
-                    {/* Escrow Badge */}
-                    <div className="absolute bottom-3 left-3 rounded-full bg-black/50 backdrop-blur-md text-white px-2.5 py-0.5 text-[10px] font-bold border border-white/20 flex items-center gap-1">
-                      <ShieldCheck className="h-3 w-3 text-emerald-400" aria-hidden="true" />
-                      <span>Escrow Safe</span>
-                    </div>
-                  </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="featured">Featured &amp; Recommended</SelectItem>
+                <SelectItem value="discount">Biggest Discount</SelectItem>
+                <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-                  {/* Brand & Category */}
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                    <span>{deal.seller}</span>
-                    <span className="flex items-center gap-1 text-amber-500 font-bold">
-                      <Star className="h-3 w-3 fill-amber-400" aria-hidden="true" />
-                      {deal.rating} ({deal.reviews})
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="font-outfit text-sm font-extrabold text-slate-900 dark:text-white line-clamp-2 mb-3">
-                    {deal.title}
-                  </h3>
-
-                  {/* Pricing */}
-                  <div className="flex items-baseline gap-2 mb-3">
-                    <span className="font-outfit text-xl font-black text-rose-600">
-                      {formatPrice(deal.price)}
-                    </span>
-                    <span className="font-outfit text-xs text-slate-400 line-through">
-                      {formatPrice(deal.originalPrice)}
-                    </span>
-                  </div>
-
-                  {/* Sold Stock Progress Bar */}
-                  <div className="space-y-1 mb-4">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
-                      <span>Claimed: {deal.stockSoldPercent}%</span>
-                      <span className="text-rose-500 font-bold">Almost Sold Out!</span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-amber-500 to-rose-500 transition-all duration-500"
-                        style={{ width: `${deal.stockSoldPercent}%` }}
-                      />
-                    </div>
-                  </div>
+        {/* Deals Grid — real catalogue products on the standard card */}
+        <div id="deals-panel" role="tabpanel" aria-labelledby={`deals-tab-${activeTab}`}>
+          <QueryState
+            isLoading={isLoading}
+            isError={isError}
+            isFetching={isFetching}
+            error={error}
+            onRetry={refetch}
+            refetch={refetch}
+            errorTitle="Unable to load deals"
+            isEmpty={!isLoading && !isError && visibleDeals.length === 0}
+            skeletonType="grid"
+            skeletonCount={8}
+            emptyView={
+              <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-12 text-center space-y-3">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-50 text-sun-orange" aria-hidden="true">
+                  <Tag className="h-6 w-6" />
                 </div>
-
-                {/* Add to Cart button */}
-                <button
-                  type="button"
-                  onClick={() => handleAddToCart(deal)}
-                  aria-live="polite"
-                  className={`w-full inline-flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-bold transition-all cursor-pointer ${
-                    isAdded
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25'
-                      : 'bg-sun-orange hover:bg-sun-orange-600 text-white shadow-md shadow-orange-500/25 active:scale-95'
-                  }`}
+                <h3 className="font-outfit text-lg font-bold text-slate-900 dark:text-white">
+                  {deals.length === 0 ? 'No discounted products right now' : 'No deals in this view'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  Discounts appear here as soon as a seller sets a compare-at price above the
+                  selling price.
+                </p>
+                <Link
+                  to="/products"
+                  className="inline-block rounded-full bg-sun-orange text-white px-5 py-2 text-xs font-bold shadow-md hover:bg-sun-orange-600 transition-all"
                 >
-                  {isAdded ? (
-                    <>
-                      <Check className="h-4 w-4" aria-hidden="true" />
-                      <span>Added to Bag!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-                      <span>Claim This Deal</span>
-                    </>
-                  )}
-                </button>
+                  Browse All Products
+                </Link>
               </div>
-            );
-          })}
+            }
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4.5">
+              {visibleDeals.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onToggleWishlist={handleToggleWishlist}
+                  isWishlisted={isInWishlist(product.id)}
+                  solidAddToCart={true}
+                />
+              ))}
+            </div>
+          </QueryState>
         </div>
       </div>
+
+      <Toast toast={toast} onDismiss={hideToast} />
     </div>
   );
 };
