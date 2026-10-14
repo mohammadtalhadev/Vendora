@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-
-const CONTAINER = 'mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8';
+import { PolicyShell, PolicySection } from '../components/common/PolicyShell';
 
 interface PolicySection {
   id: string;
@@ -67,60 +66,40 @@ const SECTIONS: PolicySection[] = [
  * enforces.
  */
 export const SellerPolicyPage: React.FC = () => (
-  <div className="bg-slate-50 pb-20 font-sans text-slate-800 antialiased selection:bg-orange-200">
-    <section className="border-b border-slate-200 bg-white">
-      <div className={`${CONTAINER} py-10 sm:py-14`}>
-        <span className="text-[10px] font-black tracking-widest text-sun-orange uppercase">
-          Selling on Vendora
-        </span>
-        <h1 className="mt-2 font-outfit text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-          Seller Policy
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-          The rules of trading on Vendora, written the way the platform actually works.
-          For what it costs, see{' '}
-          <Link to="/seller-fees" className="font-bold text-sun-orange hover:underline">
-            Seller Fees
-          </Link>
-          .
-        </p>
-      </div>
-    </section>
-
-    <div className={`${CONTAINER} mt-10`}>
-      <div className="space-y-4">
-        {SECTIONS.map((section, i) => (
-          <article
-            key={section.id}
-            id={section.id}
-            className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8"
-          >
-            <h2 className="font-outfit text-lg font-black text-slate-900">
-              <span className="mr-2 text-sun-orange">{String(i + 1).padStart(2, '0')}</span>
-              {section.title}
-            </h2>
-            {section.body.map((paragraph, j) => (
-              <p key={j} className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-                {paragraph}
-              </p>
-            ))}
-          </article>
-        ))}
-      </div>
-
-      <p className="mt-8 text-xs text-slate-500">
-        Questions about this policy? Reach the team through the{' '}
-        <Link to="/contact" className="font-bold text-sun-orange hover:underline">
-          contact page
-        </Link>
-        . Applying to sell means you accept this policy alongside the platform{' '}
-        <Link to="/terms" className="font-bold text-sun-orange hover:underline">
-          Terms of Service
+  <PolicyShell
+    eyebrow="Selling on Vendora"
+    title="Seller Policy"
+    intro={
+      <p>
+        The rules of trading on Vendora, written the way the platform actually works.
+        For what it costs, see{' '}
+        <Link to="/seller-fees" className="font-bold text-sun-orange hover:underline">
+          Seller Fees
         </Link>
         .
       </p>
-    </div>
-  </div>
+    }
+  >
+    {SECTIONS.map((section, i) => (
+      <PolicySection key={section.id} id={section.id} index={i + 1} title={section.title}>
+        {section.body.map((paragraph, j) => (
+          <p key={j}>{paragraph}</p>
+        ))}
+      </PolicySection>
+    ))}
+
+    <p className="text-xs text-slate-500">
+      Questions about this policy? Reach the team through the{' '}
+      <Link to="/contact" className="font-bold text-sun-orange hover:underline">
+        contact page
+      </Link>
+      . Applying to sell means you accept this policy alongside the platform{' '}
+      <Link to="/terms" className="font-bold text-sun-orange hover:underline">
+        Terms of Service
+      </Link>
+      .
+    </p>
+  </PolicyShell>
 );
 
 export default SellerPolicyPage;

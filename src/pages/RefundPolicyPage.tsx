@@ -9,6 +9,7 @@ import {
   Calculator,
   ChevronDown,
 } from 'lucide-react';
+import { PolicyShell } from '../components/common/PolicyShell';
 
 export const RefundPolicyPage: React.FC = () => {
   // Refund Estimator State
@@ -115,9 +116,9 @@ export const RefundPolicyPage: React.FC = () => {
     },
     {
       id: 'ref-faq-3',
-      question: 'How does the Vendora Escrow Buyer Protection safeguard my refund?',
+      question: 'How does Vendora Buyer Protection safeguard my refund?',
       answer:
-        'When you pay on Vendora, your funds are held in a secure escrow account and are not released to the third-party merchant until delivery is confirmed and your 30-day inspection period concludes. If a return is accepted, your funds are refunded directly from the escrow pool without having to wait for the merchant to pay.',
+        'Card payments are captured by Vendora, and the seller\'s earnings for your order settle only after delivery. If a return is accepted, your refund is issued to your original payment method. If the seller declines and you believe the return is eligible, raise a dispute from the order — the dispute desk reviews the record and decides.',
     },
     {
       id: 'ref-faq-4',
@@ -134,44 +135,36 @@ export const RefundPolicyPage: React.FC = () => {
   ];
 
   return (
-    <div className="relative">
-      {/* ── Ambient Glow Background ───────────────────────────────── */}
-      <div className="relative overflow-hidden">
-        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
-          {/* ── Breadcrumb & Header ─────────────────────────────────── */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-[11px] font-bold text-slate-400">
-                CONSUMER PROTECTION <span className="text-slate-300">/</span> FAIR RETURN STANDARDS
-              </div>
-              <h1 className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 font-display">
-                Refund &amp; Return Policy
-              </h1>
-              <p className="mt-2 text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
-                Backed by the Vendora 30-Day Escrow Buyer Guarantee: every purchase is protected from arrival to satisfaction.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <Link
-                to="/returns"
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-glass-pill hover:bg-white transition-all active:scale-95"
-              >
-                <RotateCcw className="h-4 w-4 text-sun-orange" />
-                Start a Return
-              </Link>
-              <Link
-                to="/disputes"
-                className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95"
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Disputes &amp; Claims Desk
-              </Link>
-            </div>
-          </div>
-
-          {/* ── 30-Day Escrow Buyer Protection Hero Card ─────────────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-10 shadow-glass backdrop-blur-xl space-y-6">
+    <>
+      <PolicyShell
+        eyebrow="Consumer Protection"
+        title="Refund & Return Policy"
+        intro={
+          <p>
+            Every purchase is covered by the 30-day return window: if something is wrong, start a return and the seller reviews it — and if a seller refuses an eligible return, the dispute desk steps in.
+          </p>
+        }
+        action={
+          <>
+            <Link
+              to="/returns"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
+            >
+              <RotateCcw className="h-4 w-4 text-sun-orange" />
+              Start a Return
+            </Link>
+            <Link
+              to="/disputes"
+              className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Disputes &amp; Claims Desk
+            </Link>
+          </>
+        }
+      >
+          {/* ── 30-Day Buyer Protection Hero Card ──────────────────── */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div className="flex items-center gap-3.5">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-xs">
@@ -179,22 +172,22 @@ export const RefundPolicyPage: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                    BANK-GRADE ESCROW SAFEGUARD
+                    30-DAY RETURN WINDOW
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-display">
+                  <h2 className="font-outfit text-lg font-black text-slate-900">
                     The Vendora 30-Day Money-Back Guarantee
                   </h2>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-xs font-extrabold text-emerald-800">
-                  100% Escrow Protected
+                  30-Day Window
                 </span>
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-4xl">
-              Unlike traditional marketplaces where your payment goes immediately to an unverified third party, Vendora holds buyer funds in a segregated escrow account. The merchant does not receive payout settlement until your package is delivered and the inspection window on your order clears without dispute.
+            <p className="text-sm text-slate-600 leading-relaxed max-w-4xl">
+              Your payment does not sit with an unverified stranger: card payments are captured by Vendora and a seller&apos;s earnings settle after delivery, while cash-on-delivery is paid at your door. If a return is accepted, the refund is issued to your original payment method — and if a seller refuses an eligible return, you can escalate to the dispute desk, which reviews the full record.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-xs">
@@ -211,10 +204,10 @@ export const RefundPolicyPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
                 <div className="font-bold text-slate-900 flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <span>Instant Scan Trigger</span>
+                  <span>Seller Review First</span>
                 </div>
                 <p className="text-slate-500">
-                  Your refund begins processing immediately when the courier scans the parcel.
+                  Your refund is processed once the seller accepts the return and the goods are on their way back.
                 </p>
               </div>
 
@@ -231,14 +224,14 @@ export const RefundPolicyPage: React.FC = () => {
           </div>
 
           {/* ── Interactive Net Refund Estimator ─────────────────────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-10 shadow-glass backdrop-blur-xl space-y-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-sun-orange uppercase tracking-wider mb-1">
                   <Calculator className="h-3.5 w-3.5" />
                   Interactive Transparency Tool
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 font-display">
+                <h3 className="font-outfit text-lg font-black text-slate-900">
                   Live Net Refund &amp; Bonus Estimator
                 </h3>
               </div>
@@ -312,7 +305,7 @@ export const RefundPolicyPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="text-3xl sm:text-4xl font-black text-slate-900 font-display">
+                <div className="font-outfit text-3xl font-black text-slate-900">
                   ${netRefund.toFixed(2)}
                 </div>
 
@@ -337,7 +330,7 @@ export const RefundPolicyPage: React.FC = () => {
 
                 <Link
                   to="/returns"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 py-2.5 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 py-2.5 text-xs font-bold text-white transition-all shadow-md active:scale-95"
                 >
                   <span>Start Return with This Option</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -349,7 +342,7 @@ export const RefundPolicyPage: React.FC = () => {
           {/* ── Refund Methods & Timeline Table ──────────────────────── */}
           <div className="space-y-4">
             <div>
-              <h3 className="text-xl font-black text-slate-900 font-display">
+              <h3 className="font-outfit text-lg font-black text-slate-900">
                 Refund Processing Timeframes by Payment Gateway
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -361,7 +354,7 @@ export const RefundPolicyPage: React.FC = () => {
               {refundMethods.map((m) => (
                 <div
                   key={m.method}
-                  className="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-glass backdrop-blur-xl flex flex-col justify-between space-y-3 hover:shadow-glass-hover transition-all"
+                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs flex flex-col justify-between space-y-3 transition-all"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -370,7 +363,7 @@ export const RefundPolicyPage: React.FC = () => {
                       </span>
                     </div>
                     <h4 className="font-bold text-slate-900 text-sm">{m.method}</h4>
-                    <div className="text-lg font-black text-slate-900 font-display flex items-center gap-1.5">
+                    <div className="font-outfit text-lg font-black text-slate-900 flex items-center gap-1.5">
                       <Clock className="h-4 w-4 text-sun-orange" />
                       <span>{m.time}</span>
                     </div>
@@ -386,8 +379,8 @@ export const RefundPolicyPage: React.FC = () => {
           </div>
 
           {/* ── Item Condition & Eligibility Tiers ───────────────────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-8 shadow-glass backdrop-blur-xl space-y-4">
-            <h3 className="text-xl font-black text-slate-900 font-display">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-4">
+            <h3 className="font-outfit text-lg font-black text-slate-900">
               Item Condition &amp; Refund Percentage Schedule
             </h3>
 
@@ -410,8 +403,8 @@ export const RefundPolicyPage: React.FC = () => {
           </div>
 
           {/* ── Policy FAQs ──────────────────────────────────────────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-8 shadow-glass backdrop-blur-xl space-y-4">
-            <h3 className="text-xl font-black text-slate-900 font-display">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-4">
+            <h3 className="font-outfit text-lg font-black text-slate-900">
               Refund &amp; Return Policy FAQ
             </h3>
 
@@ -448,9 +441,8 @@ export const RefundPolicyPage: React.FC = () => {
               })}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+      </PolicyShell>
+    </>
   );
 };
 

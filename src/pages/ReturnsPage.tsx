@@ -131,7 +131,7 @@ export const ReturnsPage: React.FC = () => {
       id: 'ret-faq-3',
       question: 'How does the refund work?',
       answer:
-        'Refunds follow your original payment method. The escrow-held amount is released back once the seller or support desk approves the return.',
+        'Refunds follow your original payment method. Once the seller approves the return — or the dispute desk upholds it — the refund is issued back to the method you paid with.',
     },
     {
       id: 'ret-faq-4',
@@ -246,10 +246,10 @@ export const ReturnsPage: React.FC = () => {
             <div className="rounded-3xl border border-indigo-200/80 bg-indigo-50/70 dark:border-indigo-900/40 dark:bg-indigo-950/30 p-5 space-y-3">
               <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
                 <ShieldCheck className="h-4 w-4" />
-                <h4 className="font-outfit text-xs font-bold">Escrow Guarantee</h4>
+                <h4 className="font-outfit text-xs font-bold">Buyer Protection</h4>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                Your payment stays in escrow until the seller approves your return.
+                If a seller declines your return and you believe it is eligible, raise a dispute from the order and the dispute desk reviews it.
               </p>
             </div>
           </div>
@@ -299,9 +299,9 @@ export const ReturnsPage: React.FC = () => {
                   <Zap className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-outfit font-bold text-slate-900 dark:text-white text-xs sm:text-sm">Escrow Refund</h3>
+                  <h3 className="font-outfit font-bold text-slate-900 dark:text-white text-xs sm:text-sm">Refund on Approval</h3>
                   <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                    The held amount is released back to your payment method after approval.
+                    Refunds are issued to your original payment method once the return is approved.
                   </p>
                 </div>
               </div>
@@ -523,7 +523,7 @@ export const ReturnsPage: React.FC = () => {
                 {(
                   [
                     { key: 'replacement', title: 'Free Replacement', desc: 'The seller ships a replacement after review' },
-                    { key: 'refund', title: 'Escrow Bank Refund', desc: 'Reversed to your original payment method' },
+                    { key: 'refund', title: 'Bank Refund', desc: 'Reversed to your original payment method' },
                     { key: 'credit', title: 'Store Credit', desc: 'Credited to your Vendora balance' },
                   ] as const
                 ).map((opt) => (

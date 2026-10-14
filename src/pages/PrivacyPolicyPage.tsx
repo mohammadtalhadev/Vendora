@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PolicyShell } from '../components/common/PolicyShell';
 import { Toast } from '../components/common/Toast';
 import { useToast } from '../hooks/useToast';
 import {
@@ -49,47 +50,40 @@ export const PrivacyPolicyPage: React.FC = () => {
   };
 
   return (
-    <div className="relative">
-      {/* ── Ambient Glow Background ───────────────────────────────── */}
-      <div className="relative overflow-x-clip">
-        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
-          {/* ── Breadcrumb & Header ─────────────────────────────────── */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-[11px] font-bold text-slate-400">
-                GOVERNANCE &amp; TRUST <span className="text-slate-300">/</span> GLOBAL PRIVACY CHARTER
-              </div>
-              <h1 className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 font-display">
-                Privacy Policy
-              </h1>
-              <p className="mt-2 text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
-                Last Updated: March 2026 • Compliant with GDPR (EU/UK), CCPA/CPRA (California), and PIPEDA (Canada).
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setIsDsarModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-glass-pill hover:bg-white transition-all active:scale-95 cursor-pointer"
-              >
-                <UserCheck className="h-4 w-4 text-sun-orange" />
-                Download / Delete Data (DSAR)
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95 cursor-pointer"
-              >
-                <Printer className="h-4 w-4" />
-                Print Legal Policy
-              </button>
-            </div>
-          </div>
+    <>
+      <PolicyShell
+        eyebrow="Governance & Trust"
+        title="Privacy Policy"
+        intro={
+          <p>
+            Last Updated: March 2026 • Compliant with GDPR (EU/UK), CCPA/CPRA (California), and PIPEDA (Canada).
+          </p>
+        }
+        action={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsDsarModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+            >
+              <UserCheck className="h-4 w-4 text-sun-orange" />
+              Download / Delete Data (DSAR)
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <Printer className="h-4 w-4" />
+              Print Legal Policy
+            </button>
+          </>
+        }
+      >
 
           {/* ── Trust Pillars & Compliance Badges ───────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-glass backdrop-blur-xl flex items-center gap-3">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
                 <ShieldCheck className="h-5 w-5" />
               </div>
@@ -99,7 +93,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-glass backdrop-blur-xl flex items-center gap-3">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shrink-0">
                 <Lock className="h-5 w-5" />
               </div>
@@ -109,7 +103,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-glass backdrop-blur-xl flex items-center gap-3">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 shrink-0">
                 <Server className="h-5 w-5" />
               </div>
@@ -119,7 +113,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-glass backdrop-blur-xl flex items-center gap-3">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-sun-orange shrink-0">
                 <Eye className="h-5 w-5" />
               </div>
@@ -131,21 +125,21 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
 
           {/* ── Interactive Cookie & Privacy Preferences Center ──────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-8 shadow-glass backdrop-blur-xl space-y-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-sun-orange uppercase tracking-wider mb-1">
                   <Sliders className="h-3.5 w-3.5" />
                   Your Privacy, Your Control
                 </div>
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   Cookie &amp; Tracking Consent Preferences
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={handleSaveCookiePreferences}
-                className="rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white transition-all cursor-pointer shadow-md hover:shadow-orange-glow active:scale-95 self-start sm:self-auto"
+                className="rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white transition-all cursor-pointer shadow-md active:scale-95 self-start sm:self-auto"
               >
                 Save Preferences
               </button>
@@ -239,7 +233,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Sticky Table of Contents (4 cols) */}
             <div className="hidden lg:block lg:col-span-4 sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto pr-1 [scrollbar-width:thin] space-y-4">
-              <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-glass backdrop-blur-xl space-y-3 text-xs">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs space-y-3 text-xs">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <FileText className="h-4 w-4 text-sun-orange" />
                   Table of Contents
@@ -273,7 +267,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </div>
 
               {/* DPO Contact Card */}
-              <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-glass backdrop-blur-xl space-y-3 text-xs">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs space-y-3 text-xs">
                 <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
                   <Mail className="h-4 w-4 text-emerald-600" />
                   Data Protection Officer (DPO)
@@ -291,10 +285,10 @@ export const PrivacyPolicyPage: React.FC = () => {
             </div>
 
             {/* Comprehensive Articles (8 cols) */}
-            <div className="lg:col-span-8 rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-10 shadow-glass backdrop-blur-xl space-y-8 text-xs sm:text-sm text-slate-700 leading-relaxed">
+            <div className="lg:col-span-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-8 text-sm leading-relaxed text-slate-600">
               {/* Section 1 */}
               <section id="section-1" className="space-y-3 scroll-mt-28">
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   1. Information We Collect
                 </h2>
                 <p>
@@ -310,7 +304,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
               {/* Section 2 */}
               <section id="section-2" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   2. How We Utilize Your Information
                 </h2>
                 <p>
@@ -326,7 +320,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               {/* Section 3: Marketplace Data Separation */}
               <section id="section-3" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
                 <div className="p-4 rounded-2xl bg-orange-50/80 border border-orange-200/60 space-y-2">
-                  <h2 className="text-lg font-black text-slate-900 font-display flex items-center gap-2">
+                  <h2 className="font-outfit text-lg font-black text-slate-900 flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-sun-orange" />
                     3. Multi-Vendor Marketplace Data Separation (Zero Leakage)
                   </h2>
@@ -343,7 +337,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
               {/* Section 4 */}
               <section id="section-4" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   4. Cookies &amp; Tracking Technologies
                 </h2>
                 <p>
@@ -353,7 +347,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
               {/* Section 5 */}
               <section id="section-5" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   5. Global Privacy Rights (GDPR / CCPA / PIPEDA)
                 </h2>
                 <p>
@@ -381,7 +375,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
               {/* Section 6 */}
               <section id="section-6" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   6. Security &amp; Encryption Standards
                 </h2>
                 <p>
@@ -391,7 +385,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
               {/* Section 7 */}
               <section id="section-7" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   7. Data Retention &amp; Deletion Protocols
                 </h2>
                 <p>
@@ -401,7 +395,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
               {/* Section 8 */}
               <section id="section-8" className="space-y-3 scroll-mt-28 border-t border-slate-100 pt-6">
-                <h2 className="text-xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   8. Contact our Data Protection Officer
                 </h2>
                 <p>
@@ -416,8 +410,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </section>
             </div>
           </div>
-        </div>
-      </div>
+      </PolicyShell>
 
       {/* ── DSAR Modal (Data Subject Access Request) ───────────────── */}
       <Dialog open={isDsarModalOpen} onOpenChange={setIsDsarModalOpen}>
@@ -492,7 +485,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95 cursor-pointer"
+                className="rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white transition-all shadow-md active:scale-95 cursor-pointer"
               >
                 Submit Formal Request
               </button>
@@ -504,7 +497,7 @@ export const PrivacyPolicyPage: React.FC = () => {
       {/* ── Toast Notification ─────────────────────────────────────── */}
       {/* Shared toast (Batch 47) — replaces this page's private pill. */}
       <Toast toast={toast} onDismiss={hideToast} />
-    </div>
+    </>
   );
 };
 

@@ -9,6 +9,8 @@ import {
   Compass,
 } from 'lucide-react';
 
+import { PolicyShell } from '../components/common/PolicyShell';
+
 export const ShippingPolicyPage: React.FC = () => {
   // Calculator state
   const [destCountry, setDestCountry] = useState('US');
@@ -131,56 +133,49 @@ export const ShippingPolicyPage: React.FC = () => {
       id: 'ship-faq-5',
       question: 'What happens if a package is marked delivered but I cannot find it?',
       answer:
-        'Check nearby drop points (porch, building lobby, concierge desk, or neighbors). If not found within 24 hours of the delivery scan, report it via our Claims Desk. Every shipment is backed by the Vendora Escrow Safe-Transit Guarantee—we cover 100% of porch piracy or lost package replacements.',
+        'Check nearby drop points (porch, building lobby, concierge desk, or neighbors). If not found within 24 hours of the delivery scan, report it via our Claims Desk. Open a dispute from the order and the dispute desk will review the delivery record with you.',
     },
   ];
 
   return (
-    <div className="relative">
-      {/* ── Ambient Glow Background ───────────────────────────────── */}
-      <div className="relative overflow-hidden">
-        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
-          {/* ── Breadcrumb & Header ─────────────────────────────────── */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-[11px] font-bold text-slate-400">
-                POLICIES &amp; LOGISTICS <span className="text-slate-300">/</span> DELIVERY STANDARDS
-              </div>
-              <h1 className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 font-display">
-                Shipping Rates &amp; Policies
-              </h1>
-              <p className="mt-2 text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
-                Clear transit rates, guaranteed delivery timeframes, multi-vendor parcel tracking, and complete customs transparency.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <Link
-                to="/track"
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-xs font-bold text-slate-700 shadow-glass-pill hover:bg-white transition-all active:scale-95"
-              >
-                <Package className="h-4 w-4 text-sun-orange" />
-                Track an Order
-              </Link>
-              <Link
-                to="/faq"
-                className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-orange-glow transition-all active:scale-95"
-              >
-                <Compass className="h-4 w-4" />
-                Help Center
-              </Link>
-            </div>
-          </div>
+    <>
+      <PolicyShell
+        eyebrow="Policies & Logistics"
+        title="Shipping Rates & Policies"
+        intro={
+          <p>
+            How delivery works on a multi-vendor marketplace: per-package dispatch, tracking on every parcel, and the standard delivery window shown at checkout.
+          </p>
+        }
+        action={
+          <>
+            <Link
+              to="/track"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
+            >
+              <Package className="h-4 w-4 text-sun-orange" />
+              Track an Order
+            </Link>
+            <Link
+              to="/faq"
+              className="inline-flex items-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 px-5 py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95"
+            >
+              <Compass className="h-4 w-4" />
+              Help Center
+            </Link>
+          </>
+        }
+      >
 
           {/* ── Interactive Shipping Rates Calculator Widget ─────────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-10 shadow-glass backdrop-blur-xl space-y-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-[10px] font-bold text-sun-orange uppercase tracking-wider mb-1">
                   <Calculator className="h-3.5 w-3.5" />
                   Real-Time Shipping Fee &amp; Timeline Estimator
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-display">
+                <h2 className="font-outfit text-lg font-black text-slate-900">
                   Estimate Your Delivery Rate &amp; Arrival Window
                 </h2>
               </div>
@@ -279,7 +274,7 @@ export const ShippingPolicyPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="text-3xl sm:text-4xl font-black text-slate-900 font-display">
+                <div className="font-outfit text-3xl font-black text-slate-900">
                   {calcResult.isFree ? (
                     <span className="text-emerald-700">FREE</span>
                   ) : (
@@ -297,14 +292,14 @@ export const ShippingPolicyPage: React.FC = () => {
                     <strong className="text-slate-900">{calcResult.carrier}</strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Safe-Transit Escrow Insurance:</span>
-                    <strong className="text-emerald-700 font-bold">100% Covered</strong>
+                    <span className="text-slate-500">Buyer Protection:</span>
+                    <strong className="text-emerald-700 font-bold">Dispute desk on every order</strong>
                   </div>
                 </div>
 
                 <Link
                   to="/products"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 py-2.5 text-xs font-bold text-white transition-all shadow-md hover:shadow-orange-glow active:scale-95"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-sun-orange hover:bg-sun-orange-600 py-2.5 text-xs font-bold text-white transition-all shadow-md active:scale-95"
                 >
                   <span>Explore Catalog Products</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -316,7 +311,7 @@ export const ShippingPolicyPage: React.FC = () => {
           {/* ── 4 Standard Delivery Tiers (Cards Grid) ───────────────── */}
           <div className="space-y-4">
             <div>
-              <h3 className="text-xl font-black text-slate-900 font-display">
+              <h3 className="font-outfit text-lg font-black text-slate-900">
                 Vendora Delivery Speed Options
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -328,7 +323,7 @@ export const ShippingPolicyPage: React.FC = () => {
               {rateTiers.map((tier) => (
                 <div
                   key={tier.name}
-                  className="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-glass backdrop-blur-xl flex flex-col justify-between space-y-4 hover:shadow-glass-hover transition-all"
+                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs flex flex-col justify-between space-y-4 transition-all"
                 >
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
@@ -338,7 +333,7 @@ export const ShippingPolicyPage: React.FC = () => {
                     </div>
 
                     <h4 className="font-bold text-slate-900 text-base">{tier.name}</h4>
-                    <div className="text-2xl font-black text-slate-900 font-display">{tier.price}</div>
+                    <div className="font-outfit text-2xl font-black text-slate-900">{tier.price}</div>
                     <div className="text-[11px] font-semibold text-sun-orange">{tier.priceSub}</div>
 
                     <div className="pt-2 border-t border-slate-100 text-xs text-slate-600 leading-relaxed">
@@ -360,13 +355,13 @@ export const ShippingPolicyPage: React.FC = () => {
           </div>
 
           {/* ── Multi-Vendor Split Shipping Explanation ──────────────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-8 shadow-glass backdrop-blur-xl space-y-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-sun-orange">
                 <Package className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900 font-display">
+                <h3 className="font-outfit text-lg font-black text-slate-900">
                   How Multi-Vendor Marketplace Shipments Work
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -400,13 +395,13 @@ export const ShippingPolicyPage: React.FC = () => {
           </div>
 
           {/* ── International Shipping & Customs Tariffs ─────────────── */}
-          <div className="rounded-3xl border border-slate-800 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 p-6 sm:p-8 text-white space-y-4 shadow-xl">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 text-white space-y-4 shadow-2xs">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white">
                 <Globe2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black font-display text-white">
+                <h3 className="font-outfit text-lg font-black text-white">
                   Cross-Border &amp; International Delivery (DDP Guaranteed)
                 </h3>
                 <p className="text-xs text-slate-300">
@@ -438,8 +433,8 @@ export const ShippingPolicyPage: React.FC = () => {
           </div>
 
           {/* ── FAQs on Shipping ─────────────────────────────────────── */}
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 sm:p-8 shadow-glass backdrop-blur-xl space-y-4">
-            <h3 className="text-xl font-black text-slate-900 font-display">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8 space-y-4">
+            <h3 className="font-outfit text-lg font-black text-slate-900">
               Shipping &amp; Delivery Policies FAQ
             </h3>
 
@@ -476,9 +471,8 @@ export const ShippingPolicyPage: React.FC = () => {
               })}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+      </PolicyShell>
+    </>
   );
 };
 

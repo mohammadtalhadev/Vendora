@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useParams } from 'react-router-dom';
 import { RootLayout } from '../components/layout/RootLayout';
 import { AccountLayout } from '../components/layout/AccountLayout';
 import { PublicLayout, AdminLayout, VendorLayout, RiderLayout, SupportLayout } from '../components/layout/PanelLayout';
@@ -372,6 +372,18 @@ const lazyWrap = (element: React.ReactNode) => (
   <Suspense fallback={<PageLoader />}>{element}</Suspense>
 );
 
+
+/**
+ * Redirect for legacy alias routes that carried a route param (Batch 55):
+ * renders the canonical URL built from the matched params, so old links
+ * keep working without mounting the page twice.
+ */
+const ParamRedirect: React.FC<{ build: (params: Record<string, string | undefined>) => string }> = ({
+  build,
+}) => {
+  const params = useParams();
+  return <Navigate to={build(params)} replace />;
+};
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -400,11 +412,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'stores/:vendorId',
-        element: lazyWrap(<VendorStorefrontPage />),
+        element: <ParamRedirect build={(p) => `/vendors/${p.vendorId ?? ''}`} />,
       },
       {
         path: 'store/:vendorId',
-        element: lazyWrap(<VendorStorefrontPage />),
+        element: <ParamRedirect build={(p) => `/vendors/${p.vendorId ?? ''}`} />,
       },
       {
         path: 'cart',
@@ -496,15 +508,15 @@ export const router = createBrowserRouter([
       },
       {
         path: 'track-order',
-        element: lazyWrap(<TrackOrderPage />),
+        element: <Navigate to="/track" replace />,
       },
       {
         path: 'track-order/:trackingNumber',
-        element: lazyWrap(<TrackOrderPage />),
+        element: <ParamRedirect build={(p) => `/track?trk=${encodeURIComponent(p.trackingNumber ?? '')}`} />,
       },
       {
         path: 'order-tracking',
-        element: lazyWrap(<TrackOrderPage />),
+        element: <Navigate to="/track" replace />,
       },
       {
         path: 'compare',
@@ -556,7 +568,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'returns-replacements',
-        element: lazyWrap(<ReturnsPage />),
+        element: <Navigate to="/returns" replace />,
       },
       {
         path: 'shipping',
@@ -564,11 +576,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'shipping-rates',
-        element: lazyWrap(<ShippingPolicyPage />),
+        element: <Navigate to="/shipping" replace />,
       },
       {
         path: 'shipping-policy',
-        element: lazyWrap(<ShippingPolicyPage />),
+        element: <Navigate to="/shipping" replace />,
       },
       {
         path: 'refund-policy',
@@ -576,7 +588,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'refunds',
-        element: lazyWrap(<RefundPolicyPage />),
+        element: <Navigate to="/refund-policy" replace />,
       },
       {
         path: 'privacy',
@@ -588,7 +600,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'legal',
-        element: lazyWrap(<TermsPage />),
+        element: <Navigate to="/terms" replace />,
       },
       {
         path: 'about',
@@ -596,7 +608,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'about-us',
-        element: lazyWrap(<AboutPage />),
+        element: <Navigate to="/about" replace />,
       },
       {
         path: 'affiliates',
@@ -604,7 +616,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'creator-program',
-        element: lazyWrap(<AffiliatePage />),
+        element: <Navigate to="/affiliates" replace />,
       },
       {
         path: 'faq',
@@ -612,7 +624,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'help',
-        element: lazyWrap(<FAQPage />),
+        element: <Navigate to="/faq" replace />,
       },
       {
         path: 'contact',
@@ -620,7 +632,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'contact-us',
-        element: lazyWrap(<ContactPage />),
+        element: <Navigate to="/contact" replace />,
       },
       {
         path: 'brands',
@@ -628,7 +640,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'brand-stores',
-        element: lazyWrap(<BrandsPage />),
+        element: <Navigate to="/brands" replace />,
       },
       {
         path: 'brands/:slug',
@@ -644,7 +656,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'flash-deals',
-        element: lazyWrap(<DealsPage />),
+        element: <Navigate to="/deals" replace />,
       },
       {
         path: 'seller-fees',
@@ -668,7 +680,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'jobs',
-        element: lazyWrap(<CareersPage />),
+        element: <Navigate to="/careers" replace />,
       },
       {
         path: 'blog',
@@ -676,7 +688,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'journal',
-        element: lazyWrap(<BlogPage />),
+        element: <Navigate to="/blog" replace />,
       },
       {
         path: 'blog/:slug',
@@ -759,7 +771,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'add-product',
-        element: lazyWrap(<VendorAddProductPage />),
+        element: <Navigate to="/vendor/products/new" replace />,
       },
       {
         path: 'returns',

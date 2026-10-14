@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Copy, Gift, Share2, ShoppingBag, Sparkles, Store } from 'lucide-react';
+import { PolicyShell } from '../components/common/PolicyShell';
 import { useAuthStore } from '../store/auth-store';
 import { useReferralSummary } from '../features/rewards/hooks/useRewards';
 import { referralLinkFor } from '../features/rewards/api/rewards';
@@ -35,68 +36,63 @@ export const AffiliatePage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-14 sm:px-6">
-      <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3.5 py-1 text-xs font-bold text-[#EA6C13] ring-1 ring-orange-200">
-        <Share2 className="h-3.5 w-3.5" />
-        <span>Referral Program</span>
-      </div>
-
-      <h1 className="font-outfit mt-5 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-        Share Vendora, earn loyalty points
-      </h1>
-
-      <div className="mt-5 space-y-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300 sm:text-base">
-        <p>
-          Vendora&apos;s referral program is live, and it runs on the loyalty system — not on
-          promises. Every account has a personal referral link. When someone signs up through
-          your link and their first order is delivered, you earn{' '}
-          <strong className="text-slate-900 dark:text-white">250 loyalty points</strong>.
-        </p>
-        <p>
-          Points are real: you also earn 1 point for every Rs 100 of a delivered order&apos;s
-          subtotal, and any 100 points convert into a Rs 100 coupon you can spend at checkout.
-          Your balance, referral counts and coupon codes live on your{' '}
-          <Link to="/account/rewards" className="font-bold text-sun-orange hover:underline">
-            Rewards &amp; Gift Cards
-          </Link>{' '}
-          page.
-        </p>
-      </div>
-
-      <ol className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <li className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-white/10 dark:bg-slate-900">
+    <PolicyShell
+      eyebrow="Referral Program"
+      title="Share Vendora, earn loyalty points"
+      intro={
+        <>
+          <p>
+            Vendora&apos;s referral program is live, and it runs on the loyalty system — not on
+            promises. Every account has a personal referral link. When someone signs up through
+            your link and their first order is delivered, you earn{' '}
+            <strong className="text-slate-900">250 loyalty points</strong>.
+          </p>
+          <p>
+            Points are real: you also earn 1 point for every Rs 100 of a delivered order&apos;s
+            subtotal, and any 100 points convert into a Rs 100 coupon you can spend at checkout.
+            Your balance, referral counts and coupon codes live on your{' '}
+            <Link to="/account/rewards" className="font-bold text-sun-orange hover:underline">
+              Rewards &amp; Gift Cards
+            </Link>{' '}
+            page.
+          </p>
+        </>
+      }
+    >
+      <ol className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <li className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs">
           <Share2 className="h-5 w-5 text-sun-orange" />
-          <p className="mt-3 text-sm font-extrabold text-slate-900 dark:text-white">1. Share your link</p>
+          <p className="mt-3 text-sm font-extrabold text-slate-900">1. Share your link</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Send your personal referral link to friends who have not joined Vendora yet.
           </p>
         </li>
-        <li className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-white/10 dark:bg-slate-900">
+        <li className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs">
           <ShoppingBag className="h-5 w-5 text-sun-orange" />
-          <p className="mt-3 text-sm font-extrabold text-slate-900 dark:text-white">2. They shop &amp; receive</p>
+          <p className="mt-3 text-sm font-extrabold text-slate-900">2. They shop &amp; receive</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             The referral counts when their first order is actually delivered — not at sign-up.
           </p>
         </li>
-        <li className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-white/10 dark:bg-slate-900">
+        <li className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs">
           <Sparkles className="h-5 w-5 text-sun-orange" />
-          <p className="mt-3 text-sm font-extrabold text-slate-900 dark:text-white">3. You earn 250 points</p>
+          <p className="mt-3 text-sm font-extrabold text-slate-900">3. You earn 250 points</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Points land in your loyalty balance and convert to coupons at 100 points = Rs 100.
           </p>
         </li>
       </ol>
 
-      <section className="mt-8 rounded-3xl border border-white/80 bg-white/80 p-6 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs sm:p-8">
         {user ? (
           referralLink ? (
             <>
-              <h2 className="font-outfit text-base font-black text-slate-900 dark:text-white">Your referral link</h2>
+              <h2 className="font-outfit text-base font-black text-slate-900">Your referral link</h2>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <code className="rounded-xl bg-slate-100 px-3 py-2 font-mono text-sm font-black tracking-wider text-slate-900 dark:bg-white/10 dark:text-white">
+                <code className="rounded-xl bg-slate-100 px-3 py-2 font-mono text-sm font-black tracking-wider text-slate-900">
                   {referralCode}
                 </code>
-                <span className="min-w-0 flex-1 truncate rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-white/5">
+                <span className="min-w-0 flex-1 truncate rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
                   {referralLink}
                 </span>
                 <button
@@ -117,7 +113,7 @@ export const AffiliatePage: React.FC = () => {
               )}
             </>
           ) : (
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-slate-600">
               Your referral link is being prepared — check your{' '}
               <Link to="/account/rewards" className="font-bold text-sun-orange hover:underline">
                 Rewards page
@@ -127,8 +123,8 @@ export const AffiliatePage: React.FC = () => {
           )
         ) : (
           <>
-            <h2 className="font-outfit text-base font-black text-slate-900 dark:text-white">Get your link</h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            <h2 className="font-outfit text-base font-black text-slate-900">Get your link</h2>
+            <p className="mt-2 text-sm text-slate-600">
               Sign in to see your personal referral code and link, your points balance and how
               many referrals have been rewarded.
             </p>
@@ -142,28 +138,28 @@ export const AffiliatePage: React.FC = () => {
         )}
       </section>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link
           to="/gift-cards"
-          className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg dark:border-white/10 dark:bg-slate-900"
+          className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg"
         >
           <Gift className="h-5 w-5 text-sun-orange" />
-          <p className="mt-3 text-sm font-extrabold text-slate-900 dark:text-white">Gift cards</p>
+          <p className="mt-3 text-sm font-extrabold text-slate-900">Gift cards</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Prefer giving credit directly? Buy a gift card with a real, spendable balance.
           </p>
         </Link>
         <Link
           to="/become-a-seller"
-          className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg dark:border-white/10 dark:bg-slate-900"
+          className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg"
         >
           <Store className="h-5 w-5 text-sun-orange" />
-          <p className="mt-3 text-sm font-extrabold text-slate-900 dark:text-white">Sell on Vendora</p>
+          <p className="mt-3 text-sm font-extrabold text-slate-900">Sell on Vendora</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             Selling is open today — open a real store and list products now.
           </p>
         </Link>
       </div>
-    </div>
+    </PolicyShell>
   );
 };

@@ -5,8 +5,7 @@ import { ArrowRight, Banknote, Percent, Receipt, Store } from 'lucide-react';
 import { fetchCommissionRates, INSTANT_PAYOUT_FEE_RATE } from '../features/vendor/api/fees';
 import { useCategories } from '../features/catalog/hooks/useProducts';
 import { formatPrice } from '../store/currency-store';
-
-const CONTAINER = 'mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8';
+import { PolicyShell } from '../components/common/PolicyShell';
 
 const pct = (rate: number): string => `${Math.round(rate * 1000) / 10}%`;
 
@@ -31,25 +30,17 @@ export const SellerFeesPage: React.FC = () => {
   const exampleGoods = 10000;
 
   return (
-    <div className="bg-slate-50 pb-20 font-sans text-slate-800 antialiased selection:bg-orange-200">
-      {/* ── Header ── */}
-      <section className="border-b border-slate-200 bg-white">
-        <div className={`${CONTAINER} py-10 sm:py-14`}>
-          <span className="text-[10px] font-black tracking-widest text-sun-orange uppercase">
-            Selling on Vendora
-          </span>
-          <h1 className="mt-2 font-outfit text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-            Seller Fees, Explained Plainly
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-            One commission on what you sell, and one optional payout fee. The rates below
-            are read from the platform&apos;s live configuration — the same numbers the
-            system applies to real orders — not a brochure.
-          </p>
-        </div>
-      </section>
-
-      <div className={`${CONTAINER} mt-10 space-y-8`}>
+    <PolicyShell
+      eyebrow="Selling on Vendora"
+      title="Seller Fees, Explained Plainly"
+      intro={
+        <p>
+          One commission on what you sell, and one optional payout fee. The rates below
+          are read from the platform&apos;s live configuration — the same numbers the
+          system applies to real orders — not a brochure.
+        </p>
+      }
+    >
         {/* ── How commission works ── */}
         <section className="grid gap-4 md:grid-cols-3">
           {[
@@ -210,8 +201,7 @@ export const SellerFeesPage: React.FC = () => {
             Become a Seller <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </section>
-      </div>
-    </div>
+    </PolicyShell>
   );
 };
 
