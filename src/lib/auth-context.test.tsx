@@ -10,6 +10,7 @@ vi.mock('./supabase', async () => {
 import { AuthProvider, useAuth } from './auth-context';
 import { useAuthStore } from '../store/auth-store';
 import { useCartStore } from '../store/cart-store';
+import { queryClient } from './query-client';
 import { profileRow, supabaseDouble } from '../test/supabase-double';
 
 function Probe() {
@@ -92,6 +93,53 @@ describe('AuthProvider', () => {
     expect(useAuthStore.getState().token).toBeNull();
     expect(useCartStore.getState().activeUserId).toBeNull();
     expect(supabaseDouble.auth.signOut).toHaveBeenCalled();
+  });
+
+  it('clears the query cache and the departing user\u2019s local caches on sign-out', async () => {
+    supabaseDouble.seedProfile(profileRow());
+    renderProbe();
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    await waitFor(() => expect(useAuthStore.getState().isAuthenticated).toBe(true));
+
+    queryClient.setQueryData(['orders', 'mine'], [{ id: 'order-1' }]);
+    localStorage.setItem('vd:v1:cart:user-1', '[{"productId":"p1"}]');
+    localStorage.setItem('vd:v1:wishlist:user-1', '[{"id":"p1"}]');
+    localStorage.setItem('vd:v1:cart:guest', '[{"productId":"p9"}]');
+
+    fireEvent.click(screen.getByRole('button', { name: /sign out/i }));
+
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('guest'));
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+    expect(localStorage.getItem('vd:v1:cart:user-1')).toBeNull();
+    expect(localStorage.getItem('vd:v1:wishlist:user-1')).toBeNull();
+    // The device's own guest bucket is not the departing account's data.
+    expect(localStorage.getItem('vd:v1:cart:guest')).not.toBeNull();
+  });
+
+  it('holds the signed-in state when a profile re-read fails on a live session', async () => {
+    supabaseDouble.seedProfile(profileRow({ roles: ['admin'] }));
+    renderProbe();
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    await waitFor(() => expect(useAuthStore.getState().isAuthenticated).toBe(true));
+
+    // A token refresh whose profile read is refused (a transient PostgREST
+    // failure) must not be read as a sign-out or a lost role (Batch 59).
+    supabaseDouble.failures.profiles = 'connection reset by peer';
+    act(() =>
+      supabaseDouble.emit('TOKEN_REFRESHED', {
+        access_token: 'test-access-token',
+        user: { id: 'user-1', email: 'talha@demo.test' },
+      }),
+    );
+
+    // Give the failed read time to land, then confirm nothing was dropped.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().user?.roles).toEqual(['admin']);
+    expect(screen.getByTestId('status')).toHaveTextContent('Talha Javaid');
+    delete supabaseDouble.failures.profiles;
   });
 
   it('drops the session when the server reports sign-out on its own', async () => {

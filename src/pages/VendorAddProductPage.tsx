@@ -66,7 +66,6 @@ export const VendorAddProductPage: React.FC = () => {
   const [slug, setSlug] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [brand, setBrand] = useState('');
-  const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
 
   // Media
@@ -292,11 +291,14 @@ export const VendorAddProductPage: React.FC = () => {
     }
 
     // `seller_id` is stamped by the database from the session, and the rating columns
-    // belong to the review triggers, so neither is sent here.
+    // belong to the review triggers, so neither is sent here. (The old "Catchy
+    // Headline" field is gone: no column ever stored it — it only survived as a
+    // fallback when the description was empty, so anything typed into it beside
+    // a real description was silently discarded.)
     const draft: VendorProductDraft = {
       title: title.trim(),
       slug: slug.trim() || undefined,
-      description: description.trim() || headline.trim(),
+      description: description.trim(),
       categoryId,
       brand: brand.trim() || storeName,
       images,
@@ -582,18 +584,6 @@ export const VendorAddProductPage: React.FC = () => {
                     className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Catchy Headline / Summary
-                </label>
-                <Input
-                  value={headline}
-                  onChange={(e) => setHeadline(e.target.value)}
-                  placeholder="e.g. CNC aluminum chassis, hot-swappable PCB, and sound-dampening foam"
-                  className="rounded-xl text-xs py-2 border-slate-200 focus:border-slate-900"
-                />
               </div>
 
               <div>

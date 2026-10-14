@@ -8,6 +8,7 @@ import type { User, UserRole } from '../types/domain';
 import { useAuthStore } from '../store/auth-store';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
+import { queryClient } from './query-client';
 
 interface AuthContextType {
   user: User | null;
@@ -39,6 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * re-keyed here so a sign-in can never inherit the previous user's buckets.
    */
   const applySession = (user: User | null, next: Session | null) => {
+    if (!user && next) {
+      // A live session whose profile could not be resolved (see the listener
+      // contract in session.ts). This is not a sign-out and not a wrong role:
+      // keep the profile already held, and if none is held yet keep `loading`
+      // up so guards wait instead of redirecting and surfaces keep their
+      // previous state instead of flashing a signed-out one.
+      setSession(next);
+      if (useAuthStore.getState().user) setLoading(false);
+      return;
+    }
     setSession(next);
     if (user) {
       const prevUser = useAuthStore.getState().user;
@@ -98,8 +109,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    const departingUserId = useAuthStore.getState().user?.id ?? null;
     await sessionApi.signOut();
     applySession(null, null);
+    // Logout hygiene (FE-SEC F3): the query cache holds the departing
+    // account's orders, addresses and staff lists in memory, and the cart /
+    // wishlist localStorage entries are that account's cached server state.
+    // Both stay behind on a shared browser unless they are cleared here.
+    // Only the departing user's own keys go — guest buckets and device
+    // preferences (theme, currency) are not the account's data.
+    queryClient.clear();
+    if (departingUserId && typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(`vd:v1:cart:${departingUserId}`);
+        localStorage.removeItem(`vd:v1:wishlist:${departingUserId}`);
+      } catch {
+        // Storage unavailable (private mode quotas etc.) — the in-memory
+        // reset above still stands; there is nothing further to report.
+      }
+    }
   };
 
   const hasRole = (role: UserRole) => {

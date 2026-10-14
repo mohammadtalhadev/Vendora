@@ -262,20 +262,38 @@ export async function signInWithOAuth(provider: 'google' | 'apple'): Promise<voi
 }
 
 /**
- * Subscribes to auth changes and resolves the profile for each one. A null user means
- * signed out, or a session whose profile could not be read.
+ * Subscribes to auth changes and resolves the profile for each one.
+ *
+ * The listener contract keeps three outcomes apart, because collapsing them
+ * is what used to kick signed-in staff out mid-session (Batch 59):
+ * - (user, session): the profile the backend authorized.
+ * - (null, null): there is no session — a definitive sign-out.
+ * - (null, session): a session EXISTS but its profile read failed (a
+ *   transient PostgREST/network refusal during restore or a token refresh).
+ *   That is "unresolved", never "signed out": the caller must hold its
+ *   current state instead of logging the user out or denying their role.
+ *
+ * Resolutions are ticketed: auth events can arrive faster than the two
+ * profile round-trips resolve, and a stale read must never land after a
+ * newer one and overwrite it with an older picture of the account.
  */
 export function onAuthStateChange(
   listener: (user: User | null, session: Session | null) => void,
 ): () => void {
+  let ticket = 0;
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const mine = ++ticket;
     if (!session?.user) {
       listener(null, null);
       return;
     }
     void loadProfile(session.user).then(
-      (user) => listener(user, user ? session : null),
-      () => listener(null, null),
+      (user) => {
+        if (mine === ticket) listener(user, user ? session : null);
+      },
+      () => {
+        if (mine === ticket) listener(null, session);
+      },
     );
   });
   return () => data.subscription.unsubscribe();

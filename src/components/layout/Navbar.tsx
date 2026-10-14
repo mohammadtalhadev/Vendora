@@ -44,7 +44,7 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const { signInAsDemo, signOut } = useAuth();
+  const { signInAsDemo, signOut, loading: authLoading } = useAuth();
   const { mergeGuestCartIntoUser } = useCartStore();
   const { itemCount } = useCartCalculations();
   const { items: wishlistItems } = useWishlistStore();
@@ -569,8 +569,11 @@ export const Navbar: React.FC = () => {
                     )}
                   </div>
                   <div className="hidden xl:flex flex-col text-left leading-tight">
+                    {/* While the session is still restoring, the account slot
+                        stays neutral: naming the visitor a guest here is the
+                        flash signed-in users saw on every reload (Batch 59). */}
                     <span className="text-[10px] text-slate-400 font-normal">
-                      {user ? 'Welcome,' : 'Sign In'}
+                      {authLoading ? 'Account' : user ? 'Welcome,' : 'Sign In'}
                     </span>
                     <span className="text-xs font-bold text-slate-900 group-hover:text-sun-orange flex items-center gap-1 transition-colors">
                       {user ? user.name.split(' ')[0] : 'Account'}
@@ -582,7 +585,12 @@ export const Navbar: React.FC = () => {
                 {isRoleMenuOpen && (
                   <div id="navbar-account-menu" className="absolute right-0 top-13 z-50 w-72 rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800">
                   {/* Account Header with Role Badge inside dropdown */}
-                  {user ? (
+                  {authLoading && !user ? (
+                    <div className="border-b border-slate-100 pb-3 mb-2">
+                      <div className="text-xs font-bold text-slate-800">Checking your session…</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Your account appears here as soon as it loads.</div>
+                    </div>
+                  ) : user ? (
                     <div className="border-b border-slate-100 pb-3 mb-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="font-bold text-sm text-slate-900 truncate">{user.name}</div>

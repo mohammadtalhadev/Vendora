@@ -44,6 +44,22 @@ const customerUser = {
   vendorStatus: 'none' as const,
 };
 
+const riderUser = {
+  id: 'u-rider',
+  email: 'rider@example.com',
+  name: 'Rider One',
+  roles: ['customer', 'rider'],
+  vendorStatus: 'none' as const,
+};
+
+const supportUser = {
+  id: 'u-support',
+  email: 'agent@example.com',
+  name: 'Agent One',
+  roles: ['customer', 'support'],
+  vendorStatus: 'none' as const,
+};
+
 function renderLogin() {
   return render(
     <MemoryRouter initialEntries={['/login']}>
@@ -51,6 +67,8 @@ function renderLogin() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<div>STOREFRONT HOME</div>} />
         <Route path="/vendor" element={<div>VENDOR CONSOLE</div>} />
+        <Route path="/rider" element={<div>RIDER BOARD</div>} />
+        <Route path="/support" element={<div>SUPPORT CONSOLE</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -120,5 +138,25 @@ describe('LoginPage role toggle mapping', () => {
 
     expect(await screen.findByText('STOREFRONT HOME')).toBeInTheDocument();
     expect(mocks.signOut).not.toHaveBeenCalled();
+  });
+
+  it('rider account → the rider board, not the storefront (Batch 59)', async () => {
+    mocks.signIn.mockResolvedValue(riderUser);
+    renderLogin();
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('RIDER BOARD')).toBeInTheDocument();
+    expect(screen.queryByText('STOREFRONT HOME')).not.toBeInTheDocument();
+  });
+
+  it('support account → the support console, not the storefront (Batch 59)', async () => {
+    mocks.signIn.mockResolvedValue(supportUser);
+    renderLogin();
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('SUPPORT CONSOLE')).toBeInTheDocument();
+    expect(screen.queryByText('STOREFRONT HOME')).not.toBeInTheDocument();
   });
 });

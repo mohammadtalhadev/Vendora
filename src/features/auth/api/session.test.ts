@@ -183,14 +183,17 @@ describe('session.onAuthStateChange', () => {
     await vi.waitFor(() => expect(listener).toHaveBeenLastCalledWith(null, null));
   });
 
-  it('reports guest when the profile read behind a session fails', async () => {
+  it('reports the session as unresolved — not as a guest — when its profile read fails', async () => {
     const listener = vi.fn();
     session.onAuthStateChange(listener);
     supabaseDouble.failures.profiles = 'permission denied for table profiles';
 
-    supabaseDouble.emit('SIGNED_IN', { access_token: 't', user: { id: 'user-1', email: 'buyer@demo.test' } });
+    const liveSession = { access_token: 't', user: { id: 'user-1', email: 'buyer@demo.test' } };
+    supabaseDouble.emit('SIGNED_IN', liveSession);
 
-    await vi.waitFor(() => expect(listener).toHaveBeenLastCalledWith(null, null));
+    // Batch 59: (null, session) means "signed in, profile unresolved". The old
+    // (null, null) here is what logged staff out on any transient read failure.
+    await vi.waitFor(() => expect(listener).toHaveBeenLastCalledWith(null, liveSession));
   });
 
   it('stops delivering after unsubscribe', () => {

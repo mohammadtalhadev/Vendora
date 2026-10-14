@@ -452,6 +452,8 @@ export const VendorReviewsPage: React.FC = () => {
               <option value="5">5 Stars Only</option>
               <option value="4">4 Stars Only</option>
               <option value="3">3 Stars Only</option>
+              <option value="2">2 Stars Only</option>
+              <option value="1">1 Star Only</option>
             </select>
 
             <select

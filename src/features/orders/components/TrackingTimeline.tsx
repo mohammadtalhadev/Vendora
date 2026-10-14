@@ -24,6 +24,12 @@ import {
 
 export interface TrackingTimelineProps {
   subOrder: SubOrder;
+  /**
+   * How the parent order is paid, when the caller knows it. A cancellation
+   * notice talks about a refund only when money was actually captured:
+   * for cash on delivery nothing was charged (Batch 59).
+   */
+  paymentMethod?: 'card' | 'cod';
   className?: string;
   defaultOrientation?: 'horizontal' | 'vertical';
   allowToggleOrientation?: boolean;
@@ -107,6 +113,7 @@ function formatEventTimestamp(isoString: string): string {
 
 export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
   subOrder,
+  paymentMethod,
   className = '',
   defaultOrientation = 'horizontal',
   allowToggleOrientation = true,
@@ -247,7 +254,10 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
           <div className="text-xs">
             <p className="font-bold">This sub-order was cancelled</p>
             <p className="mt-0.5 text-rose-700">
-              {subOrder.returnReason || 'Cancellation processed. Any captured payment will be refunded to your source card.'}
+              {subOrder.returnReason ||
+                (paymentMethod === 'cod'
+                  ? 'Cancellation processed. Nothing was charged — cash on delivery is only paid when a parcel arrives.'
+                  : 'Cancellation processed. Any captured payment will be refunded to your source card.')}
             </p>
           </div>
         </div>

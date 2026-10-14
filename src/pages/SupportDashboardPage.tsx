@@ -512,7 +512,13 @@ export const SupportDashboardPage: React.FC = () => {
             <DisputeQueueList
               disputes={rows}
               counts={{
-                all: queue.data?.total ?? 0,
+                // `total` is the filtered pool's size, so as an "All" figure
+                // it contradicted every other chip (and shrank under search).
+                // The RPC's counts are desk-wide partitions of the same
+                // payload, so All is their sum — one read, one truth.
+                all: counts
+                  ? counts.open + counts.underReview + counts.escalated + counts.resolved
+                  : 0,
                 unassigned: counts?.unassigned ?? 0,
                 mine: counts?.mine ?? 0,
                 escalated: counts?.escalated ?? 0,

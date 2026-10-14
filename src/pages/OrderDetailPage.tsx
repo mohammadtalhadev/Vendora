@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { SubOrder } from '../types/domain';
 import { deriveOrderGroupStatus } from '../lib/order-state-machine';
 import type { OrderGroupDerivedStatus } from '../lib/order-state-machine';
@@ -74,6 +74,7 @@ function getDerivedBadgeVariant(status: OrderGroupDerivedStatus): {
 
 export const OrderDetailPage: React.FC = () => {
   const { id, orderId } = useParams();
+  const navigate = useNavigate();
   const effectiveOrderId = orderId || id || '';
 
   const { data, isLoading, isError, error, refetch } = useOrderDetail(effectiveOrderId);
@@ -115,15 +116,27 @@ export const OrderDetailPage: React.FC = () => {
             ? { label: 'Refunded', variant: 'secondary' }
             : { label: 'Settlement not recorded', variant: 'secondary' };
 
-  // Financial calculations
+  // Financial calculations. Headline figures cover the packages that are
+  // still part of the order: a cancelled package's money left the order when
+  // it was cancelled (Batch 56 restocks and refunds/voids it), so leaving it
+  // in the total showed a figure the customer no longer owed (Batch 59). The
+  // cancelled value is still displayed — separately, in the summary below.
   const { formatPrice } = useCurrency();
-  const itemsSubtotal = subOrders.reduce((sum, so) => sum + so.subtotal, 0);
-  const totalShipping = subOrders.reduce((sum, so) => sum + so.shippingFee, 0);
+  const activeSubOrders = subOrders.filter((so) => so.status !== 'cancelled');
+  const cancelledSubOrders = subOrders.filter((so) => so.status === 'cancelled');
+  const itemsSubtotal = activeSubOrders.reduce((sum, so) => sum + so.subtotal, 0);
+  const totalShipping = activeSubOrders.reduce((sum, so) => sum + so.shippingFee, 0);
   const grandTotal = itemsSubtotal + totalShipping;
+  const cancelledTotal = cancelledSubOrders.reduce(
+    (sum, so) => sum + so.subtotal + so.shippingFee,
+    0,
+  );
 
-  // Print Invoice handler
+  // Print Invoice goes to the dedicated invoice page (Batch 59): printing
+  // this detail page produced a screenshot of the tracking UI, not an
+  // invoice, and the invoice route already exists for exactly this.
   const handlePrintInvoice = () => {
-    window.print();
+    navigate(`/orders/${effectiveOrderId}/invoice`);
   };
 
   // The courier's handover code is only ever shown at checkout. Re-issuing mints a new one
@@ -310,6 +323,24 @@ export const OrderDetailPage: React.FC = () => {
                       {formatPrice(grandTotal)}
                     </p>
                   </div>
+                  {cancelledSubOrders.length > 0 && (
+                    <>
+                      <div className="h-8 w-px bg-slate-200" />
+                      <div data-testid="cancelled-packages-total">
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          Cancelled Packages
+                        </span>
+                        <p className="font-bold text-slate-500 line-through">
+                          {formatPrice(cancelledTotal)}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {orderGroup.paymentMethod === 'cod'
+                            ? 'Never charged — not part of the total'
+                            : 'Not part of the total'}
+                        </p>
+                      </div>
+                    </>
+                  )}
                   {orderGroup.giftCardAmount > 0 && (
                     <>
                       <div className="h-8 w-px bg-slate-200" />
@@ -627,7 +658,7 @@ export const OrderDetailPage: React.FC = () => {
 
                       {/* FEATURED: TrackingTimeline Component */}
                       <div className="border-t border-slate-100 pt-6">
-                        <TrackingTimeline subOrder={subOrder} />
+                        <TrackingTimeline subOrder={subOrder} paymentMethod={orderGroup.paymentMethod} />
                       </div>
                     </div>
                   </div>

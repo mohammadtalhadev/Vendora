@@ -57,19 +57,32 @@ function mapPayout(row: PayoutRow): AdminPayout {
   };
 }
 
-export async function fetchAdminPayouts(signal?: AbortSignal): Promise<AdminPayout[]> {
-  let query = supabase
-    .from('payouts')
-    .select(
-      'id, vendor_id, amount, status, payment_method, payment_reference, metadata, created_at, updated_at, vendor:vendor_profiles(store_name, slug)',
-    )
-    .order('created_at', { ascending: false })
-    .limit(200);
-  if (signal) query = query.abortSignal(signal);
+const PAYOUTS_PAGE_SIZE = 500;
 
-  const { data, error } = await query;
-  if (error) throw new Error(`Failed to load payouts: ${error.message}`);
-  return ((data ?? []) as unknown as PayoutRow[]).map(mapPayout);
+export async function fetchAdminPayouts(signal?: AbortSignal): Promise<AdminPayout[]> {
+  // The ledger is read whole, in pages: this used to stop at `.limit(200)`,
+  // so past the 200th payout the page's filters and totals silently covered
+  // only the newest slice of the ledger (Batch 59). Pages are ordered by
+  // (created_at, id) so a page boundary can never skip or repeat a row.
+  const rows: PayoutRow[] = [];
+  for (let from = 0; ; from += PAYOUTS_PAGE_SIZE) {
+    let query = supabase
+      .from('payouts')
+      .select(
+        'id, vendor_id, amount, status, payment_method, payment_reference, metadata, created_at, updated_at, vendor:vendor_profiles(store_name, slug)',
+      )
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, from + PAYOUTS_PAGE_SIZE - 1);
+    if (signal) query = query.abortSignal(signal);
+
+    const { data, error } = await query;
+    if (error) throw new Error(`Failed to load payouts: ${error.message}`);
+    const batch = (data ?? []) as unknown as PayoutRow[];
+    rows.push(...batch);
+    if (batch.length < PAYOUTS_PAGE_SIZE) break;
+  }
+  return rows.map(mapPayout);
 }
 
 /**

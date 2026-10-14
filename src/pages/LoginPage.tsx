@@ -90,6 +90,13 @@ export const LoginPage: React.FC = () => {
         navigate(redirectPath);
       } else if (selectedRole === 'seller') {
         navigate('/vendor');
+      } else if (loggedInUser.roles.includes('rider')) {
+        // Riders and support agents have no toggle path of their own, so
+        // their stored role is the only honest landing: without this they
+        // were dropped on the storefront like shoppers (Batch 59).
+        navigate('/rider');
+      } else if (loggedInUser.roles.includes('support')) {
+        navigate('/support');
       } else {
         navigate('/');
       }

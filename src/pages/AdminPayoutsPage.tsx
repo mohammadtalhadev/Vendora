@@ -313,9 +313,16 @@ export const AdminPayoutsPage: React.FC = () => {
               : `No ${filter} payouts.`}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
-            <DataTable columns={columns} rows={rows} getRowKey={(p) => p.id} />
-          </div>
+          <>
+            {/* The ledger is read whole (Batch 59), and the count says so:
+                what is on screen is the total, not a silent first slice. */}
+            <p className="text-xs text-slate-500" data-testid="payouts-total">
+              Showing {rows.length} of {payoutsQuery.data?.length ?? 0} payouts
+            </p>
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+              <DataTable columns={columns} rows={rows} getRowKey={(p) => p.id} />
+            </div>
+          </>
         )}
       </div>
     </WorkspaceLayout>

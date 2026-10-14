@@ -185,11 +185,18 @@ export const AdminProductsPage: React.FC = () => {
   const { toast, showToast, hideToast } = useToast(3200);
 
   const renderKpiCards = () => {
-    const totalSubmissions = total;
+    // Every figure on this row comes from the queue read's desk-wide counts.
+    // `total` is the FILTERED pool's size (the pending queue can be a single
+    // listing while the counts span the whole catalogue), so dividing global
+    // counts by it produced an "approval rate" of 11200.0% (Batch 59). The
+    // approval rate is the share of DECIDED submissions that were approved.
+    const totalSubmissions =
+      counts.pendingReview + counts.approved + counts.rejected + counts.draft + counts.archived;
     const pendingCount = counts.pendingReview;
     const approvedCount = counts.approved;
     const rejectedCount = counts.rejected;
-    const totalShown = total > 0 ? ((approvedCount + rejectedCount) / totalSubmissions) * 100 : 0;
+    const decidedCount = approvedCount + rejectedCount;
+    const approvalRate = decidedCount > 0 ? (approvedCount / decidedCount) * 100 : 0;
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -238,10 +245,10 @@ export const AdminProductsPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-bold tracking-tight text-slate-900">{totalShown.toFixed(1)}%</div>
+            <div className="text-2xl font-bold tracking-tight text-slate-900">{approvalRate.toFixed(1)}%</div>
             <div className="mt-1 flex items-center gap-1.5 text-xs">
               <span className="text-slate-400">{approvedCount} approved</span>
-              <span className="text-slate-400">of {totalSubmissions} items</span>
+              <span className="text-slate-400">of {decidedCount} reviewed</span>
             </div>
           </div>
         </div>

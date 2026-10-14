@@ -104,12 +104,31 @@ function mapBoard(value: unknown): RiderBoard {
   };
 }
 
+/**
+ * True when a board read failed because the account has no rider profile at
+ * all (`rider_delivery_board` raises 42501 'Not a rider'), as opposed to a
+ * read that merely failed. The distinction matters on screen: retrying can
+ * fix a failed read, but no retry creates a profile.
+ */
+export function isNotARiderError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error as { vendoraCode?: string }).vendoraCode === 'not-a-rider'
+  );
+}
+
 export async function fetchRiderBoard(signal?: AbortSignal): Promise<RiderBoard> {
   let query = supabase.rpc('rider_delivery_board');
   if (signal) query = query.abortSignal(signal);
 
   const { data, error } = await query;
-  if (error) throw rpcFailed('Could not load your route', error.message);
+  if (error) {
+    const failed = rpcFailed('Could not load your route', error.message);
+    if (error.code === '42501' || /not a rider/i.test(error.message)) {
+      (failed as { vendoraCode?: string }).vendoraCode = 'not-a-rider';
+    }
+    throw failed;
+  }
   return mapBoard(data);
 }
 

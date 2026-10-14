@@ -5,7 +5,7 @@ vi.mock('../../../lib/supabase', async () => {
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
 });
 
-import { advanceDrop, fetchRiderBoard, setAvailability, verifyHandover } from './board';
+import { advanceDrop, fetchRiderBoard, isNotARiderError, setAvailability, verifyHandover } from './board';
 import {
   deliveryRow,
   orderRow,
@@ -92,6 +92,22 @@ describe('fetchRiderBoard', () => {
     supabaseDouble.failRpc('permission denied for function rider_delivery_board');
 
     await expect(fetchRiderBoard()).rejects.toThrow(/could not load your route/i);
+  });
+
+  it('tags the no-profile refusal so the page can tell it from a failed read', async () => {
+    supabaseDouble.authState.session = { access_token: 'test-token', user: { id: 'shopper', email: 'shopper@demo.test' } };
+
+    const failure = await fetchRiderBoard().catch((error: unknown) => error);
+
+    expect(isNotARiderError(failure)).toBe(true);
+  });
+
+  it('does not tag an ordinary failed read as a missing profile', async () => {
+    supabaseDouble.failRpc('permission denied for function rider_delivery_board');
+
+    const failure = await fetchRiderBoard().catch((error: unknown) => error);
+
+    expect(isNotARiderError(failure)).toBe(false);
   });
 });
 

@@ -107,8 +107,11 @@ describe('RiderDashboardPage', () => {
 
     render();
 
-    await waitFor(() => expect(screen.getByTestId('board-error')).toBeInTheDocument());
-    expect(screen.getByText(/not a rider/i)).toBeInTheDocument();
+    // Batch 59: "no rider profile" is its own honest state, not the generic
+    // read error — retrying can never create the missing profile.
+    await waitFor(() => expect(screen.getByTestId('board-not-registered')).toBeInTheDocument());
+    expect(screen.getByText(/rider profile isn.t set up yet/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('board-error')).not.toBeInTheDocument();
     expect(screen.queryAllByTestId('drop-card')).toHaveLength(0);
   });
 

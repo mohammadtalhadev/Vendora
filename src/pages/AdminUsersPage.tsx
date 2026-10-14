@@ -83,6 +83,8 @@ export const AdminUsersPage: React.FC = () => {
   const [status, setStatus] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkStatus, setBulkStatus] = useState<'active' | 'suspended' | null>(null);
+  /** The row whose Suspend/Activate waits for confirmation (Batch 59). */
+  const [pendingRowToggle, setPendingRowToggle] = useState<AdminUserRow | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkSummary, setBulkSummary] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -247,7 +249,7 @@ export const AdminUsersPage: React.FC = () => {
         <button
           type="button"
           disabled={actions.setUserStatus.isPending}
-          onClick={() => handleToggleStatus(user.id, user.accountStatus)}
+          onClick={() => setPendingRowToggle(user)}
           className={`rounded px-2.5 py-1 text-[10px] font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
             user.accountStatus === 'active'
               ? 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
@@ -592,6 +594,47 @@ export const AdminUsersPage: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Row status confirmation (Batch 59) — the per-row Suspend used to
+          fire on a single click while the bulk action confirmed first;
+          locking one account out deserves the same pause. */}
+      <Dialog
+        open={pendingRowToggle !== null}
+        onOpenChange={(open) => !open && setPendingRowToggle(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">
+              {pendingRowToggle?.accountStatus === 'active'
+                ? `Suspend ${pendingRowToggle?.name ?? 'this account'}?`
+                : `Activate ${pendingRowToggle?.name ?? 'this account'}?`}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              {pendingRowToggle?.accountStatus === 'active'
+                ? 'A suspended account cannot sign in or trade until it is activated again. The change is written to the audit log.'
+                : 'An activated account can sign in and trade again. The change is written to the audit log.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-end gap-2.5 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={() => setPendingRowToggle(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              disabled={actions.setUserStatus.isPending}
+              onClick={() => {
+                if (!pendingRowToggle) return;
+                handleToggleStatus(pendingRowToggle.id, pendingRowToggle.accountStatus);
+                setPendingRowToggle(null);
+              }}
+            >
+              {pendingRowToggle?.accountStatus === 'active' ? 'Suspend account' : 'Activate account'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk status confirmation — suspending locks accounts out of the
           marketplace, so the count is confirmed before any call is made. */}

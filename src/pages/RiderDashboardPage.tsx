@@ -30,6 +30,7 @@ import {
 } from '../features/rider/components/ReportIssueModal';
 import { useRiderActions, useRiderBoard } from '../features/rider/hooks/useRider';
 import { useRiderLive } from '../features/rider/hooks/useLive';
+import { isNotARiderError } from '../features/rider/api/board';
 import type { RiderAvailability, RiderDrop } from '../features/rider/api/board';
 import { useCurrency } from '../store/currency-store';
 import { cn } from '../lib/utils';
@@ -385,6 +386,47 @@ const BoardError: React.FC<{ message: string; retrying: boolean; onRetry: () => 
   </section>
 );
 
+/**
+ * The honest dead end (Batch 59): the account signed in, but dispatch has no
+ * rider profile for it, so there is no route to show and no retry can change
+ * that. Profiles are created by the Vendora team — saying so plainly beats a
+ * "could not be read" error that invites endless retries.
+ */
+const BoardNotRegistered: React.FC<{ checking: boolean; onRecheck: () => void }> = ({
+  checking,
+  onRecheck,
+}) => (
+  <section
+    data-testid="board-not-registered"
+    className="space-y-4 rounded-3xl border-2 border-slate-300 bg-slate-50 p-5 shadow-sm"
+  >
+    <div className="flex items-start gap-3">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-700 text-white">
+        <Truck className="h-5 w-5" />
+      </span>
+      <div>
+        <p className="text-sm font-black text-slate-900">Your rider profile isn&rsquo;t set up yet</p>
+        <p className="mt-1 text-xs font-medium text-slate-600">
+          You are signed in, but dispatch has no rider profile for this account, so there is no
+          route to show. Rider profiles are created by the Vendora team when a rider is brought
+          on — if you believe this account should have one, contact support from your account
+          page and ask them to check the rider setup for your sign-in email.
+        </p>
+      </div>
+    </div>
+    <button
+      type="button"
+      data-testid="btn-recheck-board"
+      disabled={checking}
+      onClick={onRecheck}
+      className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+      <span>Check again</span>
+    </button>
+  </section>
+);
+
 export const RiderDashboardPage: React.FC = () => {
   // `/rider/deliveries/:id` is served by this same component, so the route param decides
   // whether the screen is the board or one parcel on it.
@@ -510,7 +552,9 @@ export const RiderDashboardPage: React.FC = () => {
       sidebar={<RiderNav />}
     >
       <div className="w-full space-y-4 pb-10 sm:space-y-6">
-        {board.isError ? (
+        {board.isError && isNotARiderError(board.error) ? (
+          <BoardNotRegistered checking={board.isFetching} onRecheck={() => void board.refetch()} />
+        ) : board.isError ? (
           <BoardError
             message={readError}
             retrying={board.isFetching}
