@@ -16,6 +16,8 @@ function settlementLine(status: string | undefined): { label: string; tone: stri
       return { label: 'PAYMENT FAILED', tone: 'text-rose-600 dark:text-rose-400 print:text-rose-800' };
     case 'refunded':
       return { label: 'REFUNDED', tone: 'text-slate-600 dark:text-slate-400 print:text-slate-600' };
+    case 'voided':
+      return { label: 'PAYMENT VOID · ORDER CANCELLED', tone: 'text-slate-600 dark:text-slate-400 print:text-slate-600' };
     default:
       return { label: 'SETTLEMENT NOT RECORDED', tone: 'text-slate-600 dark:text-slate-400 print:text-slate-600' };
   }

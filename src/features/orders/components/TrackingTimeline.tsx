@@ -119,11 +119,13 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
   const isDigital = subOrder.type === 'digital';
   const currentStatus = subOrder.status;
 
-  // Handle Copy Digital License Key
+  // Handle Copy Digital License Key. Since Batch 56 a digital package can
+  // legitimately have no key yet (a COD order whose payment has not
+  // settled), and there is no fallback key to show or copy in that state.
   const handleCopyKey = () => {
-    const key = subOrder.licenseKey || 'VEN-LIC-DEMO-KEY-8942';
+    if (!subOrder.licenseKey) return;
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(key).catch(() => {});
+      navigator.clipboard.writeText(subOrder.licenseKey).catch(() => {});
     }
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
@@ -284,73 +286,83 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
               size="default"
               className="border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
             >
-              License Active
+              {subOrder.licenseKey ? 'License Active' : 'Awaiting Payment'}
             </Badge>
           </div>
 
-          <div className="mt-5 flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3 overflow-hidden">
-              <span className="text-xs font-semibold text-slate-400">
-                Key:
-              </span>
-              <code
-                className="font-mono text-sm sm:text-base font-bold tracking-widest text-lemon select-all break-all"
-                data-testid="license-key-value"
-              >
-                {subOrder.licenseKey || 'VEN-LIC-DEMO-KEY-8942'}
-              </code>
-            </div>
-            <Button
-              type="button"
-              variant="glass-pill"
-              size="sm"
-              onClick={handleCopyKey}
-              className="gap-2 text-xs font-bold text-slate-900"
-              data-testid="copy-key-button"
-            >
-              {copiedKey ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>Copy Key</span>
-                </>
-              )}
-            </Button>
-          </div>
+          {subOrder.licenseKey ? (
+            <>
+              <div className="mt-5 flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:flex-row sm:items-center">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <span className="text-xs font-semibold text-slate-400">
+                    Key:
+                  </span>
+                  <code
+                    className="font-mono text-sm sm:text-base font-bold tracking-widest text-lemon select-all break-all"
+                    data-testid="license-key-value"
+                  >
+                    {subOrder.licenseKey}
+                  </code>
+                </div>
+                <Button
+                  type="button"
+                  variant="glass-pill"
+                  size="sm"
+                  onClick={handleCopyKey}
+                  className="gap-2 text-xs font-bold text-slate-900"
+                  data-testid="copy-key-button"
+                >
+                  {copiedKey ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      <span>Copy Key</span>
+                    </>
+                  )}
+                </Button>
+              </div>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4 text-xs text-slate-300">
-            <span>
-              Asset:{' '}
-              <strong className="text-white">
-                {subOrder.items[0]?.title || 'Vendora Digital Product'}
-              </strong>
-            </span>
-            <div className="flex items-center gap-2">
-              <Download className="h-4 w-4 text-sun-orange" />
-              <button
-                type="button"
-                onClick={() => {
-                  setDownloadStarted(true);
-                  const element = document.createElement('a');
-                  const content = `Vendora Verified Digital License Package\nOrder: ${subOrder.id}\nLicense Key: ${subOrder.licenseKey || 'VEN-LIC-DEMO-KEY-8942'}\nAsset: ${subOrder.items[0]?.title || 'Vendora Digital Product'}\nGenerated: ${new Date().toISOString()}`;
-                  const file = new Blob([content], { type: 'text/plain' });
-                  element.href = URL.createObjectURL(file);
-                  element.download = `license-${subOrder.id}.txt`;
-                  document.body.appendChild(element);
-                  element.click();
-                  document.body.removeChild(element);
-                  setTimeout(() => setDownloadStarted(false), 2000);
-                }}
-                className="font-semibold text-sun-orange hover:underline"
-              >
-                {downloadStarted ? 'Downloading Package...' : 'Download Package (.ZIP)'}
-              </button>
-            </div>
-          </div>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4 text-xs text-slate-300">
+                <span>
+                  Asset:{' '}
+                  <strong className="text-white">
+                    {subOrder.items[0]?.title || 'Vendora Digital Product'}
+                  </strong>
+                </span>
+                <div className="flex items-center gap-2">
+                  <Download className="h-4 w-4 text-sun-orange" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDownloadStarted(true);
+                      const element = document.createElement('a');
+                      const content = `Vendora Verified Digital License Package\nOrder: ${subOrder.id}\nLicense Key: ${subOrder.licenseKey}\nAsset: ${subOrder.items[0]?.title || 'Vendora Digital Product'}\nGenerated: ${new Date().toISOString()}`;
+                      const file = new Blob([content], { type: 'text/plain' });
+                      element.href = URL.createObjectURL(file);
+                      element.download = `license-${subOrder.id}.txt`;
+                      document.body.appendChild(element);
+                      element.click();
+                      document.body.removeChild(element);
+                      setTimeout(() => setDownloadStarted(false), 2000);
+                    }}
+                    className="font-semibold text-sun-orange hover:underline"
+                  >
+                    {downloadStarted ? 'Downloading Package...' : 'Download Package (.ZIP)'}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="mt-5 text-sm leading-relaxed text-slate-300" data-testid="license-key-pending">
+              Your license key will appear here as soon as your payment is confirmed.
+              Cash-on-delivery digital orders release their key once the payment is
+              collected — nothing is due from you here in the meantime.
+            </p>
+          )}
         </div>
       ) : (
         /* 4. PHYSICAL SUB-ORDER: 7-Stage Horizontal / Vertical Stepper */

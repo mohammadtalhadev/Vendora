@@ -1329,6 +1329,206 @@ ok('the ACL agrees: authenticated lost the outbox pair, kept the guarded helpers
 ok('the definer outbox triggers still enqueue (internal callers unaffected)',
   (await q(`select count(*)::int c from notification_outbox`))[0].c > 0);
 
+console.log('\n[batch 56] money integrity: gift-card mint, cancel symmetry, digital keys, payout + loyalty corrections');
+// Batch 56 (20261016010000): the five money-lifecycle gaps. Fresh fixtures so
+// every figure below is exact, whatever the earlier sections left behind.
+const B56CU = '12121212-1212-4121-8121-121212121212';
+const P56 = '56565656-5656-4565-8565-565656565656';
+await as('postgres');
+await q(`insert into auth.users (id, email, raw_user_meta_data) values ($1,'b56@demo.test','{}')`, [B56CU]);
+await q(
+  `insert into products (id, title, slug, category_id, brand, images, price, type, seller_id,
+     variants, stock, shipping_settings, status) values
+     ($1,'B56 Widget','b56-widget',$2,'Acme','{img.jpg}',100,'physical',$3,
+      '[{"id":"v-a","price":100}]'::jsonb,50,'{"freeShipping":false,"standardFee":5}'::jsonb,'approved')`,
+  [P56, CAT, STORE],
+);
+
+// -- 1. a gift card can no longer be minted for free ---------------------------
+await as('authenticated', B56CU);
+await expectThrow('gift card: a bare call with no payment details mints nothing',
+  () => q(`select purchase_gift_card('friend@example.com', 1000, null)`),
+  'card details incomplete');
+await expectThrow('gift card: explicit empty card details are refused too',
+  () => q(`select purchase_gift_card('friend@example.com', 1000, null, null, null)`),
+  'card details incomplete');
+await expectThrow('gift card: a malformed last4 is refused',
+  () => q(`select purchase_gift_card('friend@example.com', 1000, null, 'Visa', '12')`),
+  'card details incomplete');
+ok('gift card: the refused calls left no cards and no payments behind',
+  (await q(`select (select count(*)::int from gift_cards where purchaser_id=$1) c,
+                  (select count(*)::int from gift_card_payments where user_id=$1) p`, [B56CU]))[0].c === 0 &&
+  (await q(`select count(*)::int c from gift_card_payments where user_id=$1`, [B56CU]))[0].c === 0);
+
+// -- the legitimate purchase: one payment row, one card, linked ---------------
+const bought = (await q(`select purchase_gift_card('friend@example.com', 1000, 'hi', 'Visa', '4242') as r`))[0].r;
+ok('gift card: the paid purchase returns a code', /^VGC-/.test(bought.code), `(got ${bought.code})`);
+const payRow = (await q(`select * from gift_card_payments where user_id=$1`, [B56CU]))[0];
+ok('gift card: the payment is its own simulated_card row, succeeded, for the exact amount',
+  payRow.method === 'simulated_card' && payRow.status === 'succeeded' &&
+  Number(payRow.amount) === 1000 && payRow.card_last4 === '4242');
+ok('gift card: the payment is linked to exactly the card it minted', payRow.gift_card_id === bought.id);
+ok('gift card: no card exists without a payment behind it',
+  (await q(`select count(*)::int c from gift_cards gc where gc.purchaser_id=$1
+             and not exists (select 1 from gift_card_payments p where p.gift_card_id = gc.id)`, [B56CU]))[0].c === 0);
+
+// -- per-user issuance limits ---------------------------------------------------
+const smallCodes: string[] = [];
+for (let i = 0; i < 9; i++) {
+  smallCodes.push((await q(`select purchase_gift_card('friend@example.com', 100, null, 'Visa', '4242') as r`))[0].r.code);
+}
+await expectThrow('gift card: the 11th card in a day is refused',
+  () => q(`select purchase_gift_card('friend@example.com', 100, null, 'Visa', '4242')`),
+  'daily gift card limit');
+const counts56 = (await q(`select (select count(*)::int from gift_card_payments where user_id=$1) p,
+                                  (select count(*)::int from gift_cards where purchaser_id=$1) c`, [B56CU]))[0];
+ok('gift card: payments and cards stay 1:1 (one payment can never mint twice)',
+  counts56.p === 10 && counts56.c === 10, `(payments ${counts56.p}, cards ${counts56.c})`);
+await as('authenticated', CU2);
+const bigCode = (await q(`select purchase_gift_card('big@example.com', 499900, null, 'Visa', '4242') as r`))[0].r.code;
+await expectThrow('gift card: issuance past Rs 500,000 in a day is refused',
+  () => q(`select purchase_gift_card('big@example.com', 200, null, 'Visa', '4242')`),
+  'daily gift card limit');
+
+// -- 3. digital keys wait for the money ------------------------------------------
+await as('authenticated', B56CU);
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'',1)`, [B56CU, P_DIG]);
+const codDig = (await q(`select place_order($1::jsonb,'cod') as r`, [{ street: '1 Main St' }]))[0].r;
+ok('digital COD: the package is available but NO key is issued while payment is pending',
+  codDig.subOrders[0].status === 'available' && codDig.subOrders[0].licenseKey === null);
+ok('digital COD: the database agrees — license_key is null',
+  (await q(`select license_key from sub_orders where id=$1`, [codDig.subOrders[0].id]))[0].license_key === null);
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'',1)`, [B56CU, P_DIG]);
+const cardDig = (await q(`select place_order($1::jsonb,'card','standard',null,null,null,'Visa','4242') as r`, [{ street: '1 Main St' }]))[0].r;
+ok('digital card order: settled at booking, so the key is issued instantly',
+  /^VEND-[0-9A-F]{12}$/.test(cardDig.subOrders[0].licenseKey), `(got ${cardDig.subOrders[0].licenseKey})`);
+await as('authenticated', ADMIN);
+await q(`select admin_set_payment_status($1, 'succeeded', 'cash received at the desk')`, [codDig.orderId]);
+ok('digital COD: settling the payment mints the waiting key',
+  /^VEND-[0-9A-F]{12}$/.test((await q(`select license_key from sub_orders where id=$1`, [codDig.subOrders[0].id]))[0].license_key ?? ''));
+
+// -- a gift card that settles a digital COD order releases its key ---------------
+await as('authenticated', B56CU);
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'',1)`, [B56CU, P_DIG]);
+const codDig2 = (await q(`select place_order($1::jsonb,'cod') as r`, [{ street: '1 Main St' }]))[0].r;
+const appliedDig = (await q(`select apply_gift_card_to_order($1,$2) as r`, [bigCode, codDig2.orderId]))[0].r;
+ok('gift card: applying to your own pending COD order works', Number(appliedDig.applied) === 20,
+  `(applied ${appliedDig.applied})`);
+ok('digital: a gift card covering the full due mints the key',
+  /^VEND-[0-9A-F]{12}$/.test((await q(`select license_key from sub_orders where id=$1`, [codDig2.subOrders[0].id]))[0].license_key ?? ''));
+
+// -- 1b. apply guards: delivered orders and other people's orders ----------------
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'v-a',5)`, [B56CU, P56]);
+const codBig = (await q(`select place_order($1::jsonb,'cod') as r`, [{ street: '1 Main St' }]))[0].r;
+const big56Pkg = codBig.subOrders[0];
+await as('authenticated', VENDOR);
+for (const next of ['confirmed', 'packed', 'ready_for_pickup']) {
+  await q(`select advance_sub_order_status($1,$2)`, [big56Pkg.id, next]);
+}
+await as('authenticated', ADMIN);
+await q(`select assign_rider($1,$2)`, [big56Pkg.id, RPID]);
+const big56Delivery = (await q(`select id from deliveries where sub_order_id=$1`, [big56Pkg.id]))[0].id;
+await as('authenticated', RIDER);
+await q(`select advance_sub_order_status($1,'shipped')`, [big56Pkg.id]);
+await q(`select advance_sub_order_status($1,'out_for_delivery')`, [big56Pkg.id]);
+await q(`select verify_delivery($1,$2)`, [big56Delivery, big56Pkg.deliveryCode]);
+ok('fixture: the COD package is delivered', (await q(`select status from sub_orders where id=$1`, [big56Pkg.id]))[0].status === 'delivered');
+await as('authenticated', B56CU);
+await expectThrow('gift card: a delivered order refuses gift cards',
+  () => q(`select apply_gift_card_to_order($1,$2)`, [smallCodes[0], codBig.orderId]),
+  'delivered');
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'v-a',1)`, [B56CU, P56]);
+const codPending = (await q(`select place_order($1::jsonb,'cod') as r`, [{ street: '1 Main St' }]))[0].r;
+await as('authenticated', CU);
+await expectThrow('gift card: another customer’s order is not theirs to pay',
+  () => q(`select apply_gift_card_to_order($1,$2)`, [smallCodes[0], codPending.orderId]),
+  'order not found');
+await as('authenticated', B56CU);
+const appliedPending = (await q(`select apply_gift_card_to_order($1,$2) as r`, [smallCodes[0], codPending.orderId]))[0].r;
+ok('gift card: a partial cover applies against the amount due',
+  Number(appliedPending.applied) === 100 && Number(appliedPending.amountDue) === 5,
+  `(applied ${appliedPending.applied}, due ${appliedPending.amountDue})`);
+
+// -- 4 + 5. partial refunds: vendor earned and loyalty both give the money back --
+await as('postgres');
+const earned0 = Number((await q(`select vendor_earned_net_payout($1) e`, [STORE]))[0].e);
+const points0 = (await q(`select points from loyalty_accounts where user_id=$1`, [B56CU]))[0]?.points ?? 0;
+ok('fixture: delivering Rs 500 of goods earned the buyer 5 points', points0 === 5, `(got ${points0})`);
+await as('authenticated', ADMIN);
+await q(`select admin_refund_sub_order($1, 250, 'Partial goodwill')`, [big56Pkg.id]);
+await as('postgres');
+const earned1 = Number((await q(`select vendor_earned_net_payout($1) e`, [STORE]))[0].e);
+ok('payout: a partial refund leaves the vendor earned column by the refunded amount',
+  Math.abs(earned1 - (earned0 - 250)) < 0.01, `(earned ${earned0} -> ${earned1})`);
+const points1 = (await q(`select points from loyalty_accounts where user_id=$1`, [B56CU]))[0].points;
+ok('loyalty: the refunded share of the points is clawed back (5 -> 3)',
+  points1 === 3, `(got ${points1})`);
+ok('loyalty: the clawback is a ledger entry, not a silent edit',
+  Number((await q(`select coalesce(sum(points),0) s from loyalty_transactions where user_id=$1 and kind='clawback' and ref=$2`, [B56CU, big56Pkg.id]))[0].s) === -2);
+await as('authenticated', ADMIN);
+await q(`select admin_refund_sub_order($1, 255, 'Balance refunded')`, [big56Pkg.id]);
+await as('postgres');
+const earned2 = Number((await q(`select vendor_earned_net_payout($1) e`, [STORE]))[0].e);
+const big56Net = Number((await q(`select net_payout from sub_orders where id=$1`, [big56Pkg.id]))[0].net_payout);
+ok('payout: a full refund removes the package’s whole net from earned',
+  Math.abs(earned2 - (earned0 - big56Net)) < 0.01, `(earned ${earned0} -> ${earned2}, package net ${big56Net})`);
+ok('loyalty: a full refund claws back every point the package earned',
+  (await q(`select points from loyalty_accounts where user_id=$1`, [B56CU]))[0].points === 0);
+ok('the fully refunded order reads refunded',
+  (await q(`select payment_status from orders where id=$1`, [codBig.orderId]))[0].payment_status === 'refunded');
+await as('authenticated', B56CU);
+await expectThrow('gift card: a settled (refunded) order refuses gift cards',
+  () => q(`select apply_gift_card_to_order($1,$2)`, [smallCodes[1], codBig.orderId]),
+  'already settled');
+
+// -- 2. cancel symmetry: card-paid cancels restock AND refund ---------------------
+await as('postgres');
+const stockBeforeCancel = (await q(`select stock::int s from products where id=$1`, [P56]))[0].s;
+await as('authenticated', B56CU);
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'v-a',3)`, [B56CU, P56]);
+const cardOrder56 = (await q(`select place_order($1::jsonb,'card','standard',null,null,null,'Visa','4242') as r`, [{ street: '1 Main St' }]))[0].r;
+const cardPkg56 = cardOrder56.subOrders[0];
+ok('cancel fixture: the card order took 3 units off the shelf',
+  (await q(`select stock::int s from products where id=$1`, [P56]))[0].s === stockBeforeCancel - 3);
+await as('authenticated', VENDOR);
+await q(`select advance_sub_order_status($1,'cancelled')`, [cardPkg56.id]);
+await as('postgres');
+ok('cancel: the units go back on the shelf in the same transaction',
+  (await q(`select stock::int s from products where id=$1`, [P56]))[0].s === stockBeforeCancel);
+const cancelRefund = (await q(`select amount from refunds where sub_order_id=$1`, [cardPkg56.id]));
+ok('cancel: the captured payment is refunded through the refunds ledger (gross 305)',
+  cancelRefund.length === 1 && Number(cancelRefund[0].amount) === 305,
+  `(rows ${cancelRefund.length}, amount ${cancelRefund[0]?.amount})`);
+ok('cancel: the order’s payment status follows to refunded',
+  (await q(`select payment_status from orders where id=$1`, [cardOrder56.orderId]))[0].payment_status === 'refunded');
+ok('cancel: no loyalty was earned pre-delivery, so none is clawed back',
+  (await q(`select count(*)::int c from loyalty_transactions where kind='clawback' and ref=$1`, [cardPkg56.id]))[0].c === 0);
+
+// -- 2. COD cancels restock and void the payment ---------------------------------
+await as('authenticated', B56CU);
+const stockBeforeCod = (await q(`select stock::int s from products where id=$1`, [P56]))[0].s;
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'v-a',1)`, [B56CU, P56]);
+const codCancel = (await q(`select place_order($1::jsonb,'cod') as r`, [{ street: '1 Main St' }]))[0].r;
+await q(`select advance_sub_order_status($1,'cancelled')`, [codCancel.subOrders[0].id]);
+await as('postgres');
+ok('COD cancel: the customer can cancel their own placed package and the stock returns',
+  (await q(`select stock::int s from products where id=$1`, [P56]))[0].s === stockBeforeCod);
+ok('COD cancel: nothing was captured, so no refund row exists',
+  (await q(`select count(*)::int c from refunds where sub_order_id=$1`, [codCancel.subOrders[0].id]))[0].c === 0);
+ok('COD cancel: the order’s payment reads voided, not pending forever',
+  (await q(`select payment_status from orders where id=$1`, [codCancel.orderId]))[0].payment_status === 'voided');
+
+// -- a gift card used AT checkout settles a digital COD order on the spot --------
+await as('authenticated', B56CU);
+await q(`insert into cart_items (user_id, product_id, variant_id, quantity) values ($1,$2,'',1)`, [B56CU, P_DIG]);
+const codDig3 = (await q(
+  `select place_order($1::jsonb,'cod','standard',null,null,null,null,null,null,$2) as r`,
+  [{ street: '1 Main St' }, smallCodes[2]],
+))[0].r;
+ok('digital: a gift card applied at checkout both pays and releases the key',
+  Number(codDig3.giftCardApplied) === 20 && /^VEND-[0-9A-F]{12}$/.test(codDig3.subOrders[0].licenseKey),
+  `(applied ${codDig3.giftCardApplied}, key ${codDig3.subOrders[0].licenseKey})`);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

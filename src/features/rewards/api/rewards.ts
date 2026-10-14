@@ -90,17 +90,24 @@ const str = (value: unknown): string => (value === null || value === undefined ?
 
 /**
  * Buys a gift card. The raw code comes back exactly once, in this response;
- * the database keeps only its hash and last four digits.
+ * the database keeps only its hash and last four digits. Since Batch 56 the
+ * purchase stands on a recorded simulated-card payment: the caller supplies
+ * the card's brand and last four (never the number), exactly as checkout
+ * does, and the RPC refuses to mint without them.
  */
 export async function purchaseGiftCard(input: {
   recipientEmail: string;
   amount: number;
   message?: string;
+  cardBrand: string;
+  cardLast4: string;
 }): Promise<PurchasedGiftCard> {
   const { data, error } = await supabase.rpc('purchase_gift_card', {
     p_recipient_email: input.recipientEmail,
     p_amount: input.amount,
     p_message: input.message ?? null,
+    p_card_brand: input.cardBrand,
+    p_card_last4: input.cardLast4,
   });
   if (error) throw new Error(error.message);
   const row = asRecord(data);

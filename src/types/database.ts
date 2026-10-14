@@ -579,6 +579,57 @@ export type Database = {
         }
       ]
     },
+    "gift_card_payments": {
+      Row: {
+        "id": string,
+        "user_id": string,
+        "amount": number,
+        "method": string,
+        "card_brand": string | null,
+        "card_last4": string | null,
+        "status": string,
+        "gift_card_id": string | null,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "user_id": string,
+        "amount": number,
+        "method"?: string,
+        "card_brand"?: string | null,
+        "card_last4"?: string | null,
+        "status"?: string,
+        "gift_card_id"?: string | null,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "user_id"?: string,
+        "amount"?: number,
+        "method"?: string,
+        "card_brand"?: string | null,
+        "card_last4"?: string | null,
+        "status"?: string,
+        "gift_card_id"?: string | null,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "gift_card_payments_gift_card_id_fkey"
+          columns: ["gift_card_id"]
+          isOneToOne: false
+          referencedRelation: "gift_cards"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "gift_card_payments_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
     "gift_card_transactions": {
       Row: {
         "id": string,
@@ -1085,7 +1136,7 @@ export type Database = {
         "shipping_address": Json,
         "payment_method": "card" | "cod",
         "payment_details": Json,
-        "payment_status": "pending" | "succeeded" | "failed" | "refunded",
+        "payment_status": "pending" | "succeeded" | "failed" | "refunded" | "voided",
         "created_at": string,
         "gift_card_amount": number,
         "discount_total": number,
@@ -1099,7 +1150,7 @@ export type Database = {
         "shipping_address"?: Json,
         "payment_method"?: "card" | "cod",
         "payment_details"?: Json,
-        "payment_status"?: "pending" | "succeeded" | "failed" | "refunded",
+        "payment_status"?: "pending" | "succeeded" | "failed" | "refunded" | "voided",
         "created_at"?: string,
         "gift_card_amount"?: number,
         "discount_total"?: number,
@@ -1113,7 +1164,7 @@ export type Database = {
         "shipping_address"?: Json,
         "payment_method"?: "card" | "cod",
         "payment_details"?: Json,
-        "payment_status"?: "pending" | "succeeded" | "failed" | "refunded",
+        "payment_status"?: "pending" | "succeeded" | "failed" | "refunded" | "voided",
         "created_at"?: string,
         "gift_card_amount"?: number,
         "discount_total"?: number,
@@ -2702,7 +2753,7 @@ export type Database = {
     "admin_set_payment_status": {
       Args: {
         "p_order_group_id": string,
-        "p_status": "pending" | "succeeded" | "failed" | "refunded",
+        "p_status": "pending" | "succeeded" | "failed" | "refunded" | "voided",
         "p_reason"?: string | null
       }
       Returns: Json
@@ -3051,6 +3102,12 @@ export type Database = {
       }
       Returns: Json
     },
+    "mint_digital_license_keys": {
+      Args: {
+        "p_order_id": string
+      }
+      Returns: number
+    },
     "moderate_product": {
       Args: {
         "p_product_id": string,
@@ -3116,7 +3173,9 @@ export type Database = {
       Args: {
         "p_recipient_email": string,
         "p_amount": number,
-        "p_message"?: string | null
+        "p_message"?: string | null,
+        "p_card_brand"?: string | null,
+        "p_card_last4"?: string | null
       }
       Returns: Json
     },
@@ -3227,6 +3286,14 @@ export type Database = {
         "p_action": string
       }
       Returns: Json
+    },
+    "settle_cancelled_package": {
+      Args: {
+        "p_sub_order_id": string,
+        "p_actor": string,
+        "p_actor_role": string
+      }
+      Returns: Record<string, unknown>
     },
     "store_owner_id": {
       Args: {
@@ -3362,7 +3429,7 @@ export type Database = {
       "moderation_status": "draft" | "pending_review" | "approved" | "rejected" | "archived",
       "notification_type": "order_status" | "system" | "promotion" | "payout" | "dispute" | "review" | "security",
       "payment_method": "card" | "cod",
-      "payment_status": "pending" | "succeeded" | "failed" | "refunded",
+      "payment_status": "pending" | "succeeded" | "failed" | "refunded" | "voided",
       "payout_status": "processing" | "completed" | "failed",
       "product_type": "physical" | "digital",
       "rider_availability": "available" | "busy" | "offline",

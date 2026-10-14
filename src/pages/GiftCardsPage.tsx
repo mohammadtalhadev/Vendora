@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/auth-store';
 import { useCurrency } from '../store/currency-store';
 import { useMyGiftCards, usePurchaseGiftCard } from '../features/rewards/hooks/useRewards';
 import type { PurchasedGiftCard } from '../features/rewards/api/rewards';
+import { detectCardBrand, validateCardLuhn } from '../features/checkout/utils/luhn';
 
 const AMOUNT_PRESETS = [500, 1000, 2500, 5000, 10000];
 
@@ -15,7 +16,9 @@ const AMOUNT_PRESETS = [500, 1000, 2500, 5000, 10000];
  * Buying creates a `gift_cards` row through the `purchase_gift_card` RPC;
  * the raw code is returned once, here, and never stored or shown again —
  * only the last four digits are kept. Payment is booked under the project's
- * existing simulated-card model because a real gateway is deferred.
+ * existing simulated-card model because a real gateway is deferred; since
+ * Batch 56 the purchase records that simulated payment as its own row and
+ * the RPC will not mint a card without the card evidence below.
  */
 export const GiftCardsPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
@@ -27,6 +30,8 @@ export const GiftCardsPage: React.FC = () => {
   const [customAmount, setCustomAmount] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardError, setCardError] = useState<string | null>(null);
   const [issued, setIssued] = useState<PurchasedGiftCard | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -36,8 +41,24 @@ export const GiftCardsPage: React.FC = () => {
 
   const handlePurchase = () => {
     if (!amountValid || !emailValid || purchase.isPending) return;
+    // The simulated payment step, validated exactly the way checkout
+    // validates its card: Luhn checksum in the browser, brand + last four
+    // (never the number) to the RPC, which records the payment row the
+    // card is minted against.
+    const digits = cardNumber.replace(/\D/g, '');
+    if (!validateCardLuhn(digits)) {
+      setCardError('Card failed Luhn checksum validation. Please check the digits.');
+      return;
+    }
+    setCardError(null);
     purchase.mutate(
-      { recipientEmail: recipientEmail.trim(), amount: effectiveAmount, message: message.trim() || undefined },
+      {
+        recipientEmail: recipientEmail.trim(),
+        amount: effectiveAmount,
+        message: message.trim() || undefined,
+        cardBrand: detectCardBrand(digits),
+        cardLast4: digits.slice(-4),
+      },
       {
         onSuccess: (card) => {
           setIssued(card);
@@ -183,6 +204,31 @@ export const GiftCardsPage: React.FC = () => {
                   className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 focus:border-sun-orange focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
                 />
               </div>
+            </div>
+            <div>
+              <label htmlFor="gift-card-number" className="mb-1.5 block text-xs font-bold text-slate-500">
+                Pay with card
+              </label>
+              <input
+                id="gift-card-number"
+                type="text"
+                inputMode="numeric"
+                autoComplete="cc-number"
+                value={cardNumber}
+                onChange={(e) => setCardNumber(e.target.value)}
+                placeholder="4242 4242 4242 4242"
+                aria-invalid={cardError ? true : undefined}
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 focus:border-sun-orange focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Simulated checkout — no real charge is made and the number itself is never stored;
+                only its brand and last four digits are recorded with the payment.
+              </p>
+              {cardError && (
+                <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">
+                  {cardError}
+                </p>
+              )}
             </div>
             {purchase.isError && (
               <p role="alert" className="text-xs font-semibold text-rose-600">

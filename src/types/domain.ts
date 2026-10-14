@@ -216,8 +216,12 @@ export interface OrderGroup {
     brand?: string;
     last4?: string;
   };
-  /** Written by place_order: 'succeeded' for a captured card, 'pending' for cash. */
-  paymentStatus?: 'pending' | 'succeeded' | 'failed' | 'refunded';
+  /**
+   * Written by place_order: 'succeeded' for a captured card, 'pending' for cash.
+   * Later transitions: 'refunded' once refund rows cover the order, 'voided'
+   * when an uncollected COD order is cancelled in full (Batch 56).
+   */
+  paymentStatus?: 'pending' | 'succeeded' | 'failed' | 'refunded' | 'voided';
   /** How much of this order's total gift cards have covered (orders.gift_card_amount). */
   giftCardAmount: number;
   subOrderIds: string[];

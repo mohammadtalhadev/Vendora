@@ -99,6 +99,7 @@ const PAYMENT_STATUS_LABEL: Record<NonNullable<OrderGroup['paymentStatus']>, str
   succeeded: 'Payment captured',
   failed: 'Payment failed',
   refunded: 'Refunded on this order',
+  voided: 'Payment void — order cancelled',
 };
 
 function paymentLabel(payment: UsedPayment): string {
