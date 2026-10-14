@@ -78,6 +78,7 @@ export function domainProductToCardItem(p: Product): ProductItem {
     maxStock: Math.max(stock, 50),
     sellerId: p.sellerId || 'platform',
     sellerName: p.sellerName || 'Vendora Verified',
+    sellerLogo: p.sellerLogo ?? null,
     sellerType: p.sellerType || 'vendor',
     isVerified: true,
     type: p.type || 'physical',

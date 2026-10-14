@@ -37,7 +37,7 @@ import { NotificationDropdown } from '../common/NotificationDropdown';
  * default inside NotificationDropdown); there are no exceptions now.
  */
 const NAV_ICON_BUTTON_CLASS =
-  'relative h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-all group shrink-0 cursor-pointer hover:bg-white hover:shadow-md hover:ring-1 hover:ring-orange-200 hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
+  'relative h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-all group shrink-0 cursor-pointer hover:bg-white hover:shadow-lg hover:shadow-orange-500/20 hover:ring-2 hover:ring-sun-orange hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();

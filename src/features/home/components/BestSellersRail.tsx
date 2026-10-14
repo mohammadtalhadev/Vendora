@@ -162,7 +162,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
                   className={`absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full transition-all cursor-pointer ${
                     wishlisted
                       ? 'bg-rose-50 text-rose-500 shadow-sm'
-                      : 'bg-white/80 text-slate-400 hover:bg-white hover:text-rose-500 backdrop-blur-xs'
+                      : 'bg-white/80 text-slate-500 hover:bg-white hover:text-sun-orange hover:ring-2 hover:ring-sun-orange backdrop-blur-xs'
                   }`}
                   title="Save to wishlist"
                 >

@@ -49,6 +49,7 @@ export interface Product {
   sellerId: string; // 'platform' or vendorId
   sellerName: string;
   sellerType: 'platform' | 'vendor';
+  sellerLogo?: string | null;
   variants: Variant[];
   stock: number;
   shippingSettings?: {

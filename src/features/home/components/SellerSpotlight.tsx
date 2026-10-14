@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Star, ShieldCheck, TrendingUp, ChevronRight, Rocket, Sparkles } from 'lucide-react';
+import { Store, Star, ShieldCheck, TrendingUp, ChevronRight, Rocket } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
 /**
  * Display shape for a spotlighted seller. Defined here (it previously lived in the
@@ -88,7 +88,7 @@ export const SellerSpotlight: React.FC<SellerSpotlightProps> = ({ vendors }) => 
 
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-orange-200/80 bg-white/90 dark:bg-orange-950/40 px-3 py-1 text-[10px] font-bold text-sun-orange shadow-2xs">
-            <Sparkles className="h-3 w-3 text-sun-orange" />
+            <Store className="h-3 w-3 text-sun-orange" />
             <span>SELL ON VENDORA</span>
           </div>
           <h3 className="font-outfit text-xl sm:text-2xl md:text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, ShieldCheck, Store } from 'lucide-react';
+import { Star, ShoppingCart, Heart, ShieldCheck } from 'lucide-react';
+import { StoreLogo } from '../../vendor/components/StoreLogo';
 import { useCurrency } from '../../../store/currency-store';
 
 export interface ProductItem {
@@ -19,6 +20,7 @@ export interface ProductItem {
   maxStock: number;
   sellerId: string;
   sellerName: string;
+  sellerLogo?: string | null;
   sellerType: 'platform' | 'vendor';
   isVerified?: boolean;
   type: 'physical' | 'digital';
@@ -65,11 +67,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <button
             type="button"
             onClick={() => onToggleWishlist(product)}
-            className="absolute right-2 top-2 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full bg-white/75 backdrop-blur-md border border-white/60 shadow-xs transition-all hover:bg-white hover:scale-110 hover:text-rose-500"
+            className="absolute right-2 top-2 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full bg-white/75 backdrop-blur-md border border-white/60 shadow-xs transition-all text-slate-500 hover:bg-white hover:scale-110 hover:text-sun-orange hover:ring-2 hover:ring-sun-orange"
             title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
-            <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+            <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
           </button>
           <Link to={`/products/${product.id}`} className="flex h-full w-full items-center justify-center">
             <img
@@ -135,7 +137,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Sold by seller + Verified Badge with hover tooltip */}
         <div className="mt-2 sm:mt-2.5 flex max-w-full items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-slate-600">
-          <Store className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-aqua" />
+          <StoreLogo name={product.sellerName} logo={product.sellerLogo} className="h-5 w-5 shrink-0 rounded-full text-[10px] ring-1 ring-slate-200/80 sm:h-6 sm:w-6 sm:text-[11px]" />
           <span className="shrink-0 font-medium text-slate-500">Sold by</span>
           <Link
             to={`/products?seller=${encodeURIComponent(product.sellerId)}`}

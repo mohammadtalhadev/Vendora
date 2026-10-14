@@ -1,5 +1,5 @@
 import React from 'react';
-import { BellRing, ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import { BellRing, ShieldCheck, Zap, Smartphone } from 'lucide-react';
 
 /**
  * Mobile-web promo. There is no native Vendora app, so this section sells
@@ -17,7 +17,7 @@ export const AppPromoSection: React.FC = () => {
 
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold text-amber-300 ring-1 ring-white/15 backdrop-blur-xs">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Smartphone className="h-3.5 w-3.5" />
             <span>Vendora in Your Mobile Browser</span>
           </div>
 

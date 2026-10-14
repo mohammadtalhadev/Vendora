@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Eye, ArrowUpRight, ShoppingBag } from 'lucide-react';
+import { Lightbulb, Eye, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
 import { SectionHeading } from './SectionHeading';
 
@@ -122,7 +122,7 @@ export const InspirationMosaic: React.FC = () => {
       <SectionHeading
         eyebrow={
           <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange-700">
-            <Sparkles className="h-3.5 w-3.5 text-sun-orange" />
+            <Lightbulb className="h-3.5 w-3.5 text-sun-orange" />
             Lifestyle Inspiration
           </span>
         }

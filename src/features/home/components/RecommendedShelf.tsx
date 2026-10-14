@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { Sparkles } from 'lucide-react';
 import { ProductCard, domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
 import { useReveal } from '../../../hooks/useReveal';
@@ -37,12 +36,6 @@ export const RecommendedShelf: React.FC<RecommendedShelfProps> = ({
     <section className="reveal mb-14">
       {/* Header */}
       <SectionHeading
-        eyebrow={
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange-700">
-            <Sparkles className="h-3.5 w-3.5 text-sun-orange" />
-            Top Rated
-          </span>
-        }
         title="Top-Rated Picks"
         subtitle="Top-rated products from verified sellers across the marketplace"
       />

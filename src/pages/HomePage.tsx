@@ -25,6 +25,7 @@ import {
   DigitalShowcase,
   AppPromoSection,
   BackToTopButton,
+  BannerCta,
 } from '../features/home';
 import { useHeroSlides } from '../features/home/api/hero-banners';
 import { TrustStrip } from '../components/common/TrustStrip';
@@ -391,7 +392,7 @@ export const HomePage: React.FC = () => {
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
                   activeHeroIndex === idx
                     ? 'h-2 w-7 bg-sun-orange'
-                    : 'h-2 w-2 bg-slate-300 hover:bg-slate-400'
+                    : 'h-2 w-2 bg-slate-300 hover:bg-sun-orange/70'
                 }`}
               />
             ))}
@@ -428,7 +429,7 @@ export const HomePage: React.FC = () => {
             <button
               type="button"
               onClick={() => scrollContainer(categoriesRef, -240)}
-              className="flex mr-2 h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-slate-900 hover:scale-105 transition-all cursor-pointer"
+              className="flex mr-2 h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-sun-orange hover:border-sun-orange hover:scale-105 transition-all cursor-pointer"
               title="Previous categories"
               aria-label="Previous categories"
             >
@@ -463,7 +464,7 @@ export const HomePage: React.FC = () => {
             <button
               type="button"
               onClick={() => scrollContainer(categoriesRef, 240)}
-              className="flex ml-2 h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-slate-900 hover:scale-105 transition-all cursor-pointer"
+              className="flex ml-2 h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-sun-orange hover:border-sun-orange hover:scale-105 transition-all cursor-pointer"
               title="Next categories"
               aria-label="Next categories"
             >
@@ -557,12 +558,9 @@ export const HomePage: React.FC = () => {
                   <p className="font-outfit mt-3.5 max-w-[340px] text-xs font-normal leading-relaxed text-[#6B635B] sm:text-sm">
                     Save up to 30% on audio and computers from trusted vendors.
                   </p>
-                  <Link
-                    to="/products?category=electronics"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-slate-800 sm:text-sm"
-                  >
+                  <BannerCta to="/products?category=electronics" className="mt-5">
                     Shop Electronics
-                  </Link>
+                  </BannerCta>
                 </div>
                 <CountdownPills
                   initialDays={39}
@@ -695,12 +693,9 @@ export const HomePage: React.FC = () => {
                   <p className="font-outfit mt-3 max-w-[340px] text-xs leading-relaxed text-[#6B635B] sm:text-sm">
                     Skincare, makeup and fragrances. Up to 25% off.
                   </p>
-                  <Link
-                    to="/products?category=beauty"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-colors hover:bg-sun-orange-600 sm:text-sm"
-                  >
+                  <BannerCta to="/products?category=beauty" className="mt-5">
                     Shop Beauty
-                  </Link>
+                  </BannerCta>
                 </div>
                 <CountdownPills
                   initialDays={37}
@@ -727,12 +722,9 @@ export const HomePage: React.FC = () => {
                   <p className="font-outfit mt-3 max-w-[340px] text-xs leading-relaxed text-[#6B635B] sm:text-sm">
                     Skincare, makeup and fragrances. Up to 25% off.
                   </p>
-                  <Link
-                    to="/products?category=beauty"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-colors hover:bg-sun-orange-600 sm:text-sm"
-                  >
+                  <BannerCta to="/products?category=beauty" className="mt-5">
                     Shop Beauty
-                  </Link>
+                  </BannerCta>
                 </div>
                 <CountdownPills
                   initialDays={38}
@@ -821,12 +813,9 @@ export const HomePage: React.FC = () => {
                   <p className="font-outfit mt-3 max-w-[340px] text-xs leading-relaxed text-slate-600 sm:text-sm">
                     Air fryers, vacuums &amp; more. Up to 25% off.
                   </p>
-                  <Link
-                    to="/products?category=appliances"
-                    className="font-outfit mt-5 inline-flex items-center rounded-lg bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-sun-orange-600 sm:text-sm"
-                  >
+                  <BannerCta to="/products?category=appliances" className="mt-5">
                     Shop Now
-                  </Link>
+                  </BannerCta>
                 </div>
                 <CountdownPills
                   initialDays={37}

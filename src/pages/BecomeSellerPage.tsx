@@ -568,7 +568,7 @@ export const BecomeSellerPage: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 text-xs border border-white/50 shadow-md">
                 <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
-                  <Zap className="h-3.5 w-3.5 text-sun-orange" aria-hidden="true" />
+                  <Zap className="h-3.5 w-3.5 fill-sun-orange text-sun-orange" aria-hidden="true" />
                   <span>Bykea Express Fast-Track</span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-0.5">
@@ -726,11 +726,6 @@ export const BecomeSellerPage: React.FC = () => {
           </div>
 
           <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-white/85 dark:bg-orange-950/40 px-3.5 py-1 text-[11px] font-bold text-sun-orange shadow-xs">
-              <Sparkles className="h-3 w-3 text-sun-orange" aria-hidden="true" />
-              LAUNCH WITH 90 DAYS ZERO COMMISSION GUARANTEE
-            </div>
-
             <h2 className="font-outfit text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
               Ready to scale your brand across Pakistan?
             </h2>

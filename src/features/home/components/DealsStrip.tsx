@@ -71,7 +71,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
           className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
             activeTab === 'new-arrivals'
               ? 'text-sun-orange border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
-              : 'text-slate-500 hover:text-slate-900'
+              : 'text-slate-500 hover:text-sun-orange'
           }`}
         >
           New Arrivals
@@ -82,7 +82,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
           className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
             activeTab === 'best-sellers'
               ? 'text-sun-orange border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
-              : 'text-slate-500 hover:text-slate-900'
+              : 'text-slate-500 hover:text-sun-orange'
           }`}
         >
           Best Seller
@@ -93,7 +93,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
           className={`cursor-pointer font-outfit text-base sm:text-lg font-bold transition-all ${
             activeTab === 'best-offers'
               ? 'text-sun-orange border-b-2 border-sun-orange pb-3 -mb-[17px] font-extrabold'
-              : 'text-slate-500 hover:text-slate-900'
+              : 'text-slate-500 hover:text-sun-orange'
           }`}
         >
           Best Offers

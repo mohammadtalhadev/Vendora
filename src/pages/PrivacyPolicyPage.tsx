@@ -54,7 +54,7 @@ export const PrivacyPolicyPage: React.FC = () => {
   return (
     <div className="relative">
       {/* ── Ambient Glow Background ───────────────────────────────── */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-x-clip">
         <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
           {/* ── Breadcrumb & Header ─────────────────────────────────── */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -241,7 +241,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           {/* ── Main Policy Body: 8 Core Articles ────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Sticky Table of Contents (4 cols) */}
-            <div className="hidden lg:block lg:col-span-4 sticky top-24 space-y-4">
+            <div className="hidden lg:block lg:col-span-4 sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto pr-1 [scrollbar-width:thin] space-y-4">
               <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-glass backdrop-blur-xl space-y-3 text-xs">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <FileText className="h-4 w-4 text-sun-orange" />

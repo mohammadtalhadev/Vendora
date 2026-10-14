@@ -8,3 +8,4 @@ export { DigitalShowcase, type DigitalShowcaseProps } from './components/Digital
 export { InspirationMosaic } from './components/InspirationMosaic';
 export { AppPromoSection } from './components/AppPromoSection';
 export { BackToTopButton } from './components/BackToTopButton';
+export { BannerCta, BANNER_CTA_CLASS, type BannerCtaProps } from './components/BannerCta';

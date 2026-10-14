@@ -66,7 +66,7 @@ export const BrandSpotlight: React.FC = () => {
           <button
             type="button"
             onClick={() => scroll('left')}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-2xs hover:border-sun-orange hover:bg-orange-50 hover:text-sun-orange transition-all cursor-pointer"
             aria-label="Scroll stores left"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -74,7 +74,7 @@ export const BrandSpotlight: React.FC = () => {
           <button
             type="button"
             onClick={() => scroll('right')}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-2xs hover:border-sun-orange hover:bg-orange-50 hover:text-sun-orange transition-all cursor-pointer"
             aria-label="Scroll stores right"
           >
             <ChevronRight className="h-4 w-4" />
