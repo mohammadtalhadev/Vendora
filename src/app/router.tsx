@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RootLayout } from '../components/layout/RootLayout';
 import { AccountLayout } from '../components/layout/AccountLayout';
 import { PublicLayout, AdminLayout, VendorLayout, RiderLayout, SupportLayout } from '../components/layout/PanelLayout';
+import { RouteErrorScreen } from '../components/common/RouteErrorScreen';
+import { isChunkLoadError, reloadOnceForNewVersion } from '../lib/chunk-recovery';
 import { 
   AdminOnlyRoute, 
   VendorOnlyRoute, 
@@ -17,277 +19,277 @@ import { ProductDetailPage } from '../pages/ProductDetailPage';
 import { CartPage } from '../pages/CartPage';
 
 // Lazy Loaded Routes for Performance & Code Splitting (PRD Section 12 & 14)
-const VendorStorefrontPage = lazy(() =>
+const VendorStorefrontPage = lazyWithRetry(() =>
   import('../pages/VendorStorefrontPage').then((m) => ({ default: m.VendorStorefrontPage })),
 );
-const CheckoutPage = lazy(() =>
+const CheckoutPage = lazyWithRetry(() =>
   import('../pages/CheckoutPage').then((m) => ({ default: m.CheckoutPage })),
 );
-const OrdersPage = lazy(() =>
+const OrdersPage = lazyWithRetry(() =>
   import('../pages/OrdersPage').then((m) => ({ default: m.OrdersPage })),
 );
-const OrderDetailPage = lazy(() =>
+const OrderDetailPage = lazyWithRetry(() =>
   import('../pages/OrderDetailPage').then((m) => ({ default: m.OrderDetailPage })),
 );
-const InvoicePage = lazy(() =>
+const InvoicePage = lazyWithRetry(() =>
   import('../pages/InvoicePage').then((m) => ({ default: m.InvoicePage })),
 );
-const DownloadsPage = lazy(() =>
+const DownloadsPage = lazyWithRetry(() =>
   import('../pages/DownloadsPage').then((m) => ({ default: m.DownloadsPage })),
 );
-const OrderConfirmationPage = lazy(() =>
+const OrderConfirmationPage = lazyWithRetry(() =>
   import('../pages/OrderConfirmationPage').then((m) => ({ default: m.OrderConfirmationPage })),
 );
-const AccountReviewsPage = lazy(() =>
+const AccountReviewsPage = lazyWithRetry(() =>
   import('../pages/AccountReviewsPage').then((m) => ({ default: m.AccountReviewsPage })),
 );
-const AccountReturnsPage = lazy(() =>
+const AccountReturnsPage = lazyWithRetry(() =>
   import('../pages/AccountReturnsPage').then((m) => ({ default: m.AccountReturnsPage })),
 );
-const AccountSettingsPage = lazy(() =>
+const AccountSettingsPage = lazyWithRetry(() =>
   import('../pages/AccountSettingsPage').then((m) => ({ default: m.AccountSettingsPage })),
 );
-const ComparePage = lazy(() =>
+const ComparePage = lazyWithRetry(() =>
   import('../pages/ComparePage').then((m) => ({ default: m.ComparePage })),
 );
-const WishlistPage = lazy(() =>
+const WishlistPage = lazyWithRetry(() =>
   import('../pages/WishlistPage').then((m) => ({ default: m.WishlistPage })),
 );
-const NotificationsPage = lazy(() =>
+const NotificationsPage = lazyWithRetry(() =>
   import('../pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
 );
-const BecomeSellerPage = lazy(() =>
+const BecomeSellerPage = lazyWithRetry(() =>
   import('../pages/BecomeSellerPage').then((m) => ({ default: m.BecomeSellerPage })),
 );
-const AccountProfilePage = lazy(() =>
+const AccountProfilePage = lazyWithRetry(() =>
   import('../pages/AccountProfilePage').then((m) => ({ default: m.AccountProfilePage })),
 );
-const CustomerDisputesPage = lazy(() =>
+const CustomerDisputesPage = lazyWithRetry(() =>
   import('../pages/CustomerDisputesPage').then((m) => ({ default: m.CustomerDisputesPage })),
 );
-const LoginPage = lazy(() =>
+const LoginPage = lazyWithRetry(() =>
   import('../pages/LoginPage').then((m) => ({ default: m.LoginPage })),
 );
-const AdminLoginPage = lazy(() =>
+const AdminLoginPage = lazyWithRetry(() =>
   import('../pages/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage })),
 );
-const RegisterPage = lazy(() =>
+const RegisterPage = lazyWithRetry(() =>
   import('../pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
 );
-const ResetPasswordPage = lazy(() =>
+const ResetPasswordPage = lazyWithRetry(() =>
   import('../pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
 );
-const ForbiddenPage = lazy(() =>
+const ForbiddenPage = lazyWithRetry(() =>
   import('../pages/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage })),
 );
-const ReturnsPage = lazy(() =>
+const ReturnsPage = lazyWithRetry(() =>
   import('../pages/ReturnsPage').then((m) => ({ default: m.ReturnsPage })),
 );
-const ShippingPolicyPage = lazy(() =>
+const ShippingPolicyPage = lazyWithRetry(() =>
   import('../pages/ShippingPolicyPage').then((m) => ({ default: m.ShippingPolicyPage })),
 );
-const RefundPolicyPage = lazy(() =>
+const RefundPolicyPage = lazyWithRetry(() =>
   import('../pages/RefundPolicyPage').then((m) => ({ default: m.RefundPolicyPage })),
 );
-const PrivacyPolicyPage = lazy(() =>
+const PrivacyPolicyPage = lazyWithRetry(() =>
   import('../pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })),
 );
-const TermsPage = lazy(() =>
+const TermsPage = lazyWithRetry(() =>
   import('../pages/TermsPage').then((m) => ({ default: m.TermsPage })),
 );
-const AboutPage = lazy(() =>
+const AboutPage = lazyWithRetry(() =>
   import('../pages/AboutPage').then((m) => ({ default: m.AboutPage })),
 );
-const AffiliatePage = lazy(() =>
+const AffiliatePage = lazyWithRetry(() =>
   import('../pages/AffiliatePage').then((m) => ({ default: m.AffiliatePage })),
 );
-const SellerFeesPage = lazy(() =>
+const SellerFeesPage = lazyWithRetry(() =>
   import('../pages/SellerFeesPage').then((m) => ({ default: m.SellerFeesPage })),
 );
-const SellerPolicyPage = lazy(() =>
+const SellerPolicyPage = lazyWithRetry(() =>
   import('../pages/SellerPolicyPage').then((m) => ({ default: m.SellerPolicyPage })),
 );
-const CouponCentrePage = lazy(() =>
+const CouponCentrePage = lazyWithRetry(() =>
   import('../pages/CouponCentrePage').then((m) => ({ default: m.CouponCentrePage })),
 );
-const CookiePolicyPage = lazy(() =>
+const CookiePolicyPage = lazyWithRetry(() =>
   import('../pages/CookiePolicyPage').then((m) => ({ default: m.CookiePolicyPage })),
 );
-const FAQPage = lazy(() =>
+const FAQPage = lazyWithRetry(() =>
   import('../pages/FAQPage').then((m) => ({ default: m.FAQPage })),
 );
-const ContactPage = lazy(() =>
+const ContactPage = lazyWithRetry(() =>
   import('../pages/ContactPage').then((m) => ({ default: m.ContactPage })),
 );
-const TrackOrderPage = lazy(() =>
+const TrackOrderPage = lazyWithRetry(() =>
   import('../pages/TrackOrderPage').then((m) => ({ default: m.TrackOrderPage })),
 );
-const BrandsPage = lazy(() =>
+const BrandsPage = lazyWithRetry(() =>
   import('../pages/BrandsPage').then((m) => ({ default: m.BrandsPage })),
 );
-const DealsPage = lazy(() =>
+const DealsPage = lazyWithRetry(() =>
   import('../pages/DealsPage').then((m) => ({ default: m.DealsPage })),
 );
-const CareersPage = lazy(() =>
+const CareersPage = lazyWithRetry(() =>
   import('../pages/CareersPage').then((m) => ({ default: m.CareersPage })),
 );
-const BlogPage = lazy(() =>
+const BlogPage = lazyWithRetry(() =>
   import('../pages/BlogPage').then((m) => ({ default: m.BlogPage })),
 );
-const CategorySlugRedirect = lazy(() =>
+const CategorySlugRedirect = lazyWithRetry(() =>
   import('../pages/CategorySlugRedirect').then((m) => ({ default: m.CategorySlugRedirect })),
 );
-const CategoriesPage = lazy(() =>
+const CategoriesPage = lazyWithRetry(() =>
   import('../pages/CategoriesPage').then((m) => ({ default: m.CategoriesPage })),
 );
-const BrandDetailPage = lazy(() =>
+const BrandDetailPage = lazyWithRetry(() =>
   import('../pages/BrandDetailPage').then((m) => ({ default: m.BrandDetailPage })),
 );
-const BlogPostPage = lazy(() =>
+const BlogPostPage = lazyWithRetry(() =>
   import('../pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })),
 );
-const NewArrivalsPage = lazy(() =>
+const NewArrivalsPage = lazyWithRetry(() =>
   import('../pages/NewArrivalsPage').then((m) => ({ default: m.NewArrivalsPage })),
 );
 
 // Vendor Workspace Lazy Pages
-const VendorDashboardPage = lazy(() =>
+const VendorDashboardPage = lazyWithRetry(() =>
   import('../pages/VendorDashboardPage').then((m) => ({ default: m.VendorDashboardPage })),
 );
-const VendorOrdersPage = lazy(() =>
+const VendorOrdersPage = lazyWithRetry(() =>
   import('../pages/VendorOrdersPage').then((m) => ({ default: m.VendorOrdersPage })),
 );
-const VendorOrderDetailPage = lazy(() =>
+const VendorOrderDetailPage = lazyWithRetry(() =>
   import('../pages/VendorOrderDetailPage').then((m) => ({ default: m.VendorOrderDetailPage })),
 );
-const VendorInventoryPage = lazy(() =>
+const VendorInventoryPage = lazyWithRetry(() =>
   import('../pages/VendorInventoryPage').then((m) => ({ default: m.VendorInventoryPage })),
 );
-const VendorProductsPage = lazy(() =>
+const VendorProductsPage = lazyWithRetry(() =>
   import('../pages/VendorProductsPage').then((m) => ({ default: m.VendorProductsPage })),
 );
-const VendorAddProductPage = lazy(() =>
+const VendorAddProductPage = lazyWithRetry(() =>
   import('../pages/VendorAddProductPage').then((m) => ({ default: m.VendorAddProductPage })),
 );
-const VendorReturnsPage = lazy(() =>
+const VendorReturnsPage = lazyWithRetry(() =>
   import('../pages/VendorReturnsPage').then((m) => ({ default: m.VendorReturnsPage })),
 );
-const VendorEarningsPage = lazy(() =>
+const VendorEarningsPage = lazyWithRetry(() =>
   import('../pages/VendorEarningsPage').then((m) => ({ default: m.VendorEarningsPage })),
 );
-const VendorAnalyticsPage = lazy(() =>
+const VendorAnalyticsPage = lazyWithRetry(() =>
   import('../pages/VendorAnalyticsPage').then((m) => ({ default: m.VendorAnalyticsPage })),
 );
-const VendorPayoutsPage = lazy(() =>
+const VendorPayoutsPage = lazyWithRetry(() =>
   import('../pages/VendorPayoutsPage').then((m) => ({ default: m.VendorPayoutsPage })),
 );
-const VendorPromotionsPage = lazy(() =>
+const VendorPromotionsPage = lazyWithRetry(() =>
   import('../pages/VendorPromotionsPage').then((m) => ({ default: m.VendorPromotionsPage })),
 );
-const VendorMessagesPage = lazy(() =>
+const VendorMessagesPage = lazyWithRetry(() =>
   import('../pages/VendorMessagesPage').then((m) => ({ default: m.VendorMessagesPage })),
 );
-const VendorReviewsPage = lazy(() =>
+const VendorReviewsPage = lazyWithRetry(() =>
   import('../pages/VendorReviewsPage').then((m) => ({ default: m.VendorReviewsPage })),
 );
-const VendorSettingsPage = lazy(() =>
+const VendorSettingsPage = lazyWithRetry(() =>
   import('../pages/VendorSettingsPage').then((m) => ({ default: m.VendorSettingsPage })),
 );
-const VendorSupportPage = lazy(() =>
+const VendorSupportPage = lazyWithRetry(() =>
   import('../pages/VendorSupportPage').then((m) => ({ default: m.VendorSupportPage })),
 );
-const VendorMediaPage = lazy(() =>
+const VendorMediaPage = lazyWithRetry(() =>
   import('../pages/VendorMediaPage').then((m) => ({ default: m.VendorMediaPage })),
 );
-const VendorProfilePage = lazy(() =>
+const VendorProfilePage = lazyWithRetry(() =>
   import('../pages/VendorProfilePage').then((m) => ({ default: m.VendorProfilePage })),
 );
-const VendorShippingSettingsPage = lazy(() =>
+const VendorShippingSettingsPage = lazyWithRetry(() =>
   import('../pages/VendorShippingSettingsPage').then((m) => ({ default: m.VendorShippingSettingsPage })),
 );
-const VendorImportExportPage = lazy(() =>
+const VendorImportExportPage = lazyWithRetry(() =>
   import('../pages/VendorImportExportPage').then((m) => ({ default: m.VendorImportExportPage })),
 );
-const VendorQAPage = lazy(() =>
+const VendorQAPage = lazyWithRetry(() =>
   import('../pages/VendorQAPage').then((m) => ({ default: m.VendorQAPage })),
 );
 
 // Admin Workspace Lazy Pages (Catmin)
-const AdminDashboardPage = lazy(() =>
+const AdminDashboardPage = lazyWithRetry(() =>
   import('../pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),
 );
-const AdminVendorsPage = lazy(() =>
+const AdminVendorsPage = lazyWithRetry(() =>
   import('../pages/AdminVendorsPage').then((m) => ({ default: m.AdminVendorsPage })),
 );
-const AdminVendorDetailPage = lazy(() =>
+const AdminVendorDetailPage = lazyWithRetry(() =>
   import('../pages/AdminVendorDetailPage').then((m) => ({ default: m.AdminVendorDetailPage })),
 );
-const AdminProductsPage = lazy(() =>
+const AdminProductsPage = lazyWithRetry(() =>
   import('../pages/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage })),
 );
-const AdminAddProductPage = lazy(() =>
+const AdminAddProductPage = lazyWithRetry(() =>
   import('../pages/AdminAddProductPage').then((m) => ({ default: m.AdminAddProductPage })),
 );
-const AdminCategoriesPage = lazy(() =>
+const AdminCategoriesPage = lazyWithRetry(() =>
   import('../pages/AdminCategoriesPage').then((m) => ({ default: m.AdminCategoriesPage })),
 );
-const AdminCommissionPage = lazy(() =>
+const AdminCommissionPage = lazyWithRetry(() =>
   import('../pages/AdminCommissionPage').then((m) => ({ default: m.AdminCommissionPage })),
 );
-const AdminDisputesPage = lazy(() =>
+const AdminDisputesPage = lazyWithRetry(() =>
   import('../pages/AdminDisputesPage').then((m) => ({ default: m.AdminDisputesPage })),
 );
-const AdminPayoutsPage = lazy(() =>
+const AdminPayoutsPage = lazyWithRetry(() =>
   import('../pages/AdminPayoutsPage').then((m) => ({ default: m.AdminPayoutsPage })),
 );
-const AdminReturnsPage = lazy(() =>
+const AdminReturnsPage = lazyWithRetry(() =>
   import('../pages/AdminReturnsPage').then((m) => ({ default: m.AdminReturnsPage })),
 );
-const AdminReportsPage = lazy(() =>
+const AdminReportsPage = lazyWithRetry(() =>
   import('../pages/AdminReportsPage').then((m) => ({ default: m.AdminReportsPage })),
 );
-const AdminUsersPage = lazy(() =>
+const AdminUsersPage = lazyWithRetry(() =>
   import('../pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
 );
-const AdminOrdersPage = lazy(() =>
+const AdminOrdersPage = lazyWithRetry(() =>
   import('../pages/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage })),
 );
-const AdminOrderDetailPage = lazy(() =>
+const AdminOrderDetailPage = lazyWithRetry(() =>
   import('../pages/AdminOrderDetailPage').then((m) => ({ default: m.AdminOrderDetailPage })),
 );
-const AdminNotificationsPage = lazy(() =>
+const AdminNotificationsPage = lazyWithRetry(() =>
   import('../pages/AdminNotificationsPage').then((m) => ({ default: m.AdminNotificationsPage })),
 );
-const AdminSettingsPage = lazy(() =>
+const AdminSettingsPage = lazyWithRetry(() =>
   import('../pages/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage })),
 );
-const AdminMediaPage = lazy(() =>
+const AdminMediaPage = lazyWithRetry(() =>
   import('../pages/AdminMediaPage').then((m) => ({ default: m.AdminMediaPage })),
 );
-const AdminProfilePage = lazy(() =>
+const AdminProfilePage = lazyWithRetry(() =>
   import('../pages/AdminProfilePage').then((m) => ({ default: m.AdminProfilePage })),
 );
-const AdminAuditLogsPage = lazy(() =>
+const AdminAuditLogsPage = lazyWithRetry(() =>
   import('../pages/AdminAuditLogsPage').then((m) => ({ default: m.AdminAuditLogsPage })),
 );
-const AdminCMSPage = lazy(() =>
+const AdminCMSPage = lazyWithRetry(() =>
   import('../pages/AdminCMSPage').then((m) => ({ default: m.AdminCMSPage })),
 );
-const AdminLogisticsPage = lazy(() =>
+const AdminLogisticsPage = lazyWithRetry(() =>
   import('../pages/AdminLogisticsPage').then((m) => ({ default: m.AdminLogisticsPage })),
 );
-const AdminCompliancePage = lazy(() =>
+const AdminCompliancePage = lazyWithRetry(() =>
   import('../pages/AdminCompliancePage').then((m) => ({ default: m.AdminCompliancePage })),
 );
-const AdminBrandsPage = lazy(() =>
+const AdminBrandsPage = lazyWithRetry(() =>
   import('../pages/AdminBrandsPage').then((m) => ({ default: m.AdminBrandsPage })),
 );
 
 // Rider & Support Workspaces Lazy Pages
-const RiderDashboardPage = lazy(() =>
+const RiderDashboardPage = lazyWithRetry(() =>
   import('../pages/RiderDashboardPage').then((m) => ({ default: m.RiderDashboardPage })),
 );
-const SupportDashboardPage = lazy(() =>
+const SupportDashboardPage = lazyWithRetry(() =>
   import('../pages/SupportDashboardPage').then((m) => ({ default: m.SupportDashboardPage })),
 );
 
@@ -298,6 +300,30 @@ const PageLoader: React.FC = () => (
   </div>
 );
 
+/**
+ * lazy() with stale-chunk recovery. After a redeploy, a tab opened before the
+ * deploy asks for chunk hashes that no longer exist and the import rejects. One
+ * guarded reload lands the tab on the current deployment (see
+ * lib/chunk-recovery); while it reloads, the promise never settles so Suspense
+ * keeps the page loader up instead of flashing an error. If a reload already
+ * happened inside the guard window, the error propagates to the route's
+ * errorElement (RouteErrorScreen) instead of looping.
+ */
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>,
+): React.LazyExoticComponent<T> {
+  return lazy(async () => {
+    try {
+      return await factory();
+    } catch (error) {
+      if (isChunkLoadError(error) && reloadOnceForNewVersion()) {
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
 const lazyWrap = (element: React.ReactNode) => (
   <Suspense fallback={<PageLoader />}>{element}</Suspense>
 );
@@ -305,6 +331,7 @@ const lazyWrap = (element: React.ReactNode) => (
 export const router = createBrowserRouter([
   {
     path: '/',
+    errorElement: <RouteErrorScreen />,
     element: (
       <PublicLayout>
         <RootLayout />
@@ -631,6 +658,7 @@ export const router = createBrowserRouter([
   // Vendor Workspace Routes
   {
     path: '/vendor',
+    errorElement: <RouteErrorScreen />,
     element: (
       <VendorOnlyRoute>
         <VendorLayout />
@@ -739,11 +767,13 @@ export const router = createBrowserRouter([
   // workspace's guard sends unauthenticated visitors here, not to /login.
   {
     path: '/admin/login',
+    errorElement: <RouteErrorScreen />,
     element: lazyWrap(<AdminLoginPage />),
   },
   // Admin Workspace Routes (Catmin Design System)
   {
     path: '/admin',
+    errorElement: <RouteErrorScreen />,
     element: (
       <AdminOnlyRoute loginPath="/admin/login" deniedPath="/admin/login?denied=1">
         <AdminLayout />
@@ -859,6 +889,7 @@ export const router = createBrowserRouter([
   // Rider Workspace Routes
   {
     path: '/rider',
+    errorElement: <RouteErrorScreen />,
     element: (
       <RiderOnlyRoute>
         <RiderLayout />
@@ -882,6 +913,7 @@ export const router = createBrowserRouter([
   // Support Workspace Routes
   {
     path: '/support',
+    errorElement: <RouteErrorScreen />,
     element: (
       <SupportOnlyRoute>
         <SupportLayout />

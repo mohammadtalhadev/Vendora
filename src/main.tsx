@@ -9,6 +9,7 @@ import { GlobalCarouselArrows } from './components/GlobalCarouselArrows';
 import { AuthProvider } from './lib/auth-context';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { isSupabaseConfigured } from './lib/supabase';
+import { reloadOnceForNewVersion } from './lib/chunk-recovery';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +71,16 @@ function renderApp() {
     </StrictMode>,
   );
 }
+
+// Vite fires `vite:preloadError` when a lazy chunk cannot be loaded — in
+// practice that means this tab predates the current deployment and asked for
+// a hashed file that no longer exists. One guarded reload picks up the fresh
+// index.html instead of surfacing a broken page (see lib/chunk-recovery; the
+// lazy wrapper in app/router handles the same failure on the import path).
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  reloadOnceForNewVersion();
+});
 
 // Every read and write goes to the real Supabase database through the typed
 // features/** APIs — there is no mock layer in any mode, so the app renders
