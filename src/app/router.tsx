@@ -58,6 +58,9 @@ const GiftCardsPage = lazyWithRetry(() =>
 const RecentlyViewedPage = lazyWithRetry(() =>
   import('../pages/RecentlyViewedPage').then((m) => ({ default: m.RecentlyViewedPage })),
 );
+const AccountSupportPage = lazyWithRetry(() =>
+  import('../pages/AccountSupportPage').then((m) => ({ default: m.AccountSupportPage })),
+);
 const ComparePage = lazyWithRetry(() =>
   import('../pages/ComparePage').then((m) => ({ default: m.ComparePage })),
 );
@@ -316,6 +319,12 @@ const RiderProfilePage = lazyWithRetry(() =>
 const SupportDashboardPage = lazyWithRetry(() =>
   import('../pages/SupportDashboardPage').then((m) => ({ default: m.SupportDashboardPage })),
 );
+const SupportTicketsPage = lazyWithRetry(() =>
+  import('../pages/SupportTicketsPage').then((m) => ({ default: m.SupportTicketsPage })),
+);
+const SupportTicketDetailPage = lazyWithRetry(() =>
+  import('../pages/SupportTicketDetailPage').then((m) => ({ default: m.SupportTicketDetailPage })),
+);
 
 const PageLoader: React.FC = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center p-8">
@@ -443,6 +452,10 @@ export const router = createBrowserRouter([
           {
             path: 'account/rewards',
             element: lazyWrap(<AccountRewardsPage />),
+          },
+          {
+            path: 'account/support',
+            element: lazyWrap(<AccountSupportPage />),
           },
         ],
       },
@@ -987,6 +1000,14 @@ export const router = createBrowserRouter([
       {
         path: 'disputes/:id',
         element: lazyWrap(<SupportDashboardPage />),
+      },
+      {
+        path: 'tickets',
+        element: lazyWrap(<SupportTicketsPage />),
+      },
+      {
+        path: 'tickets/:id',
+        element: lazyWrap(<SupportTicketDetailPage />),
       },
     ],
   },

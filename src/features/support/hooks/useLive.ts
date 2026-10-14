@@ -19,6 +19,8 @@ export function useSupportLive(): void {
 
   useRealtimeWatch({ table: 'disputes', onChange: stale });
   useRealtimeWatch({ table: 'dispute_messages', onChange: stale });
+  useRealtimeWatch({ table: 'support_tickets', onChange: stale });
+  useRealtimeWatch({ table: 'support_ticket_messages', onChange: stale });
   useRealtimeWatch({ table: 'refunds', onChange: stale });
   useRealtimeWatch({ table: 'sub_orders', onChange: stale });
 }

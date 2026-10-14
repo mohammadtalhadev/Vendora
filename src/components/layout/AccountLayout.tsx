@@ -4,6 +4,7 @@ import {
   Download,
   Gift,
   Heart,
+  LifeBuoy,
   MapPin,
   Package,
   RotateCcw,
@@ -94,6 +95,12 @@ const NAV_ITEMS: AccountNavItem[] = [
     label: 'Rewards & Gift Cards',
     icon: <Gift className="h-4 w-4 shrink-0" aria-hidden="true" />,
     isActive: (p) => p === '/account/rewards',
+  },
+  {
+    to: '/account/support',
+    label: 'Support Tickets',
+    icon: <LifeBuoy className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    isActive: (p) => p === '/account/support',
   },
   {
     to: '/account/settings',

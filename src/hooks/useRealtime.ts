@@ -9,8 +9,9 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
  * RLS had not vetted. So every subscription here ends in a query invalidation.
  *
  * These are the tables the migrations add to the `supabase_realtime` publication
- * (`20261011000300_vendora_rpc_storage_realtime.sql` and
- * `20261011001200_vendora_notification_fanout.sql`). A change to anything outside the list
+ * (`20261011000300_vendora_rpc_storage_realtime.sql`,
+ * `20261011001200_vendora_notification_fanout.sql` and, for the ticket tables,
+ * `20261015060000_vendora_support_tickets.sql`). A change to anything outside the list
  * simply never arrives, which is the difference between a live screen and a quietly stale one.
  */
 export const WATCHED_TABLES = [
@@ -19,6 +20,8 @@ export const WATCHED_TABLES = [
   'deliveries',
   'disputes',
   'dispute_messages',
+  'support_tickets',
+  'support_ticket_messages',
   'notifications',
   'products',
   'vendor_profiles',

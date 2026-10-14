@@ -6,6 +6,7 @@ import {
   LifeBuoy,
   MessageCircleQuestion,
   RotateCcw,
+  Ticket,
   ExternalLink,
   ChevronsUpDown,
   LogOut,
@@ -13,6 +14,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { useAuthStore } from '../../../store/auth-store';
 import { useDisputeQueue } from '../hooks/useSupportQueries';
+import { useTicketQueue } from '../hooks/useTickets';
 import { cn } from '../../../lib/utils';
 
 export interface SupportNavProps {
@@ -56,6 +58,10 @@ export const SupportNav: React.FC<SupportNavProps> = ({ className, onNavigate })
   // cannot claim work the desk itself does not show. A zero renders nothing.
   const queue = useDisputeQueue({ status: 'awaiting_staff', unassigned: true, page: 1, pageSize: 1 });
   const unassigned = queue.data?.counts.unassigned ?? 0;
+  // The ticket badge is the ticket queue's own awaiting-staff count (open +
+  // in progress), read the same way - one desk, one source of truth per queue.
+  const ticketQueue = useTicketQueue({ status: 'all', page: 1, pageSize: 1 });
+  const ticketsAwaiting = ticketQueue.data?.counts.awaitingStaff ?? 0;
 
   const navSections: NavSection[] = [
     {
@@ -69,6 +75,14 @@ export const SupportNav: React.FC<SupportNavProps> = ({ className, onNavigate })
           badge: unassigned > 0 ? String(unassigned) : undefined,
           badgeColor:
             'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40',
+        },
+        {
+          to: '/support/tickets',
+          label: 'Tickets',
+          icon: Ticket,
+          badge: ticketsAwaiting > 0 ? String(ticketsAwaiting) : undefined,
+          badgeColor:
+            'bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/40',
         },
       ],
     },

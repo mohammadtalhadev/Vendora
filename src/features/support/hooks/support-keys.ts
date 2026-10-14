@@ -16,6 +16,12 @@ export const supportKeys = {
     ['support', userId ?? 'anon', 'canned', params] as const,
   orderLookup: (userId: string | null | undefined, email: string | null) =>
     ['support', userId ?? 'anon', 'orders', email ?? ''] as const,
+  ticketQueue: (userId: string | null | undefined, params: Record<string, unknown>) =>
+    ['support', userId ?? 'anon', 'tickets', params] as const,
+  ticketDetail: (userId: string | null | undefined, ticketId: string | null) =>
+    ['support', userId ?? 'anon', 'tickets', ticketId ?? '', 'detail'] as const,
+  myTickets: (userId: string | null | undefined) =>
+    ['support', userId ?? 'anon', 'tickets', 'mine'] as const,
 };
 
 /** Who is asking. This only chooses what is displayed; the RPCs and policies decide what is allowed. */
