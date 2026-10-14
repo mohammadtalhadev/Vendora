@@ -160,5 +160,25 @@ export async function broadcastNotification(input: {
   return num(data);
 }
 
+/**
+ * Staff only; `broadcast_email()` applies the same staff guard and audience validation as
+ * `broadcast_notification()`. It only QUEUES one email per account in `notification_outbox` -
+ * the send-notifications Edge Function delivers them - so the count returned is "queued for",
+ * never "delivered to".
+ */
+export async function broadcastEmail(input: {
+  audience: 'all' | 'customer' | 'vendor' | 'support' | 'admin' | 'rider';
+  title: string;
+  message: string;
+}): Promise<number> {
+  const { data, error } = await supabase.rpc('broadcast_email', {
+    p_role_target: input.audience,
+    p_title: input.title,
+    p_message: input.message,
+  });
+  if (error) throw rpcFailed('Could not queue the announcement email', error.message);
+  return num(data);
+}
+
 export const isNotificationKind = (value: string): value is NotificationKind =>
   (KINDS as readonly string[]).includes(value);

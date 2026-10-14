@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store/auth-store';
 import { useRealtimeWatch } from '../../../hooks/useRealtime';
 import {
+  broadcastEmail,
   broadcastNotification,
   dismissNotification,
   fetchNotifications,
@@ -76,6 +77,10 @@ export function useNotificationActions() {
       // The recipients are other people's caches, so the audience's own screens catch up through
       // their subscription; this one only refreshes the sender, who may be in the audience too.
       onSuccess: refresh,
+    }),
+    /** The email channel for a broadcast: queues outbox rows; the Edge Function delivers them. */
+    broadcastEmail: useMutation({
+      mutationFn: broadcastEmail,
     }),
   };
 }

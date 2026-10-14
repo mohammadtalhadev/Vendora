@@ -8,15 +8,17 @@ import {
   ShieldAlert,
   TriangleAlert,
 } from 'lucide-react';
-import { signOutEverywhere, updatePassword } from '../features/auth/api/session';
+import { deleteAccount, signOut, signOutEverywhere, updatePassword } from '../features/auth/api/session';
 import { useAuthStore } from '../store/auth-store';
 
 /**
  * Account Settings & Security (/account/settings). Password changes go
  * through the same tested `updatePassword` helper the auth API exposes;
  * "sign out everywhere" revokes every session via Supabase's global scope.
- * Account deletion has no self-serve endpoint by design — it is handled by
- * the admin team, and this page says so instead of faking a button.
+ * Account deletion is real and self-serve: the `delete-account` Edge
+ * Function anonymizes the user's orders, removes their personal rows and
+ * deletes the auth record. The page gates it behind typing DELETE and a
+ * final confirmation, and shows the function's own error when it fails.
  */
 export const AccountSettingsPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
@@ -34,6 +36,12 @@ export const AccountSettingsPage: React.FC = () => {
   const [confirmSignOutAll, setConfirmSignOutAll] = useState(false);
   const [signingOutAll, setSigningOutAll] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  const [deleteText, setDeleteText] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteState, setDeleteState] = useState<
+    { kind: 'idle' } | { kind: 'deleting' } | { kind: 'error'; message: string }
+  >({ kind: 'idle' });
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +79,27 @@ export const AccountSettingsPage: React.FC = () => {
       setSignOutError(
         err instanceof Error ? err.message : 'Could not sign out other sessions.',
       );
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteState({ kind: 'deleting' });
+    try {
+      await deleteAccount();
+      // The account is gone; the local session token is already invalid, so a
+      // sign-out failure here must not strand the user on this page.
+      try {
+        await signOut();
+      } catch {
+        // Ignored: deletion succeeded, which is the irreversible part.
+      }
+      navigate('/', { replace: true });
+    } catch (err) {
+      setConfirmingDelete(false);
+      setDeleteState({
+        kind: 'error',
+        message: err instanceof Error ? err.message : 'The account could not be deleted.',
+      });
     }
   };
 
@@ -230,16 +259,75 @@ export const AccountSettingsPage: React.FC = () => {
           Delete account
         </h2>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-          Account deletion is permanent and is handled by our admin team, so an account
-          is never wiped by a stray click. If you want your account and personal data
-          deleted, contact support and we will process it for you.
+          Deleting your account is permanent and cannot be undone. Your profile,
+          addresses, saved payment methods, cart, wishlist and notifications are
+          removed, and your past orders are anonymized — sellers keep the order
+          record, but it no longer carries your name, email or address.
         </p>
-        <Link
-          to="/contact"
-          className="mt-4 inline-flex items-center gap-2 rounded-full border border-rose-300 bg-white px-5 py-2.5 text-xs font-bold text-rose-600 shadow-xs transition-all hover:bg-rose-50 sm:text-sm dark:border-rose-800 dark:bg-transparent"
-        >
-          Contact support about deletion
-        </Link>
+        <div className="mt-4 grid gap-3 sm:max-w-md">
+          <div>
+            <label
+              htmlFor="settings-delete-confirm"
+              className="mb-1.5 block text-xs font-bold text-slate-600 dark:text-slate-300"
+            >
+              Type DELETE to enable account deletion
+            </label>
+            <input
+              id="settings-delete-confirm"
+              type="text"
+              autoComplete="off"
+              value={deleteText}
+              onChange={(e) => {
+                setDeleteText(e.target.value);
+                setConfirmingDelete(false);
+                if (deleteState.kind === 'error') setDeleteState({ kind: 'idle' });
+              }}
+              placeholder="DELETE"
+              className={inputClass}
+            />
+          </div>
+          {deleteState.kind === 'error' && (
+            <div role="alert" className="text-xs font-semibold text-rose-600">
+              <p className="flex items-start gap-2">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                {deleteState.message}
+              </p>
+              <p className="mt-1.5">If this keeps failing, contact support.</p>
+            </div>
+          )}
+          {confirmingDelete ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                This is final. Delete your account permanently?
+              </span>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleteState.kind === 'deleting'}
+                className="cursor-pointer rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-60"
+              >
+                {deleteState.kind === 'deleting' ? 'Deleting…' : 'Yes, delete my account'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={deleteState.kind === 'deleting'}
+                className="cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-all hover:border-slate-400 dark:border-white/15 dark:bg-transparent dark:text-slate-200"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={deleteText !== 'DELETE' || deleteState.kind === 'deleting'}
+              className="w-fit cursor-pointer rounded-full bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-rose-500/25 transition-all hover:bg-rose-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+            >
+              Delete my account
+            </button>
+          )}
+        </div>
       </section>
     </div>
   );

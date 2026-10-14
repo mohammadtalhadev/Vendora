@@ -17,7 +17,8 @@ import type { NotificationKind } from '../features/notifications/api/notificatio
 
 /**
  * What the console can honestly do with notifications: say something to a role through
- * `broadcast_notification()`, and read back the announcements the platform has sent.
+ * `broadcast_notification()` (with an optional email copy queued by `broadcast_email()`
+ * into the notification outbox), and read back the announcements the platform has sent.
  * Delivery rates, gateway health and trigger switches are not stripped here because they
  * would be nice - they are stripped because no table or RPC reports them.
  */
@@ -62,9 +63,14 @@ export const AdminNotificationsPage = () => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [href, setHref] = useState('');
+  const [alsoEmail, setAlsoEmail] = useState(false);
+  /** The email half of the last send: queued count, the RPC's refusal, or nothing yet. */
+  const [emailOutcome, setEmailOutcome] = useState<
+    { kind: 'queued'; count: number } | { kind: 'error'; message: string } | null
+  >(null);
   const [page, setPage] = useState(1);
 
-  const { broadcast } = useNotificationActions();
+  const { broadcast, broadcastEmail } = useNotificationActions();
   const log = useBroadcastLog({ page, pageSize: PAGE_SIZE });
 
   const rows = log.data?.rows ?? [];
@@ -150,27 +156,42 @@ export const AdminNotificationsPage = () => {
   const send = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const path = href.trim();
-    broadcast.mutate(
-      {
-        audience,
-        type,
-        // Title and body go in as written: `broadcast_notification()` is what refuses an empty
-        // one, and its message is the answer the operator needs.
-        title: title.trim(),
-        message: message.trim(),
-        href: path === '' ? undefined : path,
+    const submitted = {
+      audience,
+      type,
+      // Title and body go in as written: `broadcast_notification()` is what refuses an empty
+      // one, and its message is the answer the operator needs.
+      title: title.trim(),
+      message: message.trim(),
+      href: path === '' ? undefined : path,
+    };
+    setEmailOutcome(null);
+    broadcast.mutate(submitted, {
+      onSuccess: () => {
+        // `audit_logs` is not in the realtime publication, so re-reading is the only honest way
+        // to see the record this write just produced.
+        void log.refetch();
+        setTitle('');
+        setMessage('');
+        setHref('');
+        if (alsoEmail) {
+          // The email channel runs only after the in-app broadcast succeeded, with the
+          // submitted values (state above is already cleared). `broadcast_email()` queues
+          // the rows; delivery belongs to the send-notifications Edge Function.
+          broadcastEmail.mutate(
+            { audience: submitted.audience, title: submitted.title, message: submitted.message },
+            {
+              onSuccess: (count) => setEmailOutcome({ kind: 'queued', count }),
+              onError: (error) =>
+                setEmailOutcome({
+                  kind: 'error',
+                  message: reason(error, 'The announcement email could not be queued.'),
+                }),
+            },
+          );
+        }
       },
-      {
-        onSuccess: () => {
-          // `audit_logs` is not in the realtime publication, so re-reading is the only honest way
-          // to see the record this write just produced.
-          void log.refetch();
-          setTitle('');
-          setMessage('');
-          setHref('');
-        },
-      },
-    );
+    });
   };
 
   return (
@@ -292,6 +313,26 @@ export const AdminNotificationsPage = () => {
               />
             </div>
 
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="broadcast-also-email"
+                className="flex w-fit cursor-pointer items-center gap-2 font-bold text-slate-700"
+              >
+                <input
+                  id="broadcast-also-email"
+                  type="checkbox"
+                  checked={alsoEmail}
+                  onChange={(event) => setAlsoEmail(event.target.checked)}
+                  className="h-3.5 w-3.5 cursor-pointer accent-slate-900"
+                />
+                Also send as email
+              </label>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Queues one email per account in the audience in the notification outbox; the
+                send-notifications function delivers them.
+              </p>
+            </div>
+
             <div className="flex items-center gap-3 sm:col-span-2">
               <Button
                 type="submit"
@@ -321,6 +362,28 @@ export const AdminNotificationsPage = () => {
                 {broadcast.data === 0
                   ? ' — no account carries that role, so nothing was written.'
                   : '.'}
+                {emailOutcome?.kind === 'queued' && (
+                  <>
+                    {' '}
+                    Email queued for {accounts(emailOutcome.count)} — delivery happens when the
+                    send-notifications function runs.
+                  </>
+                )}
+                {broadcastEmail.isPending && ' Queueing the email copy…'}
+              </span>
+            </div>
+          )}
+
+          {emailOutcome?.kind === 'error' && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              data-testid="broadcast-email-error"
+              className="mt-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden="true" />
+              <span>
+                The in-app announcement went out, but the email copy failed: {emailOutcome.message}
               </span>
             </div>
           )}

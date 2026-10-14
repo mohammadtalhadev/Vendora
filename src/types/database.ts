@@ -2421,6 +2421,14 @@ export type Database = {
       }
       Returns: number
     },
+    "broadcast_email": {
+      Args: {
+        "p_role_target": string,
+        "p_title": string,
+        "p_message": string
+      }
+      Returns: number
+    },
     "cart_lines_for": {
       Args: {
         "p_uid": string

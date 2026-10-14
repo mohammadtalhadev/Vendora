@@ -199,6 +199,38 @@ export async function signOut(): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Permanently deletes the signed-in account through the `delete-account`
+ * Edge Function: it anonymizes the user's orders, removes their personal
+ * rows and deletes the auth record. The typed confirmation travels in the
+ * body exactly as the function demands (`{ confirm: 'DELETE' }`).
+ * On failure the function's own error message is what the caller shows -
+ * including the honest case where the function is not deployed at all.
+ */
+export async function deleteAccount(): Promise<void> {
+  const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>(
+    'delete-account',
+    { body: { confirm: 'DELETE' } },
+  );
+  if (!error && data?.ok) return;
+
+  let message = error?.message ?? data?.error ?? 'The account could not be deleted.';
+  // A non-2xx response surfaces as a generic FunctionsHttpError; the function's
+  // own `{ error }` body rides on its context response, and that is the
+  // explanation the user deserves verbatim.
+  const context = (error as { context?: Response } | null)?.context;
+  if (context && typeof context.clone === 'function') {
+    try {
+      const body = (await context.clone().json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      // Body was not JSON (e.g. a 404 from an undeployed function) - keep the
+      // transport message rather than inventing one.
+    }
+  }
+  throw new Error(message);
+}
+
 /** Signs the account out on every device, this one included. */
 export async function signOutEverywhere(): Promise<void> {
   const { error } = await supabase.auth.signOut({ scope: 'global' });
