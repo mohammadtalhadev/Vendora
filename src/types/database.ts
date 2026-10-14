@@ -2451,6 +2451,12 @@ export type Database = {
       }
       Returns: Json
     },
+    "delete_vendor_product": {
+      Args: {
+        "p_product_id": string
+      }
+      Returns: Json
+    },
     "escalate_to_support": {
       Args: {
         "p_dispute_id": string,

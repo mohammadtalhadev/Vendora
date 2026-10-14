@@ -65,6 +65,19 @@ export interface DataTableProps<T> {
     index: number,
   ) => React.HTMLAttributes<HTMLTableRowElement> & Record<`data-${string}`, string | undefined>;
   /**
+   * Optional row selection. When `onSelectionChange` is provided, a checkbox
+   * column is prepended: one checkbox per row plus a header checkbox that
+   * selects/deselects the rows currently rendered (the page, when paginated).
+   * Selection is fully controlled — `selectedIds` holds the ids of the
+   * selected rows as produced by `getRowId` (default: `getRowKey`). Pages
+   * that do not pass these props render exactly as before.
+   */
+  selectedIds?: readonly string[];
+  /** Called with the full next selection whenever a checkbox changes. */
+  onSelectionChange?: (selectedIds: string[]) => void;
+  /** Row id used for selection bookkeeping. Defaults to `String(getRowKey(row))`. */
+  getRowId?: (row: T) => string;
+  /**
    * When provided, the shared TablePagination footer renders below the table.
    * DataTable is presentational about paging: it forwards the flat
    * page/pageSize/total props through an adapter to TablePagination, which
@@ -101,11 +114,48 @@ export function DataTable<T>({
   onRowClick,
   rowClassName,
   getRowProps,
+  selectedIds,
+  onSelectionChange,
+  getRowId,
   pagination,
   caption,
   ariaLabel,
   className,
 }: DataTableProps<T>) {
+  const selectionEnabled = Boolean(onSelectionChange);
+  const rowIdOf = React.useCallback(
+    (row: T): string => (getRowId ? getRowId(row) : String(getRowKey(row))),
+    [getRowId, getRowKey],
+  );
+  const selectedSet = React.useMemo(() => new Set(selectedIds ?? []), [selectedIds]);
+  // Only computed when selection is on: with it off, DataTable must not call
+  // getRowKey any more often than it did before selection existed.
+  const renderedIds = React.useMemo(
+    () => (selectionEnabled ? rows.map(rowIdOf) : []),
+    [selectionEnabled, rows, rowIdOf],
+  );
+  const allRenderedSelected =
+    renderedIds.length > 0 && renderedIds.every((id) => selectedSet.has(id));
+  const columnCount = columns.length + (selectionEnabled ? 1 : 0);
+
+  const toggleRowSelection = (row: T) => {
+    if (!onSelectionChange) return;
+    const id = rowIdOf(row);
+    onSelectionChange(
+      selectedSet.has(id)
+        ? (selectedIds ?? []).filter((selected) => selected !== id)
+        : [...(selectedIds ?? []), id],
+    );
+  };
+
+  const toggleRenderedSelection = () => {
+    if (!onSelectionChange) return;
+    onSelectionChange(
+      allRenderedSelected
+        ? (selectedIds ?? []).filter((selected) => !renderedIds.includes(selected))
+        : Array.from(new Set([...(selectedIds ?? []), ...renderedIds])),
+    );
+  };
   const paginationModel = React.useMemo<UsePaginationResult<T> | null>(() => {
     if (!pagination) return null;
     const { page, pageSize, totalItems, onPageChange, onPageSizeChange } = pagination;
@@ -133,6 +183,17 @@ export function DataTable<T>({
           {caption != null && <caption className="sr-only">{caption}</caption>}
           <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
+              {selectionEnabled && (
+                <th scope="col" className="py-3 px-4 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all rows on this page"
+                    checked={allRenderedSelected}
+                    onChange={toggleRenderedSelection}
+                    className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                  />
+                </th>
+              )}
               {columns.map((column) => (
                 <th
                   key={column.key}
@@ -148,6 +209,11 @@ export function DataTable<T>({
             {isLoading ? (
               Array.from({ length: loadingRowCount }, (_, rowIndex) => (
                 <tr key={`loading-${rowIndex}`} aria-hidden="true">
+                  {selectionEnabled && (
+                    <td className="py-3 px-4 w-10">
+                      <div className="h-3.5 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+                    </td>
+                  )}
                   {columns.map((column) => (
                     <td key={column.key} className={cn('py-3 px-4', alignClass(column.align))}>
                       <div className="h-3.5 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
@@ -157,7 +223,7 @@ export function DataTable<T>({
               ))
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="p-0">
+                <td colSpan={columnCount} className="p-0">
                   {emptyState ?? (
                     <div className="px-4 py-10 text-center text-xs text-slate-500">
                       Nothing here yet.
@@ -191,6 +257,18 @@ export function DataTable<T>({
                       typeof rowClassName === 'function' ? rowClassName(row) : rowClassName,
                     )}
                   >
+                    {selectionEnabled && (
+                      <td className="py-3 px-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          aria-label="Select row"
+                          checked={selectedSet.has(rowIdOf(row))}
+                          onChange={() => toggleRowSelection(row)}
+                          onClick={(event) => event.stopPropagation()}
+                          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                        />
+                      </td>
+                    )}
                     {columns.map((column) => (
                       <td
                         key={column.key}

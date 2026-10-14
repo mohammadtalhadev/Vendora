@@ -70,6 +70,9 @@ const NotificationsPage = lazyWithRetry(() =>
 const BecomeSellerPage = lazyWithRetry(() =>
   import('../pages/BecomeSellerPage').then((m) => ({ default: m.BecomeSellerPage })),
 );
+const SellerApplicationPage = lazyWithRetry(() =>
+  import('../pages/SellerApplicationPage').then((m) => ({ default: m.SellerApplicationPage })),
+);
 const AccountProfilePage = lazyWithRetry(() =>
   import('../pages/AccountProfilePage').then((m) => ({ default: m.AccountProfilePage })),
 );
@@ -487,6 +490,10 @@ export const router = createBrowserRouter([
       {
         path: 'become-a-seller',
         element: lazyWrap(<BecomeSellerPage />),
+      },
+      {
+        path: 'seller-application',
+        element: lazyWrap(<SellerApplicationPage />),
       },
       {
         path: 'sell',

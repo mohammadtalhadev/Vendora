@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Product } from '../../../types/domain';
 import {
   createVendorProduct,
+  deleteVendorProduct,
   fetchVendorProduct,
   fetchVendorProducts,
   setProductListing,
@@ -68,6 +69,16 @@ export function useSetProductStock() {
     mutationFn: ({ productId, stock }: { productId: string; stock: number }) =>
       setVendorProductStock(productId, stock),
     onSuccess: (product: Product) => invalidate(product.id),
+  });
+}
+
+/** Hard delete via the RPC; refused listings (orders/reviews) throw the server's reason. */
+export function useDeleteVendorProduct() {
+  const invalidate = useInvalidateCatalog();
+
+  return useMutation({
+    mutationFn: (productId: string) => deleteVendorProduct(productId),
+    onSuccess: () => invalidate(),
   });
 }
 

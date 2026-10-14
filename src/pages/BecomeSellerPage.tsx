@@ -198,6 +198,14 @@ export const BecomeSellerPage: React.FC = () => {
                 businessName={user?.name}
                 estimatedTime="24–48 business hours"
               />
+              <div className="mt-4 text-center">
+                <Link to="/seller-application">
+                  <Button variant="outline" size="lg" className="font-bold">
+                    <span>Track your application</span>
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
 

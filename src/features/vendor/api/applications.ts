@@ -18,6 +18,50 @@ export interface VendorApplicationInput {
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export type VendorApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
+
+/** One of the signed-in applicant's own `vendor_applications` rows. */
+export interface MyVendorApplication {
+  id: string;
+  proposedStoreName: string;
+  proposedSlug: string;
+  businessType: string;
+  status: VendorApplicationStatus;
+  /** The reviewer's note (the table's `review_note` column); set on a decision. */
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * The caller's own applications, newest first. The `applications_select_own`
+ * RLS policy already scopes selects to `user_id = auth.uid()`; the explicit
+ * filter keeps the query honest if a staff account (which can read more)
+ * ever lands on the tracking page.
+ */
+export async function fetchMyApplications(userId: string): Promise<MyVendorApplication[]> {
+  const { data, error } = await supabase
+    .from('vendor_applications')
+    .select(
+      'id, proposed_store_name, proposed_slug, business_type, status, review_note, reviewed_at, created_at, updated_at',
+    )
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`Could not load your applications: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    proposedStoreName: row.proposed_store_name,
+    proposedSlug: row.proposed_slug,
+    businessType: row.business_type,
+    status: row.status,
+    reviewNote: row.review_note,
+    reviewedAt: row.reviewed_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
 /**
  * Submit a seller application to `vendor_applications` (the typed replacement for the
  * legacy service-layer writer, which inserted a non-existent `slug` column and so

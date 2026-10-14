@@ -168,6 +168,19 @@ export async function setVendorProductStock(
 }
 
 /**
+ * Permanently deletes a listing this store owns. The `delete_vendor_product` RPC
+ * refuses listings that appear in any order or carry any review — those stay on
+ * the withdraw/archive path — and its refusal wording is surfaced verbatim so
+ * the seller hears the database's reason, not a paraphrase.
+ */
+export async function deleteVendorProduct(productId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_vendor_product', {
+    p_product_id: productId,
+  });
+  if (error) throw rpcFailed('Could not delete this listing', error.message);
+}
+
+/**
  * `submit` sends a draft or a rejected listing to moderation; `withdraw` pulls it back
  * to draft. The RPC enforces which transitions are legal and who owns the row - a
  * listing is withdrawn rather than deleted, because past orders still reference it.
