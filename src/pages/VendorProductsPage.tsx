@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Download,
   CheckCircle2,
@@ -110,7 +111,6 @@ export const VendorProductsPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   /** Percent for the bulk price adjustment; kept as text so "-10" and "" both behave. */
@@ -148,19 +148,19 @@ export const VendorProductsPage: React.FC = () => {
   );
 
   const handleOpenAddModal = () => {
-    setEditingProduct(null);
     setIsModalOpen(true);
   };
 
   /**
-   * `ProductFormModal` has already written the listing through `products_insert_vendor` /
-   * `products_update_vendor` by the time it reports back, so this only acknowledges it -
-   * writing again here would book the same listing twice.
+   * The quick-add modal has already written the listing through
+   * `products_insert_vendor` by the time it reports back, so this only
+   * acknowledges it - writing again here would book the same listing twice.
+   * Editing is not the modal's job anymore (Batch 48): the row's edit action
+   * routes to the full form at `products/:id/edit`, the one complete editor.
    */
   const handleProductSaved = (savedProduct: Product) => {
-    showNotification(`"${savedProduct.title}" saved${editingProduct ? '' : ' as a submission for review'}.`);
+    showNotification(`"${savedProduct.title}" saved as a submission for review.`);
     setIsModalOpen(false);
-    setEditingProduct(null);
   };
 
   /** `set_vendor_product_listing` owns both transitions and refuses the illegal ones. */
@@ -574,17 +574,14 @@ export const VendorProductsPage: React.FC = () => {
         const canWithdraw = p.listingStatus === 'pending_review';
         return (
           <div className="flex items-center justify-end gap-1.5">
-            <button
-              onClick={() => {
-                const found = listings.find((pr) => pr.id === p.id) ?? null;
-                setEditingProduct(found);
-                setIsModalOpen(true);
-              }}
+            <Link
+              to={`/vendor/products/${p.id}/edit`}
               className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              title="Edit listing"
+              title="Edit listing in the full form"
+              aria-label={`Edit ${p.title} in the full form`}
             >
               <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
+            </Link>
             {canSubmit && (
               <button
                 onClick={() => void handleListingAction(p, 'submit')}
@@ -1100,14 +1097,10 @@ export const VendorProductsPage: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Product Create / Edit Modal */}
+        {/* Product Quick-Add Modal (create only; editing lives in the full form) */}
         <ProductFormModal
           open={isModalOpen}
-          onOpenChange={(open) => {
-            setIsModalOpen(open);
-            if (!open) setEditingProduct(null);
-          }}
-          initialProduct={editingProduct}
+          onOpenChange={setIsModalOpen}
           onSave={handleProductSaved}
         />
       </div>

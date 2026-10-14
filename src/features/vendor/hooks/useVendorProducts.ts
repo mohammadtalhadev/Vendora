@@ -12,6 +12,7 @@ import {
   type VendorProductUpdate,
 } from '../api/products';
 import { vendorKeys, useVendorScope } from './vendor-keys';
+import { liveList } from './live-list';
 
 /** Every listing this store owns, in any moderation state. */
 export function useVendorProducts() {
@@ -20,6 +21,9 @@ export function useVendorProducts() {
     queryKey: vendorKeys.products(userId),
     queryFn: ({ signal }) => fetchVendorProducts(signal),
     enabled: Boolean(userId),
+    // The Products, Inventory and Import/Export boards watch this list
+    // (Batch 48 freshness standard).
+    ...liveList,
   });
 }
 

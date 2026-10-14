@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { TablePagination } from '../common/TablePagination';
 import type { UsePaginationResult } from '../../hooks/usePagination';
 import { cn } from '../../lib/utils';
@@ -16,6 +17,16 @@ export interface DataTableColumn<T> {
   className?: string;
   /** Extra classes for the header cell (merged over the standard `py-3 px-4`). */
   headerClassName?: string;
+  /**
+   * Opt-in sorting (Batch 48): when provided, the header becomes a sort
+   * button and clicking it sorts the rendered rows by this value, toggling
+   * ascending/descending. Sorting is client-side over the rows the page
+   * handed in — a paginated page sorts the page it rendered, it does not
+   * reach back for the full result set. Rows whose value is null/undefined
+   * always sink to the end, in both directions. Columns without a
+   * `sortValue` render exactly as before.
+   */
+  sortValue?: (row: T) => string | number | null | undefined;
 }
 
 export interface DataTablePagination {
@@ -104,9 +115,10 @@ const alignClass = (align: DataTableColumn<unknown>['align']): string =>
  * Styling reproduces the admin console's hand-rolled tables exactly
  * (slate header band, `py-3 px-4` cells, row hairlines, hover wash), so a
  * page can swap its local `<table>` for DataTable without a visual change.
- * Sorting is deliberately NOT built in: no current page offers header
- * sorting, and v1 stays a faithful render of what the pages already do.
- * Pagination composes the existing TablePagination rather than replacing it.
+ * Sorting is opt-in per column via `sortValue` (Batch 48): the sort state
+ * lives here, uncontrolled, because every current page wants the same
+ * click-to-toggle behaviour over the rows it rendered. Pagination composes
+ * the existing TablePagination rather than replacing it.
  */
 export function DataTable<T>({
   columns,
@@ -133,11 +145,46 @@ export function DataTable<T>({
     [getRowId, getRowKey],
   );
   const selectedSet = React.useMemo(() => new Set(selectedIds ?? []), [selectedIds]);
+
+  // Opt-in column sorting. State is a single (key, direction) pair; the
+  // sorted array is a stable copy, so equal values keep the page's own
+  // order and the caller's `rows` array is never mutated.
+  const [sort, setSort] = React.useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const sortedRows = React.useMemo(() => {
+    if (!sort) return rows;
+    const column = columns.find((candidate) => candidate.key === sort.key);
+    if (!column?.sortValue) return rows;
+    const { sortValue } = column;
+    const factor = sort.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const aValue = sortValue(a);
+      const bValue = sortValue(b);
+      // Empty values sink to the end in both directions: "no date recorded"
+      // is not the smallest date, it is the absence of one.
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+      const compared =
+        typeof aValue === 'number' && typeof bValue === 'number'
+          ? aValue - bValue
+          : String(aValue).localeCompare(String(bValue), undefined, { numeric: true });
+      return compared * factor;
+    });
+  }, [rows, columns, sort]);
+
+  const toggleSort = (column: DataTableColumn<T>) => {
+    setSort((current) =>
+      current?.key === column.key
+        ? { key: column.key, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+        : { key: column.key, direction: 'asc' },
+    );
+  };
+
   // Only computed when selection is on: with it off, DataTable must not call
   // getRowKey any more often than it did before selection existed.
   const renderedIds = React.useMemo(
-    () => (selectionEnabled ? rows.map(rowIdOf) : []),
-    [selectionEnabled, rows, rowIdOf],
+    () => (selectionEnabled ? sortedRows.map(rowIdOf) : []),
+    [selectionEnabled, sortedRows, rowIdOf],
   );
   const allRenderedSelected =
     renderedIds.length > 0 && renderedIds.every((id) => selectedSet.has(id));
@@ -177,11 +224,11 @@ export function DataTable<T>({
       },
       total: totalItems,
       totalPages,
-      pageItems: rows,
+      pageItems: sortedRows,
       from: totalItems === 0 ? 0 : (page - 1) * pageSize + 1,
       to: Math.min(page * pageSize, totalItems),
     };
-  }, [pagination, rows]);
+  }, [pagination, sortedRows]);
 
   return (
     <div className={className}>
@@ -204,15 +251,48 @@ export function DataTable<T>({
                   />
                 </th>
               )}
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  scope="col"
-                  className={cn('py-3 px-4', alignClass(column.align), column.headerClassName)}
-                >
-                  {column.header}
-                </th>
-              ))}
+              {columns.map((column) => {
+                const sortable = column.sortValue != null;
+                const isSorted = sortable && sort?.key === column.key;
+                return (
+                  <th
+                    key={column.key}
+                    scope="col"
+                    aria-sort={
+                      isSorted ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined
+                    }
+                    className={cn('py-3 px-4', alignClass(column.align), column.headerClassName)}
+                  >
+                    {sortable ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(column)}
+                        aria-label={`Sort by ${typeof column.header === 'string' ? column.header : column.key}`}
+                        className={cn(
+                          'inline-flex cursor-pointer items-center gap-1 uppercase tracking-inherit transition-colors hover:text-slate-900',
+                          column.align === 'right' && 'flex-row-reverse',
+                        )}
+                      >
+                        {column.header}
+                        {isSorted ? (
+                          sort.direction === 'asc' ? (
+                            <ArrowUp className="h-3 w-3 shrink-0" aria-hidden="true" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 shrink-0" aria-hidden="true" />
+                          )
+                        ) : (
+                          <ArrowUpDown
+                            className="h-3 w-3 shrink-0 text-slate-300"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -231,7 +311,7 @@ export function DataTable<T>({
                   ))}
                 </tr>
               ))
-            ) : rows.length === 0 ? (
+            ) : sortedRows.length === 0 ? (
               <tr>
                 <td colSpan={columnCount} className="p-0">
                   {emptyState ?? (
@@ -242,7 +322,7 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              rows.map((row, index) => {
+              sortedRows.map((row, index) => {
                 const {
                   className: rowPropClassName,
                   onClick: rowPropOnClick,

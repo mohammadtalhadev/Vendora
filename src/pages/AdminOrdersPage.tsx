@@ -117,6 +117,7 @@ export const AdminOrdersPage: React.FC = () => {
     {
       key: 'id',
       header: 'Order ID',
+      sortValue: (order) => order.id,
       className: 'font-mono font-bold text-slate-900',
       cell: (order) => (
         <Link
@@ -130,6 +131,7 @@ export const AdminOrdersPage: React.FC = () => {
     {
       key: 'customer',
       header: 'Customer',
+      sortValue: (order) => order.customerEmail || '',
       cell: (order) => (
         <p className="text-[11px] text-slate-600 leading-tight break-all">
           {order.customerEmail || '—'}
@@ -139,6 +141,7 @@ export const AdminOrdersPage: React.FC = () => {
     {
       key: 'packages',
       header: 'Packages',
+      sortValue: (order) => order.packages,
       className: 'text-slate-600',
       cell: (order) => (
         <>
@@ -160,6 +163,7 @@ export const AdminOrdersPage: React.FC = () => {
       key: 'amount',
       header: 'Amount',
       align: 'right',
+      sortValue: (order) => order.gross,
       cell: (order) => (
         <>
           <p className="font-semibold text-slate-900 text-xs">{formatPrice(order.gross)}</p>
@@ -173,12 +177,14 @@ export const AdminOrdersPage: React.FC = () => {
       key: 'status',
       header: 'Status',
       align: 'center',
+      sortValue: (order) => order.leadStatus,
       cell: (order) => <StatusBadge status={order.leadStatus} />,
     },
     {
       key: 'date',
       header: 'Date',
       align: 'right',
+      sortValue: (order) => new Date(order.createdAt).getTime(),
       className: 'text-[11px] text-slate-500 font-medium',
       cell: (order) => formatDateTime(order.createdAt),
     },

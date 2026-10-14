@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
+import { FormField } from '../components/ui/form-field';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import {
   useNotificationPrefs,
   useSaveNotificationPrefs,
@@ -38,6 +41,14 @@ const CARD = 'rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2x
 const FIELD =
   'w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-slate-900 focus:outline-none';
 const LABEL = 'mb-1 block font-bold text-slate-700';
+/**
+ * The ui Input is a storefront capsule (h-11, rounded-full, text-sm); the
+ * settings grid is a dense panel surface, so the primitive is reined back
+ * to the panel's own geometry (Batch 48) — same control, same focus/error
+ * treatment, panel density.
+ */
+const PANEL_INPUT = 'h-9 rounded-lg px-3 text-xs';
+const PANEL_TEXTAREA = 'min-h-0 rounded-lg px-3 py-2 text-xs';
 
 /** One percent is one hundredth of the stored fraction; the divisor is a constant, never a field. */
 const PER_HUNDRED = 100;
@@ -110,17 +121,27 @@ const TAB_SAVE_LABEL: Record<SettlementTab, string> = {
   settlement: 'Settlement preferences',
 };
 
-/** Only the active tab's columns, validated against the column's own constraints. */
-function updatesForTab(tab: SettlementTab, form: StoreForm): VendorStoreUpdate | { error: string } {
+/**
+ * Only the active tab's columns, validated against the column's own constraints.
+ * A refusal names the field that caused it (Batch 48) so the form can hang the
+ * error on that field through FormField, not only in the tab-level notice.
+ */
+function updatesForTab(
+  tab: SettlementTab,
+  form: StoreForm,
+): VendorStoreUpdate | { error: string; field?: keyof StoreForm } {
   if (tab === 'general') {
     const slug = form.slug.trim().toLowerCase().replace(/\s+/g, '-');
     // Both columns are `not null`, and `slug` is also `unique`: an empty one either moves the
     // storefront off its address or collides with another store's row.
     if (!form.storeName.trim()) {
-      return { error: 'The store display name cannot be saved empty.' };
+      return { error: 'The store display name cannot be saved empty.', field: 'storeName' };
     }
     if (!slug) {
-      return { error: 'The URL slug cannot be saved empty - it is the address buyers use.' };
+      return {
+        error: 'The URL slug cannot be saved empty - it is the address buyers use.',
+        field: 'slug',
+      };
     }
     return {
       storeName: form.storeName.trim(),
@@ -143,11 +164,17 @@ function updatesForTab(tab: SettlementTab, form: StoreForm): VendorStoreUpdate |
   if (tab === 'policies') {
     const days = Number.parseFloat(form.returnWindowDays);
     if (!Number.isFinite(days) || days < 0 || days > 365) {
-      return { error: 'The return window has to be a whole number of days between 0 and 365.' };
+      return {
+        error: 'The return window has to be a whole number of days between 0 and 365.',
+        field: 'returnWindowDays',
+      };
     }
     const fee = Number.parseFloat(form.restockingFee);
     if (!Number.isFinite(fee) || fee < 0 || fee > 100) {
-      return { error: 'Restocking fee must be a percentage between 0 and 100.' };
+      return {
+        error: 'Restocking fee must be a percentage between 0 and 100.',
+        field: 'restockingFee',
+      };
     }
     return {
       returnWindowDays: Math.round(days),
@@ -161,9 +188,9 @@ function updatesForTab(tab: SettlementTab, form: StoreForm): VendorStoreUpdate |
   }
 
   const schedule = payoutScheduleOf(form.payoutSchedule);
-  if ('error' in schedule) return { error: schedule.error };
+  if ('error' in schedule) return { error: schedule.error, field: 'payoutSchedule' };
   const reserve = reserveFractionOf(form.payoutReservePct);
-  if ('error' in reserve) return { error: reserve.error };
+  if ('error' in reserve) return { error: reserve.error, field: 'payoutReservePct' };
   return {
     payoutSchedule: schedule.value,
     payoutReservePct: reserve.value,
@@ -248,6 +275,8 @@ export const VendorSettingsPage: React.FC = () => {
   const [tab, setTab] = useState<Tab>('general');
   const [form, setForm] = useState<StoreForm>(BLANK_FORM);
   const [notice, setNotice] = useState<Notice | null>(null);
+  /** Per-field refusals from the last save attempt, keyed by the field that caused them. */
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof StoreForm, string>>>({});
   /** The tab whose write is in flight, so its button, switch and dot show it and no other's. */
   const [savingTab, setSavingTab] = useState<Tab | null>(null);
   const [savingPref, setSavingPref] = useState<keyof VendorNotificationPrefs | null>(null);
@@ -286,10 +315,16 @@ export const VendorSettingsPage: React.FC = () => {
 
   const set = <K extends keyof StoreForm>(key: K, value: StoreForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    // The rejected value has just been changed, so the refusal that named it is spent.
+    // The rejected value has just been changed, so the refusals that named it are spent.
     setNotice((current) =>
       current && current.kind === 'error' && current.tab === tab ? null : current,
     );
+    setFieldErrors((current) => {
+      if (!(key in current)) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
   };
 
   const saveStore = (target: SettlementTab, updates: VendorStoreUpdate) => {
@@ -329,9 +364,18 @@ export const VendorSettingsPage: React.FC = () => {
     if (!activeTab) return;
     const built = updatesForTab(activeTab, form);
     if ('error' in built) {
+      // The refusal shows twice on purpose: on the field that caused it, and
+      // in the tab notice, which is where a keyboard/AT user lands after the
+      // save button. A refusal with no field keeps only the notice.
+      setFieldErrors(built.field ? { [built.field]: built.error } : {});
       showNotice({ kind: 'error', tab: activeTab, message: built.error });
       return;
     }
+    setFieldErrors((current) => {
+      const next = { ...current };
+      for (const key of TAB_FIELDS[activeTab]) delete next[key];
+      return next;
+    });
     saveStore(activeTab, built);
   };
 
@@ -562,79 +606,76 @@ export const VendorSettingsPage: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className={LABEL} htmlFor="store-name">
-                        Store display name
-                      </label>
-                      <input
+                    <FormField
+                      label="Store display name"
+                      htmlFor="store-name"
+                      error={fieldErrors.storeName}
+                      required
+                    >
+                      <Input
                         id="store-name"
                         value={form.storeName}
                         onChange={(event) => set('storeName', event.target.value)}
-                        className={FIELD}
+                        className={PANEL_INPUT}
+                        hasError={!!fieldErrors.storeName}
+                        aria-invalid={!!fieldErrors.storeName}
                       />
-                    </div>
-                    <div>
-                      <label className={LABEL} htmlFor="store-slug">
-                        URL slug
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField
+                      label="URL slug"
+                      htmlFor="store-slug"
+                      error={fieldErrors.slug}
+                      hint="Spaces become hyphens when saved. A buyer reaching you by slug uses this value, so changing it moves the link."
+                      required
+                    >
+                      <Input
                         id="store-slug"
                         value={form.slug}
                         onChange={(event) => set('slug', event.target.value)}
-                        className={`${FIELD} font-mono`}
+                        className={`${PANEL_INPUT} font-mono`}
+                        hasError={!!fieldErrors.slug}
+                        aria-invalid={!!fieldErrors.slug}
                       />
-                      <span className="mt-1 block text-[11px] text-slate-400">
-                        Spaces become hyphens when saved. A buyer reaching you by slug uses this
-                        value, so changing it moves the link.
-                      </span>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className={LABEL} htmlFor="store-tagline">
-                        Tagline
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField label="Tagline" htmlFor="store-tagline" className="sm:col-span-2">
+                      <Input
                         id="store-tagline"
                         value={form.tagline}
                         onChange={(event) => set('tagline', event.target.value)}
-                        className={FIELD}
+                        className={PANEL_INPUT}
                       />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className={LABEL} htmlFor="store-description">
-                        About this store
-                      </label>
-                      <textarea
+                    </FormField>
+                    <FormField
+                      label="About this store"
+                      htmlFor="store-description"
+                      className="sm:col-span-2"
+                    >
+                      <Textarea
                         id="store-description"
                         rows={4}
                         value={form.description}
                         onChange={(event) => set('description', event.target.value)}
-                        className={`${FIELD} leading-relaxed`}
+                        className={`${PANEL_TEXTAREA} leading-relaxed`}
                       />
-                    </div>
-                    <div>
-                      <label className={LABEL} htmlFor="store-logo">
-                        Logo URL
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField label="Logo URL" htmlFor="store-logo">
+                      <Input
                         id="store-logo"
                         value={form.logo}
                         onChange={(event) => set('logo', event.target.value)}
-                        className={`${FIELD} font-mono`}
+                        className={`${PANEL_INPUT} font-mono`}
                         placeholder="https://…"
                       />
-                    </div>
-                    <div>
-                      <label className={LABEL} htmlFor="store-banner">
-                        Banner URL
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField label="Banner URL" htmlFor="store-banner">
+                      <Input
                         id="store-banner"
                         value={form.banner}
                         onChange={(event) => set('banner', event.target.value)}
-                        className={`${FIELD} font-mono`}
+                        className={`${PANEL_INPUT} font-mono`}
                         placeholder="https://…"
                       />
-                    </div>
+                    </FormField>
                   </div>
 
                   <p className="text-[11px] leading-relaxed text-slate-500">
@@ -653,45 +694,37 @@ export const VendorSettingsPage: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className={LABEL} htmlFor="support-email">
-                        Support email
-                      </label>
-                      <input
+                    <FormField label="Support email" htmlFor="support-email">
+                      <Input
                         id="support-email"
                         type="email"
                         value={form.supportEmail}
                         onChange={(event) => set('supportEmail', event.target.value)}
-                        className={FIELD}
+                        className={PANEL_INPUT}
                       />
-                    </div>
-                    <div>
-                      <label className={LABEL} htmlFor="support-phone">
-                        Support phone
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField label="Support phone" htmlFor="support-phone">
+                      <Input
                         id="support-phone"
                         value={form.supportPhone}
                         onChange={(event) => set('supportPhone', event.target.value)}
-                        className={FIELD}
+                        className={PANEL_INPUT}
                       />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className={LABEL} htmlFor="carriers">
-                        Carriers (comma separated)
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField
+                      label="Carriers (comma separated)"
+                      htmlFor="carriers"
+                      hint="A description only. No carrier API is connected, and a rider is assigned by the platform, not chosen from this list."
+                      className="sm:col-span-2"
+                    >
+                      <Input
                         id="carriers"
                         value={form.carriers}
                         onChange={(event) => set('carriers', event.target.value)}
-                        className={FIELD}
+                        className={PANEL_INPUT}
                         placeholder="DHL Express, UPS, Local courier"
                       />
-                      <span className="mt-1 block text-[11px] text-slate-400">
-                        A description only. No carrier API is connected, and a rider is assigned by
-                        the platform, not chosen from this list.
-                      </span>
-                    </div>
+                    </FormField>
                   </div>
                 </section>
 
@@ -720,17 +753,14 @@ export const VendorSettingsPage: React.FC = () => {
                   </label>
 
                   {form.vacationMode && (
-                    <div>
-                      <label className={LABEL} htmlFor="vacation-message">
-                        Notice shown on your dashboard
-                      </label>
-                      <input
+                    <FormField label="Notice shown on your dashboard" htmlFor="vacation-message">
+                      <Input
                         id="vacation-message"
                         value={form.vacationMessage}
                         onChange={(event) => set('vacationMessage', event.target.value)}
-                        className={FIELD}
+                        className={PANEL_INPUT}
                       />
-                    </div>
+                    </FormField>
                   )}
                 </section>
               </>
@@ -747,34 +777,40 @@ export const VendorSettingsPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className={LABEL} htmlFor="return-window">
-                      Return window (days after delivery)
-                    </label>
-                    <input
+                  <FormField
+                    label="Return window (days after delivery)"
+                    htmlFor="return-window"
+                    error={fieldErrors.returnWindowDays}
+                  >
+                    <Input
                       id="return-window"
                       type="number"
                       min="0"
                       max="365"
                       value={form.returnWindowDays}
                       onChange={(event) => set('returnWindowDays', event.target.value)}
-                      className={FIELD}
+                      className={PANEL_INPUT}
+                      hasError={!!fieldErrors.returnWindowDays}
+                      aria-invalid={!!fieldErrors.returnWindowDays}
                     />
-                  </div>
-                  <div>
-                    <label className={LABEL} htmlFor="restocking-fee">
-                      Restocking fee (percent of goods, 0-100)
-                    </label>
-                    <input
+                  </FormField>
+                  <FormField
+                    label="Restocking fee (percent of goods, 0-100)"
+                    htmlFor="restocking-fee"
+                    error={fieldErrors.restockingFee}
+                  >
+                    <Input
                       id="restocking-fee"
                       type="number"
                       min="0"
                       step="0.01"
                       value={form.restockingFee}
                       onChange={(event) => set('restockingFee', event.target.value)}
-                      className={FIELD}
+                      className={PANEL_INPUT}
+                      hasError={!!fieldErrors.restockingFee}
+                      aria-invalid={!!fieldErrors.restockingFee}
                     />
-                  </div>
+                  </FormField>
                   <div role="group" aria-labelledby="return-payer-label">
                     <span id="return-payer-label" className={LABEL}>
                       Who pays return freight
@@ -796,18 +832,15 @@ export const VendorSettingsPage: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <label className={LABEL} htmlFor="warranty-period">
-                      Warranty statement
-                    </label>
-                    <input
+                  <FormField label="Warranty statement" htmlFor="warranty-period">
+                    <Input
                       id="warranty-period"
                       value={form.warrantyPeriod}
                       onChange={(event) => set('warrantyPeriod', event.target.value)}
-                      className={FIELD}
+                      className={PANEL_INPUT}
                       placeholder="1 year, parts and labour"
                     />
-                  </div>
+                  </FormField>
                 </div>
 
                 <label className="flex items-start gap-2.5 border-t border-slate-100 pt-3">
@@ -846,31 +879,30 @@ export const VendorSettingsPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className={LABEL} htmlFor="payout-schedule">
-                      Preferred cadence
-                    </label>
+                  <FormField
+                    label="Preferred cadence"
+                    htmlFor="payout-schedule"
+                    error={fieldErrors.payoutSchedule}
+                    hint="Stored on your row. No scheduler reads it - a payout happens when you request one on the Payouts page."
+                  >
                     <select
                       id="payout-schedule"
                       value={form.payoutSchedule}
                       onChange={(event) => set('payoutSchedule', event.target.value)}
                       className={`${FIELD} native-select`}
+                      aria-invalid={!!fieldErrors.payoutSchedule}
                     >
                       <option value="daily">Daily</option>
                       <option value="weekly">Weekly</option>
                       <option value="biweekly">Every two weeks</option>
                     </select>
-                    <span className="mt-1 block text-[11px] text-slate-400">
-                      Stored on your row. No scheduler reads it - a payout happens when you
-                      request one on the Payouts page.
-                    </span>
-                  </div>
+                  </FormField>
 
                   <div>
                     <label className={LABEL} htmlFor="payout-reserve">
                       Held back as reserve (percent)
                     </label>
-                    <input
+                    <Input
                       id="payout-reserve"
                       type="number"
                       inputMode="decimal"
@@ -881,9 +913,8 @@ export const VendorSettingsPage: React.FC = () => {
                       onChange={(event) => set('payoutReservePct', event.target.value)}
                       aria-invalid={'error' in reserveInput}
                       aria-describedby="payout-reserve-help"
-                      className={`${FIELD} ${
-                        'error' in reserveInput ? 'border-rose-400 focus:border-rose-600' : ''
-                      }`}
+                      hasError={'error' in reserveInput}
+                      className={PANEL_INPUT}
                     />
                     <span
                       id="payout-reserve-help"

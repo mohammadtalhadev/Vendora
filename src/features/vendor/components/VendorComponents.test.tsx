@@ -203,12 +203,11 @@ describe('VendorProductsPage and the listing form', () => {
     });
     fireEvent.change(within(dialog).getByRole('combobox'), { target: { value: 'cat-audio' } });
 
-    fireEvent.click(within(dialog).getByRole('button', { name: /2\. Pricing & Delivery/i }));
-    fireEvent.change(within(dialog).getByPlaceholderText('189.00'), { target: { value: '189' } });
-    fireEvent.change(within(dialog).getByPlaceholderText('25'), { target: { value: '40' } });
-    fireEvent.change(within(dialog).getByPlaceholderText('8.50'), { target: { value: '6' } });
+    // Quick add (Batch 48): price and stock sit on the single form, no tabs.
+    fireEvent.change(within(dialog).getByLabelText(/^Price/), { target: { value: '189' } });
+    fireEvent.change(within(dialog).getByLabelText(/Opening Stock/), { target: { value: '40' } });
 
-    fireEvent.click(within(dialog).getByRole('button', { name: /Save Product/i }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /Add Product/i }));
 
     await waitFor(() => expect(supabaseDouble.tables.products).toHaveLength(1));
     expect(supabaseDouble.tables.products[0]).toMatchObject({
@@ -231,7 +230,7 @@ describe('VendorProductsPage and the listing form', () => {
     fireEvent.click(screen.getByRole('button', { name: /\+ Add New Product/i }));
     const dialog = await screen.findByRole('dialog');
 
-    fireEvent.click(within(dialog).getByRole('button', { name: /Save Product/i }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /Add Product/i }));
 
     await waitFor(() => expect(screen.getByText('Product title is required.')).toBeInTheDocument());
     expect(supabaseDouble.tables.products).toHaveLength(0);
@@ -259,24 +258,27 @@ describe('VendorProductsPage and the listing form', () => {
   });
 });
 
-describe('ProductFormModal', () => {
-  it('switches the fulfillment model and shows only the fields that model has', async () => {
+describe('ProductFormModal (quick add)', () => {
+  it('offers only the essential fields and points at the full form for the rest', async () => {
     renderWorkspace(
       <ProductFormModal open onOpenChange={() => {}} onSave={() => {}} />
     );
 
     const dialog = await screen.findByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: /2\. Pricing & Delivery/i }));
+    expect(within(dialog).getByText('Quick Add Product')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/Product Title/)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/^Price/)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/Opening Stock/)).toBeInTheDocument();
 
-    expect(within(dialog).getByRole('button', { name: /Physical Good \(Courier Pickup\)/i })).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: /Digital Asset \(Instant License\)/i }));
-    expect(within(dialog).getByText('License Type')).toBeInTheDocument();
-    expect(within(dialog).getByText('Asset Download URL')).toBeInTheDocument();
+    // No second full form hides in the modal (Batch 48): variants, digital
+    // delivery and shipping settings belong to the full form alone.
+    expect(within(dialog).queryByText(/Variant Generator/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Pricing & Delivery/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Digital Asset/i)).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/Standard Shipping Fee/)).not.toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: /Physical Good \(Courier Pickup\)/i }));
-    expect(within(dialog).getByText(/Standard Shipping Fee/)).toBeInTheDocument();
-    expect(within(dialog).queryByText('Asset Download URL')).not.toBeInTheDocument();
+    const fullForm = within(dialog).getByRole('link', { name: /Open the full form/i });
+    expect(fullForm).toHaveAttribute('href', '/vendor/products/new');
   });
 
   it('requires a category before it will write a listing', async () => {
@@ -286,7 +288,7 @@ describe('ProductFormModal', () => {
     fireEvent.change(within(dialog).getByPlaceholderText(/Aura Precision Studio Reference/i), {
       target: { value: 'Uncategorised Attempt' },
     });
-    fireEvent.click(within(dialog).getByRole('button', { name: /Save Product/i }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /Add Product/i }));
 
     await waitFor(() =>
       expect(screen.getByText('Choose the category this listing belongs in.')).toBeInTheDocument(),

@@ -48,6 +48,8 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/database';
 import type { ShippingAddress, SubOrder, SubOrderStatus } from '../types/domain';
@@ -1034,7 +1036,7 @@ export const AccountProfilePage: React.FC = () => {
                           <label htmlFor="account-name" className={labelClass}>
                             Display Name
                           </label>
-                          <input
+                          <Input
                             id="account-name"
                             name="accountName"
                             type="text"
@@ -1053,7 +1055,7 @@ export const AccountProfilePage: React.FC = () => {
                           <label htmlFor="account-email" className={labelClass}>
                             Sign-in Email
                           </label>
-                          <input
+                          <Input
                             id="account-email"
                             name="accountEmail"
                             type="email"
@@ -1103,7 +1105,7 @@ export const AccountProfilePage: React.FC = () => {
                                 change only takes effect once that link is opened.
                               </p>
                               <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                                <input
+                                <Input
                                   id="account-email-new"
                                   name="accountEmailNew"
                                   aria-label="New email address"
@@ -1120,14 +1122,15 @@ export const AccountProfilePage: React.FC = () => {
                                   }}
                                   className={inputClass}
                                 />
-                                <button
+                                <Button
                                   type="button"
+                                  size="sm"
                                   onClick={() => void submitEmailChange()}
                                   disabled={emailBusy}
-                                  className="shrink-0 rounded-xl bg-sun-orange text-white px-4 py-2.5 text-xs font-bold hover:bg-sun-orange-600 shadow-md shadow-orange-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                  className="h-auto shrink-0 rounded-xl px-4 py-2.5"
                                 >
                                   {emailBusy ? 'Sending…' : 'Send confirmation link'}
-                                </button>
+                                </Button>
                               </div>
                               {emailError && (
                                 <p role="alert" className="mt-1.5 text-[11px] font-bold text-rose-600 dark:text-rose-400">
@@ -1139,13 +1142,14 @@ export const AccountProfilePage: React.FC = () => {
                         </div>
 
                         <div className="pt-2 flex items-center gap-3">
-                          <button
+                          <Button
                             type="submit"
+                            size="sm"
                             disabled={profileBusy}
-                            className="rounded-xl bg-sun-orange text-white px-5 py-2.5 text-xs font-bold hover:bg-sun-orange-600 shadow-md shadow-orange-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="h-auto rounded-xl px-5 py-2.5"
                           >
                             {profileBusy ? 'Saving…' : 'Save Changes'}
-                          </button>
+                          </Button>
                           {profileBusy && (
                             <span className="text-xs font-bold text-slate-500" role="status" aria-live="polite">
                               Writing to your profile row…
@@ -1163,13 +1167,15 @@ export const AccountProfilePage: React.FC = () => {
                         <p className="text-[11px] text-slate-500">
                           Your password is changed under Security, along with what this account cannot change.
                         </p>
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleTabChange('security')}
-                          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                          className="h-auto rounded-xl px-4 py-2"
                         >
                           Go to Security
-                        </button>
+                        </Button>
                       </div>
                     </>
                   )}
@@ -2127,7 +2133,7 @@ export const AccountProfilePage: React.FC = () => {
                               <label htmlFor="account-password-new" className={labelClass}>
                                 New Password
                               </label>
-                              <input
+                              <Input
                                 id="account-password-new"
                                 name="newPassword"
                                 type="password"
@@ -2141,7 +2147,7 @@ export const AccountProfilePage: React.FC = () => {
                               <label htmlFor="account-password-confirm" className={labelClass}>
                                 Confirm New Password
                               </label>
-                              <input
+                              <Input
                                 id="account-password-confirm"
                                 name="confirmPassword"
                                 type="password"
@@ -2156,25 +2162,28 @@ export const AccountProfilePage: React.FC = () => {
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
-                              <button
+                              <Button
                                 type="submit"
+                                size="sm"
                                 disabled={passwordBusy}
-                                className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-4 py-2 text-xs font-bold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="h-auto rounded-xl px-4 py-2"
                               >
                                 {passwordBusy ? 'Updating…' : 'Update Password'}
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 type="button"
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => {
                                   setIsPasswordFormOpen(false);
                                   setPasswordError(null);
                                   setNewPassword('');
                                   setConfirmPassword('');
                                 }}
-                                className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+                                className="h-auto rounded-xl px-4 py-2"
                               >
                                 Cancel
-                              </button>
+                              </Button>
                             </div>
                             {passwordError && (
                               <Banner tone="error" onDismiss={() => setPasswordError(null)}>
@@ -2183,15 +2192,17 @@ export const AccountProfilePage: React.FC = () => {
                             )}
                           </form>
                         ) : (
-                          <button
+                          <Button
                             type="button"
+                            variant="outline"
+                            size="sm"
                             aria-expanded={isPasswordFormOpen}
                             aria-controls="account-password-form"
                             onClick={() => setIsPasswordFormOpen(true)}
-                            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                            className="h-auto rounded-xl px-4 py-2"
                           >
                             Change password
-                          </button>
+                          </Button>
                         )}
                       </>
                     )}
@@ -2375,21 +2386,24 @@ export const AccountProfilePage: React.FC = () => {
           </div>
 
           <DialogFooter>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setIsReturnOpen(false)}
-              className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+              className="h-auto rounded-xl px-4 py-2"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={submitReturn}
               disabled={returnMutation.isPending || !returnSubOrderId}
-              className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              className="h-auto rounded-xl px-5 py-2"
             >
               {returnMutation.isPending ? 'Sending…' : 'Request Return'}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2466,13 +2480,15 @@ export const AccountProfilePage: React.FC = () => {
           </div>
 
           <DialogFooter>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setIsDisputeOpen(false)}
-              className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"
+              className="h-auto rounded-xl px-4 py-2"
             >
               Cancel
-            </button>
+            </Button>
             <button
               type="button"
               onClick={submitDispute}
@@ -2559,7 +2575,7 @@ export const AccountProfilePage: React.FC = () => {
                 <label htmlFor="address-fullName" className={labelClass}>
                   Recipient Full Name *
                 </label>
-                <input
+                <Input
                   id="address-fullName"
                   type="text"
                   required
@@ -2574,7 +2590,7 @@ export const AccountProfilePage: React.FC = () => {
                 <label htmlFor="address-phone" className={labelClass}>
                   Contact Phone *
                 </label>
-                <input
+                <Input
                   id="address-phone"
                   type="tel"
                   required
@@ -2590,7 +2606,7 @@ export const AccountProfilePage: React.FC = () => {
               <label htmlFor="address-street" className={labelClass}>
                 Street Address *
               </label>
-              <input
+              <Input
                 id="address-street"
                 type="text"
                 required
@@ -2606,7 +2622,7 @@ export const AccountProfilePage: React.FC = () => {
                 <label htmlFor="address-city" className={labelClass}>
                   City *
                 </label>
-                <input
+                <Input
                   id="address-city"
                   type="text"
                   required
@@ -2621,7 +2637,7 @@ export const AccountProfilePage: React.FC = () => {
                 <label htmlFor="address-state" className={labelClass}>
                   State / Province
                 </label>
-                <input
+                <Input
                   id="address-state"
                   type="text"
                   value={addressState}
@@ -2635,7 +2651,7 @@ export const AccountProfilePage: React.FC = () => {
                 <label htmlFor="address-zip" className={labelClass}>
                   ZIP / Postal Code *
                 </label>
-                <input
+                <Input
                   id="address-zip"
                   type="text"
                   required
@@ -2652,7 +2668,7 @@ export const AccountProfilePage: React.FC = () => {
                 <label htmlFor="address-country" className={labelClass}>
                   Country
                 </label>
-                <input
+                <Input
                   id="address-country"
                   type="text"
                   value={addressCountry}
@@ -2666,7 +2682,7 @@ export const AccountProfilePage: React.FC = () => {
                 <label htmlFor="address-label" className={labelClass}>
                   Address Label / Nickname
                 </label>
-                <input
+                <Input
                   id="address-label"
                   type="text"
                   value={addressLabel}
@@ -2692,19 +2708,18 @@ export const AccountProfilePage: React.FC = () => {
             {addressError && <Banner tone="error">{addressError}</Banner>}
 
             <DialogFooter className="pt-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsAddressModalOpen(false)}
-                className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="h-auto rounded-xl px-4 py-2"
               >
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
-              >
+              </Button>
+              <Button type="submit" size="sm" className="h-auto rounded-xl px-5 py-2">
                 {editingAddressId ? 'Save Changes' : 'Save Address'}
-              </button>
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -2757,7 +2772,7 @@ export const AccountProfilePage: React.FC = () => {
                   <label htmlFor="card-name" className={labelClass}>
                     Cardholder Name *
                   </label>
-                  <input
+                  <Input
                     id="card-name"
                     type="text"
                     required
@@ -2779,7 +2794,7 @@ export const AccountProfilePage: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <input
+                  <Input
                     id="card-number"
                     type="text"
                     required
@@ -2832,7 +2847,7 @@ export const AccountProfilePage: React.FC = () => {
                     <label htmlFor="card-cvv" className={labelClass}>
                       CVV *
                     </label>
-                    <input
+                    <Input
                       id="card-cvv"
                       type="password"
                       maxLength={4}
@@ -2871,19 +2886,18 @@ export const AccountProfilePage: React.FC = () => {
             {paymentError && <Banner tone="error">{paymentError}</Banner>}
 
             <DialogFooter className="pt-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsPaymentModalOpen(false)}
-                className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="h-auto rounded-xl px-4 py-2"
               >
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-xl bg-sun-orange hover:bg-sun-orange-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition-colors cursor-pointer"
-              >
+              </Button>
+              <Button type="submit" size="sm" className="h-auto rounded-xl px-5 py-2">
                 Save Payment Method
-              </button>
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

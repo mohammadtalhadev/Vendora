@@ -165,6 +165,7 @@ export const VendorReturnsPage: React.FC = () => {
     {
       key: 'package',
       header: 'PACKAGE & RMA',
+      sortValue: (pkg) => pkg.rmaCode ?? pkg.id,
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (pkg) => (
@@ -185,6 +186,7 @@ export const VendorReturnsPage: React.FC = () => {
     {
       key: 'buyer',
       header: 'BUYER',
+      sortValue: (pkg) => pkg.buyerEmail || '',
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (pkg) => (
@@ -201,6 +203,7 @@ export const VendorReturnsPage: React.FC = () => {
     {
       key: 'contents',
       header: 'WHAT COMES BACK',
+      sortValue: (pkg) => pkg.subtotal,
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (pkg) => (
@@ -235,6 +238,7 @@ export const VendorReturnsPage: React.FC = () => {
     {
       key: 'requested',
       header: 'REQUESTED / REASON',
+      sortValue: (pkg) => new Date(requestedAtOf(pkg)).getTime(),
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (pkg) => (
@@ -252,6 +256,7 @@ export const VendorReturnsPage: React.FC = () => {
     {
       key: 'refund',
       header: 'REFUND',
+      sortValue: (pkg) => pkg.refundAmount ?? pkg.subtotal,
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (pkg) => (
@@ -634,7 +639,29 @@ export const VendorReturnsPage: React.FC = () => {
                 columns={returnColumns}
                 rows={paged}
                 getRowKey={(pkg) => pkg.id}
-                emptyState={<></>}
+                isLoading={queue.isPending}
+                emptyState={
+                  <div className="space-y-2 px-4 py-10 text-center">
+                    <RotateCcw className="mx-auto h-8 w-8 text-slate-300" aria-hidden="true" />
+                    <div className="text-sm font-bold text-slate-900">
+                      No returns match this view
+                    </div>
+                    <p className="mx-auto max-w-md text-xs text-slate-500">
+                      The store does have returns on its books, but none of them sit in the tab or
+                      search you have open. Switch tabs or clear the search to see the rest of the
+                      queue.
+                    </p>
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition-colors cursor-pointer"
+                      >
+                        Clear search
+                      </button>
+                    )}
+                  </div>
+                }
               />
 
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500">

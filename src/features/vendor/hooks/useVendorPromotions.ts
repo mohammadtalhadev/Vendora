@@ -9,6 +9,7 @@ import {
   type PromotionUpdate,
 } from '../api/promotions';
 import { vendorKeys, useVendorScope } from './vendor-keys';
+import { liveList } from './live-list';
 
 export type { VendorPromotion } from '../api/promotions';
 
@@ -19,6 +20,8 @@ export function useVendorPromotions() {
     queryKey: vendorKeys.promotions(userId),
     queryFn: ({ signal }) => fetchVendorPromotions(signal),
     enabled: Boolean(userId),
+    // Redemption counts move while the seller watches (Batch 48 freshness standard).
+    ...liveList,
   });
 }
 

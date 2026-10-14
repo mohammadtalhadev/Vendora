@@ -147,6 +147,7 @@ export const VendorPromotionsPage: React.FC = () => {
     {
       key: 'code',
       header: 'CODE & CAMPAIGN',
+      sortValue: (promo) => promo.code,
       headerClassName: 'text-[11px]',
       className: 'py-3.5',
       cell: (promo) => (
@@ -203,6 +204,7 @@ export const VendorPromotionsPage: React.FC = () => {
     {
       key: 'minimum',
       header: 'MINIMUM / CAP',
+      sortValue: (promo) => promo.minimumOrder,
       headerClassName: 'text-[11px]',
       className: 'py-3.5',
       cell: (promo) => (
@@ -221,6 +223,7 @@ export const VendorPromotionsPage: React.FC = () => {
     {
       key: 'window',
       header: 'WINDOW',
+      sortValue: (promo) => (promo.startsAt ? new Date(promo.startsAt).getTime() : null),
       headerClassName: 'text-[11px]',
       className: 'py-3.5',
       cell: (promo) => (
@@ -239,6 +242,7 @@ export const VendorPromotionsPage: React.FC = () => {
     {
       key: 'redemptions',
       header: 'REDEMPTIONS',
+      sortValue: (promo) => promo.usageCount,
       headerClassName: 'text-[11px]',
       className: 'py-3.5',
       cell: (promo) => {
@@ -706,7 +710,27 @@ export const VendorPromotionsPage: React.FC = () => {
                 columns={campaignColumns}
                 rows={filtered}
                 getRowKey={(promo) => promo.id}
-                emptyState={<></>}
+                emptyState={
+                  <div className="space-y-2 px-4 py-10 text-center">
+                    <Tag className="mx-auto h-8 w-8 text-slate-300" aria-hidden="true" />
+                    <div className="text-sm font-bold text-slate-900">
+                      No campaigns match this view
+                    </div>
+                    <p className="mx-auto max-w-md text-xs text-slate-500">
+                      Your store has campaigns on its books, but none of them sit in the tab or
+                      search you have open. Switch tabs or clear the search to see the rest.
+                    </p>
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition-colors cursor-pointer"
+                      >
+                        Clear search
+                      </button>
+                    )}
+                  </div>
+                }
               />
 
               <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">

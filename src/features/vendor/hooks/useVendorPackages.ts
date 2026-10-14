@@ -16,6 +16,7 @@ import {
   type RestockedLine,
 } from '../api/returns';
 import { vendorKeys, useVendorScope } from './vendor-keys';
+import { liveList } from './live-list';
 
 export function useVendorPackages() {
   const userId = useVendorScope();
@@ -23,6 +24,8 @@ export function useVendorPackages() {
     queryKey: vendorKeys.packages(userId),
     queryFn: ({ signal }) => fetchVendorPackages(signal),
     enabled: Boolean(userId),
+    // The Orders and Returns boards watch this list (Batch 48 freshness standard).
+    ...liveList,
   });
 }
 

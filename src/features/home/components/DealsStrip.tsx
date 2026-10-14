@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductCard, domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
+import { GridSkeleton } from '../../../components/common/QueryState';
 import { useReveal } from '../../../hooks/useReveal';
 
 export interface DealsStripProps {
@@ -25,9 +26,21 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
   useReveal();
   const [activeTab, setActiveTab] = useState<'best-sellers' | 'new-arrivals' | 'best-offers'>('best-sellers');
 
-  const { data: bestSellerData } = useProducts({ sort: 'best_selling', page: 1, limit: 8 });
-  const { data: newArrivalData } = useProducts({ sort: 'featured', page: 1, limit: 8 });
-  const { data: offersPoolData } = useProducts({ sort: 'featured', page: 1, limit: 40 });
+  const { data: bestSellerData, isLoading: bestSellersLoading } = useProducts({
+    sort: 'best_selling',
+    page: 1,
+    limit: 8,
+  });
+  const { data: newArrivalData, isLoading: newArrivalsLoading } = useProducts({
+    sort: 'featured',
+    page: 1,
+    limit: 8,
+  });
+  const { data: offersPoolData, isLoading: offersLoading } = useProducts({
+    sort: 'featured',
+    page: 1,
+    limit: 40,
+  });
 
   const bestSellers = useMemo(
     () => (bestSellerData?.items ?? []).map(domainProductToCardItem),
@@ -60,6 +73,17 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
       : activeTab === 'new-arrivals'
       ? newArrivals
       : bestOffers;
+
+  // Until the active tab's query lands, the grid shows the same card
+  // skeletons the other home rails use (Batch 47 standard) instead of
+  // flashing the "no deals" copy at a catalogue that simply has not
+  // answered yet (Batch 48).
+  const activeLoading =
+    activeTab === 'best-sellers'
+      ? bestSellersLoading
+      : activeTab === 'new-arrivals'
+      ? newArrivalsLoading
+      : offersLoading;
 
   return (
     <section className="reveal mb-14">
@@ -138,7 +162,9 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
 
         {/* Right Column: 4 Columns x 2 Rows (8 Standard ProductCards) */}
         <div className="lg:col-span-9">
-          {products.length > 0 ? (
+          {activeLoading ? (
+            <GridSkeleton count={8} />
+          ) : products.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
               {products.map((p) => (
                 <div key={p.id} className="reveal h-full">

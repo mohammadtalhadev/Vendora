@@ -225,6 +225,7 @@ export const VendorImportExportPage: React.FC = () => {
     {
       key: 'line',
       header: 'Line',
+      sortValue: (row) => row.line,
       align: 'center',
       headerClassName: 'p-3 text-[11px] tracking-normal',
       className: 'p-3 text-center font-mono text-slate-400',
@@ -233,6 +234,7 @@ export const VendorImportExportPage: React.FC = () => {
     {
       key: 'title',
       header: 'Title',
+      sortValue: (row) => row.title,
       headerClassName: 'p-3 text-[11px] tracking-normal',
       className: 'p-3 font-bold text-slate-900',
       cell: (row) => (
@@ -257,6 +259,7 @@ export const VendorImportExportPage: React.FC = () => {
     {
       key: 'price',
       header: 'Price',
+      sortValue: (row) => row.price,
       headerClassName: 'p-3 text-[11px] tracking-normal',
       className: 'p-3 font-bold text-slate-900',
       cell: (row) => (row.price === null ? '—' : `$${row.price.toFixed(2)}`),
@@ -264,6 +267,7 @@ export const VendorImportExportPage: React.FC = () => {
     {
       key: 'stock',
       header: 'Stock',
+      sortValue: (row) => row.stock,
       headerClassName: 'p-3 text-[11px] tracking-normal',
       className: 'p-3 font-semibold text-slate-800',
       cell: (row) => row.stock,
@@ -616,7 +620,24 @@ export const VendorImportExportPage: React.FC = () => {
                     rows={visibleRows}
                     getRowKey={(row) => row.line}
                     rowClassName="align-top"
-                    emptyState={<></>}
+                    emptyState={
+                      <div className="space-y-2 px-4 py-10 text-center">
+                        <FileSpreadsheet
+                          className="mx-auto h-8 w-8 text-slate-300"
+                          aria-hidden="true"
+                        />
+                        <div className="text-sm font-bold text-slate-900">
+                          No rows in this view
+                        </div>
+                        <p className="mx-auto max-w-md text-xs text-slate-500">
+                          {statusFilter === 'ready'
+                            ? 'No row in this file passes validation yet. Switch to Blocked to see what each row needs, or fix the sheet and upload it again.'
+                            : statusFilter === 'blocked'
+                              ? 'Nothing in this file is blocked — every row passes validation. Switch to Ready or All rows to see them.'
+                              : 'This file produced no data rows to preview. Check that the sheet has a header row and at least one listing under it.'}
+                        </p>
+                      </div>
+                    }
                   />
                 </div>
               </>

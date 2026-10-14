@@ -113,6 +113,69 @@ describe('DataTable pattern', () => {
     expect(second).not.toHaveClass('bg-slate-50');
   });
 
+  it('sorts by a column sortValue when its header is clicked, toggling direction', () => {
+    const sortableColumns: DataTableColumn<Row>[] = [
+      { key: 'name', header: 'Name', cell: (row) => row.name, sortValue: (row) => row.name },
+      { key: 'total', header: 'Total', align: 'right', cell: (row) => `$${row.total}`, sortValue: (row) => row.total },
+    ];
+    const sortableRows: Row[] = [
+      { id: 'r1', name: 'Charlie', total: 30 },
+      { id: 'r2', name: 'Alpha', total: 10 },
+      { id: 'r3', name: 'Beta', total: 20 },
+    ];
+    render(<DataTable columns={sortableColumns} rows={sortableRows} getRowKey={(r) => r.id} />);
+    const bodyOrder = () =>
+      screen.getAllByRole('row').slice(1).map((tr) => tr.querySelector('td')?.textContent);
+    expect(bodyOrder()).toEqual(['Charlie', 'Alpha', 'Beta']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by Total' }));
+    expect(bodyOrder()).toEqual(['Alpha', 'Beta', 'Charlie']);
+    expect(screen.getByRole('columnheader', { name: /Total/ })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by Total' }));
+    expect(bodyOrder()).toEqual(['Charlie', 'Beta', 'Alpha']);
+    expect(screen.getByRole('columnheader', { name: /Total/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by Name' }));
+    expect(bodyOrder()).toEqual(['Alpha', 'Beta', 'Charlie']);
+  });
+
+  it('sinks null sort values to the end in both directions', () => {
+    const nullableColumns: DataTableColumn<Row & { due: number | null }>[] = [
+      { key: 'name', header: 'Name', cell: (row) => row.name },
+      {
+        key: 'due',
+        header: 'Due',
+        cell: (row) => (row.due === null ? '—' : String(row.due)),
+        sortValue: (row) => row.due,
+      },
+    ];
+    const nullableRows = [
+      { id: 'r1', name: 'Alpha', total: 10, due: null },
+      { id: 'r2', name: 'Beta', total: 20, due: 5 },
+      { id: 'r3', name: 'Charlie', total: 30, due: 1 },
+    ];
+    render(<DataTable columns={nullableColumns} rows={nullableRows} getRowKey={(r) => r.id} />);
+    const bodyOrder = () =>
+      screen.getAllByRole('row').slice(1).map((tr) => tr.querySelector('td')?.textContent);
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by Due' }));
+    expect(bodyOrder()).toEqual(['Charlie', 'Beta', 'Alpha']);
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by Due' }));
+    expect(bodyOrder()).toEqual(['Beta', 'Charlie', 'Alpha']);
+  });
+
+  it('leaves columns without a sortValue as plain headers', () => {
+    render(<DataTable columns={columns} rows={rows} getRowKey={(r) => r.id} />);
+    expect(screen.queryByRole('button', { name: /Sort by/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Name' })).not.toHaveAttribute('aria-sort');
+  });
+
   it('composes a getRowProps onClick with onRowClick instead of replacing it', () => {
     const rowPropClick = vi.fn();
     const onRowClick = vi.fn();

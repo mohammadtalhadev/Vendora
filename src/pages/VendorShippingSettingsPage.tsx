@@ -10,6 +10,11 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
+import { FormField } from '../components/ui/form-field';
+import { Input } from '../components/ui/input';
+
+/** Panel-density geometry for the ui Input capsule, as on Vendor Settings (Batch 48). */
+const PANEL_INPUT = 'h-9 rounded-lg px-3 text-xs';
 import {
   useSaveShippingSettings,
   useShippingSettings,
@@ -225,50 +230,39 @@ export const VendorShippingSettingsPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="standard-shipping-rate"
-                    className="mb-1 block font-bold text-slate-700"
-                  >
-                    Standard flat rate
-                  </label>
-                  <input
+                <FormField
+                  label="Standard flat rate"
+                  htmlFor="standard-shipping-rate"
+                  hint="Stored per store. What a buyer is billed comes from the product's own shipping row."
+                >
+                  <Input
                     id="standard-shipping-rate"
                     type="number"
                     min="0"
                     step="0.01"
                     value={form.standardRate}
                     onChange={(event) => set('standardRate', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 font-bold text-slate-900 focus:border-slate-900 focus:outline-none"
+                    className={`${PANEL_INPUT} font-bold`}
                     required
                   />
-                  <span className="mt-0.5 block text-[11px] text-slate-400">
-                    Stored per store. What a buyer is billed comes from the product&apos;s own
-                    shipping row.
-                  </span>
-                </div>
+                </FormField>
 
-                <div>
-                  <label
-                    htmlFor="express-courier-rate"
-                    className="mb-1 block font-bold text-slate-700"
-                  >
-                    Express surcharge
-                  </label>
-                  <input
+                <FormField
+                  label="Express surcharge"
+                  htmlFor="express-courier-rate"
+                  hint="Recorded only - no express option is priced from this number."
+                >
+                  <Input
                     id="express-courier-rate"
                     type="number"
                     min="0"
                     step="0.01"
                     value={form.expressRate}
                     onChange={(event) => set('expressRate', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 font-bold text-slate-900 focus:border-slate-900 focus:outline-none"
+                    className={`${PANEL_INPUT} font-bold`}
                     required
                   />
-                  <span className="mt-0.5 block text-[11px] text-slate-400">
-                    Recorded only - no express option is priced from this number.
-                  </span>
-                </div>
+                </FormField>
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
@@ -294,14 +288,14 @@ export const VendorShippingSettingsPage: React.FC = () => {
                   {form.freeShippingEnabled && (
                     <span className="flex items-center gap-1 font-bold text-slate-900">
                       <span>{config.symbol}</span>
-                      <input
+                      <Input
                         type="number"
                         min="0"
                         step="0.01"
                         aria-label="Free shipping threshold amount"
                         value={form.freeShippingThreshold}
                         onChange={(event) => set('freeShippingThreshold', event.target.value)}
-                        className="w-24 rounded-xl border border-slate-200 p-1.5 text-center font-bold focus:border-slate-900 focus:outline-none"
+                        className="h-8 w-24 rounded-lg px-2 text-center text-xs font-bold"
                       />
                     </span>
                   )}
@@ -321,114 +315,90 @@ export const VendorShippingSettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="facility-name" className="mb-1 block font-bold text-slate-700">
-                  Facility name
-                </label>
-                <input
+              <FormField label="Facility name" htmlFor="facility-name">
+                <Input
                   id="facility-name"
                   type="text"
                   value={form.warehouseName}
                   onChange={(event) => set('warehouseName', event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-2.5 font-bold text-slate-900 focus:border-slate-900 focus:outline-none"
+                  className={`${PANEL_INPUT} font-bold`}
                 />
-              </div>
+              </FormField>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="sm:col-span-2">
-                  <label htmlFor="street-address" className="mb-1 block font-bold text-slate-700">
-                    Street and bay
-                  </label>
-                  <input
+                <FormField label="Street and bay" htmlFor="street-address" className="sm:col-span-2">
+                  <Input
                     id="street-address"
                     type="text"
                     value={form.street}
                     onChange={(event) => set('street', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-slate-900 focus:outline-none"
+                    className={PANEL_INPUT}
                   />
-                </div>
-                <div>
-                  <label htmlFor="city-input" className="mb-1 block font-bold text-slate-700">
-                    City
-                  </label>
-                  <input
+                </FormField>
+                <FormField label="City" htmlFor="city-input">
+                  <Input
                     id="city-input"
                     type="text"
                     value={form.city}
                     onChange={(event) => set('city', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-slate-900 focus:outline-none"
+                    className={PANEL_INPUT}
                   />
-                </div>
+                </FormField>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div>
-                  <label htmlFor="state-input" className="mb-1 block font-bold text-slate-700">
-                    State / region
-                  </label>
-                  <input
+                <FormField label="State / region" htmlFor="state-input">
+                  <Input
                     id="state-input"
                     type="text"
                     value={form.state}
                     onChange={(event) => set('state', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-slate-900 focus:outline-none"
+                    className={PANEL_INPUT}
                   />
-                </div>
-                <div>
-                  <label htmlFor="zip-code-input" className="mb-1 block font-bold text-slate-700">
-                    Postal code
-                  </label>
-                  <input
+                </FormField>
+                <FormField label="Postal code" htmlFor="zip-code-input">
+                  <Input
                     id="zip-code-input"
                     type="text"
                     value={form.zipCode}
                     onChange={(event) => set('zipCode', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-slate-900 focus:outline-none"
+                    className={PANEL_INPUT}
                   />
-                </div>
-                <div>
-                  <label htmlFor="hotline-input" className="mb-1 block font-bold text-slate-700">
-                    Dispatch phone
-                  </label>
-                  <input
+                </FormField>
+                <FormField label="Dispatch phone" htmlFor="hotline-input">
+                  <Input
                     id="hotline-input"
                     type="text"
                     value={form.phone}
                     onChange={(event) => set('phone', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-slate-900 focus:outline-none"
+                    className={PANEL_INPUT}
                   />
-                </div>
+                </FormField>
               </div>
 
               <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="hours-input" className="mb-1 block font-bold text-slate-700">
-                    Pickup hours
-                  </label>
-                  <input
+                <FormField label="Pickup hours" htmlFor="hours-input">
+                  <Input
                     id="hours-input"
                     type="text"
                     value={form.operatingHours}
                     onChange={(event) => set('operatingHours', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 focus:border-slate-900 focus:outline-none"
+                    className={PANEL_INPUT}
                   />
-                </div>
-                <div>
-                  <label htmlFor="gate-code" className="mb-1 block font-bold text-slate-700">
-                    Gate / access note
-                  </label>
-                  <input
+                </FormField>
+                <FormField
+                  label="Gate / access note"
+                  htmlFor="gate-code"
+                  hint="Stored as plain text for your own records. The rider workspace has no read policy on this table, so a courier never sees it here."
+                >
+                  <Input
                     id="gate-code"
                     type="text"
                     value={form.gateCode}
                     onChange={(event) => set('gateCode', event.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
+                    className={`${PANEL_INPUT} font-mono`}
                   />
-                  <span className="mt-0.5 block text-[11px] text-slate-400">
-                    Stored as plain text for your own records. The rider workspace has no read
-                    policy on this table, so a courier never sees it here.
-                  </span>
-                </div>
+                </FormField>
               </div>
             </section>
 

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   Download,
   Package,
+  PackageSearch,
   Truck,
   Search,
   Printer,
@@ -113,6 +114,7 @@ export const VendorOrdersPage: React.FC = () => {
     orders,
     advanceOrderStatus,
     kpis,
+    isLoading,
   } = useVendorData();
 
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
@@ -207,6 +209,22 @@ export const VendorOrdersPage: React.FC = () => {
     currentPage * itemsPerPage
   );
 
+  /** Every narrowing control at its neutral value — toolbar and empty state share it. */
+  const filtersActive =
+    ageFilter !== 'all' ||
+    carrierFilter !== 'all' ||
+    paymentFilter !== 'all' ||
+    searchQuery.trim() !== '' ||
+    selectedFilter !== 'all';
+  const clearFilters = () => {
+    setAgeFilter('all');
+    setCarrierFilter('all');
+    setPaymentFilter('all');
+    setSearchQuery('');
+    setSelectedFilter('all');
+    setCurrentPage(1);
+  };
+
   const toggleSelectOne = (id: string) => {
     setSelectedOrderIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
@@ -266,6 +284,7 @@ export const VendorOrdersPage: React.FC = () => {
     {
       key: 'order',
       header: 'ORDER ID & DATE',
+      sortValue: (order) => new Date(order.createdAt).getTime(),
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (order) => (
@@ -286,6 +305,7 @@ export const VendorOrdersPage: React.FC = () => {
     {
       key: 'customer',
       header: 'CUSTOMER & DESTINATION',
+      sortValue: (order) => order.buyerAddress?.fullName || order.buyerEmail || '',
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (order) => (
@@ -302,6 +322,7 @@ export const VendorOrdersPage: React.FC = () => {
     {
       key: 'items',
       header: 'ITEMS',
+      sortValue: (order) => order.items.length,
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (order) => (
@@ -323,6 +344,7 @@ export const VendorOrdersPage: React.FC = () => {
     {
       key: 'total',
       header: 'TOTAL & PAYMENT',
+      sortValue: (order) => order.subtotal + order.shippingFee,
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (order) => (
@@ -342,6 +364,7 @@ export const VendorOrdersPage: React.FC = () => {
     {
       key: 'status',
       header: 'FULFILLMENT STATUS',
+      sortValue: (order) => order.status,
       headerClassName: 'py-3.5 text-[11px]',
       className: 'py-3.5',
       cell: (order) => (
@@ -683,21 +706,10 @@ export const VendorOrdersPage: React.FC = () => {
               </SelectContent>
             </Select>
 
-            {(ageFilter !== 'all' ||
-              carrierFilter !== 'all' ||
-              paymentFilter !== 'all' ||
-              searchQuery.trim() !== '' ||
-              selectedFilter !== 'all') && (
+            {filtersActive && (
               <button
                 type="button"
-                onClick={() => {
-                  setAgeFilter('all');
-                  setCarrierFilter('all');
-                  setPaymentFilter('all');
-                  setSearchQuery('');
-                  setSelectedFilter('all');
-                  setCurrentPage(1);
-                }}
+                onClick={clearFilters}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition-colors cursor-pointer"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
@@ -759,7 +771,30 @@ export const VendorOrdersPage: React.FC = () => {
             rowClassName={(order) =>
               selectedOrderIds.includes(order.id) ? 'bg-slate-50/80' : ''
             }
-            emptyState={<></>}
+            isLoading={isLoading}
+            emptyState={
+              <div className="space-y-2 px-4 py-10 text-center">
+                <PackageSearch className="mx-auto h-8 w-8 text-slate-300" aria-hidden="true" />
+                <div className="text-sm font-bold text-slate-900">
+                  {filtersActive ? 'No orders match these filters' : 'No orders yet'}
+                </div>
+                <p className="mx-auto max-w-md text-xs text-slate-500">
+                  {filtersActive
+                    ? 'Nothing in this store fits the status, search and filter combination above. Clear the filters to see the full order book again.'
+                    : 'When a buyer checks out with one of your listings, their package lands here for you to confirm, pack and hand to a rider.'}
+                </p>
+                {filtersActive && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            }
           />
 
           {/* Table Footer / Pagination */}
