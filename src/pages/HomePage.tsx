@@ -27,7 +27,7 @@ import {
   BackToTopButton,
   BannerCta,
 } from '../features/home';
-import { useHeroSlides } from '../features/home/api/hero-banners';
+import { useHeroPortrait, useHeroSlides } from '../features/home/api/hero-banners';
 import { TrustStrip } from '../components/common/TrustStrip';
 
 
@@ -163,6 +163,7 @@ export const HomePage: React.FC = () => {
   // Hero Section Carousel state. The slide list can change length when the CMS
   // read lands, so the rendered index is always taken modulo the list.
   const heroSlides = useHeroSlides();
+  const heroPortrait = useHeroPortrait();
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const activeHeroIndex = heroSlides.length > 0 ? heroSlideIndex % heroSlides.length : 0;
 
@@ -366,18 +367,17 @@ export const HomePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Right Card: wireless headphones photo (3 Cols, hidden on mobile).
-                This slot previously used a pre-rendered marketing banner whose
-                pixels carried a product name and a "From $249*" price claim —
-                a claim no catalogue row backs — so it now uses a clean,
-                text-free product photo like the carousel slides. */}
-            <div className="relative overflow-hidden hidden md:block rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3 group lg:aspect-auto aspect-[16/9] min-h-[260px] sm:min-h-[320px]">
+            {/* Right rail: the portrait (9:16) banner — its own CMS placement
+                (homepage_hero_portrait) with a built-in campaign fallback.
+                Stacked under the carousel on mobile at its natural ratio;
+                beside it on desktop, filling the row's height. */}
+            <div className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3 lg:aspect-auto">
               <img
-                src="/images/products/prod_silver_headphones.jpg"
-                alt="Wireless noise-cancelling headphones"
+                src={heroPortrait.image}
+                alt={heroPortrait.alt}
                 className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
               />
-              <Link to="/products?category=audio-wearables" className="absolute inset-0 z-20" title="Wireless Headphones" />
+              <Link to={heroPortrait.link} className="absolute inset-0 z-20" title={heroPortrait.alt} aria-label={heroPortrait.alt} />
             </div>
           </div>
 

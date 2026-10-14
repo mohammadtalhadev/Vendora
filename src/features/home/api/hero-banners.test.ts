@@ -6,8 +6,11 @@ vi.mock('../../../lib/supabase', async () => {
 });
 
 import {
+  FALLBACK_HERO_PORTRAIT,
   FALLBACK_HERO_SLIDES,
+  fetchPublishedHeroPortrait,
   fetchPublishedHeroSlides,
+  heroPortraitFromRows,
   heroSlidesFromRows,
 } from './hero-banners';
 import { contentBlockRow, supabaseDouble } from '../../../test/supabase-double';
@@ -116,16 +119,69 @@ describe('heroSlidesFromRows', () => {
 });
 
 describe('FALLBACK_HERO_SLIDES', () => {
-  it('are the built-in slides the hero shipped with, images and links intact', () => {
+  it("are the owner's current 16:9 campaign banners, images and links intact", () => {
     expect(FALLBACK_HERO_SLIDES.map((slide) => slide.id)).toEqual([
-      'hero-smartphones',
-      'hero-wearables',
-      'hero-tech',
+      'hero-iphone',
+      'hero-airpods',
+      'hero-fashion',
     ]);
     for (const slide of FALLBACK_HERO_SLIDES) {
-      expect(slide.image).toMatch(/^\/images\//);
-      expect(slide.link).toMatch(/^\/products/);
+      expect(slide.image).toMatch(/^\/banners\/hero-[a-z]+\.webp$/);
+      expect(slide.link.startsWith('/')).toBe(true);
       expect(slide.ctaText).toBe('Shop Now');
     }
+  });
+});
+
+describe('hero portrait (9:16 rail)', () => {
+  it('is the built-in Apple Watch campaign until the CMS publishes one', () => {
+    expect(FALLBACK_HERO_PORTRAIT).toEqual({
+      image: '/banners/hero-watch.webp',
+      link: '/brands/apple-official',
+      alt: 'Apple Watch Series 10',
+    });
+  });
+
+  it('maps the first usable portrait row and skips imageless ones', () => {
+    const portrait = heroPortraitFromRows([
+      contentBlockRow({ id: 'p-empty', slug: 'hero-p0', body: { headline: 'No image' } }),
+      contentBlockRow({
+        id: 'p-live',
+        slug: 'hero-p1',
+        body: {
+          headline: 'Apple Watch Series 10',
+          imageUrl: 'https://cdn.example.test/watch.jpg',
+          ctaLink: '/brands/apple-official',
+        },
+      }),
+    ]);
+
+    expect(portrait).toEqual({
+      image: 'https://cdn.example.test/watch.jpg',
+      link: '/brands/apple-official',
+      alt: 'Apple Watch Series 10',
+    });
+    expect(heroPortraitFromRows([])).toBeNull();
+  });
+
+  it('fetches only the published portrait placement', async () => {
+    supabaseDouble.seedContentBlock(contentBlockRow({ id: 's-live', slug: 'hero-slide' }));
+    supabaseDouble.seedContentBlock(contentBlockRow({
+      id: 'p-draft',
+      slug: 'hero-portrait-draft',
+      placement: 'homepage_hero_portrait',
+      published: false,
+      body: { headline: 'Draft', imageUrl: 'https://cdn.example.test/draft.jpg' },
+    }));
+    supabaseDouble.seedContentBlock(contentBlockRow({
+      id: 'p-live',
+      slug: 'hero-portrait-live',
+      placement: 'homepage_hero_portrait',
+      body: { headline: 'Watch', imageUrl: 'https://cdn.example.test/watch.jpg', ctaLink: '/products' },
+    }));
+
+    const portrait = await fetchPublishedHeroPortrait();
+
+    expect(portrait?.image).toBe('https://cdn.example.test/watch.jpg');
   });
 });

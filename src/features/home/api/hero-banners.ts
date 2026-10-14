@@ -23,36 +23,56 @@ export interface HeroSlide {
   ctaText: string;
 }
 
-/** The built-in slides, matching the user-upscaled images the hero shipped with. */
+/** The built-in slides: the owner's current 16:9 campaign banners. */
 export const FALLBACK_HERO_SLIDES: HeroSlide[] = [
   {
-    id: 'hero-smartphones',
-    title: 'Smartphones & Flagship Tech',
-    subtitle: 'Latest phones and wearables from verified sellers, with genuine warranty picks.',
-    image: '/images/products/iphone_15_pro_natural.png',
-    link: '/products?category=electronics',
-    alt: 'Smartphones and flagship tech',
+    id: 'hero-iphone',
+    title: 'iPhone 18 Pro Max',
+    subtitle: 'The next generation is here — A19 Bionic, Holo-Display, Pro Camera.',
+    image: '/banners/hero-iphone.webp',
+    link: '/brands/apple-official',
+    alt: 'iPhone 18 Pro Max',
     ctaText: 'Shop Now',
   },
   {
-    id: 'hero-wearables',
-    title: 'Smartwatches & Wearables',
-    subtitle: 'Fitness, health and notifications — on your wrist.',
-    image: '/images/products/prod_smart_watch.jpg',
-    link: '/products?category=electronics',
-    alt: 'Smartwatches and wearables',
+    id: 'hero-airpods',
+    title: 'AirPods Pro 2',
+    subtitle: 'Pure sound, zero distractions — Adaptive Audio and Active Noise Cancellation.',
+    image: '/banners/hero-airpods.webp',
+    link: '/products?category=audio-wearables',
+    alt: 'AirPods Pro 2',
     ctaText: 'Shop Now',
   },
   {
-    id: 'hero-tech',
-    title: 'Phones, Cameras & More Tech',
-    subtitle: 'Compare top brands side by side and shop the real catalogue.',
-    image: '/images/bevesi/art_elec_phones.png',
-    link: '/products?category=electronics',
-    alt: 'Phones, cameras and more tech',
+    id: 'hero-fashion',
+    title: 'Upgrade Your Style Today',
+    subtitle: 'Premium fashion from top brands — trendy looks, better prices.',
+    image: '/banners/hero-fashion.webp',
+    link: '/products?category=fashion',
+    alt: 'Fashion — upgrade your style',
     ctaText: 'Shop Now',
   },
 ];
+
+/**
+ * The hero's portrait rail: one tall (9:16) banner beside the carousel,
+ * fed by its own CMS placement (`homepage_hero_portrait`) so the console's
+ * landscape slides and the portrait slot never fight over one list.
+ */
+export interface HeroPortrait {
+  image: string;
+  link: string;
+  alt: string;
+}
+
+/** The built-in portrait banner: the owner's 9:16 Apple Watch campaign. */
+export const FALLBACK_HERO_PORTRAIT: HeroPortrait = {
+  image: '/banners/hero-watch.webp',
+  link: '/brands/apple-official',
+  alt: 'Apple Watch Series 10',
+};
+
+const PORTRAIT_PLACEMENT = 'homepage_hero_portrait';
 
 const PLACEMENT = 'homepage_hero';
 
@@ -131,4 +151,49 @@ export function useHeroSlides(): HeroSlide[] {
     staleTime: 1000 * 60 * 5,
   });
   return data && data.length > 0 ? data : FALLBACK_HERO_SLIDES;
+}
+
+/** Maps portrait-placement rows onto the rail's shape; the first usable row wins. */
+export function heroPortraitFromRows(rows: Array<Record<string, unknown>>): HeroPortrait | null {
+  for (const row of rows) {
+    const bodies = Array.isArray(row.body) ? row.body.map(asRecord) : [asRecord(row.body)];
+    for (const body of bodies) {
+      const image = text(body.imageUrl);
+      if (!image) continue;
+      return {
+        image,
+        link: text(body.ctaLink) || '/products',
+        alt: text(body.headline) || text(row.title) || 'Featured banner',
+      };
+    }
+  }
+  return null;
+}
+
+/** The published portrait banner, when the CMS has one. */
+export async function fetchPublishedHeroPortrait(
+  signal?: AbortSignal,
+): Promise<HeroPortrait | null> {
+  let query = supabase
+    .from('content_blocks')
+    .select(BANNER_SELECT)
+    .eq('placement', PORTRAIT_PLACEMENT)
+    .eq('published', true)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
+  if (signal) query = query.abortSignal(signal);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to load the hero portrait banner: ${error.message}`);
+  return heroPortraitFromRows((data ?? []) as unknown as Array<Record<string, unknown>>);
+}
+
+/** The portrait the rail renders: the CMS banner when published, the built-in otherwise. */
+export function useHeroPortrait(): HeroPortrait {
+  const { data } = useQuery({
+    queryKey: ['home', 'hero-portrait'] as const,
+    queryFn: ({ signal }) => fetchPublishedHeroPortrait(signal),
+    staleTime: 1000 * 60 * 5,
+  });
+  return data ?? FALLBACK_HERO_PORTRAIT;
 }
