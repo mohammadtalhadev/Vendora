@@ -291,7 +291,14 @@ export type Database = {
         "picked_up_at": string | null,
         "delivered_at": string | null,
         "created_at": string,
-        "updated_at": string
+        "updated_at": string,
+        "code_attempts": number,
+        "code_locked_until": string | null,
+        "proof_photo_url": string | null,
+        "cod_collected_amount": number | null,
+        "cod_collected_at": string | null,
+        "cod_handed_over_at": string | null,
+        "cod_handed_over_by": string | null
       }
       Insert: {
         "id"?: string,
@@ -306,7 +313,14 @@ export type Database = {
         "picked_up_at"?: string | null,
         "delivered_at"?: string | null,
         "created_at"?: string,
-        "updated_at"?: string
+        "updated_at"?: string,
+        "code_attempts"?: number,
+        "code_locked_until"?: string | null,
+        "proof_photo_url"?: string | null,
+        "cod_collected_amount"?: number | null,
+        "cod_collected_at"?: string | null,
+        "cod_handed_over_at"?: string | null,
+        "cod_handed_over_by"?: string | null
       }
       Update: {
         "id"?: string,
@@ -321,7 +335,14 @@ export type Database = {
         "picked_up_at"?: string | null,
         "delivered_at"?: string | null,
         "created_at"?: string,
-        "updated_at"?: string
+        "updated_at"?: string,
+        "code_attempts"?: number,
+        "code_locked_until"?: string | null,
+        "proof_photo_url"?: string | null,
+        "cod_collected_amount"?: number | null,
+        "cod_collected_at"?: string | null,
+        "cod_handed_over_at"?: string | null,
+        "cod_handed_over_by"?: string | null
       }
       Relationships: [
         {
@@ -486,6 +507,44 @@ export type Database = {
           columns: ["vendor_id"]
           isOneToOne: false
           referencedRelation: "vendor_profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "error_logs": {
+      Row: {
+        "id": string,
+        "user_id": string | null,
+        "message": string,
+        "stack": string | null,
+        "route": string | null,
+        "user_agent": string | null,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "user_id"?: string | null,
+        "message"?: string,
+        "stack"?: string | null,
+        "route"?: string | null,
+        "user_agent"?: string | null,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "user_id"?: string | null,
+        "message"?: string,
+        "stack"?: string | null,
+        "route"?: string | null,
+        "user_agent"?: string | null,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "error_logs_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: false
+          referencedRelation: "users"
           referencedColumns: ["id"]
         }
       ]
@@ -820,6 +879,54 @@ export type Database = {
         }
       ]
     },
+    "notification_outbox": {
+      Row: {
+        "id": string,
+        "channel": string,
+        "recipient": string,
+        "subject": string | null,
+        "body": string,
+        "kind": string,
+        "ref_id": string | null,
+        "status": string,
+        "provider": string | null,
+        "provider_ref": string | null,
+        "error": string | null,
+        "created_at": string,
+        "sent_at": string | null
+      }
+      Insert: {
+        "id"?: string,
+        "channel": string,
+        "recipient": string,
+        "subject"?: string | null,
+        "body": string,
+        "kind": string,
+        "ref_id"?: string | null,
+        "status"?: string,
+        "provider"?: string | null,
+        "provider_ref"?: string | null,
+        "error"?: string | null,
+        "created_at"?: string,
+        "sent_at"?: string | null
+      }
+      Update: {
+        "id"?: string,
+        "channel"?: string,
+        "recipient"?: string,
+        "subject"?: string | null,
+        "body"?: string,
+        "kind"?: string,
+        "ref_id"?: string | null,
+        "status"?: string,
+        "provider"?: string | null,
+        "provider_ref"?: string | null,
+        "error"?: string | null,
+        "created_at"?: string,
+        "sent_at"?: string | null
+      }
+      Relationships: []
+    },
     "notifications": {
       Row: {
         "id": string,
@@ -864,6 +971,64 @@ export type Database = {
         }
       ]
     },
+    "order_items": {
+      Row: {
+        "id": string,
+        "order_id": string,
+        "sub_order_id": string,
+        "product_id": string | null,
+        "variant_sku": string | null,
+        "product_name": string,
+        "quantity": number,
+        "unit_price": number,
+        "line_total": number
+      }
+      Insert: {
+        "id"?: string,
+        "order_id": string,
+        "sub_order_id": string,
+        "product_id"?: string | null,
+        "variant_sku"?: string | null,
+        "product_name"?: string,
+        "quantity"?: number,
+        "unit_price"?: number,
+        "line_total"?: number
+      }
+      Update: {
+        "id"?: string,
+        "order_id"?: string,
+        "sub_order_id"?: string,
+        "product_id"?: string | null,
+        "variant_sku"?: string | null,
+        "product_name"?: string,
+        "quantity"?: number,
+        "unit_price"?: number,
+        "line_total"?: number
+      }
+      Relationships: [
+        {
+          foreignKeyName: "order_items_order_id_fkey"
+          columns: ["order_id"]
+          isOneToOne: false
+          referencedRelation: "orders"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "order_items_product_id_fkey"
+          columns: ["product_id"]
+          isOneToOne: false
+          referencedRelation: "products"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "order_items_sub_order_id_fkey"
+          columns: ["sub_order_id"]
+          isOneToOne: false
+          referencedRelation: "sub_orders"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
     "orders": {
       Row: {
         "id": string,
@@ -874,7 +1039,10 @@ export type Database = {
         "payment_details": Json,
         "payment_status": "pending" | "succeeded" | "failed" | "refunded",
         "created_at": string,
-        "gift_card_amount": number
+        "gift_card_amount": number,
+        "discount_total": number,
+        "coupon_code": string | null,
+        "idempotency_key": string | null
       }
       Insert: {
         "id"?: string,
@@ -885,7 +1053,10 @@ export type Database = {
         "payment_details"?: Json,
         "payment_status"?: "pending" | "succeeded" | "failed" | "refunded",
         "created_at"?: string,
-        "gift_card_amount"?: number
+        "gift_card_amount"?: number,
+        "discount_total"?: number,
+        "coupon_code"?: string | null,
+        "idempotency_key"?: string | null
       }
       Update: {
         "id"?: string,
@@ -896,7 +1067,10 @@ export type Database = {
         "payment_details"?: Json,
         "payment_status"?: "pending" | "succeeded" | "failed" | "refunded",
         "created_at"?: string,
-        "gift_card_amount"?: number
+        "gift_card_amount"?: number,
+        "discount_total"?: number,
+        "coupon_code"?: string | null,
+        "idempotency_key"?: string | null
       }
       Relationships: [
         {
@@ -1062,6 +1236,47 @@ export type Database = {
           columns: ["vendor_id"]
           isOneToOne: false
           referencedRelation: "vendor_profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "product_variants": {
+      Row: {
+        "id": string,
+        "product_id": string,
+        "sku": string | null,
+        "name": string | null,
+        "attributes": Json,
+        "price": number | null,
+        "stock": number | null,
+        "position": number
+      }
+      Insert: {
+        "id"?: string,
+        "product_id": string,
+        "sku"?: string | null,
+        "name"?: string | null,
+        "attributes"?: Json,
+        "price"?: number | null,
+        "stock"?: number | null,
+        "position"?: number
+      }
+      Update: {
+        "id"?: string,
+        "product_id"?: string,
+        "sku"?: string | null,
+        "name"?: string | null,
+        "attributes"?: Json,
+        "price"?: number | null,
+        "stock"?: number | null,
+        "position"?: number
+      }
+      Relationships: [
+        {
+          foreignKeyName: "product_variants_product_id_fkey"
+          columns: ["product_id"]
+          isOneToOne: false
+          referencedRelation: "products"
           referencedColumns: ["id"]
         }
       ]
@@ -1472,6 +1687,48 @@ export type Database = {
         }
       ]
     },
+    "rider_locations": {
+      Row: {
+        "delivery_id": string,
+        "rider_id": string,
+        "lat": number,
+        "lng": number,
+        "accuracy_m": number | null,
+        "updated_at": string
+      }
+      Insert: {
+        "delivery_id": string,
+        "rider_id": string,
+        "lat": number,
+        "lng": number,
+        "accuracy_m"?: number | null,
+        "updated_at"?: string
+      }
+      Update: {
+        "delivery_id"?: string,
+        "rider_id"?: string,
+        "lat"?: number,
+        "lng"?: number,
+        "accuracy_m"?: number | null,
+        "updated_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "rider_locations_delivery_id_fkey"
+          columns: ["delivery_id"]
+          isOneToOne: true
+          referencedRelation: "deliveries"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "rider_locations_rider_id_fkey"
+          columns: ["rider_id"]
+          isOneToOne: false
+          referencedRelation: "rider_profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
     "rider_profiles": {
       Row: {
         "id": string,
@@ -1621,6 +1878,124 @@ export type Database = {
           columns: ["seller_id"]
           isOneToOne: false
           referencedRelation: "vendor_profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "support_ticket_messages": {
+      Row: {
+        "id": string,
+        "ticket_id": string,
+        "author_id": string | null,
+        "author_role": string,
+        "body": string,
+        "internal_note": boolean,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "ticket_id": string,
+        "author_id"?: string | null,
+        "author_role"?: string,
+        "body": string,
+        "internal_note"?: boolean,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "ticket_id"?: string,
+        "author_id"?: string | null,
+        "author_role"?: string,
+        "body"?: string,
+        "internal_note"?: boolean,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "support_ticket_messages_author_id_fkey"
+          columns: ["author_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+          columns: ["ticket_id"]
+          isOneToOne: false
+          referencedRelation: "support_tickets"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "support_tickets": {
+      Row: {
+        "id": string,
+        "ticket_no": number,
+        "customer_id": string,
+        "customer_email": string,
+        "customer_name": string,
+        "subject": string,
+        "category": string,
+        "priority": string,
+        "status": string,
+        "assigned_agent_id": string | null,
+        "order_id": string | null,
+        "created_at": string,
+        "updated_at": string,
+        "resolved_at": string | null
+      }
+      Insert: {
+        "id"?: string,
+        "ticket_no"?: number,
+        "customer_id": string,
+        "customer_email"?: string,
+        "customer_name"?: string,
+        "subject": string,
+        "category"?: string,
+        "priority"?: string,
+        "status"?: string,
+        "assigned_agent_id"?: string | null,
+        "order_id"?: string | null,
+        "created_at"?: string,
+        "updated_at"?: string,
+        "resolved_at"?: string | null
+      }
+      Update: {
+        "id"?: string,
+        "ticket_no"?: number,
+        "customer_id"?: string,
+        "customer_email"?: string,
+        "customer_name"?: string,
+        "subject"?: string,
+        "category"?: string,
+        "priority"?: string,
+        "status"?: string,
+        "assigned_agent_id"?: string | null,
+        "order_id"?: string | null,
+        "created_at"?: string,
+        "updated_at"?: string,
+        "resolved_at"?: string | null
+      }
+      Relationships: [
+        {
+          foreignKeyName: "support_tickets_assigned_agent_id_fkey"
+          columns: ["assigned_agent_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "support_tickets_customer_id_fkey"
+          columns: ["customer_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "support_tickets_order_id_fkey"
+          columns: ["order_id"]
+          isOneToOne: false
+          referencedRelation: "orders"
           referencedColumns: ["id"]
         }
       ]
@@ -2402,6 +2777,13 @@ export type Database = {
       }
       Returns: Json
     },
+    "assign_support_ticket": {
+      Args: {
+        "p_ticket_id": string,
+        "p_agent_id": string
+      }
+      Returns: Json
+    },
     "award_loyalty": {
       Args: {
         "p_user": string,
@@ -2411,6 +2793,14 @@ export type Database = {
       }
       Returns: boolean
     },
+    "broadcast_email": {
+      Args: {
+        "p_role_target": string,
+        "p_title": string,
+        "p_message": string
+      }
+      Returns: number
+    },
     "broadcast_notification": {
       Args: {
         "p_role_target": string,
@@ -2418,14 +2808,6 @@ export type Database = {
         "p_title": string,
         "p_message": string,
         "p_href"?: string | null
-      }
-      Returns: number
-    },
-    "broadcast_email": {
-      Args: {
-        "p_role_target": string,
-        "p_title": string,
-        "p_message": string
       }
       Returns: number
     },
@@ -2469,6 +2851,22 @@ export type Database = {
       }
       Returns: Json
     },
+    "confirm_cod_handover": {
+      Args: {
+        "p_delivery_id": string
+      }
+      Returns: Json
+    },
+    "create_support_ticket": {
+      Args: {
+        "p_subject": string,
+        "p_category": string,
+        "p_body": string,
+        "p_priority"?: string,
+        "p_order_id"?: string | null
+      }
+      Returns: Json
+    },
     "current_vendor_id": {
       Args: {}
       Returns: string
@@ -2487,6 +2885,17 @@ export type Database = {
         "p_product_id": string
       }
       Returns: Json
+    },
+    "enqueue_notification": {
+      Args: {
+        "p_channel": string,
+        "p_recipient": string,
+        "p_subject": string,
+        "p_body": string,
+        "p_kind": string,
+        "p_ref"?: string | null
+      }
+      Returns: string
     },
     "escalate_to_support": {
       Args: {
@@ -2509,6 +2918,12 @@ export type Database = {
     },
     "get_my_rewards": {
       Args: {}
+      Returns: Json
+    },
+    "get_order_delivery_live": {
+      Args: {
+        "p_order_id": string
+      }
       Returns: Json
     },
     "gift_card_apply_core": {
@@ -2566,6 +2981,13 @@ export type Database = {
       }
       Returns: boolean
     },
+    "mark_cod_collected": {
+      Args: {
+        "p_delivery_id": string,
+        "p_amount": number
+      }
+      Returns: Json
+    },
     "moderate_product": {
       Args: {
         "p_product_id": string,
@@ -2573,6 +2995,10 @@ export type Database = {
         "p_reason"?: string | null
       }
       Returns: boolean
+    },
+    "my_support_tickets": {
+      Args: {}
+      Returns: Json
     },
     "notify_user": {
       Args: {
@@ -2605,9 +3031,17 @@ export type Database = {
         "p_customer_notes"?: string | null,
         "p_delivery_options"?: Json | null,
         "p_card_brand"?: string | null,
-        "p_card_last4"?: string | null
+        "p_card_last4"?: string | null,
+        "p_idempotency_key"?: string | null,
+        "p_gift_card_code"?: string | null
       }
       Returns: Json
+    },
+    "profile_phone": {
+      Args: {
+        "p_user_id": string
+      }
+      Returns: string
     },
     "purchase_gift_card": {
       Args: {
@@ -2629,6 +3063,14 @@ export type Database = {
     "redeem_loyalty_points": {
       Args: {
         "p_points": number
+      }
+      Returns: Json
+    },
+    "reply_support_ticket": {
+      Args: {
+        "p_ticket_id": string,
+        "p_body": string,
+        "p_internal_note"?: boolean
       }
       Returns: Json
     },
@@ -2669,6 +3111,10 @@ export type Database = {
       }
       Returns: boolean
     },
+    "rider_cod_summary": {
+      Args: {}
+      Returns: Json
+    },
     "rider_delivery_board": {
       Args: {}
       Returns: Json
@@ -2691,6 +3137,20 @@ export type Database = {
         "p_bank_account_id": string
       }
       Returns: boolean
+    },
+    "set_delivery_proof_photo": {
+      Args: {
+        "p_delivery_id": string,
+        "p_photo_url": string
+      }
+      Returns: Json
+    },
+    "set_support_ticket_status": {
+      Args: {
+        "p_ticket_id": string,
+        "p_status": string
+      }
+      Returns: Json
     },
     "set_vendor_product_listing": {
       Args: {
@@ -2734,6 +3194,31 @@ export type Database = {
     },
     "support_staff_directory": {
       Args: {}
+      Returns: Json
+    },
+    "support_ticket_label": {
+      Args: {
+        "p_ticket_no": number
+      }
+      Returns: string
+    },
+    "support_ticket_queue": {
+      Args: {
+        "p_status"?: string,
+        "p_mine"?: boolean,
+        "p_search"?: string,
+        "p_page"?: number,
+        "p_page_size"?: number
+      }
+      Returns: Json
+    },
+    "update_rider_location": {
+      Args: {
+        "p_delivery_id": string,
+        "p_lat": number,
+        "p_lng": number,
+        "p_accuracy"?: number | null
+      }
       Returns: Json
     },
     "update_sub_order_tracking": {

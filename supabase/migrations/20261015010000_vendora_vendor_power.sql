@@ -43,7 +43,7 @@ begin
   -- available balance and both inserted a payout. Locking the vendor's own
   -- vendor_profiles row makes later requests wait for this transaction to
   -- commit, so their balance check accounts for this payout.
-  select 1 from public.vendor_profiles where id = v_vendor for update;
+  perform 1 from public.vendor_profiles where id = v_vendor for update;
   if p_method not in ('instant','standard') then
     raise exception 'Payout method must be instant or standard';
   end if;

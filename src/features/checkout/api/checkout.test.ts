@@ -201,6 +201,8 @@ describe('placeOrder', () => {
         p_delivery_options: { [STORE]: 'express' },
         p_card_brand: 'Visa',
         p_card_last4: '0000',
+        p_idempotency_key: expect.any(String),
+        p_gift_card_code: undefined,
       },
     });
   });

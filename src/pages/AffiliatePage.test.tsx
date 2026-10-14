@@ -6,20 +6,30 @@ import { AffiliatePage } from './AffiliatePage';
 /**
  * The affiliate page used to present a fictional program: invented payout
  * totals, a fake earnings dashboard, invented commission rates and a
- * toast-only application form (Batch 5, Pro-0). No affiliate backend
- * exists in the schema, so the page is now an honest "not launched"
- * notice. These tests pin that: no stats, no rates, no form, no promise.
+ * toast-only application form (Batch 5, Pro-0). Batch 39 built the real
+ * referral backend (referral codes, loyalty points, coupon conversion),
+ * so the page now presents that live program — and only its real rules.
+ * These tests pin the launched behaviour and that none of the fabricated
+ * content came back with it.
  */
 describe('AffiliatePage', () => {
-  it('says plainly that the program has not launched', () => {
+  it('presents the live referral program and its real points rules', () => {
     render(
       <MemoryRouter>
         <AffiliatePage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: /hasn.t launched yet/i })).toBeInTheDocument();
-    expect(screen.getByText(/applications are not open/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /share vendora, earn loyalty points/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/referral program is live/i)).toBeInTheDocument();
+    expect(screen.getByText(/250 loyalty points/i)).toBeInTheDocument();
+    expect(screen.getByText(/100 points convert into a Rs 100 coupon/i)).toBeInTheDocument();
+    // Guests are pointed at sign-in to get their own referral link.
+    expect(
+      screen.getByRole('link', { name: /sign in to get your referral link/i }),
+    ).toBeInTheDocument();
   });
 
   it('carries none of the fabricated program content', () => {

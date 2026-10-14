@@ -199,7 +199,9 @@ await as('authenticated', RIDER);
 await q(`select advance_sub_order_status($1,'shipped')`, [phys.id]);
 await q(`select advance_sub_order_status($1,'out_for_delivery')`, [phys.id]);
 ok('rider walked ready_for_pickup -> shipped -> out_for_delivery', (await q(`select status from sub_orders where id=$1`, [phys.id]))[0].status === 'out_for_delivery');
-await expectThrow('wrong handover code rejected', () => q(`select verify_delivery($1,'0000')`, [delivery]), 'invalid handover code');
+const wrongCode = (await q(`select verify_delivery($1,'0000') as r`, [delivery]))[0].r;
+ok('wrong handover code rejected', wrongCode.status === 'invalid_code' &&
+  Number((await q(`select code_attempts from deliveries where id=$1`, [delivery]))[0].code_attempts) === 1);
 await q(`select verify_delivery($1,$2)`, [delivery, phys.deliveryCode]);
 ok('verify_delivery with correct code delivered sub-order', (await q(`select status from sub_orders where id=$1`, [phys.id]))[0].status === 'delivered');
 await expectThrow('delivered cannot re-deliver', () => q(`select advance_sub_order_status($1,'delivered')`, [phys.id]), 'already in this status');
@@ -373,7 +375,8 @@ await as('authenticated', RIDER);
 for (const next of ['shipped', 'out_for_delivery']) {
   await q(`select advance_sub_order_status($1,$2)`, [bPhys.id, next]);
 }
-await expectThrow('the code shown at checkout is spent once re-issued', () => q(`select verify_delivery($1,$2)`, [bDelivery, bPhys.deliveryCode]), 'invalid handover code');
+const spentCode = (await q(`select verify_delivery($1,$2) as r`, [bDelivery, bPhys.deliveryCode]))[0].r;
+ok('the code shown at checkout is spent once re-issued', spentCode.status === 'invalid_code');
 await q(`select verify_delivery($1,$2)`, [bDelivery, reissued.code]);
 ok('the re-issued code completes the delivery', (await q(`select status from sub_orders where id=$1`, [bPhys.id]))[0].status === 'delivered');
 await as('authenticated', CU2);
@@ -1042,8 +1045,9 @@ await expectThrow('but cannot close the package without the buyer’s code',
   () => q(`select advance_sub_order_status($1,'delivered')`, [riderPkg]), 'not authorized');
 await expectThrow('and cannot mark their own delivery row delivered',
   () => q(`update deliveries set status='delivered' where id=$1`, [drop]), 'row-level security');
-await expectThrow('a wrong code does not deliver the parcel',
-  () => q(`select verify_delivery($1,'1111')`, [drop]), 'invalid handover code');
+const wrongDrop = (await q(`select verify_delivery($1,'1111') as r`, [drop]))[0].r;
+ok('a wrong code does not deliver the parcel', wrongDrop.status === 'invalid_code' &&
+  (await q(`select status from sub_orders where id=$1`, [riderPkg]))[0].status !== 'delivered');
 const closed = (await q(`select verify_delivery($1,'4821') r`, [drop]))[0].r;
 ok('the handover code closes the delivery', closed.status === 'delivered' &&
   (await q(`select status from sub_orders where id=$1`, [riderPkg]))[0].status === 'delivered' &&
