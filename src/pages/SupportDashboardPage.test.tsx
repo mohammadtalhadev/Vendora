@@ -14,6 +14,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { SupportDashboardPage } from './SupportDashboardPage';
 import { renderWorkspace } from '../test/vendor-render';
 import { useAuthStore } from '../store/auth-store';
+import { formatPrice } from '../store/currency-store';
 import { DEMO_ACCOUNTS } from '../lib/demo-accounts';
 import {
   cannedRow,
@@ -53,8 +54,8 @@ describe('SupportDashboardPage', () => {
 
     await waitFor(() => expect(screen.getByTestId(`dispute-item-${CASE}`)).toBeInTheDocument());
     expect(screen.getByTestId('dispute-context-bar')).toBeInTheDocument();
-    expect(screen.getByTestId('dispute-remaining')).toHaveTextContent('$65.00');
-    expect(within(screen.getByTestId('dispute-money')).getByText('$25.00')).toBeInTheDocument();
+    expect(screen.getByTestId('dispute-remaining')).toHaveTextContent(formatPrice(65));
+    expect(within(screen.getByTestId('dispute-money')).getByText(formatPrice(25))).toBeInTheDocument();
   });
 
   it('shows nothing invented where the desk has no data', async () => {
@@ -166,7 +167,7 @@ describe('SupportDashboardPage', () => {
 
     await waitFor(() => expect(supabaseDouble.tables.refunds).toHaveLength(1));
     expect(supabaseDouble.tables.refunds[0]).toMatchObject({ sub_order_id: PACKAGE, amount: 90, reason: 'Buyer kept the wrong item.' });
-    await waitFor(() => expect(screen.getByTestId('dispute-remaining')).toHaveTextContent('$0.00'));
+    await waitFor(() => expect(screen.getByTestId('dispute-remaining')).toHaveTextContent(formatPrice(0)));
   });
 
   it('refuses a partial refund larger than the remaining gross before it leaves the browser', async () => {

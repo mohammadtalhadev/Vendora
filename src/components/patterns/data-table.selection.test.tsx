@@ -23,6 +23,25 @@ describe('DataTable selection (Batch 40)', () => {
     expect(screen.getAllByRole('row')).toHaveLength(3);
   });
 
+  it('excludes non-selectable rows from select-all and disables their checkbox', () => {
+    const onSelectionChange = vi.fn();
+    render(
+      <DataTable
+        columns={columns}
+        rows={rows}
+        getRowKey={(r) => r.id}
+        selectedIds={[]}
+        onSelectionChange={onSelectionChange}
+        isRowSelectable={(r) => r.id !== 'r1'}
+      />,
+    );
+    const boxes = screen.getAllByRole('checkbox');
+    expect(boxes[1]).toBeDisabled();
+    expect(boxes[2]).not.toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all rows on this page' }));
+    expect(onSelectionChange).toHaveBeenCalledWith(['r2']);
+  });
+
   it('toggles a single row through onSelectionChange', () => {
     const onSelectionChange = vi.fn();
     render(

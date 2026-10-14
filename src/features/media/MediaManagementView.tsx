@@ -81,11 +81,11 @@ const TILE_HEAD =
   'flex items-center justify-between text-xs font-bold text-slate-500';
 const TILE_ICON = 'flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700';
 const GHOST_BUTTON =
-  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-45';
+  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400';
 const PRIMARY_BUTTON =
   'inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
 const DANGER_BUTTON =
-  'inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:opacity-45';
+  'inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:border-rose-100 disabled:bg-slate-50 disabled:text-rose-300';
 const FIELD =
   'w-full rounded-lg border border-slate-200 p-2 text-xs focus:outline-none focus:border-slate-900';
 
@@ -429,8 +429,8 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
           </h1>
           <p className="mt-0.5 text-xs text-slate-500 max-w-2xl">
             {mode === 'admin'
-              ? 'Every store’s asset library as the data layer serves it: one row per stored object, with the owning store and the moderation verdict recorded against it.'
-              : 'Direct media repository for your store. Every row below is a file in your bucket plus the record the platform kept for it.'}
+              ? 'All stores’ media files and their moderation status.'
+              : 'Your store’s media files.'}
           </p>
         </div>
 
@@ -443,26 +443,6 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
           </div>
         )}
       </div>
-
-      {/* ── What this console can read ──────────────────────────────── */}
-      {mode === 'admin' && (
-        <section className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-xs">
-          <div className="flex items-center gap-2 font-bold text-slate-800">
-            <ShieldAlert className="h-4 w-4 text-slate-500" />
-            Scope of this listing
-          </div>
-          <p className="text-slate-600">
-            The rows below are every store&apos;s library: the select policy on{' '}
-            <code className="font-mono">media_items</code> admits platform staff alongside each owner, so
-            this listing reads across stores and names the store that owns each row. The one write staff
-            hold over another store&apos;s assets is the moderation verdict (
-            <code className="font-mono">media_moderate_admin</code>), which is why the inspector offers
-            Approve, Flag and back-to-pending — and nothing else. Row deletion stays owner-only in the
-            table policy, so there is deliberately no delete control here: removing the storage object
-            while its row survives would strand the record.
-          </p>
-        </section>
-      )}
 
       {/* ── Real outcome banners ────────────────────────────────────── */}
       {banner && (
@@ -854,7 +834,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             </div>
           ) : library.isPending ? (
             <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-xs font-semibold text-slate-500">
-              {isAdmin ? 'Loading the platform library from Postgres…' : 'Loading your library from Postgres…'}
+              {isAdmin ? 'Loading the platform library…' : 'Loading your library…'}
             </div>
           ) : library.isError ? (
             <div
@@ -1373,46 +1353,6 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             </div>
           )}
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-2">
-            <h2 className="text-sm font-bold text-slate-900">What this library is</h2>
-            <ul className="space-y-1.5 text-xs text-slate-500">
-              <li>
-                — Folders are labels on <code className="font-mono">media_items.folder</code>. There is no
-                folder table, so an empty folder cannot exist and no “create folder” form can be honest here;
-                naming a folder while uploading or moving is what creates it.
-              </li>
-              <li>
-                — A new upload is recorded as <code className="font-mono">pending</code>. The moderation
-                verdict is written by platform staff; the owner policy on this table refuses a seller write of
-                it, so nothing here approves itself.
-              </li>
-              <li>
-                {isAdmin ? (
-                  <>
-                    — Staff cannot delete another store&apos;s rows: the delete policy on this table is
-                    owner-only, so this console offers the moderation verdict and leaves removal to the
-                    owning store.
-                  </>
-                ) : (
-                  <>
-                    — Delete removes the row and the object in{' '}
-                    <code className="font-mono">vendor-assets</code>. There is no trash column and no
-                    archive table, so there is no trash bin to show and a delete cannot be undone.
-                  </>
-                )}
-              </li>
-              <li>
-                — A move is a real storage move plus a recorded path. Demo rows whose URL points outside the
-                bucket have no object to move, and the server says so when you try.
-              </li>
-              <li>
-                — Sizes come from the stored <code className="font-mono">size_bytes</code>; dimensions only
-                appear when a row recorded <code className="font-mono">width</code> and{' '}
-                <code className="font-mono">height</code>. There is no CDN, quota, bandwidth or cache endpoint
-                behind this screen, so those figures were removed rather than estimated.
-              </li>
-            </ul>
-          </section>
         </div>
       </div>
 

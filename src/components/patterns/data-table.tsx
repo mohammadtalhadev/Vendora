@@ -93,6 +93,13 @@ export interface DataTableProps<T> {
   /** Accessible name for a row's checkbox. Defaults to `Select row`. */
   selectionLabel?: (row: T) => string;
   /**
+   * Optional per-row selectability. Rows it returns false for render a
+   * disabled checkbox and are excluded from the header select-all toggle —
+   * for rows an action must never target (e.g. the signed-in admin's own
+   * account row in a bulk suspend list).
+   */
+  isRowSelectable?: (row: T) => boolean;
+  /**
    * When provided, the shared TablePagination footer renders below the table.
    * DataTable is presentational about paging: it forwards the flat
    * page/pageSize/total props through an adapter to TablePagination, which
@@ -134,6 +141,7 @@ export function DataTable<T>({
   onSelectionChange,
   getRowId,
   selectionLabel,
+  isRowSelectable,
   pagination,
   caption,
   ariaLabel,
@@ -182,18 +190,27 @@ export function DataTable<T>({
 
   // Only computed when selection is on: with it off, DataTable must not call
   // getRowKey any more often than it did before selection existed.
-  const renderedIds = React.useMemo(
-    () => (selectionEnabled ? sortedRows.map(rowIdOf) : []),
-    [selectionEnabled, sortedRows, rowIdOf],
+  // Select-all only ever covers rows that may be selected; a non-selectable
+  // row (isRowSelectable false) is never swept into a bulk action.
+  const selectableRenderedIds = React.useMemo(
+    () =>
+      selectionEnabled
+        ? sortedRows
+            .filter((row) => !isRowSelectable || isRowSelectable(row))
+            .map(rowIdOf)
+        : [],
+    [selectionEnabled, sortedRows, rowIdOf, isRowSelectable],
   );
   const allRenderedSelected =
-    renderedIds.length > 0 && renderedIds.every((id) => selectedSet.has(id));
+    selectableRenderedIds.length > 0 &&
+    selectableRenderedIds.every((id) => selectedSet.has(id));
   const someRenderedSelected =
-    !allRenderedSelected && renderedIds.some((id) => selectedSet.has(id));
+    !allRenderedSelected && selectableRenderedIds.some((id) => selectedSet.has(id));
   const columnCount = columns.length + (selectionEnabled ? 1 : 0);
 
   const toggleRowSelection = (row: T) => {
     if (!onSelectionChange) return;
+    if (isRowSelectable && !isRowSelectable(row)) return;
     const id = rowIdOf(row);
     onSelectionChange(
       selectedSet.has(id)
@@ -206,8 +223,8 @@ export function DataTable<T>({
     if (!onSelectionChange) return;
     onSelectionChange(
       allRenderedSelected
-        ? (selectedIds ?? []).filter((selected) => !renderedIds.includes(selected))
-        : Array.from(new Set([...(selectedIds ?? []), ...renderedIds])),
+        ? (selectedIds ?? []).filter((selected) => !selectableRenderedIds.includes(selected))
+        : Array.from(new Set([...(selectedIds ?? []), ...selectableRenderedIds])),
     );
   };
   const paginationModel = React.useMemo<UsePaginationResult<T> | null>(() => {
@@ -356,9 +373,10 @@ export function DataTable<T>({
                           type="checkbox"
                           aria-label={selectionLabel ? selectionLabel(row) : 'Select row'}
                           checked={selectedSet.has(rowIdOf(row))}
+                          disabled={isRowSelectable ? !isRowSelectable(row) : undefined}
                           onChange={() => toggleRowSelection(row)}
                           onClick={(event) => event.stopPropagation()}
-                          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
                         />
                       </td>
                     )}

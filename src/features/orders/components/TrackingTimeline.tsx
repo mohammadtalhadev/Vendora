@@ -119,9 +119,8 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
   const isDigital = subOrder.type === 'digital';
   const currentStatus = subOrder.status;
 
-  // Handle Copy Digital License Key. Since Batch 56 a digital package can
-  // legitimately have no key yet (a COD order whose payment has not
-  // settled), and there is no fallback key to show or copy in that state.
+  // Handle Copy Digital License Key — only the key the order actually carries;
+  // there is no demo key to fall back to.
   const handleCopyKey = () => {
     if (!subOrder.licenseKey) return;
     if (navigator?.clipboard?.writeText) {
@@ -131,11 +130,11 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
-  // Handle Copy Delivery PIN Code
+  // Handle Copy Delivery PIN Code — only the PIN issued for this order.
   const handleCopyDeliveryCode = () => {
-    const code = subOrder.deliveryCode || '4291';
+    if (!subOrder.deliveryCode) return;
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(code).catch(() => {});
+      navigator.clipboard.writeText(subOrder.deliveryCode).catch(() => {});
     }
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
@@ -169,7 +168,9 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
   const activeStage = PHYSICAL_STAGES[resolvedActiveIndex] ?? PHYSICAL_STAGES[0];
   const highlightedStage = selectedStageIndex !== null ? PHYSICAL_STAGES[selectedStageIndex] : activeStage;
 
-  const deliveryDigits = (subOrder.deliveryCode || '4291').split('');
+  // The order's own delivery PIN, split into boxes; rendered only when the
+  // order actually carries a code (see the PIN card below).
+  const deliveryDigits = (subOrder.deliveryCode ?? '').split('');
 
   return (
     <div className={`space-y-6 ${className}`} data-testid="tracking-timeline">
@@ -281,87 +282,100 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                 </p>
               </div>
             </div>
-            <Badge
-              variant="vendor-verified"
-              size="default"
-              className="border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
-            >
-              {subOrder.licenseKey ? 'License Active' : 'Awaiting Payment'}
-            </Badge>
+            {subOrder.licenseKey ? (
+              <Badge
+                variant="vendor-verified"
+                size="default"
+                className="border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
+              >
+                License Active
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                size="default"
+                className="border-white/20 bg-white/5 text-slate-300"
+              >
+                Awaiting license key
+              </Badge>
+            )}
           </div>
 
           {subOrder.licenseKey ? (
-            <>
-              <div className="mt-5 flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:flex-row sm:items-center">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <span className="text-xs font-semibold text-slate-400">
-                    Key:
-                  </span>
-                  <code
-                    className="font-mono text-sm sm:text-base font-bold tracking-widest text-lemon select-all break-all"
-                    data-testid="license-key-value"
-                  >
-                    {subOrder.licenseKey}
-                  </code>
-                </div>
-                <Button
-                  type="button"
-                  variant="glass-pill"
-                  size="sm"
-                  onClick={handleCopyKey}
-                  className="gap-2 text-xs font-bold text-slate-900"
-                  data-testid="copy-key-button"
-                >
-                  {copiedKey ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      <span>Copy Key</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4 text-xs text-slate-300">
-                <span>
-                  Asset:{' '}
-                  <strong className="text-white">
-                    {subOrder.items[0]?.title || 'Vendora Digital Product'}
-                  </strong>
+            <div className="mt-5 flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <span className="text-xs font-semibold text-slate-400">
+                  Key:
                 </span>
-                <div className="flex items-center gap-2">
-                  <Download className="h-4 w-4 text-sun-orange" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDownloadStarted(true);
-                      const element = document.createElement('a');
-                      const content = `Vendora Verified Digital License Package\nOrder: ${subOrder.id}\nLicense Key: ${subOrder.licenseKey}\nAsset: ${subOrder.items[0]?.title || 'Vendora Digital Product'}\nGenerated: ${new Date().toISOString()}`;
-                      const file = new Blob([content], { type: 'text/plain' });
-                      element.href = URL.createObjectURL(file);
-                      element.download = `license-${subOrder.id}.txt`;
-                      document.body.appendChild(element);
-                      element.click();
-                      document.body.removeChild(element);
-                      setTimeout(() => setDownloadStarted(false), 2000);
-                    }}
-                    className="font-semibold text-sun-orange hover:underline"
-                  >
-                    {downloadStarted ? 'Downloading Package...' : 'Download Package (.ZIP)'}
-                  </button>
-                </div>
+                <code
+                  className="font-mono text-sm sm:text-base font-bold tracking-widest text-lemon select-all break-all"
+                  data-testid="license-key-value"
+                >
+                  {subOrder.licenseKey}
+                </code>
               </div>
-            </>
+              <Button
+                type="button"
+                variant="glass-pill"
+                size="sm"
+                onClick={handleCopyKey}
+                className="gap-2 text-xs font-bold text-slate-900"
+                data-testid="copy-key-button"
+              >
+                {copiedKey ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy Key</span>
+                  </>
+                )}
+              </Button>
+            </div>
           ) : (
-            <p className="mt-5 text-sm leading-relaxed text-slate-300" data-testid="license-key-pending">
-              Your license key will appear here as soon as your payment is confirmed.
-              Cash-on-delivery digital orders release their key once the payment is
-              collected — nothing is due from you here in the meantime.
+            <p
+              className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-relaxed text-slate-300"
+              data-testid="license-key-pending"
+            >
+              Your license key will appear here as soon as your payment is confirmed and
+              the seller issues it for this order. Cash-on-delivery digital orders
+              release their key once the payment is collected.
             </p>
+          )}
+
+          {subOrder.licenseKey && (
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4 text-xs text-slate-300">
+              <span>
+                Asset:{' '}
+                <strong className="text-white">
+                  {subOrder.items[0]?.title || 'Vendora Digital Product'}
+                </strong>
+              </span>
+              <div className="flex items-center gap-2">
+                <Download className="h-4 w-4 text-sun-orange" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDownloadStarted(true);
+                    const element = document.createElement('a');
+                    const content = `Vendora Verified Digital License Package\nOrder: ${subOrder.id}\nLicense Key: ${subOrder.licenseKey}\nAsset: ${subOrder.items[0]?.title || 'Vendora Digital Product'}\nGenerated: ${new Date().toISOString()}`;
+                    const file = new Blob([content], { type: 'text/plain' });
+                    element.href = URL.createObjectURL(file);
+                    element.download = `license-${subOrder.id}.txt`;
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                    setTimeout(() => setDownloadStarted(false), 2000);
+                  }}
+                  className="font-semibold text-sun-orange hover:underline"
+                >
+                  {downloadStarted ? 'Downloading Package...' : 'Download Package (.ZIP)'}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       ) : (
@@ -550,7 +564,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
             <p className="mt-1 text-xs text-slate-600">{highlightedStage.description}</p>
           </div>
 
-          {/* RIDER ASSIGNMENT & SIMULATED DELIVERY CODE CARDS */}
+          {/* RIDER ASSIGNMENT & DELIVERY CODE CARDS */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Delivery Rider Assignment Badge */}
             <div
@@ -563,19 +577,27 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-                    Assigned Courier
+                    {subOrder.riderId ? 'Assigned Courier' : 'Delivery Courier'}
                   </span>
-                  <Badge variant="in-stock" size="sm">
-                    {subOrder.riderId ? 'Assigned' : 'Vendora Logistics'}
-                  </Badge>
+                  {subOrder.riderId ? (
+                    <Badge variant="in-stock" size="sm">
+                      Assigned
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" size="sm">
+                      Not assigned yet
+                    </Badge>
+                  )}
                 </div>
                 <p className="mt-0.5 text-sm font-extrabold text-slate-900 truncate">
                   {subOrder.riderId
                     ? `Express Courier (${subOrder.riderId})`
-                    : 'Sam Express · Urban Courier #842'}
+                    : 'Courier not assigned yet'}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  {currentStatus === 'out_for_delivery'
+                  {!subOrder.riderId
+                    ? 'A courier will be assigned when your order is ready for dispatch.'
+                    : currentStatus === 'out_for_delivery'
                     ? 'Rider is currently on route to your delivery address.'
                     : currentStatus === 'delivered'
                     ? 'Delivered safely by rider.'
@@ -584,7 +606,10 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
               </div>
             </div>
 
-            {/* Simulated Delivery Code Display */}
+            {/* Delivery Code Display — only the PIN issued for this order; when
+                none has been issued yet the card says so instead of showing a
+                placeholder code. */}
+            {subOrder.deliveryCode ? (
             <div
               className="flex flex-col justify-between rounded-2xl border border-orange-200/90 bg-gradient-to-br from-orange-50/90 to-amber-50/60 p-4 shadow-xs"
               data-testid="delivery-code-card"
@@ -639,6 +664,23 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
                 </Button>
               </div>
             </div>
+            ) : (
+              <div
+                className="flex flex-col justify-center rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-xs"
+                data-testid="delivery-code-card"
+              >
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-slate-400" />
+                  <span className="text-[11px] font-bold text-slate-800">
+                    Delivery Verification PIN
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-slate-600">
+                  Your PIN will appear here once your order is out for delivery. Share it with
+                  the courier on delivery to complete receipt verification.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

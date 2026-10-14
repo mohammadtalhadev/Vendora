@@ -444,7 +444,7 @@ export const AdminVendorsPage: React.FC = () => {
               paid to sellers <strong className="text-slate-800">{formatPrice(queue.volume.net)}</strong>
             </p>
             <p className="mt-2 text-[11px] text-slate-400">
-              Summed in Postgres over packages that were not cancelled — not the page this screen is showing.
+              Across all matching packages, not just this page.
             </p>
           </div>
         </div>
@@ -607,16 +607,23 @@ export const AdminVendorsPage: React.FC = () => {
               </span>
               <div className="flex items-center gap-1.5">
                 <label htmlFor="vendor-rows-per-page">Rows per page:</label>
-                <select
-                  id="vendor-rows-per-page"
-                  value={pageSize}
-                  onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                  className="native-select rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-700 focus:outline-hidden cursor-pointer"
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}
                 >
-                  <option value={6}>6</option>
-                  <option value={12}>12</option>
-                  <option value={24}>24</option>
-                </select>
+                  <SelectTrigger
+                    id="vendor-rows-per-page"
+                    aria-label="Rows per page"
+                    className="h-7 w-auto rounded-md px-2 text-xs text-slate-700"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6" className="text-xs">6</SelectItem>
+                    <SelectItem value="12" className="text-xs">12</SelectItem>
+                    <SelectItem value="24" className="text-xs">24</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

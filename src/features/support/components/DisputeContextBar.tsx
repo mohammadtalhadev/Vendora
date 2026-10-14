@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { SupportAgent, SupportDisputeRow } from '../api/disputes';
 import { cn } from '../../../lib/utils';
+import { formatPrice } from '../../../store/currency-store';
 
 export interface DisputeContextBarProps {
   /** The case as Postgres computed it: the money, the status, the evidence, who holds it. */
@@ -32,7 +33,8 @@ export interface DisputeContextBarProps {
   className?: string;
 }
 
-const money = (value: number) => `$${value.toFixed(2)}`;
+/** Money renders through the site's PKR formatter — no local $ strings. */
+const money = (value: number) => formatPrice(value);
 
 const STATUS_BADGE: Record<SupportDisputeRow['status'], string> = {
   open: 'bg-amber-50 text-amber-700 border-amber-200',

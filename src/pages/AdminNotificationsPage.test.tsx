@@ -68,14 +68,26 @@ beforeEach(() => {
   );
 });
 
+// jsdom does not implement pointer capture or scrollIntoView, both of which
+// Radix Select calls while opening. Stub them so the interaction can run.
+window.HTMLElement.prototype.hasPointerCapture = () => false;
+window.HTMLElement.prototype.setPointerCapture = () => undefined;
+window.HTMLElement.prototype.releasePointerCapture = () => undefined;
+window.Element.prototype.scrollIntoView = () => undefined;
+
+const chooseSelectOption = (label: string, optionName: string) => {
+  fireEvent.pointerDown(screen.getByLabelText(label), { button: 0, pointerType: 'mouse' });
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+};
+
 const render = () => renderWorkspace(<AdminNotificationsPage />, ['/admin/notifications']);
 
 const lastRpc = (fn: string) =>
   [...supabaseDouble.rpcCalls].reverse().find((entry) => entry.fn === fn);
 
 const fillComposer = () => {
-  fireEvent.change(screen.getByLabelText('Audience'), { target: { value: 'customer' } });
-  fireEvent.change(screen.getByLabelText('Kind'), { target: { value: 'promotion' } });
+  chooseSelectOption('Audience', 'Customers');
+  chooseSelectOption('Kind', 'Promotion');
   fireEvent.change(screen.getByLabelText('Title'), {
     target: { value: 'Autumn sale opens tonight' },
   });

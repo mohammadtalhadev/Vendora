@@ -25,6 +25,20 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { StatusBadge } from '../components/ui/status-badge';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+
+/** Form-density trigger for dialog selects (panel standard, Batch 57). */
+const FORM_SELECT_TRIGGER = 'h-10 w-full rounded-lg px-3 text-xs';
+
+const REJECT_REASON_OPTIONS = [
+  'Violates Catalog Trademark & IP Policy',
+  'Misleading Listing Title or Unsubstantiated Claims',
+  'Low Resolution or Watermarked Product Images',
+  'Missing Compliance, Safety or Regulatory Documentation',
+  'Prohibited Goods or Hazardous Material Violation',
+  'Inaccurate Pricing or Suspicious Margin Discrepancy',
+  'Other Policy Violation',
+];
 
 export const AdminProductsPage: React.FC = () => {
   const [activeStatusTab, setActiveStatusTab] = useState<'all' | 'pending_review' | 'approved' | 'rejected' | 'archived'>('all');
@@ -564,39 +578,38 @@ export const AdminProductsPage: React.FC = () => {
             />
           </div>
 
+          {/* Bulk actions: solid pill buttons — the disabled state stays
+              legible (slate fill, full opacity) instead of washed-out text. */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => handleOpenApproveModal(selectedIds)}
               disabled={selectedIds.length === 0 || isMutatingModerate}
-              className="text-emerald-700 hover:underline disabled:opacity-40"
+              className="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-emerald-700 cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
             >
               Approve Selected ({selectedIds.length})
             </button>
-            <span className="text-slate-300">•</span>
             <button
               type="button"
               onClick={() => handleOpenRejectModal(selectedIds)}
               disabled={selectedIds.length === 0 || isMutatingModerate}
-              className="text-rose-600 hover:underline disabled:opacity-40"
+              className="inline-flex items-center rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-rose-700 cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
             >
               Reject Selected ({selectedIds.length})
             </button>
-            <span className="text-slate-300">•</span>
             <button
               type="button"
               onClick={() => handleArchive(selectedIds)}
               disabled={selectedIds.length === 0 || isMutatingModerate}
-              className="text-slate-800 hover:underline disabled:opacity-40"
+              className="inline-flex items-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-slate-800 cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
             >
               Archive Selected ({selectedIds.length})
             </button>
-            <span className="text-slate-300">•</span>
             <button
               type="button"
               onClick={() => handleReturnToReview(selectedIds)}
               disabled={selectedIds.length === 0 || isMutatingModerate}
-              className="text-slate-800 hover:underline disabled:opacity-40"
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 cursor-pointer disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
             >
               Return to Review ({selectedIds.length})
             </button>
@@ -664,15 +677,18 @@ export const AdminProductsPage: React.FC = () => {
           <div className="space-y-4 pt-2 text-xs">
             <div>
               <label htmlFor="reject-reason-category" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Primary Rejection Reason *</label>
-              <select id="reject-reason-category" value={rejectReasonCategory} onChange={(e) => setRejectReasonCategory(e.target.value)} className="w-full admin-select h-10">
-                <option value="Violates Catalog Trademark & IP Policy">Violates Catalog Trademark & IP Policy</option>
-                <option value="Misleading Listing Title or Unsubstantiated Claims">Misleading Listing Title or Unsubstantiated Claims</option>
-                <option value="Low Resolution or Watermarked Product Images">Low Resolution or Watermarked Product Images</option>
-                <option value="Missing Compliance, Safety or Regulatory Documentation">Missing Compliance, Safety or Regulatory Documentation</option>
-                <option value="Prohibited Goods or Hazardous Material Violation">Prohibited Goods or Hazardous Material Violation</option>
-                <option value="Inaccurate Pricing or Suspicious Margin Discrepancy">Inaccurate Pricing or Suspicious Margin Discrepancy</option>
-                <option value="Other Policy Violation">Other Policy Violation</option>
-              </select>
+              <Select value={rejectReasonCategory} onValueChange={setRejectReasonCategory}>
+                <SelectTrigger id="reject-reason-category" className={FORM_SELECT_TRIGGER}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REJECT_REASON_OPTIONS.map((reason) => (
+                    <SelectItem key={reason} value={reason} className="text-xs">
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label htmlFor="reject-custom-note" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Corrective Guidance &amp; Seller Notes</label>
@@ -695,24 +711,32 @@ export const AdminProductsPage: React.FC = () => {
           <div className="space-y-4 pt-2 text-xs">
             <div>
               <label htmlFor="assign-moderator" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Select Moderator Specialist</label>
-              <select id="assign-moderator" value={selectedModerator} onChange={(e) => setSelectedModerator(e.target.value)} disabled={staffUnavailable} className="w-full admin-select h-10">
-                {staffLoading ? (
-                  <option value="">Loading staff…</option>
-                ) : staffFailed ? (
-                  <option value="">Staff list unavailable</option>
-                ) : staffOptions.length === 0 ? (
-                  <option value="">No staff available</option>
-                ) : (
-                  <>
-                    <option value="">Choose moderator...</option>
-                    {staffOptions.map((staff) => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.label}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
+              <Select
+                value={selectedModerator || undefined}
+                onValueChange={setSelectedModerator}
+                disabled={staffUnavailable}
+              >
+                <SelectTrigger id="assign-moderator" className={FORM_SELECT_TRIGGER}>
+                  <SelectValue
+                    placeholder={
+                      staffLoading
+                        ? 'Loading staff…'
+                        : staffFailed
+                          ? 'Staff list unavailable'
+                          : staffOptions.length === 0
+                            ? 'No staff available'
+                            : 'Choose moderator...'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffOptions.map((staff) => (
+                    <SelectItem key={staff.id} value={staff.id} className="text-xs">
+                      {staff.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label htmlFor="assign-note" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Internal Instructions (Optional)</label>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { friendlyError } from '../lib/friendly-error';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Search, Download, Wallet } from 'lucide-react';
+import { ShoppingBag, Search, Download, Pencil, Wallet } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { exportToCsv } from '../lib/export-csv';
@@ -194,7 +194,19 @@ export const AdminOrdersPage: React.FC = () => {
       header: 'Actions',
       align: 'right',
       cell: (order) => (
-        <OrderActionsMenu order={order} onChanged={() => void refetch()} />
+        <div className="flex items-center justify-end gap-1.5">
+          {/* The editor lives on the detail page (address + payment-status
+              corrections); this is the list's direct entry to it. */}
+          <Link
+            to={`/admin/orders/${order.id}`}
+            aria-label={`Edit order ${order.id.slice(0, 8)}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900"
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+            Edit
+          </Link>
+          <OrderActionsMenu order={order} onChanged={() => void refetch()} />
+        </div>
       ),
     },
   ];
@@ -209,9 +221,9 @@ export const AdminOrdersPage: React.FC = () => {
         { header: 'Packages', key: 'packages' },
         { header: 'Payment Method', key: 'paymentMethod' },
         { header: 'Payment Status', key: 'paymentStatus' },
-        { header: 'Gross (USD)', key: 'gross' },
-        { header: 'Commission (USD)', key: 'commission' },
-        { header: 'Paid to sellers (USD)', key: 'paidToSellers' },
+        { header: 'Gross (PKR)', key: 'gross' },
+        { header: 'Commission (PKR)', key: 'commission' },
+        { header: 'Paid to sellers (PKR)', key: 'paidToSellers' },
         { header: 'Status', key: 'leadStatus' },
       ],
       data: rows.map((o) => ({
@@ -297,7 +309,7 @@ export const AdminOrdersPage: React.FC = () => {
                 {formatPrice(queue.booked)}
               </div>
               <div className="mt-1 text-xs text-slate-400">
-                Summed in Postgres over every order, not just this page.
+                Across every order on the platform, not just this page.
               </div>
             </div>
           </div>

@@ -19,6 +19,7 @@ import { useVendorDetail } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import { useCurrency } from '../store/currency-store';
 import { Button } from '../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -491,17 +492,17 @@ export const AdminVendorDetailPage: React.FC = () => {
           <form onSubmit={handleIssueStrike} className="space-y-3 text-xs">
             <div>
               <label htmlFor="violationType" className="block font-bold text-slate-700 mb-1">Violation Category</label>
-              <select
-                id="violationType"
-                name="violationType"
-                defaultValue="Late Dispatch SLA (> 48h)"
-                className="native-select w-full rounded-xl border border-slate-200 p-2.5 text-slate-900"
-              >
-                <option value="Late Dispatch SLA (> 48h)">Late Dispatch SLA (&gt; 48h)</option>
-                <option value="Counterfeit / Unlicensed Item Claim">Counterfeit / Unlicensed Item Claim</option>
-                <option value="Excessive Out-of-Stock Cancellations">Excessive Out-of-Stock Cancellations</option>
-                <option value="Abusive Customer Communication">Abusive Customer Communication</option>
-              </select>
+              <Select name="violationType" defaultValue="Late Dispatch SLA (> 48h)">
+                <SelectTrigger id="violationType" className="h-10 w-full rounded-lg px-3 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Late Dispatch SLA (> 48h)" className="text-xs">Late Dispatch SLA (&gt; 48h)</SelectItem>
+                  <SelectItem value="Counterfeit / Unlicensed Item Claim" className="text-xs">Counterfeit / Unlicensed Item Claim</SelectItem>
+                  <SelectItem value="Excessive Out-of-Stock Cancellations" className="text-xs">Excessive Out-of-Stock Cancellations</SelectItem>
+                  <SelectItem value="Abusive Customer Communication" className="text-xs">Abusive Customer Communication</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

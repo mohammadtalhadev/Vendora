@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SupportDisputeRow } from '../api/disputes';
 import { cn } from '../../../lib/utils';
+import { formatPrice } from '../../../store/currency-store';
 import {
   Inbox,
   UserCheck,
@@ -31,7 +32,8 @@ export interface DisputeQueueListProps {
   className?: string;
 }
 
-const money = (amount: number) => `$${amount.toFixed(2)}`;
+/** Money renders through the site's PKR formatter — no local $ strings. */
+const money = (amount: number) => formatPrice(amount);
 
 const humanize = (value: string) => value.replace(/_/g, ' ');
 

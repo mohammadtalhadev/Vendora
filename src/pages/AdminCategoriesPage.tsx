@@ -43,6 +43,15 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { useCategoryTree } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type { AdminCategoryRoot, AdminCategoryChild } from '../features/admin/api/categories';
@@ -105,6 +114,48 @@ const toChildView = (c: AdminCategoryChild): CategoryView => ({
   id: c.id, name: c.name, slug: c.slug, isActive: c.isActive,
   commissionOverride: c.commissionOverride, products: c.products, sellers: c.sellers, icon: null, image: null,
 });
+
+
+/**
+ * "Assign to" picker for an unmapped listing: choosing a category fires the
+ * assignment and the control returns to its placeholder (it is an action,
+ * not a stored value), so the Select remounts after each pick.
+ */
+const AssignCategorySelect: React.FC<{
+  id: string;
+  roots: AdminCategoryRoot[];
+  onAssign: (categoryId: string) => void;
+}> = ({ id, roots, onAssign }) => {
+  const [nonce, setNonce] = useState(0);
+  return (
+    <Select
+      key={nonce}
+      onValueChange={(value) => {
+        onAssign(value);
+        setNonce((n) => n + 1);
+      }}
+    >
+      <SelectTrigger id={id} aria-label="Assign to category" className="h-8 flex-1 rounded-md px-2.5 text-xs">
+        <SelectValue placeholder="Select a category…" />
+      </SelectTrigger>
+      <SelectContent>
+        {roots.map((c) => (
+          <SelectGroup key={c.id}>
+            <SelectLabel>{c.name}</SelectLabel>
+            <SelectItem value={c.id} className="text-xs">
+              {c.name} (root)
+            </SelectItem>
+            {c.children.map((sub) => (
+              <SelectItem key={sub.id} value={sub.id} className="text-xs">
+                {c.name} &gt; {sub.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+};
 
 export const AdminCategoriesPage: React.FC = () => {
   const actions = useAdminActions();
@@ -476,18 +527,23 @@ export const AdminCategoriesPage: React.FC = () => {
 
                   <div className="flex items-center gap-2">
                     <label htmlFor="category-status" className="sr-only">Filter by status</label>
-                    <div className="relative">
-                      <select
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) => { setStatusFilter(value as StatusFilter); setPage(1); }}
+                    >
+                      <SelectTrigger
                         id="category-status"
-                        value={statusFilter}
-                        onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
-                        className="native-select rounded-lg border border-slate-200 bg-white pl-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none shadow-2xs"
+                        aria-label="Filter by status"
+                        className="h-9 w-auto text-xs font-semibold text-slate-700"
                       >
-                        <option value="all">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Hidden</option>
-                      </select>
-                    </div>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all" className="text-xs">All Statuses</SelectItem>
+                        <SelectItem value="active" className="text-xs">Active</SelectItem>
+                        <SelectItem value="inactive" className="text-xs">Hidden</SelectItem>
+                      </SelectContent>
+                    </Select>
 
                     <button
                       type="button"
@@ -749,25 +805,11 @@ export const AdminCategoriesPage: React.FC = () => {
                             <label htmlFor={`assign-${item.id}`} className="text-slate-500 font-medium shrink-0">
                               Assign to
                             </label>
-                            <select
+                            <AssignCategorySelect
                               id={`assign-${item.id}`}
-                              defaultValue=""
-                              onChange={(e) => {
-                                handleAssign(item.id, e.target.value || null, item.title);
-                                e.currentTarget.value = '';
-                              }}
-                              className="native-select flex-1 rounded-md border border-slate-200 bg-white p-1.5 text-xs text-slate-800 focus:outline-none"
-                            >
-                              <option value="" disabled>Select a category…</option>
-                              {tree.roots.map((c) => (
-                                <optgroup key={c.id} label={c.name}>
-                                  <option value={c.id}>{c.name} (root)</option>
-                                  {c.children.map((s) => (
-                                    <option key={s.id} value={s.id}>{c.name} &gt; {s.name}</option>
-                                  ))}
-                                </optgroup>
-                              ))}
-                            </select>
+                              roots={tree.roots}
+                              onAssign={(categoryId) => handleAssign(item.id, categoryId || null, item.title)}
+                            />
                           </div>
                         </div>
                       ))}
@@ -841,17 +883,19 @@ export const AdminCategoriesPage: React.FC = () => {
               {modal?.mode === 'create' && (
                 <div>
                   <label htmlFor="cat-parent" className="block font-bold text-slate-700 mb-1">Hierarchy Level</label>
-                  <select
-                    id="cat-parent"
-                    value={formParent}
-                    onChange={(e) => setFormParent(e.target.value)}
-                    className="native-select w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-700 focus:outline-none"
-                  >
-                    <option value="root">Root Level Tier</option>
-                    {tree?.roots.map((c) => (
-                      <option key={c.id} value={c.id}>Child of {c.name}</option>
-                    ))}
-                  </select>
+                  <Select value={formParent} onValueChange={setFormParent}>
+                    <SelectTrigger id="cat-parent" className="h-9 w-full rounded-lg px-3 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="root" className="text-xs">Root Level Tier</SelectItem>
+                      {tree?.roots.map((c) => (
+                        <SelectItem key={c.id} value={c.id} className="text-xs">
+                          Child of {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 

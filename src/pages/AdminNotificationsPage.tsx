@@ -12,6 +12,7 @@ import { AdminNav } from '../features/admin/components/AdminNav';
 import { Button } from '../components/ui/button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useBroadcastLog } from '../features/admin/hooks/useAdminQueries';
 import { useNotificationActions } from '../features/notifications/hooks/useNotifications';
 import type { NotificationKind } from '../features/notifications/api/notifications';
@@ -249,36 +250,36 @@ export const AdminNotificationsPage = () => {
               <label htmlFor="broadcast-audience" className="mb-1 block font-bold text-slate-700">
                 Audience
               </label>
-              <select
-                id="broadcast-audience"
-                value={audience}
-                onChange={(event) => setAudience(event.target.value as Audience)}
-                className="admin-select w-full"
-              >
-                {AUDIENCES.map((entry) => (
-                  <option key={entry.value} value={entry.value}>
-                    {entry.label}
-                  </option>
-                ))}
-              </select>
+              <Select value={audience} onValueChange={(value) => setAudience(value as Audience)}>
+                <SelectTrigger id="broadcast-audience" className="h-10 w-full rounded-lg px-3 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {AUDIENCES.map((entry) => (
+                    <SelectItem key={entry.value} value={entry.value} className="text-xs">
+                      {entry.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
               <label htmlFor="broadcast-kind" className="mb-1 block font-bold text-slate-700">
                 Kind
               </label>
-              <select
-                id="broadcast-kind"
-                value={type}
-                onChange={(event) => setType(event.target.value as NotificationKind)}
-                className="admin-select w-full"
-              >
-                {KINDS.map((entry) => (
-                  <option key={entry.value} value={entry.value}>
-                    {entry.label}
-                  </option>
-                ))}
-              </select>
+              <Select value={type} onValueChange={(value) => setType(value as NotificationKind)}>
+                <SelectTrigger id="broadcast-kind" className="h-10 w-full rounded-lg px-3 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {KINDS.map((entry) => (
+                    <SelectItem key={entry.value} value={entry.value} className="text-xs">
+                      {entry.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="sm:col-span-2">

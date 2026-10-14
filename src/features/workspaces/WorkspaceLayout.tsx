@@ -1481,14 +1481,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <DialogTitle className="text-lg font-bold">Edit Profile</DialogTitle>
             </div>
             <DialogDescription className="text-xs text-slate-500">
-              The name and email the session is signed in with.
+              Update the name and email shown for your account.
             </DialogDescription>
           </DialogHeader>
 
           {profileSavedToast && (
             <div className="mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-              <span>Profile updated on this session.</span>
+              <span>Profile updated.</span>
             </div>
           )}
 
@@ -1522,9 +1522,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             </div>
 
             <p className="text-xs leading-relaxed text-slate-500">
-              This writes the signed-in session only. The profile row in the database keeps the
-              name and email staff set when the account was provisioned, so a reload can restore
-              what is stored there.
+              To change the name or email on your account record, use your Profile page.
             </p>
 
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">

@@ -20,6 +20,13 @@ import { formatPrice } from '../store/currency-store';
 import { exportToCsv } from '../lib/export-csv';
 import { adminReportJson, supabaseDouble } from '../test/supabase-double';
 
+// jsdom does not implement pointer capture or scrollIntoView, both of which
+// Radix Select calls while opening. Stub them so the interaction can run.
+window.HTMLElement.prototype.hasPointerCapture = () => false;
+window.HTMLElement.prototype.setPointerCapture = () => undefined;
+window.HTMLElement.prototype.releasePointerCapture = () => undefined;
+window.Element.prototype.scrollIntoView = () => undefined;
+
 beforeEach(() => {
   vi.clearAllMocks();
   supabaseDouble.reset();
@@ -104,7 +111,11 @@ describe('AdminReportsPage', () => {
     expect(await screen.findByText('Nova Tech')).toBeInTheDocument();
     expect(lastReportRpc()?.args).toEqual({ p_days: 30, p_bucket: 'week' });
 
-    fireEvent.change(screen.getByLabelText('Report date range'), { target: { value: '7d' } });
+    fireEvent.pointerDown(screen.getByLabelText('Report date range'), {
+      button: 0,
+      pointerType: 'mouse',
+    });
+    fireEvent.click(screen.getByRole('option', { name: 'Date Range: Last 7 Days' }));
 
     await waitFor(() => expect(lastReportRpc()?.args).toEqual({ p_days: 7, p_bucket: 'day' }));
   });

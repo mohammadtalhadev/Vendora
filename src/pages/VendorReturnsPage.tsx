@@ -17,6 +17,7 @@ import { DataTable, type DataTableColumn } from '../components/patterns/data-tab
 import { Input } from '../components/ui/input';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { exportToCsv } from '../lib/export-csv';
+import { formatPrice } from '../store/currency-store';
 import {
   useApproveReturn,
   useCompleteReturn,
@@ -35,8 +36,8 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 
-const money = (value: number) =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Money renders through the site's PKR formatter — no local $ strings. */
+const money = (value: number) => formatPrice(value);
 
 const dateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

@@ -30,6 +30,7 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { StatusBadge } from '../components/ui/status-badge';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
+import { useAuthStore } from '../store/auth-store';
 
 /**
  * `admin_user_queue` pages accounts and aggregates the role counts in SQL, so the tiles
@@ -70,6 +71,13 @@ const formatDate = (iso: string): string => {
 };
 
 export const AdminUsersPage: React.FC = () => {
+  // The signed-in admin's own row is never an action target: the status RPC
+  // refuses self-suspension, so the page marks the row "You" and leaves it
+  // out of row and bulk actions instead of offering a control that errors.
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const isSelf = (user: AdminUserRow): boolean =>
+    currentUserId != null && user.id === currentUserId;
+
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('all');
   const [status, setStatus] = useState('all');
@@ -140,6 +148,7 @@ export const AdminUsersPage: React.FC = () => {
   const pct = (n: number): number => (counts.all > 0 ? Math.round((n / counts.all) * 100) : 0);
 
   const handleToggleStatus = (userId: string, current: string) => {
+    if (currentUserId != null && userId === currentUserId) return;
     const next: 'active' | 'suspended' = current === 'active' ? 'suspended' : 'active';
     actions.setUserStatus.mutate({ userId, status: next, reason: 'Action via admin console' });
   };
@@ -156,6 +165,11 @@ export const AdminUsersPage: React.FC = () => {
           <div className="min-w-0">
             <p className="font-bold text-slate-900 text-xs truncate leading-tight">
               {user.name}
+              {isSelf(user) && (
+                <span className="ml-1.5 inline-block rounded-full bg-slate-900 px-1.5 py-px align-middle text-[9px] font-bold text-white">
+                  You
+                </span>
+              )}
             </p>
             <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
               {user.email}
@@ -224,7 +238,12 @@ export const AdminUsersPage: React.FC = () => {
       key: 'action',
       header: 'Action',
       align: 'center',
-      cell: (user) => (
+      cell: (user) =>
+        isSelf(user) ? (
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-400">
+            You
+          </span>
+        ) : (
         <button
           type="button"
           disabled={actions.setUserStatus.isPending}
@@ -237,7 +256,7 @@ export const AdminUsersPage: React.FC = () => {
         >
           {user.accountStatus === 'active' ? 'Suspend' : 'Activate'}
         </button>
-      ),
+        ),
     },
   ];
 
@@ -248,7 +267,9 @@ export const AdminUsersPage: React.FC = () => {
    * Accounts that failed stay selected so the admin can retry just those.
    */
   const runBulkStatus = async (status: 'active' | 'suspended') => {
-    const ids = [...selectedIds];
+    // Defensive: the own account is unselectable in the table, and is dropped
+    // here too so a bulk action can never target it.
+    const ids = [...selectedIds].filter((id) => id !== currentUserId);
     if (ids.length === 0) return;
     setBulkRunning(true);
     try {
@@ -286,7 +307,7 @@ export const AdminUsersPage: React.FC = () => {
         { header: 'Email Address', key: 'email' },
         { header: 'Roles', key: 'roles' },
         { header: 'Account Status', key: 'accountStatus' },
-        { header: 'Volume (USD)', key: 'volume' },
+        { header: 'Volume (PKR)', key: 'volume' },
         { header: 'Orders', key: 'orders' },
         { header: 'Join Date', key: 'joinedAt' },
       ],
@@ -550,6 +571,7 @@ export const AdminUsersPage: React.FC = () => {
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
             getRowId={(user) => user.id}
+            isRowSelectable={(user) => !isSelf(user)}
             selectionLabel={(user) => `Select ${user.name}`}
             ariaLabel="User accounts"
             rowClassName={(user) => (selectedIds.includes(user.id) ? 'bg-slate-50/90' : '')}

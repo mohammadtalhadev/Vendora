@@ -1073,20 +1073,20 @@ export const AdminAddProductPage: React.FC = () => {
                     <label htmlFor="digital-license-type" className="block text-xs font-bold text-slate-800 mb-1">
                       Digital License Type
                     </label>
-                    <select
-                      id="digital-license-type"
-                      value={licenseType}
-                      onChange={(e) => setLicenseType(e.target.value)}
-                      className="w-full admin-select h-9"
-                    >
-                      <option value="Single Commercial License">Single Commercial License</option>
-                      <option value="Personal Single-Use License">Personal Single-Use License</option>
-                      <option value="Extended Developer License">Extended Developer License</option>
-                      <option value="Enterprise Multi-Seat License">Enterprise Multi-Seat License</option>
-                      <option value="Royalty-Free Lifetime License">Royalty-Free Lifetime License</option>
-                      <option value="Editorial / Non-Commercial License">Editorial / Non-Commercial License</option>
-                      <option value="Custom Enterprise Agreement">Custom Enterprise Agreement</option>
-                    </select>
+                    <Select value={licenseType} onValueChange={setLicenseType}>
+                      <SelectTrigger id="digital-license-type" className="h-10 w-full rounded-lg px-3 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem key="Single Commercial License" value="Single Commercial License" className="text-xs">Single Commercial License</SelectItem>
+                        <SelectItem key="Personal Single-Use License" value="Personal Single-Use License" className="text-xs">Personal Single-Use License</SelectItem>
+                        <SelectItem key="Extended Developer License" value="Extended Developer License" className="text-xs">Extended Developer License</SelectItem>
+                        <SelectItem key="Enterprise Multi-Seat License" value="Enterprise Multi-Seat License" className="text-xs">Enterprise Multi-Seat License</SelectItem>
+                        <SelectItem key="Royalty-Free Lifetime License" value="Royalty-Free Lifetime License" className="text-xs">Royalty-Free Lifetime License</SelectItem>
+                        <SelectItem key="Editorial / Non-Commercial License" value="Editorial / Non-Commercial License" className="text-xs">Editorial / Non-Commercial License</SelectItem>
+                        <SelectItem key="Custom Enterprise Agreement" value="Custom Enterprise Agreement" className="text-xs">Custom Enterprise Agreement</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label htmlFor="protected-asset-url" className="block text-xs font-bold text-slate-800 mb-1">
@@ -1217,17 +1217,17 @@ export const AdminAddProductPage: React.FC = () => {
                 <label htmlFor="primary-collection" className="block text-[11px] font-bold text-slate-700 mb-1">
                   Primary Collection
                 </label>
-                <select
-                  id="primary-collection"
-                  value={collection}
-                  onChange={(e) => setCollection(e.target.value)}
-                  className="w-full admin-select h-9 text-xs"
-                >
-                  <option value="Vendora Flagship">Vendora Flagship</option>
-                  <option value="Official Best Sellers">Official Best Sellers</option>
-                  <option value="Seasonal Highlights">Seasonal Highlights</option>
-                  <option value="New Platform Releases">New Platform Releases</option>
-                </select>
+                <Select value={collection} onValueChange={setCollection}>
+                  <SelectTrigger id="primary-collection" className="h-10 w-full rounded-lg px-3 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem key="Vendora Flagship" value="Vendora Flagship" className="text-xs">Vendora Flagship</SelectItem>
+                    <SelectItem key="Official Best Sellers" value="Official Best Sellers" className="text-xs">Official Best Sellers</SelectItem>
+                    <SelectItem key="Seasonal Highlights" value="Seasonal Highlights" className="text-xs">Seasonal Highlights</SelectItem>
+                    <SelectItem key="New Platform Releases" value="New Platform Releases" className="text-xs">New Platform Releases</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

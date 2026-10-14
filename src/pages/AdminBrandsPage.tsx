@@ -76,15 +76,13 @@ export const AdminBrandsPage: React.FC = () => {
 
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Brand Directory" sidebar={<AdminNav />}>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-12 font-sans text-slate-900">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-outfit">
             Brand Directory
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Every brand carried by an approved listing in the live catalog, counted straight from{' '}
-            <code className="text-[11px]">products</code>. There is no brand-gating or authorization
-            workflow because the database holds neither.
+            Every brand carried by an approved listing in the live catalog.
           </p>
         </div>
 

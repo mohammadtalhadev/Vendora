@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   RotateCcw,
   Check,
   Store,
   CreditCard,
   Scale,
-  ChevronDown,
-  DollarSign,
+  Banknote,
   Shield,
-  History,
   X,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { Button } from '../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { usePlatformSettings } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type {
@@ -86,8 +84,6 @@ const LISTING_REVIEW_MODES = [
 
 const FIELD =
   'mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-slate-900 focus:outline-hidden';
-const SELECT_FIELD =
-  'w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-xs font-medium text-slate-900 focus:border-slate-900 focus:outline-hidden';
 const SECTION_SAVE =
   'inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -274,8 +270,7 @@ export const AdminSettingsPage: React.FC = () => {
               Platform Settings
             </h1>
             <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-              Marketplace identity, settlement rules and listing policy — stored in the platform
-              settings row and recorded in the audit trail on every save.
+              Marketplace identity, settlement rules and listing policy.
             </p>
           </div>
 
@@ -322,10 +317,10 @@ export const AdminSettingsPage: React.FC = () => {
           {tabButton('policies', 'Vendor Policies & SLAs', Scale)}
         </div>
 
-        {/* Main Grid: Left Settings (8 cols) & Right record card (4 cols) */}
+        {/* Settings form — full width of the content column. */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Column (8 cols) */}
-          <div className="lg:col-span-8 space-y-6">
+          {/* Settings sections */}
+          <div className="lg:col-span-12 space-y-6">
             {/* TAB: GENERAL */}
             {activeTab === 'general' && (
               <div
@@ -378,17 +373,14 @@ export const AdminSettingsPage: React.FC = () => {
                     <label htmlFor="admin-settings-currency" className="block text-xs font-bold text-slate-700">
                       Default Currency &amp; Regional Settlement
                     </label>
-                    <div className="relative mt-1.5">
-                      <select
-                        id="admin-settings-currency"
-                        value="PKR"
-                        onChange={() => undefined}
-                        className={SELECT_FIELD}
-                      >
-                        <option value="PKR">PKR (₨) - Pakistani Rupee</option>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                    </div>
+                    <Select value="PKR" onValueChange={() => undefined}>
+                      <SelectTrigger id="admin-settings-currency" className={"mt-1.5 h-9 w-full rounded-lg px-3 text-xs font-medium"}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PKR" className="text-xs">PKR (₨) - Pakistani Rupee</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <p className="mt-1 text-[11px] text-slate-400">
                       {stored.defaultCurrency === 'PKR'
                         ? 'Settlement runs in PKR only; currency conversion is retired for now.'
@@ -417,7 +409,7 @@ export const AdminSettingsPage: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <DollarSign className="h-4 w-4 text-slate-400" />
+                    <Banknote className="h-4 w-4 text-slate-400" />
                     {sectionSaveButton('payouts', payoutsDirty, savePayouts)}
                   </div>
                 </div>
@@ -428,24 +420,26 @@ export const AdminSettingsPage: React.FC = () => {
                     <label htmlFor="admin-settings-payout-schedule" className="block text-xs font-bold text-slate-700">
                       Automated Payout Schedule
                     </label>
-                    <div className="relative mt-1.5">
-                      <select
-                        id="admin-settings-payout-schedule"
-                        value={form.payoutSchedule}
-                        onChange={(e) => edit({ payoutSchedule: e.target.value })}
-                        className={SELECT_FIELD}
-                      >
+                    <Select
+                      value={form.payoutSchedule || undefined}
+                      onValueChange={(value) => edit({ payoutSchedule: value })}
+                    >
+                      <SelectTrigger id="admin-settings-payout-schedule" className={"mt-1.5 h-9 w-full rounded-lg px-3 text-xs font-medium"}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {PAYOUT_SCHEDULES.map((option) => (
-                          <option key={option} value={option}>
+                          <SelectItem key={option} value={option} className="text-xs">
                             {option}
-                          </option>
+                          </SelectItem>
                         ))}
                         {!PAYOUT_SCHEDULES.includes(form.payoutSchedule) && form.payoutSchedule && (
-                          <option value={form.payoutSchedule}>{form.payoutSchedule}</option>
+                          <SelectItem value={form.payoutSchedule} className="text-xs">
+                            {form.payoutSchedule}
+                          </SelectItem>
                         )}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                    </div>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Minimum Payout Floor */}
@@ -548,24 +542,26 @@ export const AdminSettingsPage: React.FC = () => {
                     <label htmlFor="admin-settings-ai-moderation" className="block text-xs font-bold text-slate-700">
                       New Listing Review
                     </label>
-                    <div className="relative mt-1.5">
-                      <select
-                        id="admin-settings-ai-moderation"
-                        value={form.newListingReview}
-                        onChange={(e) => edit({ newListingReview: e.target.value })}
-                        className={SELECT_FIELD}
-                      >
+                    <Select
+                      value={form.newListingReview || undefined}
+                      onValueChange={(value) => edit({ newListingReview: value })}
+                    >
+                      <SelectTrigger id="admin-settings-ai-moderation" className={"mt-1.5 h-9 w-full rounded-lg px-3 text-xs font-medium"}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {LISTING_REVIEW_MODES.map((option) => (
-                          <option key={option} value={option}>
+                          <SelectItem key={option} value={option} className="text-xs">
                             {option}
-                          </option>
+                          </SelectItem>
                         ))}
                         {!LISTING_REVIEW_MODES.includes(form.newListingReview) && form.newListingReview && (
-                          <option value={form.newListingReview}>{form.newListingReview}</option>
+                          <SelectItem value={form.newListingReview} className="text-xs">
+                            {form.newListingReview}
+                          </SelectItem>
                         )}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                    </div>
+                      </SelectContent>
+                    </Select>
                     <p className="mt-1 text-[11px] text-slate-400">
                       The review a listing passes before it can sell.
                     </p>
@@ -575,34 +571,6 @@ export const AdminSettingsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Right Column (4 cols): how a save is recorded — nothing invented. */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-slate-900">How changes are recorded</h2>
-                <History className="h-4 w-4 text-slate-400" />
-              </div>
-              <div className="space-y-3 text-xs text-slate-500">
-                <p>
-                  Every save goes through <code className="font-mono">admin_save_platform_settings</code>,
-                  which stamps the editor and writes a{' '}
-                  <code className="font-mono">settings.update</code> entry — with the before and after
-                  values — into the audit trail. There is no quiet edit.
-                </p>
-                <p>
-                  The settings row stores no secrets, so this page shows none: no API tokens, no webhook
-                  secrets, nothing to reveal, copy or rotate. Tax providers, rate limits and retry
-                  policies have no storage in the schema either, and are not presented as settings.
-                </p>
-                <Link
-                  to="/admin/audit-logs"
-                  className="inline-flex items-center gap-1.5 font-bold text-slate-700 underline hover:text-slate-900"
-                >
-                  Open the audit trail
-                </Link>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </WorkspaceLayout>

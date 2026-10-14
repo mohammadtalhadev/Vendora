@@ -38,7 +38,7 @@ const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: 'access', label: 'Your Access', icon: ShieldCheck },
 ];
 
-const CARD = 'rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4';
+const CARD = 'rounded-xl border border-slate-200/90 bg-white p-5 text-xs shadow-2xs space-y-4';
 const FIELD =
   'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-400';
 const LABEL = 'mb-1 block text-[11px] font-bold text-slate-700';
@@ -156,8 +156,8 @@ export const AdminProfilePage: React.FC = () => {
     .toUpperCase();
 
   return (
-    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" sidebar={<AdminNav />}>
-      <div className="mx-auto w-full max-w-3xl space-y-5 p-4 sm:p-6">
+    <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Admin Profile" sidebar={<AdminNav />}>
+      <div className="space-y-6 pb-12 font-sans text-slate-900">
         <div>
           <h1 className="font-outfit text-2xl font-black text-slate-900">Admin Profile</h1>
           <p className="mt-1 text-xs text-slate-500">

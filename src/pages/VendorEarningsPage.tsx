@@ -28,6 +28,7 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { exportToCsv } from '../lib/export-csv';
+import { formatPrice } from '../store/currency-store';
 import { useVendorBalance, useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
 import {
   Area,
@@ -48,11 +49,11 @@ const RANGE_MONTHS: Record<'30d' | '90d' | '1y' | 'ytd', number> = {
   ytd: new Date().getMonth() + 1,
 };
 
-const money = (value: number) =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Money renders through the site's PKR formatter — no local $ strings. */
+const money = (value: number) => formatPrice(value);
 
-/** Compact axis tick for the earnings chart (Batch 49): $12k, not $12,000.00. */
-const axisMoney = (value: number) => (value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${value}`);
+/** Compact axis tick (Batch 49 pattern): 12k, not 12,000. Full values live in the tooltip. */
+const axisMoney = (value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`);
 
 /** 'YYYY-MM' from the RPC to the month's short name. */
 const monthLabel = (month: string) => {
@@ -196,7 +197,7 @@ export const VendorEarningsPage: React.FC = () => {
       header: 'COMMISSION',
       headerClassName: 'text-xs',
       className: 'py-3.5 font-semibold text-rose-600',
-      cell: (r) => (r.fees === 0 ? '$0.00' : `-${money(r.fees)}`),
+      cell: (r) => (r.fees === 0 ? money(0) : `-${money(r.fees)}`),
     },
     {
       key: 'net',

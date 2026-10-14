@@ -292,4 +292,38 @@ describe('TrackingTimeline Component', () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe('Absent values render honestly (no fabricated fallbacks)', () => {
+    it('shows no PIN digits, no copy button and no courier name before assignment', () => {
+      const unassigned: SubOrder = {
+        ...mockPhysicalSubOrder,
+        deliveryCode: undefined,
+        riderId: undefined,
+      };
+
+      render(<TrackingTimeline subOrder={unassigned} />);
+
+      expect(screen.getByText('Courier not assigned yet')).toBeInTheDocument();
+      expect(screen.getByText('Not assigned yet')).toBeInTheDocument();
+      expect(screen.getByText(/your pin will appear here/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('delivery-code-digits')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('copy-delivery-code-button')).not.toBeInTheDocument();
+      expect(screen.queryByText('4291')).not.toBeInTheDocument();
+    });
+
+    it('shows an awaiting state instead of a demo license key', () => {
+      const noKey: SubOrder = {
+        ...mockDigitalSubOrder,
+        licenseKey: undefined,
+      };
+
+      render(<TrackingTimeline subOrder={noKey} />);
+
+      expect(screen.getByText('Awaiting license key')).toBeInTheDocument();
+      expect(screen.getByText(/license key will appear here/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('license-key-value')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('copy-key-button')).not.toBeInTheDocument();
+      expect(screen.queryByText(/VEN-LIC-DEMO/)).not.toBeInTheDocument();
+    });
+  });
 });

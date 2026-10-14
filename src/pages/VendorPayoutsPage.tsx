@@ -43,9 +43,10 @@ import {
 } from '../features/vendor/hooks/useVendorEarnings';
 import { useVendorStore } from '../features/vendor/hooks/useVendorStore';
 import type { PayoutReceipt } from '../features/vendor/api/earnings';
+import { formatPrice } from '../store/currency-store';
 
-const money = (value: number) =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Money renders through the site's PKR formatter — no local $ strings. */
+const money = (value: number) => formatPrice(value);
 
 const CUTOFF_DAYS: Record<'all' | '30d' | '90d' | 'ytd', number | null> = {
   all: null,
@@ -181,7 +182,7 @@ export const VendorPayoutsPage: React.FC = () => {
       header: 'FEE',
       headerClassName: 'text-xs',
       className: 'py-3.5 font-semibold text-rose-600',
-      cell: (row) => (row.fee === 0 ? '$0.00' : `-${money(row.fee)}`),
+      cell: (row) => (row.fee === 0 ? money(0) : `-${money(row.fee)}`),
     },
     {
       key: 'deposit',

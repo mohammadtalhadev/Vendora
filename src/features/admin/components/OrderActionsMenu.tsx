@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Eye, FastForward, MoreHorizontal, RotateCcw, Truck } from 'lucide-react';
+import { Eye, FastForward, MoreHorizontal, Pencil, RotateCcw, Truck } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import {
   Dialog,
@@ -222,6 +222,15 @@ export const OrderActionsMenu: React.FC<{
             >
               <Eye className="h-4 w-4 text-slate-400" aria-hidden="true" />
               View details
+            </Link>
+            <Link
+              role="menuitem"
+              to={`/admin/orders/${order.id}`}
+              className={MENU_ITEM_CLASS}
+              onClick={() => setOpen(false)}
+            >
+              <Pencil className="h-4 w-4 text-slate-400" aria-hidden="true" />
+              Edit order
             </Link>
             <button
               type="button"

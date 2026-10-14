@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import {
   Calendar,
-  ChevronDown,
   Download,
-  DollarSign,
+  Banknote,
   Percent,
   PieChart,
   RotateCw,
@@ -15,6 +14,7 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { QueryState, Skeleton } from '../components/common/QueryState';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { useReportSummary } from '../features/admin/hooks/useAdminQueries';
@@ -208,8 +208,7 @@ export const AdminReportsPage: React.FC = () => {
 
   return (
     <WorkspaceLayout role="admin" roleBadgeText="SUPER ADMIN" title="Reports & Analytics" sidebar={<AdminNav />}>
-      <div className="space-y-6">
-
+      <div className="space-y-6 pb-12 font-sans text-slate-900">
         {/* Page Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -224,24 +223,29 @@ export const AdminReportsPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="relative">
-              <select
-                id="reports-preset-date-range"
-                aria-label="Report date range"
+              <Select
                 value={range}
-                onChange={(e) => {
-                  setRange(e.target.value as RangeKey);
+                onValueChange={(value) => {
+                  setRange(value as RangeKey);
                   setSellerPage(1);
                 }}
-                className="appearance-none rounded-lg border border-slate-200 bg-white pl-8 pr-8 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer focus:outline-hidden"
               >
-                {RANGE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="reports-preset-date-range"
+                  aria-label="Report date range"
+                  className="h-9 pl-8 text-xs font-semibold text-slate-700"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RANGE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value} className="text-xs">
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Calendar className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
             </div>
             <button
               type="button"
@@ -292,11 +296,11 @@ export const AdminReportsPage: React.FC = () => {
             <>
               {/* KPI Cards — totals the RPC computed for this window */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-                    <span>GROSS MARKETPLACE VOLUME</span>
+                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                    <span>Gross marketplace volume</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
-                      <DollarSign className="h-4 w-4" />
+                      <Banknote className="h-4 w-4" />
                     </div>
                   </div>
                   <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -307,9 +311,9 @@ export const AdminReportsPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-                    <span>PLATFORM COMMISSION</span>
+                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                    <span>Platform commission</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                       <Percent className="h-4 w-4" />
                     </div>
@@ -324,9 +328,9 @@ export const AdminReportsPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-                    <span>NET TO SELLERS</span>
+                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                    <span>Net to sellers</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                       <Wallet className="h-4 w-4" />
                     </div>
@@ -339,9 +343,9 @@ export const AdminReportsPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-                    <span>AVG ORDER VALUE (AOV)</span>
+                <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                    <span>Average order value (AOV)</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                       <ShoppingCart className="h-4 w-4" />
                     </div>
@@ -360,7 +364,7 @@ export const AdminReportsPage: React.FC = () => {
               {/* Flow Chart & Take by Category */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 <div className="lg:col-span-7">
-                  <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+                  <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <h2 className="text-base font-bold text-slate-900">
@@ -427,8 +431,8 @@ export const AdminReportsPage: React.FC = () => {
 
                     <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                       <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-                        <div className="text-[10px] font-bold text-slate-400">
-                          Shipping Charged
+                        <div className="text-[11px] font-bold text-slate-500">
+                          Shipping charged
                         </div>
                         <div className="mt-0.5 text-sm font-extrabold text-slate-900">
                           {formatPrice(data.totals.freight)}
@@ -436,8 +440,8 @@ export const AdminReportsPage: React.FC = () => {
                         <div className="text-slate-500">Physical packages only</div>
                       </div>
                       <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-                        <div className="text-[10px] font-bold text-slate-400">
-                          Digital Goods Volume
+                        <div className="text-[11px] font-bold text-slate-500">
+                          Digital goods volume
                         </div>
                         <div className="mt-0.5 text-sm font-extrabold text-slate-900">
                           {formatPrice(data.totals.digitalGross)}
@@ -445,8 +449,8 @@ export const AdminReportsPage: React.FC = () => {
                         <div className="text-slate-500">Gross of digital sub-orders</div>
                       </div>
                       <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-                        <div className="text-[10px] font-bold text-slate-400">
-                          Refunds Issued
+                        <div className="text-[11px] font-bold text-slate-500">
+                          Refunds
                         </div>
                         <div className="mt-0.5 text-sm font-extrabold text-slate-900">
                           {formatPrice(data.totals.refunds)}
@@ -458,7 +462,7 @@ export const AdminReportsPage: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-5">
-                  <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+                  <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-base font-bold text-slate-900">
@@ -544,7 +548,7 @@ export const AdminReportsPage: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+                <div className="rounded-xl border border-slate-200/90 bg-white shadow-2xs overflow-hidden">
                   <div className="p-3 border-b border-slate-100">
                     <Input
                       id="reports-seller-search"

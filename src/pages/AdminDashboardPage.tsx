@@ -37,6 +37,7 @@ import {
 import { UpdatedAgo } from '../components/common/UpdatedAgo';
 import { useAdminLive } from '../features/admin/hooks/useLive';
 import { exportToCsv } from '../lib/export-csv';
+import { formatPrice } from '../store/currency-store';
 
 const PERIOD_DAYS: Record<'30d' | '3m' | '6m' | '1y', number> = {
   '30d': 30,
@@ -45,13 +46,13 @@ const PERIOD_DAYS: Record<'30d' | '3m' | '6m' | '1y', number> = {
   '1y': 365,
 };
 
-const money = (value: number) =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Money renders through the site's PKR formatter — no local $ strings. */
+const money = (value: number) => formatPrice(value);
 
-/** Compact axis tick for the Recharts dashboards (Batch 49): $12k, not $12,000.00. */
-const axisMoney = (value: number) => (value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${value}`);
+/** Compact axis tick (Batch 49 pattern): 12k, not 12,000. Full values live in the tooltip. */
+const axisMoney = (value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`);
 
-/** `round(gmv / nullif(orders, 0))` is NULL until the window has orders: say that, do not print $0.00. */
+/** `round(gmv / nullif(orders, 0))` is NULL until the window has orders: say that, do not print a zero amount. */
 const aov = (value: number | null) => (value === null ? 'No orders in this window' : money(value));
 
 const deltaLabel = (pct: number | null) =>

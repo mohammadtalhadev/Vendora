@@ -12,6 +12,20 @@ import { cn } from '../../lib/utils';
  */
 export const Select = SelectPrimitive.Root;
 export const SelectValue = SelectPrimitive.Value;
+export const SelectGroup = SelectPrimitive.Group;
+
+/** Group heading inside a SelectContent (e.g. a root category over its children). */
+export const SelectLabel = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label
+    ref={ref}
+    className={cn('px-2 py-1.5 text-[11px] font-bold text-slate-400', className)}
+    {...props}
+  />
+));
+SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
 export interface SelectTriggerProps
   extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> {
