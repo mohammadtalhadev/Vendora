@@ -3106,6 +3106,12 @@ export type Database = {
       }
       Returns: string
     },
+    "profile_pinned": {
+      Args: {
+        "p_id": string
+      }
+      Returns: Record<string, unknown>[]
+    },
     "purchase_gift_card": {
       Args: {
         "p_recipient_email": string,
@@ -3325,6 +3331,12 @@ export type Database = {
         "p_vendor": string
       }
       Returns: number
+    },
+    "vendor_profile_pinned": {
+      Args: {
+        "p_id": string
+      }
+      Returns: Record<string, unknown>[]
     },
     "vendor_reserve": {
       Args: {

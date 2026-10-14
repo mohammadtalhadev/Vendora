@@ -1247,6 +1247,88 @@ await as('postgres');
 ok('and cannot dismiss someone else’s',
   (await q(`select count(*)::int c from notifications where id=$1`, [othersNotice]))[0].c === 1);
 
+console.log('\n[batch 55] RLS recursion repair + grant hygiene');
+// Batch 55 (20261016000000): the Phase-9 pin idiom subqueried the policy's own
+// table inside WITH CHECK, and on profiles / vendor_profiles — whose ownership
+// test is a direct column-to-auth.uid() comparison — the rewriter aborted
+// EVERY authenticated UPDATE with 42P17 "infinite recursion detected in
+// policy". The old-row read now lives in definer helpers. These tests run the
+// exact direct-table writes the client makes, as the roles the client holds.
+// (a) profile save works again, (b) the pinned columns still cannot move.
+await as('authenticated', CU);
+await q(`update profiles set name = 'Customer Renamed' where id = $1`, [CU]);
+ok('a customer can save their own display name again',
+  (await q(`select name from profiles where id = $1`, [CU]))[0].name === 'Customer Renamed');
+await as('postgres');
+const cuBefore = (await q(`select roles::text r, vendor_status::text vs, account_status::text as_ from profiles where id = $1`, [CU]))[0];
+await as('authenticated', CU);
+await expectThrow('but cannot promote their own roles',
+  () => q(`update profiles set roles = array['admin','customer']::user_role[] where id = $1`, [CU]),
+  'row-level security');
+await expectThrow('nor flip their own vendor_status',
+  () => q(`update profiles set vendor_status = 'approved' where id = $1`, [CU]),
+  'row-level security');
+await expectThrow('nor their own account_status',
+  () => q(`update profiles set account_status = 'suspended' where id = $1`, [CU]),
+  'row-level security');
+await as('postgres');
+const cuAfter = (await q(`select roles::text r, vendor_status::text vs, account_status::text as_ from profiles where id = $1`, [CU]))[0];
+ok('the pinned profile columns are byte-identical after the attempts',
+  cuBefore.r === cuAfter.r && cuBefore.vs === cuAfter.vs && cuBefore.as_ === cuAfter.as_);
+
+// (c) vendor store-settings save works again; approval fields stay pinned.
+await as('authenticated', VENDOR);
+await q(`update vendor_profiles set description = 'Smoke-tested store' where id = $1`, [STORE]);
+ok('a vendor can save their store description again',
+  (await q(`select description from vendor_profiles where id = $1`, [STORE]))[0].description === 'Smoke-tested store');
+await as('postgres');
+const vpBefore = (await q(`select status::text s, commission_rate_override c from vendor_profiles where id = $1`, [STORE]))[0];
+const vpStatusAttempt = vpBefore.s === 'active' ? 'suspended' : 'active';
+await as('authenticated', VENDOR);
+await expectThrow('but cannot change their own store status',
+  () => q(`update vendor_profiles set status = $1::vendor_state where id = $2`, [vpStatusAttempt, STORE]),
+  'row-level security');
+await expectThrow('nor their own commission override',
+  () => q(`update vendor_profiles set commission_rate_override = 0.5 where id = $1`, [STORE]),
+  'row-level security');
+await as('postgres');
+const vpAfter = (await q(`select status::text s, commission_rate_override c from vendor_profiles where id = $1`, [STORE]))[0];
+ok('the pinned store columns are unchanged after the attempts',
+  vpBefore.s === vpAfter.s && String(vpBefore.c) === String(vpAfter.c));
+
+// (d) the grant repair: the outbox pair is internal-only again, the vendor
+// revenue helpers answer admins and refuse everyone else.
+await as('authenticated', CU);
+await expectThrow('a signed-in user cannot queue mail directly',
+  () => q(`select public.enqueue_notification('email','victim@example.com','s','b','smoke', null)`),
+  'permission denied');
+await expectThrow('nor read another account’s phone number',
+  () => q(`select public.profile_phone($1)`, [CU2]),
+  'permission denied');
+await expectThrow('nor enumerate a vendor’s settled GMV',
+  () => q(`select public.admin_vendor_settled_gmv($1, 30)`, [STORE]),
+  'only the platform team');
+await expectThrow('nor a vendor’s tier',
+  () => q(`select public.admin_vendor_tier($1)`, [STORE]),
+  'only the platform team');
+await as('authenticated', ADMIN);
+ok('an admin still gets the settled GMV figure',
+  !Number.isNaN(Number((await q(`select public.admin_vendor_settled_gmv($1, 30) g`, [STORE]))[0].g)));
+ok('and the tier',
+  ['enterprise', 'volume_preferred', 'growing', 'standard'].includes(
+    (await q(`select public.admin_vendor_tier($1) t`, [STORE]))[0].t));
+await as('postgres');
+const acl = (await q(
+  `select has_function_privilege('authenticated', 'public.enqueue_notification(text,text,text,text,text,uuid)', 'execute') e,
+          has_function_privilege('authenticated', 'public.profile_phone(uuid)', 'execute') p,
+          has_function_privilege('authenticated', 'public.admin_vendor_settled_gmv(uuid,integer)', 'execute') g,
+          has_function_privilege('service_role', 'public.enqueue_notification(text,text,text,text,text,uuid)', 'execute') s`,
+))[0];
+ok('the ACL agrees: authenticated lost the outbox pair, kept the guarded helpers',
+  acl.e === false && acl.p === false && acl.g === true && acl.s === true);
+ok('the definer outbox triggers still enqueue (internal callers unaffected)',
+  (await q(`select count(*)::int c from notification_outbox`))[0].c > 0);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;
