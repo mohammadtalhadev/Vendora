@@ -1,8 +1,13 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, ShieldCheck } from 'lucide-react';
+import { Star, ShoppingCart, Heart, ShieldCheck, ArrowLeftRight } from 'lucide-react';
 import { StoreLogo } from '../../vendor/components/StoreLogo';
 import { useCurrency } from '../../../store/currency-store';
+import { useCompareStore } from '../../../store/compare-store';
+import { useToast } from '../../../hooks/useToast';
+import { Toast } from '../../../components/common/Toast';
+import { cardItemToProduct } from '../mappers';
 
 export interface ProductItem {
   id: string;
@@ -52,6 +57,28 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const lowStock = product.stock <= 20;
   const { formatPrice } = useCurrency();
 
+  // Compare is wired straight to the compare store: the toggle used to exist
+  // nowhere, which left the compare page, its navbar badge and this button's
+  // whole feature unreachable.
+  const compareItems = useCompareStore((s) => s.items);
+  const addToCompare = useCompareStore((s) => s.addItem);
+  const removeFromCompare = useCompareStore((s) => s.removeItem);
+  const isCompared = compareItems.some((item) => item.id === product.id);
+  const { toast, showToast, hideToast } = useToast();
+
+  const handleToggleCompare = () => {
+    if (isCompared) {
+      removeFromCompare(product.id);
+      showToast(`Removed ${product.title} from compare`, 'info');
+      return;
+    }
+    if (addToCompare(cardItemToProduct(product))) {
+      showToast(`Added ${product.title} to compare`);
+    } else {
+      showToast('Compare is full — remove a product before adding another (max 4).', 'error');
+    }
+  };
+
   const showVerified = product.sellerType === 'platform' || Boolean(product.isVerified);
 
   return (
@@ -72,6 +99,20 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
             <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleCompare}
+            aria-pressed={isCompared}
+            className={`absolute right-2 top-11 sm:top-12 z-10 flex h-7 w-7 sm:h-8 sm:w-8 cursor-pointer items-center justify-center rounded-full backdrop-blur-md border shadow-xs transition-all hover:bg-white hover:scale-110 hover:text-sun-orange hover:ring-2 hover:ring-sun-orange ${
+              isCompared
+                ? 'bg-sun-orange text-white border-sun-orange hover:text-white'
+                : 'bg-white/75 border-white/60 text-slate-500'
+            }`}
+            title={isCompared ? 'Remove from compare' : 'Add to compare'}
+            aria-label={isCompared ? `Remove ${product.title} from compare` : `Add ${product.title} to compare`}
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
           <Link to={`/products/${product.id}`} className="flex h-full w-full items-center justify-center">
             <img
@@ -242,6 +283,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           )}
         </div>
       </div>
+      {/* Portalled: the card's own hover transform would otherwise become the
+          fixed toast's containing block and pin it to the card. */}
+      {createPortal(<Toast toast={toast} onDismiss={hideToast} />, document.body)}
     </div>
   );
 });

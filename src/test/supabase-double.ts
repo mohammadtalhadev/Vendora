@@ -460,6 +460,12 @@ export function createSupabaseDouble() {
         this.filters.push((row) => Number(row[column]) >= value);
         return this;
       },
+      gt(column: string, value: number) {
+        // Postgres semantics: a NULL column never satisfies `>`, and
+        // Number(null) would read as 0, so nulls are excluded explicitly.
+        this.filters.push((row) => row[column] !== null && row[column] !== undefined && Number(row[column]) > value);
+        return this;
+      },
       lte(column: string, value: number) {
         this.filters.push((row) => Number(row[column]) <= value);
         return this;

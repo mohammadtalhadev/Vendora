@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 /**
@@ -32,6 +32,7 @@ vi.mock('../features/catalog/hooks/useProducts', () => ({
     };
   },
   useCategories: () => ({ data: { categories: [] } }),
+  useProductBrands: () => ({ data: { brands: [] } }),
 }));
 
 vi.mock('../lib/supabase', async () => {
@@ -150,5 +151,35 @@ describe('ProductsPage price filter', () => {
     // stored PKR bound), never the raw rupee figure or a multiplied one.
     expect(screen.getByText(/above \$40\.00/)).toBeInTheDocument();
     expect(screen.queryByText(/11,088|3,068,544/)).not.toBeInTheDocument();
+  });
+});
+
+describe('ProductsPage facets (Batch 46)', () => {
+  it('forwards brand, rating, stock and sale URL params to the catalog query', async () => {
+    renderPage('/products?brand=Sony&rating=4.5&stock=1&sale=1');
+
+    await screen.findByText('No products match your filters');
+    expect(lastParams()).toMatchObject({
+      brand: 'Sony',
+      minRating: 4.5,
+      inStock: true,
+      onSale: true,
+    });
+  });
+
+  it('reset clears every facet, including a category that arrived via the URL', async () => {
+    renderPage('/products?category=audio&brand=Sony&min=100&max=900');
+
+    await screen.findByText('No products match your filters');
+    fireEvent.click(screen.getAllByRole('button', { name: /reset/i })[0]);
+
+    await waitFor(() => {
+      expect(lastParams()).toMatchObject({
+        category: undefined,
+        brand: undefined,
+        minPrice: undefined,
+        maxPrice: undefined,
+      });
+    });
   });
 });

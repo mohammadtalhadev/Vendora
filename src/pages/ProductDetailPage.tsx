@@ -1,4 +1,4 @@
-import React, { useState, useId, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Star,
@@ -20,11 +20,19 @@ import {
   Shield,
   Sparkles,
   Play,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { useProductDetail } from '../features/catalog/hooks/useProducts';
 import { recordRecentlyViewed } from '../features/catalog/recently-viewed';
+import { variantPrice as resolveVariantPrice } from '../features/catalog/api/product-row';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
+import { useCompareStore } from '../store/compare-store';
+import { useToast } from '../hooks/useToast';
+import { Toast } from '../components/common/Toast';
+import { openCartDrawer } from '../features/cart/open-cart';
+import { formatDeliveryWindow } from '../lib/delivery-estimate';
+import type { Variant } from '../types/domain';
 import { useCurrency } from '../store/currency-store';
 import { QueryState } from '../components/common/QueryState';
 import { Button } from '../components/ui/button';
@@ -38,11 +46,17 @@ import { CustomerReviewsShowcase } from '../features/products/components/Custome
 import { useProductReviews } from '../features/reviews/hooks/useReviews';
 import { CustomersAlsoViewedGrid } from '../features/products/components/CustomersAlsoViewedGrid';
 
-interface VariantChoice {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
+/**
+ * The attribute map of one listed variant. Current rows carry `attributes`;
+ * a minority of older rows carry the same map under `options` (the schema v2
+ * backfill reads both), so the picker reads both rather than dropping them.
+ */
+function variantAttributes(variant: Variant): Record<string, string> {
+  const raw = variant as unknown as {
+    attributes?: Record<string, string>;
+    options?: Record<string, string>;
+  };
+  return raw.attributes ?? raw.options ?? {};
 }
 
 export const ProductDetailPage: React.FC = () => {
@@ -59,88 +73,66 @@ export const ProductDetailPage: React.FC = () => {
   const { addItem } = useCartStore();
   const { isInWishlist, toggleWishlist } = useWishlistStore();
   const { formatPrice } = useCurrency();
+  const { toast, showToast, hideToast } = useToast();
+
+  // Compare — the toggle the compare page and navbar badge always assumed existed.
+  const compareItems = useCompareStore((s) => s.items);
+  const addToCompare = useCompareStore((s) => s.addItem);
+  const removeFromCompare = useCompareStore((s) => s.removeItem);
+  const isCompared = product ? compareItems.some((item) => item.id === product.id) : false;
+
+  const handleToggleCompare = () => {
+    if (!product) return;
+    if (isCompared) {
+      removeFromCompare(product.id);
+      showToast(`Removed ${product.title} from compare`, 'info');
+      return;
+    }
+    if (addToCompare(product)) {
+      showToast(`Added ${product.title} to compare`);
+    } else {
+      showToast('Compare is full — remove a product before adding another (max 4).', 'error');
+    }
+  };
 
   // Price & Seller Selection State
   const basePrice = product?.price ?? 0;
   const [selectedOffer, setSelectedOffer] = useState<{ sellerName: string; price: number } | null>(null);
 
-  // Variant Choice Options
-  const choiceOptions: VariantChoice[] = useMemo(() => {
-    const isSkincare =
-      !product?.title ||
-      product.title.toLowerCase().includes('cleanser') ||
-      product.title.toLowerCase().includes('cream') ||
-      product.title.toLowerCase().includes('skin') ||
-      product.title.toLowerCase().includes('serum') ||
-      product.category?.toLowerCase().includes('beauty');
-
-    if (isSkincare) {
-      return [
-        {
-          id: 'choice-oily',
-          title: 'Normal to Oily',
-          subtitle: 'Matte Finish',
-          description: 'Lightweight oil-control barrier protection',
-        },
-        {
-          id: 'choice-dry',
-          title: 'Normal to Dry',
-          subtitle: 'Hydrating Formula',
-          description: 'Deep moisture replenishment with ceramides',
-        },
-      ];
-    }
-
-    const isTech =
-      product.title.toLowerCase().includes('phone') ||
-      product.title.toLowerCase().includes('iphone') ||
-      product.category?.toLowerCase().includes('electronics');
-
-    if (isTech) {
-      return [
-        {
-          id: 'choice-standard',
-          title: 'Natural Titanium',
-          subtitle: '256 GB',
-          description: 'Aerospace Grade 5 Alloy',
-        },
-        {
-          id: 'choice-pro',
-          title: 'Black Titanium',
-          subtitle: '512 GB',
-          description: 'Deep Space PVD Coated',
-        },
-      ];
-    }
-
-    return [
-      {
-        id: 'choice-standard',
-        title: 'Standard Edition',
-        subtitle: 'Factory Sealed',
-        description: 'Authentic verified packaging',
-      },
-      {
-        id: 'choice-pro',
-        title: 'Deluxe Package',
-        subtitle: 'Extended Bundle',
-        description: 'Includes bundle accessories',
-      },
-    ];
-  }, [product]);
+  // Real variants — the only options offered are the rows the seller actually
+  // listed, from the product's variants jsonb: the same ids (and prices) the
+  // cart and place_order resolve against. Nothing is generated from the title.
+  const listedVariants = useMemo(() => product?.variants ?? [], [product]);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const selectedVariant: Variant | null =
+    listedVariants.find((v) => v.id === selectedVariantId) ??
+    listedVariants.find((v) => v.stock > 0) ??
+    listedVariants[0] ??
+    null;
+  const variantAttributeKeys = useMemo(
+    () => [...new Set(listedVariants.flatMap((v) => Object.keys(variantAttributes(v))))],
+    [listedVariants],
+  );
+  const variantPickerLabel =
+    variantAttributeKeys.length === 1 ? variantAttributeKeys[0] : 'Options';
 
   // State
-  const [selectedChoiceId, setSelectedChoiceId] = useState<string>('choice-dry');
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [shippingOption, setShippingOption] = useState<'delivery' | 'pickup'>('delivery');
-  const [hasProtectionPlan, setHasProtectionPlan] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const protectionPlanId = useId();
+
+  // The selected variant carries its own stock; another seller's offer and a
+  // variant-less product fall back to the product row's stock.
+  const effectiveStock = selectedOffer
+    ? (product?.stock ?? 0)
+    : selectedVariant
+      ? selectedVariant.stock
+      : (product?.stock ?? 0);
 
   // Handlers
   const handleQuantityChange = (delta: number) => {
@@ -148,34 +140,37 @@ export const ProductDetailPage: React.FC = () => {
     setQuantity((prev) => {
       const next = prev + delta;
       if (next < 1) return 1;
-      const max = product.stock > 0 ? product.stock : 99;
+      const max = effectiveStock > 0 ? effectiveStock : 99;
       return next > max ? max : next;
     });
   };
 
-  const selectedChoice = choiceOptions.find((c) => c.id === selectedChoiceId) || choiceOptions[0];
-  const unitPrice = selectedOffer ? selectedOffer.price : basePrice;
+  // A variant resolves its own price through the same helper the cart prices
+  // lines with; an accepted offer from another seller overrides it, as before.
+  const variantUnitPrice = product ? resolveVariantPrice(product, selectedVariant?.id) : basePrice;
+  const unitPrice = selectedOffer ? selectedOffer.price : variantUnitPrice;
   const currentSellerName = selectedOffer
     ? selectedOffer.sellerName
     : product?.sellerName?.trim() || 'Vendora Seller';
-  // Protection plan: an explicitly-labelled add-on with a single clear price, no invented market comparison.
-  const PROTECTION_PLAN_PRICE = 14.99;
   // The strikethrough "was" price comes only from the real `compare_at_price` column, never a fabricated markup.
   const compareAtPrice = product?.compareAtPrice;
   const hasRealSavings = compareAtPrice !== undefined && compareAtPrice > unitPrice;
-  const totalAmount = unitPrice * quantity + (hasProtectionPlan ? PROTECTION_PLAN_PRICE : 0);
+  const totalAmount = unitPrice * quantity;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (openDrawer = true) => {
     if (!product) return;
+    // An offer line belongs to another seller's listing, whose variants are
+    // not this page's — it carries no variant id rather than this seller's.
+    const lineVariant = selectedOffer ? null : selectedVariant;
     addItem(
       {
-        id: `${product.id}-${selectedChoiceId}`,
+        id: lineVariant ? `${product.id}-${lineVariant.id}` : product.id,
         productId: product.id,
-        variantId: selectedChoiceId,
-        title: `${product.title} (${selectedChoice.title})`,
+        variantId: lineVariant?.id,
+        title: lineVariant ? `${product.title} (${lineVariant.name})` : product.title,
         price: unitPrice,
         compareAtPrice: product.compareAtPrice,
-        maxStock: product.stock,
+        maxStock: effectiveStock,
         image: displayImages[selectedImageIndex] || displayImages[0],
         sellerId: product.sellerId,
         sellerName: currentSellerName,
@@ -186,10 +181,11 @@ export const ProductDetailPage: React.FC = () => {
     );
     setAddedAnimation(true);
     setTimeout(() => setAddedAnimation(false), 2000);
+    if (openDrawer) openCartDrawer();
   };
 
   const handleBuyNow = () => {
-    handleAddToCart();
+    handleAddToCart(false);
     navigate('/cart');
   };
 
@@ -261,15 +257,16 @@ export const ProductDetailPage: React.FC = () => {
       { label: 'Condition', value: 'Brand New (Original Factory Packaging)' },
       { label: 'Authenticity', value: '100% Genuine & Verified by Vendora' },
       { label: 'Return Window', value: '30 days from delivery — see the Vendora returns policy' },
-      { label: 'Warranty', value: '1 Year Manufacturer / Vendor Warranty' },
       { label: 'Shipping & Handling', value: product?.type === 'digital' ? 'Instant Download Link' : 'Tracked & Insured Courier' },
     ];
-    const sku = product?.variants?.[0]?.sku;
+    // No warranty row: the schema carries no warranty field, so the page
+    // states none rather than promising every product the same cover.
+    const sku = selectedVariant?.sku ?? product?.variants?.[0]?.sku;
     if (sku) {
       facts.unshift({ label: 'SKU / Model', value: sku });
     }
     return facts;
-  }, [displayBrand, categoryLabel, product?.type, product?.variants]);
+  }, [displayBrand, categoryLabel, product?.type, product?.variants, selectedVariant]);
 
   return (
     <div className="relative min-h-screen py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 overflow-hidden">
@@ -345,6 +342,23 @@ export const ProductDetailPage: React.FC = () => {
                     Link copied!
                   </span>
                 )}
+              </button>
+
+              {/* Compare toggle pill */}
+              <button
+                type="button"
+                onClick={handleToggleCompare}
+                aria-pressed={isCompared}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
+                  isCompared
+                    ? 'border-sun-orange bg-sun-orange text-white hover:bg-sun-orange-600'
+                    : 'border-slate-200/80 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+                title="Compare this product"
+                aria-label={isCompared ? 'Remove from compare' : 'Add to compare'}
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5" />
+                <span>{isCompared ? 'In Compare' : 'Compare'}</span>
               </button>
             </div>
           </div>
@@ -591,7 +605,7 @@ export const ProductDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleQuantityChange(1)}
-                      disabled={product.stock > 0 && quantity >= product.stock}
+                      disabled={effectiveStock > 0 && quantity >= effectiveStock}
                       className="flex h-6 w-6 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
                       aria-label="Increase quantity"
                     >
@@ -599,71 +613,91 @@ export const ProductDetailPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Amber low stock warning pill — only when the real row stock supports it */}
-                  {product.stock > 0 && product.stock <= 10 && (
+                  {/* Amber low stock warning pill — only when the real stock supports it */}
+                  {effectiveStock > 0 && effectiveStock <= 10 && (
                     <div className="flex items-center gap-1.5 text-xs font-medium text-amber-700">
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                      <span>Only {product.stock} left in stock</span>
+                      <span>Only {effectiveStock} left in stock</span>
                     </div>
                   )}
                 </div>
 
-                {/* Choice / Variant Cards */}
-                <div className="space-y-2.5 pt-1" role="group" aria-label="Edition options">
-                  {choiceOptions.map((choice) => {
-                    const isSelected = selectedChoiceId === choice.id;
-                    return (
-                      <button
-                        key={choice.id}
-                        type="button"
-                        onClick={() => setSelectedChoiceId(choice.id)}
-                        aria-pressed={isSelected}
-                        className={`w-full cursor-pointer rounded-2xl p-3.5 text-left transition-all ${
-                          isSelected
-                            ? 'border-2 border-sun-orange bg-orange-50/20 shadow-2xs'
-                            : 'border border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <span className="flex items-center justify-between">
-                          <span className="block">
-                            <span
-                              className={`block text-xs font-bold ${
-                                isSelected ? 'text-sun-orange' : 'text-slate-900'
-                              }`}
-                            >
-                              {choice.title}
-                            </span>
-                            <span className="mt-0.5 block text-[11px] text-slate-500">
-                              {choice.subtitle}
-                            </span>
-                          </span>
-                          <span className="text-[11px] text-slate-400 font-medium">
-                            {choice.description}
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Protection Plan Checkbox */}
-                <div className="pt-1">
-                  <label
-                    htmlFor={protectionPlanId}
-                    className="flex cursor-pointer items-center gap-2.5 text-xs select-none"
-                  >
-                    <input
-                      id={protectionPlanId}
-                      type="checkbox"
-                      checked={hasProtectionPlan}
-                      onChange={(e) => setHasProtectionPlan(e.target.checked)}
-                      className="h-4 w-4 rounded-md border-slate-300 text-sun-orange accent-sun-orange focus:ring-sun-orange cursor-pointer"
-                    />
-                    <span className="font-semibold text-slate-800">
-                      2-year protection plan {formatPrice(PROTECTION_PLAN_PRICE)}
+                {/* Real Variant Picker — only the variants the seller listed.
+                    A product with no variants renders no picker at all. */}
+                {listedVariants.length > 0 && (
+                  <div className="space-y-2.5 pt-1" role="group" aria-label={`${variantPickerLabel} options`}>
+                    <span className="text-xs font-bold text-slate-700">
+                      {variantPickerLabel}:{' '}
+                      <span className="text-slate-900">{selectedVariant?.name}</span>
                     </span>
-                  </label>
-                </div>
+                    {listedVariants.map((variant) => {
+                      const isSelected = selectedVariant?.id === variant.id;
+                      const attributes = variantAttributes(variant);
+                      const attributeText = Object.entries(attributes)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(' · ');
+                      const outOfStock = variant.stock <= 0;
+                      return (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          disabled={outOfStock}
+                          onClick={() => {
+                            setSelectedVariantId(variant.id);
+                            setSelectedOffer(null);
+                            setQuantity(1);
+                          }}
+                          aria-pressed={isSelected}
+                          className={`w-full rounded-2xl p-3.5 text-left transition-all ${
+                            outOfStock
+                              ? 'border border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
+                              : isSelected
+                                ? 'border-2 border-sun-orange bg-orange-50/20 shadow-2xs cursor-pointer'
+                                : 'border border-slate-200 bg-white hover:border-slate-300 cursor-pointer'
+                          }`}
+                        >
+                          <span className="flex items-center justify-between gap-3">
+                            <span className="block min-w-0">
+                              <span
+                                className={`block text-xs font-bold ${
+                                  isSelected ? 'text-sun-orange' : 'text-slate-900'
+                                }`}
+                              >
+                                {variant.name}
+                              </span>
+                              {attributeText && (
+                                <span className="mt-0.5 block text-[11px] text-slate-500">
+                                  {attributeText}
+                                </span>
+                              )}
+                              {variant.sku && (
+                                <span className="mt-0.5 block font-mono text-[10px] text-slate-400">
+                                  SKU {variant.sku}
+                                </span>
+                              )}
+                            </span>
+                            <span className="block shrink-0 text-right">
+                              <span className="block text-xs font-extrabold text-slate-900">
+                                {formatPrice(Number(variant.price))}
+                              </span>
+                              <span
+                                className={`mt-0.5 block text-[11px] font-medium ${
+                                  outOfStock ? 'text-rose-500' : 'text-slate-400'
+                                }`}
+                              >
+                                {outOfStock
+                                  ? 'Out of stock'
+                                  : variant.stock <= 10
+                                    ? `Only ${variant.stock} left`
+                                    : 'In stock'}
+                              </span>
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* ========================================================= */}
@@ -724,6 +758,19 @@ export const ProductDetailPage: React.FC = () => {
                     </button>
                   </div>
 
+                  {/* Estimated delivery — the shared standard window, labelled
+                      an estimate; digital products deliver instantly instead. */}
+                  {product.type === 'physical' && shippingOption === 'delivery' && (
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
+                      <Truck className="h-3.5 w-3.5 shrink-0 text-sun-orange" />
+                      <span>
+                        Estimated delivery{' '}
+                        <span className="font-bold text-slate-900">{formatDeliveryWindow()}</span>{' '}
+                        (estimate)
+                      </span>
+                    </p>
+                  )}
+
                   {/* Total Amount & Price Calculation */}
                   <div className="border-t border-slate-100 pt-3">
                     <div className="flex items-baseline justify-between">
@@ -753,7 +800,7 @@ export const ProductDetailPage: React.FC = () => {
                       type="button"
                       variant="default"
                       size="lg"
-                      onClick={handleAddToCart}
+                      onClick={() => handleAddToCart()}
                       className={addedAnimation ? 'w-full bg-emerald-600 hover:bg-emerald-700' : 'w-full'}
                     >
                       {addedAnimation ? (
@@ -791,14 +838,15 @@ export const ProductDetailPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Official Warranty Card */}
+                  {/* Returns Card — the cover every order actually carries.
+                      No warranty is promised: the schema has no warranty field. */}
                   <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 text-center">
                     <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800">
                       <Shield className="h-3.5 w-3.5 text-emerald-600 fill-emerald-100" />
-                      <span>1-Year Official Warranty</span>
+                      <span>30-Day Returns</span>
                     </div>
                     <p className="mt-1 text-[11px] text-slate-500">
-                      30-day hassle-free returns &amp; refund
+                      Hassle-free returns &amp; refund within 30 days of delivery
                     </p>
                   </div>
                 </div>
@@ -847,6 +895,44 @@ export const ProductDetailPage: React.FC = () => {
             {/* CUSTOMERS ALSO VIEWED                                     */}
             {/* ========================================================= */}
             <CustomersAlsoViewedGrid excludeId={product.id} />
+
+            {/* Spacer so the mobile sticky bar never covers page content */}
+            <div className="h-24 lg:hidden" aria-hidden="true" />
+
+            {/* ========================================================= */}
+            {/* MOBILE STICKY BUY BAR (< lg) — mirrors the buy box: same
+                variant, same quantity, same actions. Sits above the
+                BottomNav on small phones, flush on md screens.          */}
+            {/* ========================================================= */}
+            <div className="fixed inset-x-0 bottom-[76px] md:bottom-0 z-40 lg:hidden border-t border-slate-200/80 bg-white/92 px-4 py-3 shadow-[0_-8px_30px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 shrink-0">
+                  <div className="font-outfit text-base font-black leading-tight text-slate-900">
+                    {formatPrice(unitPrice)}
+                  </div>
+                  <div className="max-w-[110px] truncate text-[10px] font-medium text-slate-500">
+                    {selectedVariant ? selectedVariant.name : displayTitle}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAddToCart()}
+                  disabled={effectiveStock <= 0}
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sun-orange py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:bg-sun-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                  <span>{effectiveStock <= 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={effectiveStock <= 0}
+                  className="shrink-0 cursor-pointer rounded-full bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Buy Now
+                </button>
+              </div>
+            </div>
 
             {/* ========================================================= */}
             {/* INTERACTIVE MODALS                                        */}
@@ -905,6 +991,7 @@ export const ProductDetailPage: React.FC = () => {
         )}
       </QueryState>
       </div>
+      <Toast toast={toast} onDismiss={hideToast} />
     </div>
   );
 };

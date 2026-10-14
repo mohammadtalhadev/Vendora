@@ -54,6 +54,38 @@ function inferTaxonomy(title: string, category: string): { subCategoryId: string
   return { subCategoryId: 'sub-smartphones', childCategoryId: 'child-phone-flagship' };
 }
 
+/**
+ * Rebuild the domain `Product` a card-level action (compare) stores, from the
+ * fields the card itself carries — the same reconstruction the wishlist
+ * toggle performs. Variants and shipping settings are not card data, so they
+ * stay empty rather than invented; the compare matrix renders card-level
+ * fields, and a product added from its own page carries the full record.
+ */
+export function cardItemToProduct(item: ProductItem): Product {
+  return {
+    id: item.id,
+    title: item.title,
+    slug: item.id,
+    description: item.title,
+    category: item.category,
+    brand: '',
+    images: [item.image],
+    price: item.price,
+    compareAtPrice: item.compareAtPrice,
+    type: item.type,
+    sellerId: item.sellerId,
+    sellerName: item.sellerName,
+    sellerType: item.sellerType,
+    sellerLogo: item.sellerLogo ?? null,
+    variants: [],
+    stock: item.stock,
+    rating: item.rating,
+    reviewCount: item.reviewCount,
+    status: 'approved',
+    createdAt: new Date().toISOString(),
+  };
+}
+
 /** Map a catalog `Product` onto the shape the shared product card renders. */
 export function domainProductToCardItem(p: Product): ProductItem {
   const categoryKey = (p.category || '').replace(/^cat-/, '').toLowerCase();

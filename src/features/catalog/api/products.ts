@@ -6,6 +6,19 @@ import type { Category, Product, ProductType } from '../../../types/domain';
 export interface ProductQueryParams {
   q?: string;
   category?: string;
+  /** Exact brand string as stored on the product row (see fetchProductBrands). */
+  brand?: string;
+  /** Keep only products whose stored rating is at least this value. */
+  minRating?: number;
+  /** Keep only products with stock on hand. */
+  inStock?: boolean;
+  /**
+   * Keep only products carrying a compare-at price. A compare-at price is only
+   * ever recorded for a was/now offer, and a NULL never satisfies `> 0`, so this
+   * is the sale shelf; the cards still compute the visible discount from
+   * compare_at_price > price exactly as before.
+   */
+  onSale?: boolean;
   type?: ProductType;
   seller?: 'platform' | 'vendor';
   /** One store's shelf, for a public storefront page. */
@@ -98,6 +111,10 @@ export async function fetchProducts(
     if (categoryIds) query = query.in('category_id', categoryIds);
     if (sellerIds) query = query.in('seller_id', sellerIds);
     if (params.sellerId) query = query.eq('seller_id', params.sellerId);
+    if (params.brand) query = query.eq('brand', params.brand);
+    if (params.minRating !== undefined) query = query.gte('rating', params.minRating);
+    if (params.inStock) query = query.gte('stock', 1);
+    if (params.onSale) query = query.gt('compare_at_price', 0);
     if (params.type) query = query.eq('type', params.type);
     if (params.minPrice !== undefined) query = query.gte('price', params.minPrice);
     if (params.maxPrice !== undefined) query = query.lte('price', params.maxPrice);
@@ -173,6 +190,22 @@ export async function fetchCategories(signal?: AbortSignal): Promise<{ categorie
         row.commission_rate_override === null ? undefined : Number(row.commission_rate_override),
     })),
   };
+}
+
+/**
+ * The distinct brand strings carried by approved products — the catalogue's
+ * brand facet reads its options from the shelf itself, never a hardcoded list.
+ */
+export async function fetchProductBrands(signal?: AbortSignal): Promise<{ brands: string[] }> {
+  let query = supabase.from('products').select('brand').eq('status', 'approved');
+
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query;
+
+  if (error) throw new Error(`Failed to load brands: ${error.message}`);
+  const brands = [...new Set((data ?? []).map((row) => row.brand?.trim()).filter(Boolean) as string[])];
+  brands.sort((a, b) => a.localeCompare(b));
+  return { brands };
 }
 
 export async function fetchSearchSuggestions(

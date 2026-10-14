@@ -1,9 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import {
   Package,
   Layers,
-  Sparkles,
   Trash2,
   Download,
   Box,
@@ -17,7 +16,6 @@ import {
   Globe,
   Image as ImageIcon,
   Check,
-  Percent,
   Loader2,
   ChevronDown,
   Store,
@@ -36,8 +34,12 @@ import {
 } from '../components/ui/select';
 import type { ProductType, Variant } from '../types/domain';
 import { useCategories } from '../features/catalog/hooks/useProducts';
-import { useCreateVendorProduct } from '../features/vendor/hooks/useVendorProducts';
-import type { VendorProductDraft } from '../features/vendor/api/products';
+import {
+  useCreateVendorProduct,
+  useUpdateVendorProduct,
+  useVendorProduct,
+} from '../features/vendor/hooks/useVendorProducts';
+import type { VendorProductDraft, VendorProductUpdate } from '../features/vendor/api/products';
 import { useVendorData } from '../features/vendor/hooks/useVendorData';
 import { useUploadMedia } from '../features/vendor/hooks/useVendorMedia';
 import { cn } from '../lib/utils';
@@ -45,10 +47,17 @@ import { siteOrigin } from '../lib/site-origin';
 
 export const VendorAddProductPage: React.FC = () => {
   const navigate = useNavigate();
+  // The same page serves products/new and products/:id/edit: with an id it
+  // loads that listing and saves updates — it must never silently create a
+  // duplicate of the product the seller meant to edit.
+  const { id: editId } = useParams<{ id: string }>();
+  const isEdit = Boolean(editId);
   const { vendorId, storeName } = useVendorData();
   const { data: categoryData } = useCategories();
   const categories = categoryData?.categories ?? [];
   const createListing = useCreateVendorProduct();
+  const updateListing = useUpdateVendorProduct();
+  const existingQuery = useVendorProduct(editId ?? '');
   const upload = useUploadMedia();
 
   // Basic Information
@@ -65,18 +74,15 @@ export const VendorAddProductPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Pricing & Inventory
+  // Pricing & Inventory — only fields the products row actually stores are
+  // collected. Cost, tax flags, a product-level SKU, barcode, backorders,
+  // low-stock thresholds, tags, collections and SEO overrides have no column
+  // and no write path, so the form no longer pretends to save them.
   const [price, setPrice] = useState('');
   const [compareAtPrice, setCompareAtPrice] = useState('');
-  const [costPerItem, setCostPerItem] = useState('');
-  const [chargeTax, setChargeTax] = useState(true);
 
   // Stock
-  const [sku, setSku] = useState('');
-  const [barcode, setBarcode] = useState('');
-  const [trackQuantity, setTrackQuantity] = useState(true);
   const [stock, setStock] = useState('');
-  const [lowStockThreshold, setLowStockThreshold] = useState('5');
 
   // Fulfillment
   const [productType, setProductType] = useState<ProductType>('physical');
@@ -104,15 +110,6 @@ export const VendorAddProductPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Organization & Visibility
-  const [tags, setTags] = useState<string[]>([]);
-  const [newTagInput, setNewTagInput] = useState('');
-  const [collection, setCollection] = useState('');
-
-  // SEO
-  const [seoTitle, setSeoTitle] = useState('');
-  const [seoDescription, setSeoDescription] = useState('');
-
   // Toast & Validation
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -122,16 +119,49 @@ export const VendorAddProductPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Auto-generate slug when title changes
+  // Edit mode: prefill every field from the loaded listing, exactly once.
+  const [prefilled, setPrefilled] = useState(false);
+  React.useEffect(() => {
+    const p = existingQuery.data;
+    if (!isEdit || !p || prefilled) return;
+    setTitle(p.title);
+    setSlug(p.slug);
+    setBrand(p.brand ?? '');
+    setDescription(p.description ?? '');
+    setImages(p.images ?? []);
+    setPrice(String(p.price));
+    setCompareAtPrice(p.compareAtPrice ? String(p.compareAtPrice) : '');
+    setStock(String(p.stock));
+    setProductType(p.type);
+    setWeightKg(p.shippingSettings?.weightKg ? String(p.shippingSettings.weightKg) : '');
+    setFreeShipping(Boolean(p.shippingSettings?.freeShipping));
+    setShippingFee(p.shippingSettings?.standardFee ? String(p.shippingSettings.standardFee) : '');
+    setLicenseType(p.digitalAssetInfo?.licenseType ?? '');
+    setDownloadUrl(p.digitalAssetInfo?.downloadUrl ?? '');
+    setVariants(p.variants ?? []);
+    setHasVariants((p.variants ?? []).length > 0);
+    setPrefilled(true);
+  }, [existingQuery.data, isEdit, prefilled]);
+
+  // An edited row carries the category *name*; the select is addressed by id
+  // (the same resolution ProductFormModal performs).
+  React.useEffect(() => {
+    if (!isEdit || categoryId || !existingQuery.data?.category || categories.length === 0) return;
+    const match = categories.find((cat) => cat.name === existingQuery.data.category);
+    if (match) setCategoryId(match.id);
+  }, [categories, existingQuery.data, categoryId, isEdit]);
+
+  // Auto-generate slug when title changes — while creating only. An existing
+  // listing keeps its live URL when its title is edited.
   const handleTitleChange = (val: string) => {
     setTitle(val);
+    if (isEdit) return;
     const generatedSlug = val
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
     setSlug(generatedSlug);
-    if (!seoTitle) setSeoTitle(val);
   };
 
   const handleAddImage = () => {
@@ -181,26 +211,6 @@ export const VendorAddProductPage: React.FC = () => {
     }
   };
 
-  const handleAddTag = (e: React.KeyboardEvent | React.MouseEvent) => {
-    if ('key' in e && e.key !== 'Enter') return;
-    e.preventDefault();
-    if (!newTagInput.trim() || tags.includes(newTagInput.trim())) return;
-    setTags((prev) => [...prev, newTagInput.trim()]);
-    setNewTagInput('');
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags((prev) => prev.filter((t) => t !== tagToRemove));
-  };
-
-  const handleGenerateSku = () => {
-    const random = Math.floor(1000 + Math.random() * 9000);
-    const code = brand.slice(0, 2).toUpperCase();
-    const newSku = `${code}-${random}`;
-    setSku(newSku);
-    showToast(`Generated SKU: ${newSku}`);
-  };
-
   const handleGenerateVariants = () => {
     const rawValues = optionValues
       .split(',')
@@ -212,13 +222,17 @@ export const VendorAddProductPage: React.FC = () => {
     const basePriceNum = parseFloat(price) || 0;
     const baseStockNum = parseInt(stock, 10) || 10;
     const optLabel = optionName.trim() || 'Option';
+    // SKUs live on variants (the products row has none); the prefix comes
+    // from the brand or title the seller typed.
+    const skuPrefix =
+      (brand.trim().slice(0, 2) || title.trim().slice(0, 2) || 'PR').toUpperCase() || 'PR';
 
     const generated: Variant[] = rawValues.map((val, index) => {
       const slugVal = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
       return {
         id: `var-${Date.now()}-${index}`,
         name: `${optLabel}: ${val}`,
-        sku: `${sku || 'PROD'}-${slugVal}-${index + 1}`,
+        sku: `${skuPrefix}-${slugVal}-${index + 1}`,
         price: basePriceNum,
         stock: Math.max(1, Math.floor(baseStockNum / rawValues.length)),
         attributes: { [optLabel]: val },
@@ -233,15 +247,11 @@ export const VendorAddProductPage: React.FC = () => {
     setVariants((prev) => prev.filter((v) => v.id !== id));
   };
 
-  // Margin calculation
   const priceNum = parseFloat(price) || 0;
-  const costNum = parseFloat(costPerItem) || 0;
-  const grossProfit = priceNum > 0 ? priceNum - costNum : 0;
-  const profitMargin = priceNum > 0 ? ((grossProfit / priceNum) * 100).toFixed(1) : '0';
 
   // Listing completeness counts only what the seller actually controls and
-  // what a listing needs to sell: auto-generated fields (slug, SKU, barcode)
-  // and optional extras (collection, SEO overrides) never move this score.
+  // what a listing needs to sell: auto-generated fields (the slug) and fields
+  // the catalogue cannot store never move this score.
   const completionFields = [
     Boolean(title.trim()),
     Boolean(categoryId.trim()),
@@ -249,7 +259,6 @@ export const VendorAddProductPage: React.FC = () => {
     Boolean(description.trim()),
     images.length > 0,
     priceNum > 0,
-    tags.length > 0,
     ...(productType === 'digital'
       ? [Boolean(downloadUrl.trim())]
       : [parseInt(stock, 10) > 0, Boolean(weightKg.trim())]),
@@ -273,7 +282,7 @@ export const VendorAddProductPage: React.FC = () => {
     }
 
     if (isNaN(priceNum) || priceNum <= 0) {
-      setErrorMessage('Please specify a valid product selling price greater than $0.');
+      setErrorMessage('Please specify a valid product selling price greater than Rs 0.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -315,6 +324,31 @@ export const VendorAddProductPage: React.FC = () => {
     };
 
     try {
+      if (isEdit && editId) {
+        // Edit saves an UPDATE through the same fields — never a new row, and
+        // updates carry no status (the listing keeps its moderation state).
+        const updates: VendorProductUpdate = {
+          title: draft.title,
+          slug: draft.slug,
+          description: draft.description,
+          categoryId: draft.categoryId,
+          brand: draft.brand,
+          images: draft.images,
+          price: draft.price,
+          compareAtPrice: draft.compareAtPrice,
+          type: draft.type,
+          variants: draft.variants,
+          stock: draft.stock,
+          shippingSettings: draft.shippingSettings,
+          digitalAssetInfo: draft.digitalAssetInfo,
+        };
+        const saved = await updateListing.mutateAsync({ productId: editId, updates });
+        showToast(`Listing "${saved.title}" updated.`);
+        setTimeout(() => {
+          navigate('/vendor/products');
+        }, 800);
+        return;
+      }
       const saved = await createListing.mutateAsync(draft);
       showToast(
         targetStatus === 'draft'
@@ -330,12 +364,62 @@ export const VendorAddProductPage: React.FC = () => {
     }
   };
 
+  // In edit mode the listing must load before the form renders at all —
+  // an empty form here is how the old page silently created duplicates.
+  if (isEdit && existingQuery.isLoading) {
+    return (
+      <WorkspaceLayout
+        role="vendor"
+        roleBadgeText="VERIFIED SELLER"
+        title="Edit Product"
+        subtitle="Loading your listing…"
+        sidebar={<VendorNav />}
+      >
+        <div className="flex items-center gap-2.5 rounded-2xl border border-slate-200/90 bg-white p-6 text-sm font-semibold text-slate-600">
+          <Loader2 className="h-4 w-4 animate-spin text-sun-orange" aria-hidden="true" />
+          Loading product…
+        </div>
+      </WorkspaceLayout>
+    );
+  }
+
+  if (isEdit && existingQuery.isError) {
+    return (
+      <WorkspaceLayout
+        role="vendor"
+        roleBadgeText="VERIFIED SELLER"
+        title="Edit Product"
+        subtitle="This listing could not be opened for editing."
+        sidebar={<VendorNav />}
+      >
+        <div className="space-y-4 rounded-2xl border border-rose-200 bg-rose-50/80 p-6 text-sm font-semibold text-rose-800">
+          <p className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {existingQuery.error instanceof Error
+              ? existingQuery.error.message
+              : 'Could not load this product.'}
+          </p>
+          <Link
+            to="/vendor/products"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 underline underline-offset-2"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to your products
+          </Link>
+        </div>
+      </WorkspaceLayout>
+    );
+  }
+
   return (
     <WorkspaceLayout
       role="vendor"
       roleBadgeText="VERIFIED SELLER"
-      title="Add New Product"
-      subtitle="Configure your product listing, pricing, stock levels, variants, and fulfillment options."
+      title={isEdit ? 'Edit Product' : 'Add New Product'}
+      subtitle={
+        isEdit
+          ? 'Update this listing — changes save to the same product, keeping its link and history.'
+          : 'Configure your product listing, pricing, stock levels, variants, and fulfillment options.'
+      }
       sidebar={<VendorNav />}
     >
       <div className="space-y-6 pb-20 font-sans text-slate-900">
@@ -359,10 +443,12 @@ export const VendorAddProductPage: React.FC = () => {
             </Link>
             <div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 font-outfit">
-                Add New Product
+                {isEdit ? 'Edit Product' : 'Add New Product'}
               </h1>
               <p className="mt-0.5 text-xs text-slate-500">
-                Create and publish a product listing to your storefront catalog.
+                {isEdit
+                  ? 'Saving updates this listing in place — no new product is created.'
+                  : 'Create and publish a product listing to your storefront catalog.'}
               </p>
             </div>
           </div>
@@ -377,26 +463,34 @@ export const VendorAddProductPage: React.FC = () => {
             >
               Discard
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleSaveProduct('draft')}
-              disabled={createListing.isPending}
-              className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700"
-            >
-              Save as Draft
-            </Button>
+            {!isEdit && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleSaveProduct('draft')}
+                disabled={createListing.isPending}
+                className="text-xs rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700"
+              >
+                Save as Draft
+              </Button>
+            )}
             <Button
               type="button"
               variant="default"
               size="sm"
               onClick={() => handleSaveProduct('pending_review')}
-              disabled={createListing.isPending}
+              disabled={isEdit ? updateListing.isPending : createListing.isPending}
             >
               <Upload className="h-3.5 w-3.5 text-white stroke-[2.5]" aria-hidden="true" />
               <span className="text-white">
-                {createListing.isPending ? 'Saving…' : 'Submit for Review'}
+                {isEdit
+                  ? updateListing.isPending
+                    ? 'Saving…'
+                    : 'Save Changes'
+                  : createListing.isPending
+                    ? 'Saving…'
+                    : 'Submit for Review'}
               </span>
             </Button>
           </div>
@@ -642,25 +736,25 @@ export const VendorAddProductPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 3. Pricing & Margins Card */}
+            {/* 3. Pricing Card — the two prices the listing actually stores */}
             <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                     <DollarSign className="h-4 w-4" aria-hidden="true" />
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900">Pricing &amp; Margins</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Pricing</h3>
                 </div>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  The listing stores the selling price and compare-at price; cost and tax are
-                  planning figures for this draft only.
+                  Prices are stored in PKR and shown to buyers with the compare-at price as the
+                  crossed-out &ldquo;was&rdquo; figure.
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Selling Price ($) <span className="text-rose-500">*</span>
+                    Selling Price (PKR) <span className="text-rose-500">*</span>
                   </label>
                   <Input
                     type="number"
@@ -675,7 +769,7 @@ export const VendorAddProductPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Compare-At Price ($)
+                    Compare-At Price (PKR)
                   </label>
                   <Input
                     type="number"
@@ -687,143 +781,36 @@ export const VendorAddProductPage: React.FC = () => {
                     className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Cost Per Item ($)
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={costPerItem}
-                    onChange={(e) => setCostPerItem(e.target.value)}
-                    placeholder="95.00"
-                    className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
-                  />
-                </div>
-              </div>
-
-              {/* Profit & Margin Calculator Banner */}
-              <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div>
-                  <span className="text-slate-500 font-medium">Estimated Gross Profit: </span>
-                  <strong className="text-slate-900 font-bold">${grossProfit.toFixed(2)}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-medium">Profit Margin: </span>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 text-emerald-800 px-2 py-0.5 font-bold">
-                    <Percent className="h-3 w-3" aria-hidden="true" />
-                    {profitMargin}%
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  Standard platform fee: 7.0% (${(priceNum * 0.07).toFixed(2)})
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="chargeTax"
-                  checked={chargeTax}
-                  onChange={(e) => setChargeTax(e.target.checked)}
-                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                />
-                <label htmlFor="chargeTax" className="text-xs text-slate-700 font-medium select-none cursor-pointer">
-                  Charge sales tax on this product in applicable jurisdictions
-                </label>
               </div>
             </div>
 
-            {/* 4. Inventory & Warehouse Card */}
+            {/* 4. Inventory Card — stock is the row's real quantity; SKUs live
+                on variants, and there is no barcode or threshold column. */}
             <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
                     <Box className="h-4 w-4" aria-hidden="true" />
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900">Inventory &amp; Warehousing</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Inventory</h3>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleGenerateSku}
-                  className="text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                >
-                  <Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-                  <span>Generate SKU</span>
-                </Button>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  SKUs are set per variant in the variant matrix below.
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    SKU (Stock Keeping Unit)
-                  </label>
-                  <Input
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                    placeholder="SW-AUD-8801"
-                    className="rounded-xl text-xs py-2.5 font-mono border-slate-200 focus:border-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Barcode (UPC, ISBN, or GTIN)
-                  </label>
-                  <Input
-                    value={barcode}
-                    onChange={(e) => setBarcode(e.target.value)}
-                    placeholder="840192841029"
-                    className="rounded-xl text-xs py-2.5 font-mono border-slate-200 focus:border-slate-900"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Available Stock Quantity <span className="text-rose-500">*</span>
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    placeholder="45"
-                    className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Low Stock Alert Threshold
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={lowStockThreshold}
-                    onChange={(e) => setLowStockThreshold(e.target.value)}
-                    placeholder="5"
-                    className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="trackQuantity"
-                  checked={trackQuantity}
-                  onChange={(e) => setTrackQuantity(e.target.checked)}
-                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                />
-                <label htmlFor="trackQuantity" className="text-xs text-slate-700 font-medium select-none cursor-pointer">
-                  Continue selling when out of stock (Backorders permitted)
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Available Stock Quantity <span className="text-rose-500">*</span>
                 </label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                  placeholder="45"
+                  className="rounded-xl text-xs py-2.5 border-slate-200 focus:border-slate-900"
+                />
               </div>
             </div>
 
@@ -1079,7 +1066,7 @@ export const VendorAddProductPage: React.FC = () => {
                             <tr key={v.id} className="hover:bg-slate-50/50">
                               <td className="py-2 px-3 font-semibold text-slate-800">{v.name}</td>
                               <td className="py-2 px-3 font-mono text-slate-500 text-[11px]">{v.sku}</td>
-                              <td className="py-2 px-3 text-slate-700">${v.price.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-slate-700">Rs {v.price.toLocaleString('en-PK')}</td>
                               <td className="py-2 px-3 text-slate-700">{v.stock}</td>
                               <td className="py-2 px-3 text-right">
                                 <button
@@ -1155,13 +1142,16 @@ export const VendorAddProductPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 3. Search Engine Optimization (SEO) Preview Card */}
+            {/* 3. Search Engine Optimization (SEO) Preview Card — a pure
+                preview of the listing's real title and description; the
+                catalogue has no SEO fields to collect or save. */}
             <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-3">
               <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">SEO Search Engine Preview</h3>
                   <p className="text-xs text-slate-400">
-                    Preview only - the catalogue has no SEO columns, so this text is not saved.
+                    Search engines read this listing&rsquo;s title and description — edit those
+                    above to change this preview.
                   </p>
                 </div>
                 <Globe className="h-4 w-4 text-slate-400" aria-hidden="true" />
@@ -1173,91 +1163,11 @@ export const VendorAddProductPage: React.FC = () => {
                   {siteOrigin()}/products/{slug || 'product-handle'}
                 </span>
                 <h4 className="text-sm font-semibold text-blue-700 truncate hover:underline cursor-pointer">
-                  {seoTitle || title || 'Product Title'} | Vendora Marketplace
+                  {title || 'Product Title'} | Vendora Marketplace
                 </h4>
                 <p className="text-slate-600 text-[11px] line-clamp-2">
-                  {seoDescription || description || 'Product description will appear in search results across Google and marketplace queries.'}
+                  {description || 'Product description will appear in search results across Google and marketplace queries.'}
                 </p>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Custom Search Meta Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
-                  placeholder="Custom snippet for search engines (defaults to product description)..."
-                  className="w-full rounded-xl border border-slate-200 p-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* 4. Organization & Taxonomy Card */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
-              <div className="border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900">Organization &amp; Taxonomy</h3>
-                <p className="text-xs text-slate-400">
-                  Not saved yet - the catalogue stores title, category, price, stock and media.
-                  Collections and tags stay in this draft only.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Store Collection
-                </label>
-                <select
-                  value={collection}
-                  onChange={(e) => setCollection(e.target.value)}
-                  className="native-select w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-slate-900 focus:outline-none"
-                >
-                  <option value="Featured Equipment">Featured Equipment</option>
-                  <option value="New Arrivals">New Arrivals</option>
-                  <option value="Studio Reference">Studio Reference</option>
-                  <option value="Bestsellers">Bestsellers</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Product Tags
-                </label>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {tags.map((t) => (
-                    <span
-                      key={t}
-                      className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700"
-                    >
-                      {t}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(t)}
-                        className="text-slate-400 hover:text-rose-600"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="flex gap-1.5">
-                  <Input
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    onKeyDown={handleAddTag}
-                    placeholder="Add tag and press Enter"
-                    className="rounded-xl text-xs py-1.5 border-slate-200 focus:border-slate-900 flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="sm"
-                    onClick={handleAddTag}
-                  >
-                    Add
-                  </Button>
-                </div>
               </div>
             </div>
           </div>

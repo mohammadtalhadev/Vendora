@@ -9,11 +9,14 @@ import {
   LayoutGrid,
   List,
   Filter,
+  ArrowLeftRight,
+  Check,
 } from 'lucide-react';
-import { useProducts, useCategories } from '../features/catalog/hooks/useProducts';
+import { useProducts, useCategories, useProductBrands } from '../features/catalog/hooks/useProducts';
 import { ProductCard, type ProductItem } from '../features/products';
 import { domainProductToCardItem } from '../features/products/mappers';
 import { useWishlistStore } from '../store/wishlist-store';
+import { useCompareStore } from '../store/compare-store';
 import { useCartStore } from '../store/cart-store';
 import { useCurrency } from '../store/currency-store';
 import { useToast } from '../hooks/useToast';
@@ -29,9 +32,172 @@ import {
 } from '../components/ui/select';
 import { QueryState } from '../components/common/QueryState';
 import { buildPageWindow } from '../hooks/usePagination';
-import type { Product } from '../types/domain';
+import type { Category, Product } from '../types/domain';
 
 const PAGE_SIZE = 12;
+
+const RATING_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: 'Any rating', value: '' },
+  { label: '4.0 & up', value: '4' },
+  { label: '4.5 & up', value: '4.5' },
+];
+
+interface FacetSectionsProps {
+  categories: Category[];
+  brands: string[];
+  categoryParam: string;
+  brandParam: string;
+  ratingParam: string;
+  inStockOnly: boolean;
+  onSaleOnly: boolean;
+  onSelect: (changes: Record<string, string | null>) => void;
+}
+
+/**
+ * The catalogue facets beyond price — category, brand, rating, availability —
+ * rendered identically in the desktop rail and the mobile drawer. Every
+ * option is backed by a server-side filter in the catalog query; nothing here
+ * is decorative.
+ */
+const FacetSections: React.FC<FacetSectionsProps> = ({
+  categories,
+  brands,
+  categoryParam,
+  brandParam,
+  ratingParam,
+  inStockOnly,
+  onSaleOnly,
+  onSelect,
+}) => {
+  const optionClass = (active: boolean) =>
+    `flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer ${
+      active
+        ? 'bg-orange-50 font-bold text-sun-orange dark:bg-orange-950/30'
+        : 'font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+    }`;
+
+  return (
+    <>
+      {/* Category */}
+      <div className="space-y-1.5 pt-2">
+        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+          Category
+        </h4>
+        <button
+          type="button"
+          onClick={() => onSelect({ category: null })}
+          aria-pressed={categoryParam === ''}
+          className={optionClass(categoryParam === '')}
+        >
+          <span>All Categories</span>
+          {categoryParam === '' && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+        </button>
+        {categories.map((category) => {
+          const active = categoryParam === category.slug || categoryParam === category.id;
+          return (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => onSelect({ category: category.slug })}
+              aria-pressed={active}
+              className={optionClass(active)}
+            >
+              <span>{category.name}</span>
+              {active && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Brand — options read from the approved catalogue itself */}
+      {brands.length > 0 && (
+        <div className="space-y-1.5 pt-2">
+          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+            Brand
+          </h4>
+          <div className="max-h-44 space-y-1.5 overflow-y-auto pr-1">
+            <button
+              type="button"
+              onClick={() => onSelect({ brand: null })}
+              aria-pressed={brandParam === ''}
+              className={optionClass(brandParam === '')}
+            >
+              <span>All Brands</span>
+              {brandParam === '' && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+            </button>
+            {brands.map((brand) => {
+              const active = brandParam === brand;
+              return (
+                <button
+                  key={brand}
+                  type="button"
+                  onClick={() => onSelect({ brand })}
+                  aria-pressed={active}
+                  className={optionClass(active)}
+                >
+                  <span>{brand}</span>
+                  {active && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Minimum rating */}
+      <div className="space-y-1.5 pt-2">
+        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+          Rating
+        </h4>
+        {RATING_OPTIONS.map((option) => {
+          const active = ratingParam === option.value;
+          return (
+            <button
+              key={option.label}
+              type="button"
+              onClick={() => onSelect({ rating: option.value || null })}
+              aria-pressed={active}
+              className={optionClass(active)}
+            >
+              <span className="flex items-center gap-1.5">
+                {option.value !== '' && (
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden="true" />
+                )}
+                {option.label}
+              </span>
+              {active && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Availability */}
+      <div className="space-y-2 pt-2">
+        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+          Availability
+        </h4>
+        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={inStockOnly}
+            onChange={(e) => onSelect({ stock: e.target.checked ? '1' : null })}
+            className="h-4 w-4 rounded border-slate-300 accent-sun-orange"
+          />
+          In stock only
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+          <input
+            type="checkbox"
+            checked={onSaleOnly}
+            onChange={(e) => onSelect({ sale: e.target.checked ? '1' : null })}
+            className="h-4 w-4 rounded border-slate-300 accent-sun-orange"
+          />
+          On sale only
+        </label>
+      </div>
+    </>
+  );
+};
 /** Slider ceiling in canonical PKR (matches the largest bound the URL schema accepts). */
 const PRICE_CEILING = 1_000_000;
 
@@ -47,6 +213,10 @@ export const ProductsPage: React.FC = () => {
   // 1. Read every query input from the URL (source of truth).
   const q = searchParams.get('q') ?? '';
   const categoryParam = searchParams.get('category') ?? '';
+  const brandParam = searchParams.get('brand') ?? '';
+  const ratingParam = searchParams.get('rating') ?? '';
+  const inStockOnly = searchParams.get('stock') === '1';
+  const onSaleOnly = searchParams.get('sale') === '1';
   const sort = searchParams.get('sort') ?? 'featured';
   const minParam = searchParams.get('min') ?? '';
   const maxParam = searchParams.get('max') ?? '';
@@ -98,7 +268,14 @@ export const ProductsPage: React.FC = () => {
     );
   };
 
-  const handleResetFilters = () => updateParams({ min: null, max: null }, { resetPage: true });
+  // Reset means every facet — price, category (including one that arrived via
+  // ?category=), brand, rating and the availability toggles. The search term
+  // and sort are the shopper's context, not filters, and stay.
+  const handleResetFilters = () =>
+    updateParams(
+      { min: null, max: null, category: null, brand: null, rating: null, stock: null, sale: null },
+      { resetPage: true },
+    );
 
   // The price inputs are a local draft, denominated in the shopper's DISPLAY
   // currency (that is what the heading and the symbol prefix advertise). The
@@ -144,15 +321,24 @@ export const ProductsPage: React.FC = () => {
 
   // 3. Real server-side query (PostgREST + exact count). The api layer throws on error,
   //    so we render loading / error / empty / data — never a mock fallback.
+  const minRating = toFinite(ratingParam);
   const { data, isLoading, isFetching, isError, error, refetch } = useProducts({
     q: q || undefined,
     category: categoryParam || undefined,
+    brand: brandParam || undefined,
+    minRating,
+    inStock: inStockOnly || undefined,
+    onSale: onSaleOnly || undefined,
     sort,
     minPrice,
     maxPrice,
     page,
     limit: PAGE_SIZE,
   });
+
+  // Facet option lists — categories from the taxonomy, brands from the shelf.
+  const { data: brandsData } = useProductBrands();
+  const brandOptions = brandsData?.brands ?? [];
 
   const rows: Product[] = data?.items ?? [];
   const items = rows.map(domainProductToCardItem);
@@ -197,6 +383,26 @@ export const ProductsPage: React.FC = () => {
       type: product.type,
     });
     showToast(`Added ${product.title} to cart`);
+  };
+
+  // Compare toggle for the list view — the grid's ProductCard carries its own;
+  // list rows add the domain product itself, so the matrix gets the full record.
+  const compareItems = useCompareStore((s) => s.items);
+  const addToCompare = useCompareStore((s) => s.addItem);
+  const removeFromCompare = useCompareStore((s) => s.removeItem);
+
+  const handleToggleCompare = (item: ProductItem) => {
+    if (compareItems.some((entry) => entry.id === item.id)) {
+      removeFromCompare(item.id);
+      showToast(`Removed ${item.title} from compare`, 'info');
+      return;
+    }
+    const domain = rows.find((row) => row.id === item.id);
+    if (domain && addToCompare(domain)) {
+      showToast(`Added ${item.title} to compare`);
+    } else {
+      showToast('Compare is full — remove a product before adding another (max 4).', 'error');
+    }
   };
 
   const handleToggleWishlist = (product: ProductItem) => {
@@ -290,6 +496,17 @@ export const ProductsPage: React.FC = () => {
                 Reset All
               </button>
             </div>
+
+            <FacetSections
+              categories={categoriesData?.categories ?? []}
+              brands={brandOptions}
+              categoryParam={categoryParam}
+              brandParam={brandParam}
+              ratingParam={ratingParam}
+              inStockOnly={inStockOnly}
+              onSaleOnly={onSaleOnly}
+              onSelect={(changes) => updateParams(changes, { resetPage: true })}
+            />
 
             {/* Price Range Filter — min/max are real server-side bounds */}
             <div className="space-y-3 pt-2">
@@ -574,6 +791,19 @@ export const ProductsPage: React.FC = () => {
                         >
                           Add to Cart
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCompare(product)}
+                          aria-pressed={compareItems.some((entry) => entry.id === product.id)}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold transition-all active:scale-95 ${
+                            compareItems.some((entry) => entry.id === product.id)
+                              ? 'border-sun-orange bg-sun-orange text-white'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-sun-orange hover:text-sun-orange'
+                          }`}
+                        >
+                          <ArrowLeftRight className="h-3.5 w-3.5" />
+                          {compareItems.some((entry) => entry.id === product.id) ? 'In Compare' : 'Compare'}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -679,6 +909,17 @@ export const ProductsPage: React.FC = () => {
                 >
                   Reset All Filters
                 </button>
+
+                <FacetSections
+                  categories={categoriesData?.categories ?? []}
+                  brands={brandOptions}
+                  categoryParam={categoryParam}
+                  brandParam={brandParam}
+                  ratingParam={ratingParam}
+                  inStockOnly={inStockOnly}
+                  onSaleOnly={onSaleOnly}
+                  onSelect={(changes) => updateParams(changes, { resetPage: true })}
+                />
 
                 <div className="space-y-2">
                   <h5 className="font-bold text-xs uppercase text-slate-400">Price ({currencyConfig.code})</h5>

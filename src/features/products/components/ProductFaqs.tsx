@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
+import { STANDARD_DELIVERY_BUSINESS_DAYS } from '../../../lib/delivery-estimate';
 
 export interface ProductFaq {
   q: string;
@@ -9,12 +10,12 @@ export interface ProductFaq {
 /** Sensible marketplace FAQs (Ronin-style), generic enough for any product. */
 export const DEFAULT_FAQS: ProductFaq[] = [
   {
-    q: 'Is this product original and covered by warranty?',
-    a: 'Yes. Every unit sold on Vendora is 100% authentic and backed by the seller verification program. Physical products include a 1-year official brand warranty; digital licenses are verified before delivery.',
+    q: 'Is this product original?',
+    a: 'Yes. Every unit sold on Vendora is 100% authentic and backed by the seller verification program, and digital licenses are verified before delivery.',
   },
   {
     q: 'How long does delivery take?',
-    a: 'Standard delivery completes within 2–4 business days. Express delivery is available in major cities. You will receive a tracking link with live status updates as soon as the order ships.',
+    a: `Standard delivery completes within ${STANDARD_DELIVERY_BUSINESS_DAYS.min}–${STANDARD_DELIVERY_BUSINESS_DAYS.max} business days. Express delivery is available in major cities. You will receive a tracking link with live status updates as soon as the order ships.`,
   },
   {
     q: 'What is the return & refund policy?',

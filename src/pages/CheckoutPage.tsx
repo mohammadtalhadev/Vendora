@@ -30,6 +30,7 @@ import { useSavedAddresses, useSavedAddressActions } from '../features/account/h
 import type { AddressType } from '../features/account/types';
 import { shippingAddressSchema, type CartItem, type ShippingAddress } from '../types/domain';
 import { validateCardLuhn, detectCardBrand } from '../features/checkout/utils/luhn';
+import { formatDeliveryWindow } from '../lib/delivery-estimate';
 import type { PaymentMethod } from '../features/checkout/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -946,6 +947,22 @@ export const CheckoutPage: React.FC = () => {
                             </span>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Estimated delivery — the shared standard window (an
+                        estimate, never a promise). Express is a fee upgrade
+                        with no day range anywhere in the system, so when every
+                        physical package rides express the row names the
+                        option instead of inventing days. */}
+                    {quote.groups.some((g) => g.hasPhysical) && (
+                      <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                        <span>Estimated delivery</span>
+                        <span className="font-outfit font-bold text-slate-900 dark:text-white">
+                          {quote.groups.some((g) => g.hasPhysical && g.deliveryOption !== 'express')
+                            ? formatDeliveryWindow()
+                            : 'Express Priority'}
+                        </span>
                       </div>
                     )}
 

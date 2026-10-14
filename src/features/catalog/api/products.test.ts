@@ -153,6 +153,54 @@ describe('fetchProducts', () => {
     expect(digital.items).toEqual([]);
   });
 
+  it('narrows by brand, minimum rating, stock and sale (Batch 46 facets)', async () => {
+    supabaseDouble.seedProduct(
+      productRow({
+        id: '00000000-0000-4000-8000-000000000110',
+        title: 'Sony Speaker',
+        slug: 'sony-speaker',
+        brand: 'Sony',
+        rating: 4.6,
+        stock: 5,
+        compare_at_price: 999,
+        seller_id: VENDOR,
+        category_id: AUDIO,
+        created_at: '2026-10-10T00:00:00.000Z',
+      }),
+    );
+    supabaseDouble.seedProduct(
+      productRow({
+        id: '00000000-0000-4000-8000-000000000111',
+        title: 'Sony Legacy',
+        slug: 'sony-legacy',
+        brand: 'Sony',
+        rating: 3.2,
+        stock: 0,
+        seller_id: VENDOR,
+        category_id: AUDIO,
+        created_at: '2026-10-11T00:00:00.000Z',
+      }),
+    );
+
+    const byBrand = await catalog.fetchProducts({ brand: 'Sony' });
+    expect(byBrand.items.map((item) => item.slug).sort()).toEqual(['sony-legacy', 'sony-speaker']);
+    expect(byBrand.total).toBe(2);
+
+    const rated = await catalog.fetchProducts({ brand: 'Sony', minRating: 4 });
+    expect(rated.items.map((item) => item.slug)).toEqual(['sony-speaker']);
+
+    const stocked = await catalog.fetchProducts({ brand: 'Sony', inStock: true });
+    expect(stocked.items.map((item) => item.slug)).toEqual(['sony-speaker']);
+
+    // On sale = a recorded compare-at price (a was/now offer); rows without
+    // one — including the NULL compare-at on the earbuds — are never on sale.
+    const onSale = await catalog.fetchProducts({ onSale: true });
+    expect(onSale.items.map((item) => item.slug).sort()).toEqual([
+      'reference-headphones',
+      'sony-speaker',
+    ]);
+  });
+
   it('sorts by rating and review count', async () => {
     const byRating = await catalog.fetchProducts({ sort: 'rating' });
     const bySales = await catalog.fetchProducts({ sort: 'best_selling' });
@@ -184,6 +232,29 @@ describe('fetchProducts', () => {
     controller.abort();
 
     await expect(catalog.fetchProducts({}, controller.signal)).rejects.toThrow('Failed to load products');
+  });
+});
+
+describe('fetchProductBrands', () => {
+  beforeEach(() => {
+    supabaseDouble.reset();
+    seedCatalog();
+  });
+
+  it('returns the distinct non-empty brands of approved products, sorted', async () => {
+    supabaseDouble.seedProduct(productRow({ id: '00000000-0000-4000-8000-000000000120', title: 'Brand B', slug: 'brand-b', brand: 'Sony' }));
+    supabaseDouble.seedProduct(productRow({ id: '00000000-0000-4000-8000-000000000121', title: 'Brand A', slug: 'brand-a', brand: 'Anker' }));
+    supabaseDouble.seedProduct(productRow({ id: '00000000-0000-4000-8000-000000000122', title: 'Hidden Brand', slug: 'hidden-brand', brand: 'Ghost', status: 'pending' }));
+
+    const result = await catalog.fetchProductBrands();
+
+    expect(result.brands).toEqual(['Anker', 'AudioBrand', 'Sony']);
+  });
+
+  it('surfaces a read failure', async () => {
+    supabaseDouble.failures.products = 'permission denied for table products';
+
+    await expect(catalog.fetchProductBrands()).rejects.toThrow(/Failed to load brands: permission denied/);
   });
 });
 

@@ -3,6 +3,7 @@ import {
   fetchProducts,
   fetchProductDetail,
   fetchCategories,
+  fetchProductBrands,
   fetchSearchSuggestions,
 } from '../api/products';
 import type { ProductQueryParams } from '../api/products';
@@ -13,6 +14,7 @@ export const catalogKeys = {
   products: (params: ProductQueryParams) => ['catalog', 'products', params] as const,
   productDetail: (id: string) => ['catalog', 'product', id] as const,
   categories: () => ['catalog', 'categories'] as const,
+  brands: () => ['catalog', 'brands'] as const,
   suggestions: (q: string) => ['catalog', 'suggestions', q] as const,
 };
 
@@ -38,6 +40,14 @@ export function useCategories() {
   return useQuery({
     queryKey: catalogKeys.categories(),
     queryFn: ({ signal }) => fetchCategories(signal),
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+export function useProductBrands() {
+  return useQuery({
+    queryKey: catalogKeys.brands(),
+    queryFn: ({ signal }) => fetchProductBrands(signal),
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }

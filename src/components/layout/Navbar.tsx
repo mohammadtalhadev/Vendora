@@ -25,6 +25,7 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useSearchSuggestions, useCategories } from '../../features/catalog/hooks/useProducts';
 import { formatPrice } from '../../store/currency-store';
 import { CartDrawer } from '../../features/cart/components/CartDrawer';
+import { OPEN_CART_EVENT } from '../../features/cart/open-cart';
 import { MegaMenu } from './MegaMenu';
 import { NotificationDropdown } from '../common/NotificationDropdown';
 
@@ -120,6 +121,13 @@ export const Navbar: React.FC = () => {
   // down and re-registering it while the drawer was open.
   const openCart = useCallback(() => setIsCartOpen(true), []);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
+
+  // Surfaces deeper in the tree (product page Add to Cart, sticky buy bar)
+  // open this drawer through the shared cart event.
+  useEffect(() => {
+    window.addEventListener(OPEN_CART_EVENT, openCart);
+    return () => window.removeEventListener(OPEN_CART_EVENT, openCart);
+  }, [openCart ]);
   const [mobileSearchTerm, setMobileSearchTerm] = useState('');
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
