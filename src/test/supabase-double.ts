@@ -285,6 +285,7 @@ export function createSupabaseDouble() {
     oAuthError: null as DoubleError | null,
     updateUserError: null as DoubleError | null,
     resendError: null as DoubleError | null,
+    verifyOtpError: null as DoubleError | null,
     /** Forces a session for this user, even with no matching profile row. */
     signInUser: null as DoubleAuthUser | null,
     /** When true, signUp returns a user but no session, like an email-confirmation project. */
@@ -294,6 +295,8 @@ export function createSupabaseDouble() {
   const updateUserCalls: Array<Record<string, unknown>> = [];
   /** Every `auth.resend` payload, in call order. */
   const resendCalls: Array<Record<string, unknown>> = [];
+  /** Every `auth.verifyOtp` payload, in call order. */
+  const verifyOtpCalls: Array<Record<string, unknown>> = [];
   /** Every storage upload the client attempted, with the bucket and object path it chose. */
   const storageUploads: Array<{ bucket: string; path: string; file: unknown }> = [];
   let storageUploadError: DoubleError | null = null;
@@ -2485,6 +2488,7 @@ export function createSupabaseDouble() {
     rpcCalls,
     updateUserCalls,
     resendCalls,
+    verifyOtpCalls,
     storageUploads,
     emit,
     realtimeChannels,
@@ -2692,6 +2696,24 @@ export function createSupabaseDouble() {
         resendCalls.push(payload);
         if (authState.resendError) return { data: {}, error: authState.resendError };
         return { data: {}, error: null };
+      }),
+      verifyOtp: vi.fn(async (payload: { email: string; token: string; type: string }) => {
+        verifyOtpCalls.push(payload);
+        if (authState.verifyOtpError) {
+          return { data: { user: null, session: null }, error: authState.verifyOtpError };
+        }
+        const profile = tables.profiles.find((row) => row.email === payload.email);
+        if (!profile) {
+          return {
+            data: { user: null, session: null },
+            error: { message: 'Token has expired or is invalid' },
+          };
+        }
+        const user: DoubleAuthUser = { id: profile.id, email: profile.email };
+        const session: DoubleSession = { access_token: 'test-access-token', user };
+        authState.session = session;
+        emit('SIGNED_IN', session);
+        return { data: { user, session }, error: null };
       }),
       signOut: vi.fn(async () => {
         if (authState.signOutError) return { error: authState.signOutError };
@@ -2956,9 +2978,11 @@ export function createSupabaseDouble() {
       authState.oAuthError = null;
       authState.updateUserError = null;
       authState.resendError = null;
+      authState.verifyOtpError = null;
       authState.confirmEmail = false;
       updateUserCalls.length = 0;
       resendCalls.length = 0;
+      verifyOtpCalls.length = 0;
       storageUploads.length = 0;
       storageUploadError = null;
       rpcError = null;

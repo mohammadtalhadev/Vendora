@@ -115,6 +115,35 @@ export async function resendSignupConfirmation(email: string): Promise<void> {
 }
 
 /**
+ * Verifies the email code (OTP) a new account was sent at sign-up — the
+ * typed-code alternative to clicking the confirmation link (Batch 36). The
+ * code only exists when the project's "Confirm signup" template carries
+ * `{{ .Token }}`; on success Supabase returns a live session and the caller
+ * lands the user exactly where an instantly-confirmed sign-up would.
+ */
+export async function verifySignupOtp(email: string, token: string): Promise<User> {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: token.trim(),
+    type: 'signup',
+  });
+  if (error) {
+    if (/expired|invalid|token/i.test(error.message)) {
+      throw new Error(
+        'That code is incorrect or has expired. Use the newest email and try again.',
+      );
+    }
+    throw new Error(error.message);
+  }
+  if (!data.user) {
+    throw new Error('That code could not be verified. Request a new code and try again.');
+  }
+  const user = await loadProfile(data.user);
+  if (!user) throw new Error('Your profile could not be loaded. Try signing in instead.');
+  return user;
+}
+
+/**
  * The columns `profiles_update_self` lets an owner write. `email` is absent: it mirrors
  * the auth email at signup and changing it here would desync the login credential, since
  * no trigger writes back from `profiles` to `auth.users`. `roles` is frozen by the policy.

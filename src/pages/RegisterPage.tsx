@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User,
@@ -32,7 +32,8 @@ import {
 import { useAuth } from '../lib/auth-context';
 import { useCartStore } from '../store/cart-store';
 import { submitVendorApplication } from '../features/vendor/api/applications';
-import { resendSignupConfirmation } from '../features/auth/api/session';
+import { resendSignupConfirmation, verifySignupOtp } from '../features/auth/api/session';
+import { OtpInput } from '../components/ui/otp-input';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -85,9 +86,46 @@ export const RegisterPage: React.FC = () => {
     try {
       await resendSignupConfirmation(confirmation.email);
       setResendState('sent');
+      setResendCooldown(60);
+      setOtpCode('');
+      setOtpError(null);
     } catch (err: unknown) {
       setResendError(err instanceof Error ? err.message : 'Could not resend the confirmation email.');
       setResendState('error');
+    }
+  };
+
+  // Email-code (OTP) verification state (Batch 36): the typed alternative to
+  // clicking the confirmation link, for projects whose template sends one.
+  const [otpCode, setOtpCode] = useState('');
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const coolingDown = resendCooldown > 0;
+  useEffect(() => {
+    if (!coolingDown) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [coolingDown]);
+
+  const handleVerifyOtp = async () => {
+    if (!confirmation || otpCode.length !== 6 || otpVerifying) return;
+    setOtpVerifying(true);
+    setOtpError(null);
+    try {
+      const user = await verifySignupOtp(confirmation.email, otpCode);
+      if (confirmation.kind === 'seller') {
+        navigate('/become-a-seller');
+      } else {
+        mergeGuestCartIntoUser(user.id);
+        navigate('/');
+      }
+    } catch (err: unknown) {
+      setOtpError(err instanceof Error ? err.message : 'That code could not be verified.');
+      setOtpVerifying(false);
     }
   };
 
@@ -372,22 +410,67 @@ export const RegisterPage: React.FC = () => {
                       Check your inbox to finish
                     </h2>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                      We sent a confirmation email to{' '}
-                      <span className="font-bold text-slate-900 dark:text-white">{confirmation.email}</span>. Open
-                      that email and click the verification link to{' '}
+                      We sent a confirmation email with a 6-digit code to{' '}
+                      <span className="font-bold text-slate-900 dark:text-white">{confirmation.email}</span>. Enter
+                      the code below to{' '}
                       {confirmation.kind === 'seller'
                         ? 'activate your account — your merchant application has been received and is queued for review.'
-                        : 'activate your account, then sign in with the password you just chose.'}
+                        : 'activate your account and sign in right away.'}{' '}
+                      Prefer links? The same email also carries a verification link.
                     </p>
                     <p className="mx-auto mt-3 max-w-md text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                      No email after a few minutes? Check your spam or junk folder — and note the link expires, so
+                      No email after a few minutes? Check your spam or junk folder — and note the code expires, so
                       use the newest email if you resend.
                     </p>
 
+                    {/* Email-code (OTP) entry — the typed path to the same
+                        verification the link performs (Batch 36). */}
+                    <div className="mt-6">
+                      <span className="mb-2.5 block text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                        Enter the 6-digit code
+                      </span>
+                      <OtpInput
+                        value={otpCode}
+                        onChange={(next) => {
+                          setOtpCode(next);
+                          setOtpError(null);
+                        }}
+                        disabled={otpVerifying}
+                      />
+                      {otpError && (
+                        <p role="alert" className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                          {otpError}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={otpCode.length !== 6 || otpVerifying}
+                        className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-full bg-sun-orange px-6 py-2.5 font-outfit text-xs font-bold text-white transition-all hover:bg-[#E63E00] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {otpVerifying ? 'Verifying...' : 'Verify & activate account'}
+                      </button>
+                    </div>
+
                     {resendState === 'sent' ? (
-                      <p className="mt-5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        A new confirmation email is on its way to {confirmation.email}.
-                      </p>
+                      <div className="mt-5">
+                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          A new confirmation email is on its way to {confirmation.email}.
+                        </p>
+                        {resendCooldown > 0 ? (
+                          <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                            You can request another code in {resendCooldown}s.
+                          </p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleResendConfirmation}
+                            className="mt-2 cursor-pointer text-[11px] font-bold text-sun-orange underline"
+                          >
+                            Resend again
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -411,6 +494,9 @@ export const RegisterPage: React.FC = () => {
                         setConfirmation(null);
                         setResendState('idle');
                         setResendError(null);
+                        setOtpCode('');
+                        setOtpError(null);
+                        setResendCooldown(0);
                       }}
                       className="mx-auto mt-4 block text-xs font-semibold text-slate-500 underline transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-white cursor-pointer"
                     >
