@@ -37,8 +37,9 @@ export const AboutPage: React.FC = () => {
     },
     {
       year: '2024',
-      title: 'Zero-Commission Tier & Escrow',
-      description: 'Introduced escrow protection for buyer deposits on every order.',
+      title: 'Buyer Protection & the Dispute Desk',
+      description:
+        'Introduced a structured dispute flow on every order: raise a case from the order, exchange evidence with the seller, and the Vendora team reviews the full record before any refund is decided.',
     },
     {
       year: '2025',
@@ -88,14 +89,14 @@ export const AboutPage: React.FC = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-5 sm:p-7 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl">
               <div className="text-center p-2 sm:p-3">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
-                  PAYMENT PROTECTION
+                  BUYER PROTECTION
                 </span>
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
-                  Escrow
+                  Dispute Desk
                 </div>
                 <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-sun-orange mt-1">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>Held Until Delivery</span>
+                  <span>On every order</span>
                 </div>
               </div>
 
@@ -104,11 +105,11 @@ export const AboutPage: React.FC = () => {
                   SELLER FEES
                 </span>
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
-                  0%
+                  Published
                 </div>
                 <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-1">
                   <Store className="h-3.5 w-3.5" />
-                  <span>Base Listing Fees</span>
+                  <span>One public fee schedule</span>
                 </div>
               </div>
 
@@ -130,7 +131,7 @@ export const AboutPage: React.FC = () => {
                   SUPPORT
                 </span>
                 <div className="font-outfit text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white">
-                  24/7
+                  Human
                 </div>
                 <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1">
                   <Zap className="h-3.5 w-3.5" />

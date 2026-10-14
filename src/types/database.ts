@@ -241,6 +241,36 @@ export type Database = {
       }
       Relationships: []
     },
+    "contact_messages": {
+      Row: {
+        "id": string,
+        "name": string,
+        "email": string,
+        "topic": string,
+        "order_ref": string | null,
+        "message": string,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "name": string,
+        "email": string,
+        "topic": string,
+        "order_ref"?: string | null,
+        "message": string,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "name"?: string,
+        "email"?: string,
+        "topic"?: string,
+        "order_ref"?: string | null,
+        "message"?: string,
+        "created_at"?: string
+      }
+      Relationships: []
+    },
     "content_blocks": {
       Row: {
         "id": string,
@@ -878,6 +908,24 @@ export type Database = {
           referencedColumns: ["id"]
         }
       ]
+    },
+    "newsletter_subscribers": {
+      Row: {
+        "id": string,
+        "email": string,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "email": string,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "email"?: string,
+        "created_at"?: string
+      }
+      Relationships: []
     },
     "notification_outbox": {
       Row: {

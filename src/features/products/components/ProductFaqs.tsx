@@ -18,7 +18,7 @@ export const DEFAULT_FAQS: ProductFaq[] = [
   },
   {
     q: 'What is the return & refund policy?',
-    a: 'You can request a return within 7 days of delivery if the product is damaged, defective, or not as described. Once the vendor approves the return, refunds are processed to your original payment method within 3–5 business days.',
+    a: 'You can request a return within 30 days of delivery if the product is damaged, defective, or not as described. Once the vendor approves the return, refunds are processed to your original payment method within 3–5 business days.',
   },
   {
     q: 'Which payment methods are accepted?',

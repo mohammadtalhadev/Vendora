@@ -48,6 +48,8 @@ const UNIQUE_KEYS: Record<string, string[]> = {
   reviews: ['product_id', 'author_id'],
   // Both configuration tables are singletons keyed by a boolean that must be true.
   platform_settings: ['id'],
+  // The public form inboxes (migration 20261015000000): one row per email.
+  newsletter_subscribers: ['email'],
   commission_config: ['id'],
 };
 
@@ -245,6 +247,10 @@ export function createSupabaseDouble() {
     // The customer's own address book and saved payment methods (Phase 8 tables):
     // owner-scoped rows the account screens read and write directly under RLS.
     user_addresses: [],
+    // The public form inboxes (migration 20261015000000): written by the
+    // footer newsletter and the contact page, insert-only for the public.
+    newsletter_subscribers: [],
+    contact_messages: [],
     user_payment_methods: [],
     reviews: [],
     promotions: [],

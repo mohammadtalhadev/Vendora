@@ -21,7 +21,7 @@ const TRUST_ITEMS = [
   },
   {
     icon: RotateCcw,
-    title: '7-Day Easy Returns',
+    title: '30-Day Easy Returns',
     subtitle: 'Zero-hassle door pickups',
   },
   {

@@ -76,7 +76,7 @@ export const AccountReturnsPage: React.FC = () => {
             No returns yet
           </h2>
           <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-500">
-            Most items can be returned within 7 days of delivery. When you start a return
+            Most items can be returned within 30 days of delivery. When you start a return
             from an order, it will appear here with live status.
           </p>
           <Link

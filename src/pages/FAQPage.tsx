@@ -45,7 +45,7 @@ interface FaqEntry {
  * no accordion), full width, with a faded Load-more tail.
  *
  * Every answer describes behaviour the storefront actually has (checkout
- * payment methods, the 7-day returns flow, the dispute flow, the Batch 23
+ * payment methods, the 30-day returns flow, the dispute flow, the Batch 23
  * email rules, the Batch 10 card-storage rules). The invented escrow vault,
  * courier-partner claims, SLA vouchers, payout cycles and helpful-vote
  * counts that an earlier version of this page carried are gone for good.
@@ -77,7 +77,7 @@ const SUPPORT_TOPICS: TopicCategory[] = [
     icon: RotateCcw,
     iconBg: 'bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/40',
     iconColor: 'text-rose-600 dark:text-rose-400',
-    description: 'The 7-day return window, doorstep pickup, and where to follow your refund.',
+    description: 'The 30-day return window, doorstep pickup, and where to follow your refund.',
     entryIds: ['returns', 'refunds'],
   },
   {
@@ -129,7 +129,7 @@ const FAQ_ENTRIES: FaqEntry[] = [
     icon: RotateCcw,
     question: 'How do returns work?',
     answer:
-      'Most items can be returned within 7 days of delivery. Start from the Returns page or from the order in your account, book a doorstep pickup, and follow the return status in your account until it completes.',
+      'Most items can be returned within 30 days of delivery. Start from the Returns page or from the order in your account, book a doorstep pickup, and follow the return status in your account until it completes.',
   },
   {
     id: 'refunds',
@@ -435,7 +435,7 @@ export const FAQPage: React.FC = () => {
                 Changed your mind? No hard feelings — returns are easy here.
               </h3>
               <p className="text-xs leading-relaxed text-slate-600 sm:text-sm dark:text-slate-300">
-                Most items can be returned within 7 days of delivery. Book a free doorstep
+                Most items can be returned within 30 days of delivery. Book a free doorstep
                 pickup, drop the parcel, and track your refund step by step — no phone
                 calls, no paperwork.
               </p>

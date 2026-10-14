@@ -114,11 +114,13 @@ describe('RegisterPage Component (Vendora Dual-Role Customer & Seller Portal)', 
     fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
     fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
 
-    // Uncheck terms (customerAgreed defaults to true in form)
+    // Terms start unticked (Batch 45): the box is clear, the submit is
+    // disabled, and a forced submit still fails on the agreement check.
     const termsCheckbox = screen.getByRole('checkbox');
-    fireEvent.click(termsCheckbox);
+    expect(termsCheckbox).not.toBeChecked();
 
     const submitBtn = screen.getByRole('button', { name: /Create Customer Account/i });
+    expect(submitBtn).toBeDisabled();
     fireEvent.submit(submitBtn.closest('form')!);
 
     expect(screen.getByText('You must accept the Vendora Customer Terms of Service')).toBeInTheDocument();
@@ -137,6 +139,7 @@ describe('RegisterPage Component (Vendora Dual-Role Customer & Seller Portal)', 
     fireEvent.change(phoneInput, { target: { value: '300 1234567' } });
     fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
     fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
+    fireEvent.click(screen.getByRole('checkbox'));
 
     const submitBtn = screen.getByRole('button', { name: /Create Customer Account/i });
     fireEvent.submit(submitBtn.closest('form')!);
@@ -180,6 +183,7 @@ describe('RegisterPage Component (Vendora Dual-Role Customer & Seller Portal)', 
     fireEvent.change(phoneInput, { target: { value: '321 9876543' } });
     fireEvent.change(passwordInputs[0], { target: { value: 'MerchantSecret123!' } });
     fireEvent.change(passwordInputs[1], { target: { value: 'MerchantSecret123!' } });
+    fireEvent.click(screen.getByRole('checkbox'));
 
     const submitBtn = screen.getByRole('button', { name: /Submit Merchant Application/i });
     fireEvent.submit(submitBtn.closest('form')!);

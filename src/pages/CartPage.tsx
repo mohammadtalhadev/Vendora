@@ -4,6 +4,7 @@ import { Trash2, Plus, Minus, ArrowRight, ShieldCheck, Tag } from 'lucide-react'
 import { useCartStore, useCartGroups, useCartCalculations } from '../store/cart-store';
 import { useCurrency } from '../store/currency-store';
 import { Badge } from '../components/ui/badge';
+import { fetchCouponByCode } from '../features/cart/api/promotions';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,21 +15,33 @@ export const CartPage: React.FC = () => {
 
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
+  const [couponBusy, setCouponBusy] = useState(false);
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  // The same promotions path the cart drawer and checkout use: only live
+  // codes from the database are accepted, and checkout_pricing re-checks
+  // them server-side. (This replaces a hardcoded code that always worked.)
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError('');
     const code = couponCode.trim().toUpperCase();
-    if (code === 'VENDORAPRO') {
-      applyCoupon({
-        code: 'VENDORAPRO',
-        type: 'percentage',
-        value: 10,
-      });
+    if (!code) return;
+    setCouponBusy(true);
+    try {
+      const coupon = await fetchCouponByCode(code, subtotal);
+      applyCoupon(coupon);
       setCouponCode('');
-    } else {
-      setCouponError('Invalid coupon code. Try "VENDORAPRO" for 10% off.');
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : 'That code could not be applied.');
+    } finally {
+      setCouponBusy(false);
     }
+  };
+
+  const couponKind = (coupon: NonNullable<typeof appliedCoupon>): string => {
+    const type = coupon.type as string;
+    if (type === 'percentage') return `${coupon.value}% off`;
+    if (type === 'fixed') return `${formatPrice(coupon.value)} off`;
+    return 'Free shipping';
   };
 
   if (itemCount === 0) {
@@ -218,7 +231,7 @@ export const CartPage: React.FC = () => {
             <div className="mt-6 border-t border-slate-100 pt-4">
               {appliedCoupon ? (
                 <div className="flex items-center justify-between rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-                  <span>Code {appliedCoupon.code} applied (10% off)</span>
+                  <span>Code {appliedCoupon.code} applied ({couponKind(appliedCoupon)})</span>
                   <button onClick={removeCoupon} className="text-emerald-900 hover:underline">
                     Remove
                   </button>
@@ -229,15 +242,16 @@ export const CartPage: React.FC = () => {
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="Coupon (e.g. VENDORAPRO)"
+                    placeholder="Coupon code"
                     aria-label="Coupon code"
                     className="flex-1 rounded-full border border-slate-200 px-3 py-2 text-xs focus:border-sun-orange focus:outline-none uppercase"
                   />
                   <button
                     type="submit"
-                    className="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                    disabled={couponBusy}
+                    className="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
                   >
-                    Apply
+                    {couponBusy ? 'Checking…' : 'Apply'}
                   </button>
                 </form>
               )}
@@ -256,7 +270,7 @@ export const CartPage: React.FC = () => {
             {/* Security badges */}
             <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-              <span>Simulated SSL Checkout · COD Available</span>
+              <span>Secure checkout · COD Available</span>
             </div>
           </div>
         </div>

@@ -67,6 +67,8 @@ describe('RegisterPage account-type mapping', () => {
       target: { value: '3001234567' },
     });
     fillPasswords();
+    // Terms start unticked (Batch 45) and the submit stays disabled until agreed.
+    fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /Create Customer Account/i }));
 
     expect(await screen.findByText('STOREFRONT HOME')).toBeInTheDocument();
@@ -97,6 +99,8 @@ describe('RegisterPage account-type mapping', () => {
       target: { value: '3219876543' },
     });
     fillPasswords();
+    // Terms start unticked (Batch 45) and the submit stays disabled until agreed.
+    fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /Submit Merchant Application/i }));
 
     expect(await screen.findByText('SELLER ONBOARDING')).toBeInTheDocument();

@@ -93,7 +93,7 @@ export const RegisterPage: React.FC = () => {
   const [customerConfirmPassword, setCustomerConfirmPassword] = useState('');
   const [showCustomerPassword, setShowCustomerPassword] = useState(false);
   const [showCustomerConfirmPassword, setShowCustomerConfirmPassword] = useState(false);
-  const [customerAgreed, setCustomerAgreed] = useState(true);
+  const [customerAgreed, setCustomerAgreed] = useState(false);
 
   // Seller Form State
   const [storeName, setStoreName] = useState('');
@@ -108,7 +108,7 @@ export const RegisterPage: React.FC = () => {
   const [sellerConfirmPassword, setSellerConfirmPassword] = useState('');
   const [showSellerPassword, setShowSellerPassword] = useState(false);
   const [showSellerConfirmPassword, setShowSellerConfirmPassword] = useState(false);
-  const [sellerAgreed, setSellerAgreed] = useState(true);
+  const [sellerAgreed, setSellerAgreed] = useState(false);
 
   // Submission UI States
   const [error, setError] = useState<string | null>(null);
@@ -841,7 +841,7 @@ export const RegisterPage: React.FC = () => {
 
                     {/* Customer Submit CTA */}
                     <div className="pt-3">
-                      <Button type="submit" variant="default" size="lg" disabled={isSubmitting} className="w-full">
+                      <Button type="submit" variant="default" size="lg" disabled={isSubmitting || !customerAgreed} className="w-full">
                         <span>{isSubmitting ? 'Creating account...' : 'Create Customer Account'}</span>
                         <ArrowRight className="h-4 w-4 stroke-[2.5]" />
                       </Button>
@@ -1163,7 +1163,7 @@ export const RegisterPage: React.FC = () => {
 
                     {/* Seller Submit CTA */}
                     <div className="pt-3">
-                      <Button type="submit" variant="default" size="lg" disabled={isSubmitting} className="w-full">
+                      <Button type="submit" variant="default" size="lg" disabled={isSubmitting || !sellerAgreed} className="w-full">
                         <span>{isSubmitting ? 'Submitting Application...' : 'Submit Merchant Application'}</span>
                         <ArrowRight className="h-4 w-4 stroke-[2.5]" />
                       </Button>
@@ -1255,7 +1255,7 @@ export const RegisterPage: React.FC = () => {
                           </div>
                           <div>
                             <h4 className="font-outfit font-bold text-sm text-slate-900 dark:text-white">
-                              Easy 7-Day Doorstep Returns
+                              Easy 30-Day Doorstep Returns
                             </h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                               Free courier pickup from your doorstep if items don't match expectations.

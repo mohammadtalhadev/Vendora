@@ -9,7 +9,6 @@ import {
   ShieldAlert,
   Clock,
   CheckCircle2,
-  Copy,
   MessageSquare,
   Truck,
   HelpCircle,
@@ -17,6 +16,7 @@ import {
 import { Button, buttonVariants } from '../components/ui/button';
 import { useToast } from '../hooks/useToast';
 import { Toast } from '../components/common/Toast';
+import { sendContactMessage } from '../features/forms/api/public-forms';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -68,7 +68,7 @@ const OFFICES = [
 const RESPONSE_TIMES = [
   { channel: 'Buyer care chat & email', window: 'Within 4 hours, 09:00–23:00 PKT daily' },
   { channel: 'Seller operations', window: 'Within 1 business day' },
-  { channel: 'Escrow & dispute claims', window: 'First response within 24 hours' },
+  { channel: 'Dispute claims', window: 'First response within 24 hours' },
   { channel: 'Legal & data requests', window: 'Acknowledged within 72 hours' },
 ];
 
@@ -86,21 +86,9 @@ export const ContactPage: React.FC = () => {
   const { toast, showToast, hideToast } = useToast();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
-  const [composed, setComposed] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   const channelTopic = CHANNELS.find((channel) => channel.id === form.topic) ?? CHANNELS[0];
-
-  const buildMessage = () =>
-    [
-      `Name: ${form.name}`,
-      `Email: ${form.email}`,
-      form.orderId.trim() ? `Order reference: ${form.orderId.trim()}` : null,
-      `Topic: ${channelTopic.title}`,
-      '',
-      form.message,
-    ]
-      .filter((line) => line !== null)
-      .join('\n');
 
   const validate = (): boolean => {
     const next: Partial<Record<keyof FormState, string>> = {};
@@ -111,27 +99,29 @@ export const ContactPage: React.FC = () => {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  // The message is stored in the contact_messages inbox for real — the
+  // success state below is only shown after the row lands. (This replaces
+  // the old mailto: shim, which sent nothing anywhere.)
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validate()) return;
-
-    const body = buildMessage();
-    const href = `mailto:${channelTopic.email}?subject=${encodeURIComponent(
-      `Vendora ${channelTopic.title}: ${form.orderId.trim() ? form.orderId.trim() : 'General enquiry'}`,
-    )}&body=${encodeURIComponent(body)}`;
-
-    setComposed(body);
-    window.location.assign(href);
-    showToast('Your email app should open with the message ready to send.');
-  };
-
-  const copyComposed = async () => {
-    if (!composed) return;
+    if (!validate() || submitState === 'sending') return;
+    setSubmitState('sending');
     try {
-      await navigator.clipboard.writeText(composed);
-      showToast('Message copied to clipboard.');
-    } catch {
-      showToast('Copy failed — select the text and copy it manually.', 'error');
+      await sendContactMessage({
+        name: form.name,
+        email: form.email,
+        topic: channelTopic.id,
+        orderRef: form.orderId,
+        message: form.message,
+      });
+      setSubmitState('sent');
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      setSubmitState('idle');
+      showToast(
+        err instanceof Error ? err.message : 'Your message could not be sent. Please try again.',
+        'error',
+      );
     }
   };
 
@@ -236,8 +226,8 @@ export const ContactPage: React.FC = () => {
               Write to {channelTopic.title}
             </h2>
             <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-              Sending opens your own email app with this message addressed to {channelTopic.email}. Nothing is stored on
-              this site.
+              Send this form and the {channelTopic.title} team will reply to your email address. Prefer email? Write to{' '}
+              {channelTopic.email} directly.
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
@@ -294,7 +284,7 @@ export const ContactPage: React.FC = () => {
                   id="contact-order"
                   name="orderId"
                   type="text"
-                  placeholder="ORD-98421"
+                  placeholder="Your order ID, if this is about an order"
                   value={form.orderId}
                   onChange={(event) => setForm((prev) => ({ ...prev, orderId: event.target.value }))}
                   className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sun-orange focus:ring-2 focus:ring-sun-orange/30"
@@ -322,29 +312,21 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Button type="submit" size="sm">
+                <Button type="submit" size="sm" disabled={submitState === 'sending'}>
                   <Mail className="h-4 w-4" aria-hidden="true" />
-                  Open in my email app
+                  {submitState === 'sending' ? 'Sending…' : 'Send message'}
                 </Button>
-                {composed ? (
-                  <Button type="button" variant="outline" size="sm" onClick={copyComposed}>
-                    <Copy className="h-4 w-4" aria-hidden="true" />
-                    Copy message
-                  </Button>
-                ) : null}
               </div>
 
-              {composed ? (
+              {submitState === 'sent' ? (
                 <div role="status" aria-live="polite" className="flex items-start gap-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/80 p-4">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-emerald-800">Message ready</p>
+                    <p className="text-xs font-bold text-emerald-800">Message sent</p>
                     <p className="mt-1 text-[11px] leading-relaxed text-emerald-800/80">
-                      If your mail app did not open, copy the message below and send it to {channelTopic.email}.
+                      Thank you — your message is with the {channelTopic.title} team. We reply to the email address
+                      you gave above.
                     </p>
-                    <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap rounded-xl border border-emerald-200/70 bg-white/80 p-3 text-[11px] text-slate-600">
-                      {composed}
-                    </pre>
                   </div>
                 </div>
               ) : null}

@@ -39,6 +39,8 @@ function fillCustomerForm() {
   const passwordInputs = screen.getAllByPlaceholderText('••••••••••••');
   fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
   fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
+  // Terms start unticked (Batch 45) and the submit stays disabled until agreed.
+  fireEvent.click(screen.getByRole('checkbox'));
 }
 
 describe('RegisterPage email confirmation state', () => {

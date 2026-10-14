@@ -35,6 +35,7 @@ import { OtherOffersSection, type MerchantOffer } from '../features/products/com
 import { ProductDossierSection } from '../features/products/components/ProductDossierSection';
 import { useReveal } from '../hooks/useReveal';
 import { CustomerReviewsShowcase } from '../features/products/components/CustomerReviewsShowcase';
+import { useProductReviews } from '../features/reviews/hooks/useReviews';
 import { CustomersAlsoViewedGrid } from '../features/products/components/CustomersAlsoViewedGrid';
 
 interface VariantChoice {
@@ -219,9 +220,15 @@ export const ProductDetailPage: React.FC = () => {
 
   const displayBrand = product?.brand ?? 'Vendora';
 
-  const displayRating = product?.rating ?? 0;
-  const displayReviews = product?.reviewCount ?? 0;
+  // The header rating reads the SAME reviews query the reviews section
+  // below renders from — never the product row's stored rating fields, which
+  // are only a rollup cache. One source means the header can never advertise
+  // reviews the section does not have.
+  const reviewsQuery = useProductReviews(product?.id);
+  const displayRating = reviewsQuery.data?.breakdown.average ?? 0;
+  const displayReviews = reviewsQuery.data?.breakdown.total ?? 0;
   const hasReviews = displayReviews > 0;
+  const reviewsLoading = reviewsQuery.isLoading;
 
   const categoryLabel = (product?.category ?? '')
     .replace(/^cat-/, '')
@@ -253,7 +260,7 @@ export const ProductDetailPage: React.FC = () => {
       { label: 'Item Type', value: product?.type === 'digital' ? 'Digital Download (Instant Delivery)' : 'Physical Merchandise' },
       { label: 'Condition', value: 'Brand New (Original Factory Packaging)' },
       { label: 'Authenticity', value: '100% Genuine & Verified by Vendora' },
-      { label: 'Return Window', value: '30 Days Money-Back Guarantee' },
+      { label: 'Return Window', value: '30 days from delivery — see the Vendora returns policy' },
       { label: 'Warranty', value: '1 Year Manufacturer / Vendor Warranty' },
       { label: 'Shipping & Handling', value: product?.type === 'digital' ? 'Instant Download Link' : 'Tracked & Insured Courier' },
     ];
@@ -453,7 +460,9 @@ export const ProductDetailPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-amber-500 pt-0.5">
-                        {hasReviews ? (
+                        {reviewsLoading ? (
+                          <span className="text-slate-400 font-normal">Loading reviews…</span>
+                        ) : hasReviews ? (
                           <>
                             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                             <span className="font-bold text-slate-800">{displayRating.toFixed(1)}</span>
@@ -529,7 +538,9 @@ export const ProductDetailPage: React.FC = () => {
                       />
                     ))}
                   </div>
-                  {hasReviews ? (
+                  {reviewsLoading ? (
+                    <span className="font-semibold text-slate-400">Loading reviews…</span>
+                  ) : hasReviews ? (
                     <>
                       <span className="font-extrabold text-slate-900">
                         {displayRating.toFixed(1)}{' '}
@@ -787,7 +798,7 @@ export const ProductDetailPage: React.FC = () => {
                       <span>1-Year Official Warranty</span>
                     </div>
                     <p className="mt-1 text-[11px] text-slate-500">
-                      14-day hassle-free returns &amp; refund
+                      30-day hassle-free returns &amp; refund
                     </p>
                   </div>
                 </div>

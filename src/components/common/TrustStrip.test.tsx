@@ -7,7 +7,7 @@ describe('TrustStrip (canonical trust badges, Batch 22H)', () => {
     render(<TrustStrip />);
     expect(screen.getByText('Fast & Free Shipping')).toBeInTheDocument();
     expect(screen.getByText('100% Authentic')).toBeInTheDocument();
-    expect(screen.getByText('7-Day Easy Returns')).toBeInTheDocument();
+    expect(screen.getByText('30-Day Easy Returns')).toBeInTheDocument();
     expect(screen.getByText('24/7 Dedicated Support')).toBeInTheDocument();
   });
 });
