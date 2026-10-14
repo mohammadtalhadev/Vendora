@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { friendlyError } from '../lib/friendly-error';
 import {
   Users,
   ShieldCheck,
@@ -120,7 +121,7 @@ export const AdminUsersPage: React.FC = () => {
         <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
           <div className="font-semibold mb-1">Failed to load accounts</div>
           <div className="mb-3 text-xs">
-            {error instanceof Error ? error.message : 'The accounts queue could not be read.'}
+            {error ? friendlyError(error, { staff: true }).message : 'The accounts queue could not be read.'}
           </div>
           <button
             type="button"

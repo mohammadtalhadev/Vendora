@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { friendlyErrorText } from '../lib/friendly-error';
 import { Button } from '../components/ui/button';
 
 /**
@@ -90,8 +91,7 @@ export const AdminLoginPage: React.FC = () => {
       }
       navigate(signedInUser.roles.includes('admin') ? adminDestinationFor(redirectTarget) : home);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Invalid login credentials';
-      setError(message);
+      setError(friendlyErrorText(err, { context: 'auth', staff: true }));
     } finally {
       setIsSubmitting(false);
     }

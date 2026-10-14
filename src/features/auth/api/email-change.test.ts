@@ -39,6 +39,6 @@ describe('requestEmailChange', () => {
 
   it('surfaces a Supabase refusal instead of pretending the link was sent', async () => {
     supabaseDouble.authState.updateUserError = { message: 'Email rate limit exceeded' };
-    await expect(requestEmailChange('new@example.pk')).rejects.toThrow(/rate limit/);
+    await expect(requestEmailChange('new@example.pk')).rejects.toThrow(/Too many attempts/);
   });
 });

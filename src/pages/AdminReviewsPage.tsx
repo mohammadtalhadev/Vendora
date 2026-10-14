@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { friendlyError } from '../lib/friendly-error';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, MessageSquareQuote, Search, Star } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
@@ -241,7 +242,7 @@ export const AdminReviewsPage: React.FC = () => {
         <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
           <div className="font-semibold mb-1">Failed to load reviews</div>
           <div className="mb-3 text-xs">
-            {error instanceof Error ? error.message : 'The review queue could not be read.'}
+            {error ? friendlyError(error, { staff: true }).message : 'The review queue could not be read.'}
           </div>
           <button
             type="button"

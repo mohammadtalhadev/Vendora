@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { toFriendlyError } from '../../../lib/friendly-error';
 import type {
   CartItem,
   ProductType,
@@ -188,7 +189,7 @@ export async function quoteCheckout(
   if (signal) call = call.abortSignal(signal);
 
   const { data, error } = await call;
-  if (error) throw new Error(error.message);
+  if (error) throw toFriendlyError(error, { context: 'checkout' });
   if (!data || typeof data !== 'object') throw new Error('Checkout could not price your cart.');
   return readQuote(data as RpcRow);
 }
@@ -229,7 +230,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     p_idempotency_key: currentAttemptKey(),
     p_gift_card_code: input.giftCardCode?.trim() || undefined,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw toFriendlyError(error, { context: 'checkout' });
   if (!data || typeof data !== 'object') throw new Error('Your order could not be placed. Please try again.');
   resetOrderAttemptKey();
 

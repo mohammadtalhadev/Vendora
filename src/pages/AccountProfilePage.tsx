@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth-store';
+import { friendlyError } from '../lib/friendly-error';
 import { useWishlistStore } from '../store/wishlist-store';
 import { useCurrency } from '../store/currency-store';
 import { useSavedAddresses, useSavedAddressActions } from '../features/account/hooks/useSavedAddresses';
@@ -375,7 +376,7 @@ export const AccountProfilePage: React.FC = () => {
         evidence_photos: [],
       };
       const { error } = await supabase.from('disputes').insert(row);
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(friendlyError(error).message);
       return pkg.id;
     },
     onSuccess: () => {

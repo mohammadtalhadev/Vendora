@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom';
 import { RefreshCw, Home } from 'lucide-react';
 import { isChunkLoadError, clearChunkReloadGuard } from '../../lib/chunk-recovery';
+import { captureException } from '../../lib/error-reporter';
 
 /**
  * The router's errorElement for every top-level route. Two audiences:
@@ -19,13 +20,15 @@ export const RouteErrorScreen: React.FC = () => {
   const chunkError = isChunkLoadError(error);
   const status = isRouteErrorResponse(error) ? error.status : null;
 
-  const detail = chunkError
-    ? null
-    : error instanceof Error
-      ? error.message
-      : status
-        ? `Request failed with status ${status}`
-        : null;
+  // The raw error is never rendered (Batch 54) — it can carry service
+  // internals. Instead the failure is reported and the user gets a short
+  // reference they can quote to support. Chunk errors self-heal by reload
+  // and plain 404s are navigation, not faults, so neither is reported.
+  const [reference] = useState(() =>
+    chunkError || status === 404
+      ? undefined
+      : captureException(error, { source: 'route-error' }),
+  );
 
   const handleReload = () => {
     clearChunkReloadGuard();
@@ -43,9 +46,9 @@ export const RouteErrorScreen: React.FC = () => {
             ? 'A new version of the site went live while this tab was open, so one of its files is out of date. Reloading loads the current version — nothing in your cart or account is affected.'
             : 'This page hit an unexpected problem. Reloading usually fixes it; if it keeps happening, head back to the homepage and try again from there.'}
         </p>
-        {detail && (
-          <p className="mt-3 break-words rounded-xl bg-slate-50 px-3 py-2 font-mono text-[11px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-            {detail}
+        {reference && (
+          <p className="mt-3 text-[11px] font-semibold tracking-wide text-slate-400 dark:text-slate-500">
+            Reference: {reference.slice(0, 8)}
           </p>
         )}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">

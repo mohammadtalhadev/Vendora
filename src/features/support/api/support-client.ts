@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { markRpcError } from '../../../lib/friendly-error';
 import type { Json } from '../../../types/database';
 
 /**
@@ -38,7 +39,7 @@ export function asRows(value: unknown): Record<string, unknown>[] {
  * database's wording is the point: it was written for the person seeing it.
  */
 export function rpcFailed(operation: string, message: string): Error {
-  return new Error(`${operation}: ${message}`);
+  return markRpcError(new Error(`${operation}: ${message}`), operation);
 }
 
 export const json = (value: unknown): Json => value as Json;

@@ -1,5 +1,6 @@
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../../../lib/supabase';
+import { toFriendlyError } from '../../../lib/friendly-error';
 import type { Database } from '../../../types/database';
 import type { User, UserRole, VendorStatus } from '../../../types/domain';
 
@@ -36,7 +37,7 @@ async function loadProfile(authUser: SupabaseUser): Promise<User | null> {
     .eq('id', authUser.id)
     .maybeSingle();
 
-  if (error) throw new Error(`Could not load your profile: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Could not load your profile', context: 'auth' });
   if (!profile) return null;
 
   const { data: store, error: storeError } = await supabase
@@ -45,7 +46,7 @@ async function loadProfile(authUser: SupabaseUser): Promise<User | null> {
     .eq('user_id', authUser.id)
     .maybeSingle();
 
-  if (storeError) throw new Error(`Could not load your store: ${storeError.message}`);
+  if (storeError) throw toFriendlyError(storeError, { prefix: 'Could not load your store', context: 'auth' });
 
   return toDomainUser(profile, store?.id);
 }
@@ -66,7 +67,7 @@ export async function refreshProfile(): Promise<{ user: User | null; session: Se
 /** Password sign-in. Rejects a session whose profile row is missing. */
 export async function signIn(email: string, password: string): Promise<{ user: User; session: Session }> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(error.message);
+  if (error) throw toFriendlyError(error, { context: 'auth' });
   if (!data.session) throw new Error('Sign-in succeeded but no session was returned.');
 
   const user = await loadProfile(data.user);
@@ -90,7 +91,7 @@ export async function signUp(name: string, email: string, password: string): Pro
     password,
     options: { data: { name } },
   });
-  if (error) throw new Error(error.message);
+  if (error) throw toFriendlyError(error, { context: 'auth' });
   if (!data.user) throw new Error('Registration failed.');
   if (!data.session) return { user: null, session: null, requiresEmailConfirmation: true };
 
@@ -111,7 +112,20 @@ export async function resendSignupConfirmation(email: string): Promise<void> {
     email: email.trim(),
     options: { emailRedirectTo: `${window.location.origin}/login` },
   });
-  if (error) throw new Error(`Could not resend the confirmation email: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Could not resend the confirmation email', context: 'auth' });
+}
+
+/**
+ * Starts a password reset for the login page's "forgot password" action.
+ * This lives in the session layer (the page used to call Supabase directly)
+ * so a refusal — a rate limit, a server fault — reaches the visitor as the
+ * mapped friendly sentence, never as GoTrue's raw text.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw toFriendlyError(error, { context: 'auth' });
 }
 
 /**
@@ -128,12 +142,9 @@ export async function verifySignupOtp(email: string, token: string): Promise<Use
     type: 'signup',
   });
   if (error) {
-    if (/expired|invalid|token/i.test(error.message)) {
-      throw new Error(
-        'That code is incorrect or has expired. Use the newest email and try again.',
-      );
-    }
-    throw new Error(error.message);
+    // The expired/invalid wording this function used to special-case now
+    // lives in the friendly-error mapper, alongside every other refusal.
+    throw toFriendlyError(error, { context: 'auth' });
   }
   if (!data.user) {
     throw new Error('That code could not be verified. Request a new code and try again.');
@@ -155,7 +166,7 @@ export interface ProfileIdentityUpdate {
 
 export async function updateProfileIdentity(updates: ProfileIdentityUpdate): Promise<void> {
   const { data, error } = await supabase.auth.getUser();
-  if (error) throw new Error(`Could not verify your session: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Could not verify your session', context: 'auth' });
 
   const row: ProfileUpdate = {};
   if (updates.name !== undefined) row.name = updates.name;
@@ -163,7 +174,7 @@ export async function updateProfileIdentity(updates: ProfileIdentityUpdate): Pro
   if (Object.keys(row).length === 0) return;
 
   const { error: writeError } = await supabase.from('profiles').update(row).eq('id', data.user.id);
-  if (writeError) throw new Error(`Failed to save your profile: ${writeError.message}`);
+  if (writeError) throw toFriendlyError(writeError, { prefix: 'Failed to save your profile', context: 'auth' });
 }
 
 /**
@@ -172,7 +183,7 @@ export async function updateProfileIdentity(updates: ProfileIdentityUpdate): Pro
  */
 export async function updatePassword(password: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw new Error(`Failed to update your password: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Failed to update your password', context: 'auth' });
 }
 
 /**
@@ -191,12 +202,12 @@ export async function requestEmailChange(newEmail: string): Promise<void> {
     throw new Error('That is already your sign-in email.');
   }
   const { error } = await supabase.auth.updateUser({ email: trimmed });
-  if (error) throw new Error(`Could not start the email change: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Could not start the email change', context: 'auth' });
 }
 
 export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(error.message);
+  if (error) throw toFriendlyError(error, { context: 'auth' });
 }
 
 /**
@@ -234,7 +245,7 @@ export async function deleteAccount(): Promise<void> {
 /** Signs the account out on every device, this one included. */
 export async function signOutEverywhere(): Promise<void> {
   const { error } = await supabase.auth.signOut({ scope: 'global' });
-  if (error) throw new Error(error.message);
+  if (error) throw toFriendlyError(error, { context: 'auth' });
 }
 
 /**
@@ -247,7 +258,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple'): Promise<voi
     provider,
     options: { redirectTo: `${window.location.origin}/` },
   });
-  if (error) throw new Error(error.message);
+  if (error) throw toFriendlyError(error, { context: 'auth' });
 }
 
 /**

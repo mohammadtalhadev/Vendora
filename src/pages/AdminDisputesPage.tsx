@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { friendlyError } from '../lib/friendly-error';
 import { Toast } from '../components/common/Toast';
 import { useToast } from '../hooks/useToast';
 import {
@@ -237,7 +238,7 @@ export const AdminDisputesPage: React.FC = () => {
         {isError && (
           <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
             <div className="font-bold mb-1">Failed to load disputes</div>
-            <div className="mb-3 text-xs">{error instanceof Error ? error.message : 'The arbitration queue could not be read.'}</div>
+            <div className="mb-3 text-xs">{error ? friendlyError(error, { staff: true }).message : 'The arbitration queue could not be read.'}</div>
             <Button size="sm" variant="outline" onClick={() => void refetch()} className="rounded-xl text-xs">
               Retry
             </Button>

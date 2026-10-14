@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Star, ShieldCheck, PenSquare } from 'lucide-react';
 import { WriteReviewModal } from '../../reviews/components/WriteReviewModal';
+import { friendlyError } from '../../../lib/friendly-error';
 import type { NewReviewInput } from '../../reviews/types';
 import { useProductReviews, useSubmitReview } from '../../reviews/hooks/useReviews';
 import { timeAgo } from '../../reviews/utils/time';
@@ -65,7 +66,7 @@ export const CustomerReviewsShowcase: React.FC<CustomerReviewsShowcaseProps> = (
       ) : isError ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
           <p className="font-bold">Reviews could not be loaded.</p>
-          <p className="mt-1">{error instanceof Error ? error.message : 'Unknown error'}</p>
+          <p className="mt-1">{error ? friendlyError(error).message : 'Unknown error'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">

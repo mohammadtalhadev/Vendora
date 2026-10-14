@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { friendlyError } from '../lib/friendly-error';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -90,7 +91,7 @@ export const AdminVendorDetailPage: React.FC = () => {
       <WorkspaceLayout role="admin" sidebar={<AdminNav />}>
         <div className="flex flex-col items-center justify-center min-h-screen gap-4">
           <p className="text-sm text-rose-600 font-medium">
-            {error instanceof Error ? error.message : 'Failed to load merchant'}
+            {error ? friendlyError(error, { staff: true }).message : 'Failed to load merchant'}
           </p>
           <Button
             type="button"

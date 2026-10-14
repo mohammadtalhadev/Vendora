@@ -2,6 +2,7 @@ import * as React from 'react';
 import { AlertCircle, RotateCcw, Inbox, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
+import { friendlyError } from '../../lib/friendly-error';
 
 /* ==========================================================================
    1. Skeleton Primitives (Shimmer effect with near-solid backgrounds)
@@ -208,15 +209,10 @@ export function QueryState({
       return <div className={className}>{errorView}</div>;
     }
 
-    const resolvedErrorMessage =
-      errorMessage ||
-      (typeof error === 'string'
-        ? error
-        : error instanceof Error
-        ? error.message
-        : error && typeof error === 'object' && 'message' in error
-        ? String(error.message)
-        : 'An unexpected error occurred while loading this section.');
+    // The default text is the mapped sentence, never the raw service
+    // message (Batch 54): this one branch is the error text for every
+    // QueryState consumer that does not pass its own.
+    const resolvedErrorMessage = errorMessage || friendlyError(error).message;
 
     return (
       <div

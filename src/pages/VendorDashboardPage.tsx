@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Toast } from '../components/common/Toast';
+import { friendlyError } from '../lib/friendly-error';
 import { useToast } from '../hooks/useToast';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -801,7 +802,7 @@ export const VendorDashboardPage: React.FC = () => {
         {error && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-bold text-rose-800 flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-rose-600" />
-            <span>{error instanceof Error ? error.message : String(error)}</span>
+            <span>{friendlyError(error, { staff: true }).message}</span>
             <button
               type="button"
               onClick={() => void handleRefresh()}

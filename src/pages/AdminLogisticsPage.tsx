@@ -1,4 +1,5 @@
 import React from 'react';
+import { friendlyError } from '../lib/friendly-error';
 import { Truck, Bike, Phone, AlertTriangle } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
@@ -102,7 +103,7 @@ export const AdminLogisticsPage: React.FC = () => {
         <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
           <div className="font-semibold mb-1">Failed to load the dispatch board</div>
           <div className="mb-3 text-xs">
-            {error instanceof Error ? error.message : 'The fleet and delivery rows could not be read.'}
+            {error ? friendlyError(error, { staff: true }).message : 'The fleet and delivery rows could not be read.'}
           </div>
           <button
             type="button"

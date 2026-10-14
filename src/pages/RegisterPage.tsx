@@ -33,6 +33,7 @@ import { useAuth } from '../lib/auth-context';
 import { useCartStore } from '../store/cart-store';
 import { submitVendorApplication } from '../features/vendor/api/applications';
 import { resendSignupConfirmation, verifySignupOtp } from '../features/auth/api/session';
+import { friendlyErrorText } from '../lib/friendly-error';
 import { linkReferral } from '../features/rewards/api/rewards';
 import { OtpInput } from '../components/ui/otp-input';
 
@@ -131,7 +132,7 @@ export const RegisterPage: React.FC = () => {
       setOtpCode('');
       setOtpError(null);
     } catch (err: unknown) {
-      setResendError(err instanceof Error ? err.message : 'Could not resend the confirmation email.');
+      setResendError(friendlyErrorText(err, { context: 'auth' }));
       setResendState('error');
     }
   };
@@ -166,7 +167,7 @@ export const RegisterPage: React.FC = () => {
         navigate('/');
       }
     } catch (err: unknown) {
-      setOtpError(err instanceof Error ? err.message : 'That code could not be verified.');
+      setOtpError(friendlyErrorText(err, { context: 'auth' }));
       setOtpVerifying(false);
     }
   };
@@ -254,8 +255,7 @@ export const RegisterPage: React.FC = () => {
       mergeGuestCartIntoUser(user.id);
       navigate('/');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Registration failed';
-      setError(message);
+      setError(friendlyErrorText(err, { context: 'auth' }));
     } finally {
       setIsSubmitting(false);
     }
@@ -323,8 +323,7 @@ export const RegisterPage: React.FC = () => {
       await linkStoredReferral();
       navigate('/become-a-seller');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Merchant application submission failed';
-      setError(message);
+      setError(friendlyErrorText(err, { context: 'auth' }));
     } finally {
       setIsSubmitting(false);
     }
@@ -336,7 +335,7 @@ export const RegisterPage: React.FC = () => {
     try {
       await signInWithProvider(provider);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Provider registration failed';
+      const message = friendlyErrorText(err, { context: 'auth' });
       setError(message);
       setIsSubmitting(false);
     }

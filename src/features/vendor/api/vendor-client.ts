@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { markRpcError } from '../../../lib/friendly-error';
 import type { Json } from '../../../types/database';
 
 /**
@@ -61,9 +62,12 @@ export function asStringList(value: unknown): string[] {
 /**
  * Supabase surfaces an RPC's `raise exception` as an error message; unwrapping it here
  * keeps the wording the database chose, which is written for the person seeing it.
+ * The error is tagged (Batch 54) so the friendly-error mapper can recognise
+ * it downstream: staff surfaces keep this wording, customer surfaces keep
+ * only the operation.
  */
 export function rpcFailed(operation: string, message: string): Error {
-  return new Error(`${operation}: ${message}`);
+  return markRpcError(new Error(`${operation}: ${message}`), operation);
 }
 
 /**

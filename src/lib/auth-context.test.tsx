@@ -72,7 +72,11 @@ describe('AuthProvider', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-    await waitFor(() => expect(screen.getByTestId('error')).toHaveTextContent('Invalid login credentials'));
+    await waitFor(() =>
+      expect(screen.getByTestId('error')).toHaveTextContent(
+        'Email or password is incorrect. Check both and try again.',
+      ),
+    );
     expect(useAuthStore.getState().user).toBeNull();
   });
 

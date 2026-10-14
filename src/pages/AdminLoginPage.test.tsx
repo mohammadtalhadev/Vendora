@@ -137,7 +137,9 @@ describe('AdminLoginPage', () => {
 
     fillAndSubmit();
 
-    expect(await screen.findByText('Invalid login credentials')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Email or password is incorrect. Check both and try again.'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/no staff access/i)).not.toBeInTheDocument();
     expect(auth.signOut).not.toHaveBeenCalled();
   });

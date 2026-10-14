@@ -37,7 +37,33 @@ describe('session.signIn', () => {
   });
 
   it('surfaces the server rejection instead of inventing a user', async () => {
-    await expect(session.signIn('ghost@demo.test', 'wrong-password')).rejects.toThrow('Invalid login credentials');
+    await expect(session.signIn('ghost@demo.test', 'wrong-password')).rejects.toThrow(
+      'Email or password is incorrect. Check both and try again.',
+    );
+  });
+
+  it('translates a coded invalid_credentials refusal into the friendly credentials sentence', async () => {
+    supabaseDouble.authState.signInError = {
+      message: 'Invalid login credentials',
+      code: 'invalid_credentials',
+      status: 400,
+    };
+
+    await expect(session.signIn('buyer@demo.test', 'wrong-password')).rejects.toThrow(
+      'Email or password is incorrect. Check both and try again.',
+    );
+  });
+
+  it('never leaks a GoTrue 500 to the caller — it becomes the server sentence with a reference', async () => {
+    supabaseDouble.authState.signInError = {
+      message: 'Database error querying schema',
+      status: 500,
+    };
+
+    const failure = await session.signIn('buyer@demo.test', 'demo1234').catch((err: unknown) => err);
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toMatch(/^Something went wrong on our side/);
+    expect((failure as Error).message).not.toContain('Database error');
   });
 
   it('signs the session back out when the profile row is missing', async () => {
@@ -79,7 +105,7 @@ describe('session.signUp', () => {
   it('rejects with the server message when the email is taken', async () => {
     supabaseDouble.authState.signUpError = { message: 'User with this email already registered' };
 
-    await expect(session.signUp('Talha', 'buyer@demo.test', 'demo1234')).rejects.toThrow(/already registered/);
+    await expect(session.signUp('Talha', 'buyer@demo.test', 'demo1234')).rejects.toThrow(/already exists/);
   });
 });
 
@@ -98,7 +124,7 @@ describe('session.signOut and OAuth', () => {
   it('rejects when the server refuses to revoke the session', async () => {
     supabaseDouble.authState.signOutError = { message: 'Failing to fetch jwt keys' };
 
-    await expect(session.signOut()).rejects.toThrow(/jwt keys/);
+    await expect(session.signOut()).rejects.toThrow(/Something went wrong on our side/);
   });
 
   it('starts the provider flow and comes back to the app root', async () => {
@@ -113,7 +139,7 @@ describe('session.signOut and OAuth', () => {
   it('reports a provider the project has not enabled', async () => {
     supabaseDouble.authState.oAuthError = { message: 'Provider is not enabled' };
 
-    await expect(session.signInWithOAuth('apple')).rejects.toThrow(/not enabled/);
+    await expect(session.signInWithOAuth('apple')).rejects.toThrow(/not available/);
   });
 });
 

@@ -10,6 +10,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { updatePassword } from '../features/auth/api/session';
+import { friendlyErrorText } from '../lib/friendly-error';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
@@ -70,14 +72,10 @@ export const ResetPasswordPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
-      if (updateError) {
-        setError(updateError.message);
-        return;
-      }
+      await updatePassword(password);
       setPhase('done');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not update your password');
+      setError(friendlyErrorText(err, { context: 'auth' }));
     } finally {
       setIsSubmitting(false);
     }

@@ -15,6 +15,10 @@ export interface DoubleSession {
 
 export interface DoubleError {
   message: string;
+  /** GoTrue/PostgREST error code (`invalid_credentials`, `23505`, …), when the real service would send one. */
+  code?: string;
+  /** HTTP status the real service would answer with (400/422/429/500), when it sends one. */
+  status?: number;
 }
 
 type AuthEvent = 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'USER_UPDATED' | string;
@@ -2810,7 +2814,10 @@ export function createSupabaseDouble() {
             authState.session = session;
             return { data: { user: authState.signInUser, session }, error: null };
           }
-          return { data: { user: null, session: null }, error: { message: 'Invalid login credentials' } };
+          return {
+            data: { user: null, session: null },
+            error: { message: 'Invalid login credentials', code: 'invalid_credentials', status: 400 },
+          };
         }
         const user: DoubleAuthUser = { id: profile.id, email: profile.email };
         const session: DoubleSession = { access_token: 'test-access-token', user };
@@ -2851,7 +2858,7 @@ export function createSupabaseDouble() {
         if (!profile) {
           return {
             data: { user: null, session: null },
-            error: { message: 'Token has expired or is invalid' },
+            error: { message: 'Token has expired or is invalid', code: 'otp_expired', status: 422 },
           };
         }
         const user: DoubleAuthUser = { id: profile.id, email: profile.email };
@@ -3106,7 +3113,9 @@ export function createSupabaseDouble() {
     },
     /** Makes the next RPC call fail, the way a denied SECURITY DEFINER call does. */
     failRpc(message: string | null) {
-      rpcError = message ? { message } : null;
+      // PostgREST reports a raised exception with code P0001; carrying it
+      // lets the friendly-error mapper tell authored refusals from faults.
+      rpcError = message ? { message, code: 'P0001' } : null;
     },
     reset() {
       Object.keys(tables).forEach((name) => {

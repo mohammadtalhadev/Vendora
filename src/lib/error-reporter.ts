@@ -13,7 +13,12 @@ import { supabase } from './supabase';
  *
  * captureException NEVER throws and never returns a promise the caller has
  * to handle: an error reporter that can break the error path is worse than
- * none.
+ * none. It does return the report's event id (Batch 54): the id is stored as
+ * the `error_logs` row id, so a "Reference: xxxxxxxx" line shown to a user
+ * can be looked up by an admin. Reporting the same error object twice
+ * returns the same id without writing a second row — the global handlers,
+ * the query cache and the page that displays the error may all report one
+ * failure without triplicating it.
  */
 export interface ErrorReportContext {
   route?: string;
@@ -40,6 +45,16 @@ function newEventId(): string {
   }
 }
 
+/** A dashed UUID, the shape `error_logs.id` stores. */
+function newReportId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    const hex = newEventId();
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+}
+
 /** DSN shape: https://<public-key>@<host>/<project-id> (an ingest path may follow the host). */
 function parseSentryDsn(dsn: string): { key: string; host: string; projectId: string } | null {
   try {
@@ -60,10 +75,11 @@ function reportToSentry(
   dsn: string,
   info: { message: string; stack: string | null; name: string },
   context?: ErrorReportContext,
+  reportId?: string,
 ): void {
   const parsed = parseSentryDsn(dsn);
   if (!parsed) return;
-  const eventId = newEventId();
+  const eventId = reportId ? reportId.replace(/-/g, '') : newEventId();
   const event = {
     event_id: eventId,
     timestamp: new Date().toISOString(),
@@ -105,6 +121,7 @@ function reportToSentry(
 async function reportToErrorLogs(
   info: { message: string; stack: string | null },
   context?: ErrorReportContext,
+  reportId?: string,
 ): Promise<void> {
   let userId: string | null = null;
   try {
@@ -117,6 +134,7 @@ async function reportToErrorLogs(
     context?.route ??
     (typeof window !== 'undefined' ? window.location.pathname : undefined);
   await supabase.from('error_logs').insert({
+    ...(reportId ? { id: reportId } : {}),
     user_id: userId,
     message: info.message.slice(0, 2000),
     stack: info.stack?.slice(0, 8000) ?? null,
@@ -125,15 +143,26 @@ async function reportToErrorLogs(
   });
 }
 
-export function captureException(error: unknown, context?: ErrorReportContext): void {
+/** Error objects already reported, so one failure writes one row. */
+const reportedIds = new WeakMap<object, string>();
+
+export function captureException(error: unknown, context?: ErrorReportContext): string | undefined {
   try {
+    if (error && typeof error === 'object') {
+      const existing = reportedIds.get(error);
+      if (existing) return existing;
+    }
+    const reportId = newReportId();
+    if (error && typeof error === 'object') reportedIds.set(error, reportId);
     const info = describe(error);
     const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
-    if (dsn) reportToSentry(dsn, info, context);
-    void reportToErrorLogs(info, context).catch(() => {
+    if (dsn) reportToSentry(dsn, info, context, reportId);
+    void reportToErrorLogs(info, context, reportId).catch(() => {
       // Fire-and-forget: a failed insert is a lost report, never a crash.
     });
+    return reportId;
   } catch {
     // Never throws. Deliberately empty.
+    return undefined;
   }
 }

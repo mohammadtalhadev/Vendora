@@ -31,6 +31,7 @@ import type { AddressType } from '../features/account/types';
 import { shippingAddressSchema, type CartItem, type ShippingAddress } from '../types/domain';
 import { validateCardLuhn, detectCardBrand } from '../features/checkout/utils/luhn';
 import { formatDeliveryWindow } from '../lib/delivery-estimate';
+import { friendlyErrorText } from '../lib/friendly-error';
 import type { PaymentMethod } from '../features/checkout/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -297,9 +298,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const placeOrderError = placeOrder.isError
-    ? placeOrder.error instanceof Error
-      ? placeOrder.error.message
-      : 'Your order could not be placed. Please try again.'
+    ? friendlyErrorText(placeOrder.error, { context: 'checkout' })
     : null;
 
   // =========================================================================
@@ -914,7 +913,7 @@ export const CheckoutPage: React.FC = () => {
               {totals.isError && (
                 <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-rose-600" role="alert">
                   <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                  {totals.error instanceof Error ? totals.error.message : 'Checkout could not price your cart.'}
+                  {friendlyErrorText(totals.error, { context: 'checkout' })}
                 </p>
               )}
 

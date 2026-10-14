@@ -1,3 +1,5 @@
+import { markRpcError } from '../../../lib/friendly-error';
+
 /**
  * Shared plumbing for the rider workspace. Reads return what Postgres computed and writes go
  * through the RPCs that own the state machine; nothing falls back to a local copy, so a failed
@@ -24,5 +26,5 @@ export function asRows(value: unknown): Record<string, unknown>[] {
 
 /** The database's own refusal is the message the rider should see. */
 export function rpcFailed(operation: string, message: string): Error {
-  return new Error(`${operation}: ${message}`);
+  return markRpcError(new Error(`${operation}: ${message}`), operation);
 }

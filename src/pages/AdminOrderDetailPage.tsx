@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { friendlyError } from '../lib/friendly-error';
 import { useParams, Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -215,7 +216,7 @@ export const AdminOrderDetailPage: React.FC = () => {
 
         {isError && (
           <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 text-xs font-bold text-rose-900" role="alert">
-            {error instanceof Error ? error.message : 'This order could not be loaded.'}
+            {error ? friendlyError(error, { staff: true }).message : 'This order could not be loaded.'}
             <button type="button" onClick={() => void refetch()} className="ml-3 underline">
               Retry
             </button>

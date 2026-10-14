@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { friendlyError } from '../lib/friendly-error';
 import { Link } from 'react-router-dom';
 import {
   Store,
@@ -94,7 +95,7 @@ export const AdminVendorsPage: React.FC = () => {
           <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
             <div className="font-semibold mb-1">Failed to load vendors</div>
             <div className="mb-3 text-xs">
-              {error instanceof Error ? error.message : 'The merchant queue could not be read.'}
+              {error ? friendlyError(error, { staff: true }).message : 'The merchant queue could not be read.'}
             </div>
             <button
               onClick={() => void refetch()}

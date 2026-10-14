@@ -13,7 +13,8 @@ import {
   Store,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import { supabase } from '../lib/supabase';
+import { requestPasswordReset } from '../features/auth/api/session';
+import { friendlyErrorText } from '../lib/friendly-error';
 import type { DemoRoleKey } from '../lib/demo-accounts';
 import { useCartStore } from '../store/cart-store';
 import { Button } from '../components/ui/button';
@@ -93,8 +94,7 @@ export const LoginPage: React.FC = () => {
         navigate('/');
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Invalid login credentials';
-      setError(message);
+      setError(friendlyErrorText(err, { context: 'auth' }));
     } finally {
       setIsSubmitting(false);
     }
@@ -109,14 +109,12 @@ export const LoginPage: React.FC = () => {
     }
     setResetState('sending');
     setResetError(null);
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(target, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (resetErr) {
-      setResetError(resetErr.message);
-      setResetState('error');
-    } else {
+    try {
+      await requestPasswordReset(target);
       setResetState('sent');
+    } catch (err: unknown) {
+      setResetError(friendlyErrorText(err, { context: 'auth' }));
+      setResetState('error');
     }
   };
 
@@ -128,8 +126,9 @@ export const LoginPage: React.FC = () => {
       mergeGuestCartIntoUser(user.id);
       navigate(workspaceForRole(roleKey));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Demo sign-in failed';
-      setError(`${message} — has the demo data been seeded into Supabase?`);
+      setError(
+        `${friendlyErrorText(err, { context: 'auth' })} — has the demo data been seeded into Supabase?`,
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -141,8 +140,7 @@ export const LoginPage: React.FC = () => {
     try {
       await signInWithProvider(provider);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Provider sign-in failed';
-      setError(message);
+      setError(friendlyErrorText(err, { context: 'auth' }));
       setIsSubmitting(false);
     }
   };

@@ -81,7 +81,11 @@ describe('RegisterPage email confirmation state', () => {
     fillCustomerForm();
     fireEvent.click(screen.getByRole('button', { name: /Create Customer Account/i }));
 
-    expect(await screen.findByText('Email already registered')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'An account with this email already exists. Sign in instead, or reset your password.',
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Check your inbox/i)).not.toBeInTheDocument();
   });
 });

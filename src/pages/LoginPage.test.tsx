@@ -3,9 +3,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { LoginPage } from './LoginPage';
 
+const mocks = vi.hoisted(() => ({
+  signIn: vi.fn(),
+}));
+
 vi.mock('../lib/auth-context', () => ({
   useAuth: () => ({
-    signIn: vi.fn(),
+    signIn: mocks.signIn,
     signInAsDemo: vi.fn(),
     signInWithProvider: vi.fn(),
   }),
@@ -42,5 +46,33 @@ describe('LoginPage', () => {
     expect(screen.queryByText('Platform Status: 100% Operational')).not.toBeInTheDocument();
     expect(screen.queryByText('Protected by Vendora Escrow Shield')).not.toBeInTheDocument();
     expect(screen.queryByText("Pakistan's Premier Multi-Vendor Marketplace")).not.toBeInTheDocument();
+  });
+
+  it('shows the friendly sentence, never the raw service text, for a coded invalid_credentials refusal', async () => {
+    mocks.signIn.mockRejectedValue(
+      Object.assign(new Error('Invalid login credentials'), {
+        code: 'invalid_credentials',
+        status: 400,
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Email Address'), {
+      target: { value: 'someone@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'wrong-password' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Sign In to Vendora/i }));
+
+    expect(
+      await screen.findByText('Email or password is incorrect. Check both and try again.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Invalid login credentials')).not.toBeInTheDocument();
   });
 });

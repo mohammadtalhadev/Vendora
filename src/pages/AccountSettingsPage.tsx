@@ -9,6 +9,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { deleteAccount, signOut, signOutEverywhere, updatePassword } from '../features/auth/api/session';
+import { friendlyErrorText } from '../lib/friendly-error';
 import { useAuthStore } from '../store/auth-store';
 
 /**
@@ -62,7 +63,7 @@ export const AccountSettingsPage: React.FC = () => {
     } catch (err) {
       setPasswordState({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'Could not update your password.',
+        message: friendlyErrorText(err, { context: 'account' }),
       });
     }
   };
@@ -76,9 +77,7 @@ export const AccountSettingsPage: React.FC = () => {
     } catch (err) {
       setSigningOutAll(false);
       setConfirmSignOutAll(false);
-      setSignOutError(
-        err instanceof Error ? err.message : 'Could not sign out other sessions.',
-      );
+      setSignOutError(friendlyErrorText(err, { context: 'account' }));
     }
   };
 
@@ -98,7 +97,7 @@ export const AccountSettingsPage: React.FC = () => {
       setConfirmingDelete(false);
       setDeleteState({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'The account could not be deleted.',
+        message: friendlyErrorText(err, { context: 'account' }),
       });
     }
   };

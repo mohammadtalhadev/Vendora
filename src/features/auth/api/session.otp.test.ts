@@ -34,11 +34,11 @@ describe('session.verifySignupOtp', () => {
     );
   });
 
-  it('passes through unrelated provider errors untouched', async () => {
+  it('maps unrelated provider failures instead of leaking their raw text', async () => {
     supabaseDouble.authState.verifyOtpError = { message: 'Network request failed' };
 
     await expect(session.verifySignupOtp('ayesha@example.com', '123456')).rejects.toThrow(
-      /Network request failed/,
+      /Can't reach Vendora/,
     );
   });
 

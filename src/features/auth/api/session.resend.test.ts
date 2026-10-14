@@ -25,7 +25,7 @@ describe('session.resendSignupConfirmation', () => {
     supabaseDouble.authState.resendError = { message: 'rate limited' };
 
     await expect(session.resendSignupConfirmation('ayesha@example.com')).rejects.toThrow(
-      /Could not resend the confirmation email: rate limited/,
+      /Could not resend the confirmation email: Too many attempts/,
     );
   });
 });

@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { markRpcError } from '../../../lib/friendly-error';
 
 /**
  * Shared plumbing for the notification bell and centre. A failed read is an error the screen
@@ -21,7 +22,7 @@ export function asRecord(value: unknown): Record<string, unknown> {
 }
 
 export function rpcFailed(operation: string, message: string): Error {
-  return new Error(`${operation}: ${message}`);
+  return markRpcError(new Error(`${operation}: ${message}`), operation);
 }
 
 /** The session id, or a thrown error. Nothing here has a "not signed in" data path. */

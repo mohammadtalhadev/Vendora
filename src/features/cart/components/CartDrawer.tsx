@@ -6,6 +6,7 @@ import { useCartStore, useCartCalculations } from '../../../store/cart-store';
 import { useSmoothScroll } from '../../../components/SmoothScrollProvider';
 import { useCurrency } from '../../../store/currency-store';
 import { fetchCouponByCode } from '../api/promotions';
+import { friendlyErrorText } from '../../../lib/friendly-error';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -64,7 +65,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       applyCoupon(coupon);
       setCouponCode('');
     } catch (err) {
-      setCouponError(err instanceof Error ? err.message : 'That code could not be applied.');
+      setCouponError(friendlyErrorText(err, { context: 'cart' }));
     }
   };
 

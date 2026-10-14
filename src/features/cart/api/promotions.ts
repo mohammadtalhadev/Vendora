@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { toFriendlyError } from '../../../lib/friendly-error';
 import type { Database } from '../../../types/database';
 import type { Coupon } from '../utils/totals';
 import { formatPrice } from '../../../store/currency-store';
@@ -22,7 +23,7 @@ export async function fetchCouponByCode(code: string, subtotal: number): Promise
     .select(PROMOTION_SELECT)
     .eq('code', wanted)
     .maybeSingle();
-  if (error) throw new Error(`Could not check that code: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Could not check that code', context: 'cart' });
   if (!data) throw new Error(`"${wanted}" is not a live promotion code.`);
 
   const row = data as unknown as PromotionRow;
@@ -59,7 +60,7 @@ export async function fetchLiveCoupons(signal?: AbortSignal): Promise<Coupon[]> 
   if (signal) query = query.abortSignal(signal);
 
   const { data, error } = await query;
-  if (error) throw new Error(`Could not load promotions: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Could not load promotions', context: 'cart' });
 
   const now = Date.now();
   return ((data ?? []) as unknown as PromotionRow[])
@@ -97,7 +98,7 @@ export async function fetchCouponCentre(signal?: AbortSignal): Promise<CentreCou
   if (signal) query = query.abortSignal(signal);
 
   const { data, error } = await query;
-  if (error) throw new Error(`Could not load promotions: ${error.message}`);
+  if (error) throw toFriendlyError(error, { prefix: 'Could not load promotions', context: 'cart' });
 
   const now = Date.now();
   return ((data ?? []) as unknown as PromotionRow[])

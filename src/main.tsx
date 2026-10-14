@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './styles/base.css';
 import { router } from './app/router';
 import { SmoothScrollProvider } from './components/SmoothScrollProvider';
@@ -22,6 +22,16 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 const queryClient = new QueryClient({
+  // Handled failures are reported too (Batch 54): until now only uncaught
+  // errors reached error_logs, so the failures pages caught and displayed —
+  // including auth 500s — left no trace. Reporting only; pages keep display
+  // duty, and captureException dedupes an error object reported twice.
+  queryCache: new QueryCache({
+    onError: (error) => captureException(error, { source: 'query' }),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => captureException(error, { source: 'mutation' }),
+  }),
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
