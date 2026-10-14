@@ -80,18 +80,24 @@ function asRecord(value: unknown): Record<string, unknown> {
 export function heroSlidesFromRows(rows: Array<Record<string, unknown>>): HeroSlide[] {
   const slides: HeroSlide[] = [];
   for (const row of rows) {
-    const body = asRecord(row.body);
-    const image = text(body.imageUrl);
-    if (!image) continue;
-    const headline = text(body.headline) || text(row.title);
-    slides.push({
-      id: text(row.slug) || text(row.id),
-      title: headline,
-      subtitle: text(body.subtitle),
-      image,
-      link: text(body.ctaLink) || '/products',
-      alt: headline,
-      ctaText: text(body.ctaText) || 'Shop Now',
+    /* The console writes one object per row. Rows seeded before that shape
+     * settled can still hold an array of slide objects, so both are read:
+     * an array contributes one slide per element instead of being skipped. */
+    const bodies = Array.isArray(row.body) ? row.body.map(asRecord) : [asRecord(row.body)];
+    const baseId = text(row.slug) || text(row.id);
+    bodies.forEach((body, index) => {
+      const image = text(body.imageUrl);
+      if (!image) return;
+      const headline = text(body.headline) || text(row.title);
+      slides.push({
+        id: index === 0 ? baseId : `${baseId}-${index + 1}`,
+        title: headline,
+        subtitle: text(body.subtitle),
+        image,
+        link: text(body.ctaLink) || '/products',
+        alt: headline,
+        ctaText: text(body.ctaText) || 'Shop Now',
+      });
     });
   }
   return slides;

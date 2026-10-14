@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   CheckCircle2,
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
 import { useReveal } from '../hooks/useReveal';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
@@ -343,27 +342,7 @@ export const HomePage: React.FC = () => {
                     alt={slide.alt}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <Link to={slide.link} className="absolute inset-0 z-20" title={slide.title} />
-                  {activeHeroIndex === idx && (
-                    <div className="pointer-events-none absolute inset-0 z-30 flex items-center bg-gradient-to-r from-slate-950/75 via-slate-950/30 to-transparent">
-                      <div className="hero-copy-in max-w-xl px-6 pl-14 sm:px-12 sm:pl-16 lg:px-16">
-                        <h2 className="font-outfit text-3xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-4xl lg:text-5xl">
-                          {slide.title}
-                        </h2>
-                        <p className="mt-3 max-w-md text-xs font-medium leading-relaxed text-white/85 sm:text-base">
-                          {slide.subtitle}
-                        </p>
-                        <div className="pointer-events-auto mt-6 flex flex-wrap items-center gap-3">
-                          <Button asChild variant="gradient" size="lg">
-                            <Link to={slide.link}>{slide.ctaText}</Link>
-                          </Button>
-                          <Button asChild variant="outline" size="lg">
-                            <Link to="/products">View All</Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <Link to={slide.link} className="absolute inset-0 z-20" title={slide.title} aria-label={slide.title} />
                 </div>
               ))}
 
@@ -718,7 +697,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=beauty"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-6 py-2.5 text-xs font-bold text-white transition-colors hover:bg-slate-800 sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-colors hover:bg-sun-orange-600 sm:text-sm"
                   >
                     Shop Beauty
                   </Link>
@@ -750,7 +729,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <Link
                     to="/products?category=beauty"
-                    className="font-outfit mt-5 inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-6 py-2.5 text-xs font-bold text-white transition-colors hover:bg-slate-800 sm:text-sm"
+                    className="font-outfit mt-5 inline-flex items-center rounded-full bg-sun-orange px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-colors hover:bg-sun-orange-600 sm:text-sm"
                   >
                     Shop Beauty
                   </Link>

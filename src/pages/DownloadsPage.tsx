@@ -7,7 +7,6 @@ import {
   FileCode,
   ShieldCheck,
   ExternalLink,
-  Sparkles,
   Search,
   Layers,
   ArrowRight,
@@ -105,10 +104,6 @@ export const DownloadsPage: React.FC = () => {
     <div>
         {/* Header Section */}
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sun-orange dark:text-orange-400 mb-3 shadow-xs">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Digital Fulfillment Vault</span>
-          </div>
           <h1 className="font-outfit text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
             My Downloads & Licenses
           </h1>

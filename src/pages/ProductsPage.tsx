@@ -400,8 +400,8 @@ export const ProductsPage: React.FC = () => {
 
               {/* Right: Sort by & View Toggle */}
               <div className="flex items-center gap-3 self-end sm:self-auto">
-                <div className="flex items-center gap-2">
-                  <label htmlFor="sort-select" className="text-xs text-slate-500 font-medium">
+                <div className="flex shrink-0 items-center gap-2">
+                  <label htmlFor="sort-select" className="shrink-0 whitespace-nowrap text-xs text-slate-500 font-medium">
                     Sort by:
                   </label>
                   <Select

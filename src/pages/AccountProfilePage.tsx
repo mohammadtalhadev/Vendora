@@ -913,7 +913,7 @@ export const AccountProfilePage: React.FC = () => {
           aria-orientation="horizontal"
           aria-label="Account sections"
           onKeyDown={onTabListKeyDown}
-          className="flex gap-1.5 overflow-x-auto rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-2 shadow-sm"
+          className="flex w-full min-w-0 gap-1.5 overflow-x-auto rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-2 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
                 {tabMeta.map((tab) => {
                   const selected = activeTab === tab.key;
