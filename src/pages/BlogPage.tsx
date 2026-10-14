@@ -9,90 +9,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-interface ArticleItem {
-  id: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  author: string;
-  authorRole: string;
-  date: string;
-  readTime: string;
-  image: string;
-  featured?: boolean;
-}
-
-const ARTICLES: ArticleItem[] = [
-  {
-    id: 'art-1',
-    title: 'How Vendora Escrow Protects Online Buyers Across Pakistan',
-    excerpt: 'Traditional cash on delivery often leaves buyers vulnerable to brick-in-a-box scams. Here is how escrow milestone release protects buyers and sellers on every order.',
-    category: 'Escrow & Security',
-    author: 'Vendora Editorial',
-    authorRole: 'Vendora Team',
-    date: 'Oct 10, 2026',
-    readTime: '5 min read',
-    image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80',
-    featured: true,
-  },
-  {
-    id: 'art-2',
-    title: 'Flagship Audio Shootout: Ronin R-9 vs. Sony WH-1000XM5 in Active Noise Cancelling',
-    excerpt: 'We tested the flagship wireless earbuds and headphones across Karachi\'s bustling urban transit to measure real-world hybrid ANC decibel attenuation.',
-    category: 'Tech Reviews',
-    author: 'Vendora Editorial',
-    authorRole: 'Vendora Team',
-    date: 'Oct 08, 2026',
-    readTime: '6 min read',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'art-3',
-    title: 'From Local Workshop to Nationwide Brand: How StudioCraft Scaled with 0% Listing Fees',
-    excerpt: 'An inside look at how Lahore-based minimalist ergonomic furniture maker StudioCraft leveraged Vendora\'s micro-fulfillment hubs to deliver nationwide within 48 hours.',
-    category: 'Merchant Spotlight',
-    author: 'Vendora Editorial',
-    authorRole: 'Vendora Team',
-    date: 'Oct 04, 2026',
-    readTime: '4 min read',
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'art-4',
-    title: 'Why Fast GaN Chargers Are Replacing Bulky Power Bricks for Pakistani Remote Workers',
-    excerpt: 'Gallium Nitride charging architecture explained: why 65W and 100W PD chargers keep laptops and smartphones cool while slashing recharge times in half.',
-    category: 'Tech Guides',
-    author: 'Vendora Editorial',
-    authorRole: 'Vendora Team',
-    date: 'Sep 29, 2026',
-    readTime: '4 min read',
-    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'art-5',
-    title: 'The Ultimate Guide to Safe Unboxing: Documenting Deliveries for Instant Dispute Approvals',
-    excerpt: 'Step-by-step instructions on unboxing high-value electronics with uninterrupted video proof to support fast escrow refund decisions.',
-    category: 'Buyer Guide',
-    author: 'Vendora Editorial',
-    authorRole: 'Vendora Team',
-    date: 'Sep 22, 2026',
-    readTime: '3 min read',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'art-6',
-    title: 'How Local Rider Networks Cut Delivery Times in Karachi',
-    excerpt: 'Real-time rider tracking and local hub stock are cutting the multi-day courier wait down to hours.',
-    category: 'Logistics',
-    author: 'Vendora Editorial',
-    authorRole: 'Vendora Team',
-    date: 'Sep 15, 2026',
-    readTime: '5 min read',
-    image: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=800&auto=format&fit=crop&q=80',
-  },
-];
-
-const CATEGORIES = ['All', 'Escrow & Security', 'Tech Reviews', 'Merchant Spotlight', 'Tech Guides', 'Buyer Guide', 'Logistics'];
+import { BLOG_ARTICLES as ARTICLES, BLOG_CATEGORIES as CATEGORIES } from '../data/blog-articles';
 
 export const BlogPage: React.FC = () => {
   useReveal();
@@ -129,15 +46,18 @@ export const BlogPage: React.FC = () => {
           </div>
 
           <h1 className="font-outfit text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            Insights on Modern Commerce, Escrow &amp; Technology
+            Insights on Modern Commerce &amp; Technology
           </h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-            Expert buying guides, deep-dives into multi-vendor logistics, verified merchant stories, and consumer escrow protection standards.
+            Buying guides, seller guides, and plain-language explainers on how shopping and selling on Vendora actually work.
           </p>
         </div>
 
         {/* Featured Editorial Post */}
-        <div className="reveal rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow grid grid-cols-1 lg:grid-cols-12 gap-0">
+        <Link
+          to={`/blog/${featured.id}`}
+          className="reveal block rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow grid grid-cols-1 lg:grid-cols-12 gap-0"
+        >
           <div className="lg:col-span-7 relative h-72 lg:h-auto overflow-hidden bg-slate-100 dark:bg-slate-800">
             <img
               src={featured.image}
@@ -185,7 +105,7 @@ export const BlogPage: React.FC = () => {
               </span>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Category Filter Chips */}
         <div className="flex flex-wrap items-center gap-2">
@@ -209,8 +129,9 @@ export const BlogPage: React.FC = () => {
         {/* Articles Grid */}
         <div className="reveal grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredArticles.map((art) => (
-            <article
+            <Link
               key={art.id}
+              to={`/blog/${art.id}`}
               className="group rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-sun-orange/40 transition-all duration-300 flex flex-col justify-between"
             >
               <div>
@@ -253,7 +174,7 @@ export const BlogPage: React.FC = () => {
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       </div>

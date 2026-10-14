@@ -185,6 +185,9 @@ export interface SubOrder {
   licenseKey?: string; // For digital assets
   history: TrackingEvent[];
   returnReason?: string;
+  rmaCode?: string;
+  refundAmount?: number;
+  returnRejectReason?: string;
   createdAt: string;
   carrierName?: string;
   trackingNumber?: string;

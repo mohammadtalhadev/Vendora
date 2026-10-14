@@ -35,6 +35,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SORTS: Record<string, Array<{ column: string; ascending: boolean }>> = {
   featured: [{ column: 'created_at', ascending: false }],
+  newest: [{ column: 'created_at', ascending: false }],
   best_selling: [{ column: 'review_count', ascending: false }],
   rating: [{ column: 'rating', ascending: false }],
   price_asc: [{ column: 'price', ascending: true }],

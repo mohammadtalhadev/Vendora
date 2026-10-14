@@ -52,7 +52,7 @@ export interface DigitalDownload {
 const SUB_ORDER_SELECT =
   'id, order_group_id, seller_id, type, items, subtotal, shipping_fee, delivery_option, ' +
   'commission_rate, commission_amount, net_payout, status, rider_id, license_key, history, ' +
-  'return_reason, carrier_name, tracking_number, customer_notes, created_at, ' +
+  'return_reason, rma_code, refund_amount, return_reject_reason, carrier_name, tracking_number, customer_notes, created_at, ' +
   'seller:vendor_profiles(id, store_name, seller_type)';
 
 const ORDER_SELECT =
@@ -140,6 +140,9 @@ function mapSubOrder(row: SubOrderRow): SubOrder {
       };
     }),
     returnReason: row.return_reason ?? undefined,
+    rmaCode: row.rma_code ?? undefined,
+    refundAmount: row.refund_amount === null || row.refund_amount === undefined ? undefined : Number(row.refund_amount),
+    returnRejectReason: row.return_reject_reason ?? undefined,
     createdAt: row.created_at,
     carrierName: row.carrier_name ?? undefined,
     trackingNumber: row.tracking_number ?? undefined,

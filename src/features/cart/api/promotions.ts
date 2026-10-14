@@ -77,3 +77,42 @@ export async function fetchLiveCoupons(signal?: AbortSignal): Promise<Coupon[]> 
       sellerScope: row.vendor_id ?? 'platform',
     }));
 }
+
+export interface CentreCoupon extends Coupon {
+  /** When the code stops working, when the promotion has an end date. */
+  endsAt?: string;
+}
+
+/**
+ * The Coupon Centre's read: the same live promotions `fetchLiveCoupons`
+ * shows in the cart, plus the expiry the centre prints on each card. RLS
+ * already hides inactive promotions, so everything returned here is a code
+ * checkout will honour (subject to its minimum spend).
+ */
+export async function fetchCouponCentre(signal?: AbortSignal): Promise<CentreCoupon[]> {
+  let query = supabase
+    .from('promotions')
+    .select(PROMOTION_SELECT)
+    .order('created_at', { ascending: false });
+  if (signal) query = query.abortSignal(signal);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Could not load promotions: ${error.message}`);
+
+  const now = Date.now();
+  return ((data ?? []) as unknown as PromotionRow[])
+    .filter(
+      (row) =>
+        row.usage_count < row.usage_limit &&
+        (!row.starts_at || new Date(row.starts_at).getTime() <= now) &&
+        (!row.ends_at || new Date(row.ends_at).getTime() >= now),
+    )
+    .map((row) => ({
+      code: row.code,
+      type: row.discount_type as Coupon['type'],
+      value: Number(row.discount_value),
+      minSpend: Number(row.minimum_order) || undefined,
+      sellerScope: row.vendor_id ?? 'platform',
+      endsAt: row.ends_at ?? undefined,
+    }));
+}

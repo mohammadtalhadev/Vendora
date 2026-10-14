@@ -170,6 +170,12 @@ export async function signOut(): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** Signs the account out on every device, this one included. */
+export async function signOutEverywhere(): Promise<void> {
+  const { error } = await supabase.auth.signOut({ scope: 'global' });
+  if (error) throw new Error(error.message);
+}
+
 /**
  * Starts an OAuth sign-in; the browser is redirected to the provider and back to
  * `redirectTo` once it completes. Requires the provider to be enabled in the

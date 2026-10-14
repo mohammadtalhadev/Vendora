@@ -343,7 +343,7 @@ export const AccordionCheckout: FC<AccordionCheckoutProps> = ({ onSuccess, class
         onSuccess(response.orderId);
       }
 
-      navigate(`/orders/${response.orderId}`);
+      navigate(`/order-confirmation/${response.orderId}`);
     } catch (err: unknown) {
       const errorMsg =
         err instanceof Error ? err.message : 'An error occurred while placing your order. Please try again.';

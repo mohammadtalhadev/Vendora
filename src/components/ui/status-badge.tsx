@@ -27,12 +27,17 @@ export const STATUS_LABELS: Record<string, string> = {
   out_for_delivery: 'Out for delivery',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
+  return_requested: 'Return Requested',
+  return_approved: 'Return Approved',
+  return_rejected: 'Return Rejected',
   returned: 'Returned',
   refunded: 'Refunded',
   // Payment states (AdminOrdersPage PAYMENT_OPTIONS)
   pending: 'Pending',
   succeeded: 'Succeeded',
   failed: 'Failed',
+  // Payout states (Admin Payouts)
+  processing: 'Processing',
   // Payout states (VendorPayoutsPage history)
   completed: 'Completed',
   // Listing moderation (AdminProductsPage)
@@ -61,8 +66,13 @@ export const STATUS_TONES: Record<string, string> = {
   approved: TONE_EMERALD,
   completed: TONE_EMERALD,
   cancelled: TONE_ROSE,
+  failed: TONE_ROSE,
+  processing: TONE_AMBER,
   refunded: TONE_ROSE,
   returned: TONE_ROSE,
+  return_rejected: TONE_ROSE,
+  return_requested: TONE_AMBER,
+  return_approved: TONE_BLUE,
   rejected: TONE_ROSE,
   suspended: TONE_ROSE,
   banned: 'bg-rose-600 text-white',

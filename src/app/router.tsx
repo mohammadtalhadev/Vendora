@@ -35,6 +35,18 @@ const InvoicePage = lazy(() =>
 const DownloadsPage = lazy(() =>
   import('../pages/DownloadsPage').then((m) => ({ default: m.DownloadsPage })),
 );
+const OrderConfirmationPage = lazy(() =>
+  import('../pages/OrderConfirmationPage').then((m) => ({ default: m.OrderConfirmationPage })),
+);
+const AccountReviewsPage = lazy(() =>
+  import('../pages/AccountReviewsPage').then((m) => ({ default: m.AccountReviewsPage })),
+);
+const AccountReturnsPage = lazy(() =>
+  import('../pages/AccountReturnsPage').then((m) => ({ default: m.AccountReturnsPage })),
+);
+const AccountSettingsPage = lazy(() =>
+  import('../pages/AccountSettingsPage').then((m) => ({ default: m.AccountSettingsPage })),
+);
 const ComparePage = lazy(() =>
   import('../pages/ComparePage').then((m) => ({ default: m.ComparePage })),
 );
@@ -89,6 +101,18 @@ const AboutPage = lazy(() =>
 const AffiliatePage = lazy(() =>
   import('../pages/AffiliatePage').then((m) => ({ default: m.AffiliatePage })),
 );
+const SellerFeesPage = lazy(() =>
+  import('../pages/SellerFeesPage').then((m) => ({ default: m.SellerFeesPage })),
+);
+const SellerPolicyPage = lazy(() =>
+  import('../pages/SellerPolicyPage').then((m) => ({ default: m.SellerPolicyPage })),
+);
+const CouponCentrePage = lazy(() =>
+  import('../pages/CouponCentrePage').then((m) => ({ default: m.CouponCentrePage })),
+);
+const CookiePolicyPage = lazy(() =>
+  import('../pages/CookiePolicyPage').then((m) => ({ default: m.CookiePolicyPage })),
+);
 const FAQPage = lazy(() =>
   import('../pages/FAQPage').then((m) => ({ default: m.FAQPage })),
 );
@@ -112,6 +136,18 @@ const BlogPage = lazy(() =>
 );
 const CategorySlugRedirect = lazy(() =>
   import('../pages/CategorySlugRedirect').then((m) => ({ default: m.CategorySlugRedirect })),
+);
+const CategoriesPage = lazy(() =>
+  import('../pages/CategoriesPage').then((m) => ({ default: m.CategoriesPage })),
+);
+const BrandDetailPage = lazy(() =>
+  import('../pages/BrandDetailPage').then((m) => ({ default: m.BrandDetailPage })),
+);
+const BlogPostPage = lazy(() =>
+  import('../pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })),
+);
+const NewArrivalsPage = lazy(() =>
+  import('../pages/NewArrivalsPage').then((m) => ({ default: m.NewArrivalsPage })),
 );
 
 // Vendor Workspace Lazy Pages
@@ -138,6 +174,9 @@ const VendorReturnsPage = lazy(() =>
 );
 const VendorEarningsPage = lazy(() =>
   import('../pages/VendorEarningsPage').then((m) => ({ default: m.VendorEarningsPage })),
+);
+const VendorAnalyticsPage = lazy(() =>
+  import('../pages/VendorAnalyticsPage').then((m) => ({ default: m.VendorAnalyticsPage })),
 );
 const VendorPayoutsPage = lazy(() =>
   import('../pages/VendorPayoutsPage').then((m) => ({ default: m.VendorPayoutsPage })),
@@ -197,6 +236,12 @@ const AdminCommissionPage = lazy(() =>
 );
 const AdminDisputesPage = lazy(() =>
   import('../pages/AdminDisputesPage').then((m) => ({ default: m.AdminDisputesPage })),
+);
+const AdminPayoutsPage = lazy(() =>
+  import('../pages/AdminPayoutsPage').then((m) => ({ default: m.AdminPayoutsPage })),
+);
+const AdminReturnsPage = lazy(() =>
+  import('../pages/AdminReturnsPage').then((m) => ({ default: m.AdminReturnsPage })),
 );
 const AdminReportsPage = lazy(() =>
   import('../pages/AdminReportsPage').then((m) => ({ default: m.AdminReportsPage })),
@@ -332,7 +377,23 @@ export const router = createBrowserRouter([
             path: 'disputes/:id',
             element: lazyWrap(<CustomerDisputesPage />),
           },
+          {
+            path: 'account/reviews',
+            element: lazyWrap(<AccountReviewsPage />),
+          },
+          {
+            path: 'account/returns',
+            element: lazyWrap(<AccountReturnsPage />),
+          },
+          {
+            path: 'account/settings',
+            element: lazyWrap(<AccountSettingsPage />),
+          },
         ],
+      },
+      {
+        path: 'order-confirmation/:orderId',
+        element: lazyWrap(<OrderConfirmationPage />),
       },
       {
         path: 'orders/:orderId',
@@ -479,12 +540,36 @@ export const router = createBrowserRouter([
         element: lazyWrap(<BrandsPage />),
       },
       {
+        path: 'brands/:slug',
+        element: lazyWrap(<BrandDetailPage />),
+      },
+      {
         path: 'deals',
         element: lazyWrap(<DealsPage />),
       },
       {
+        path: 'new-arrivals',
+        element: lazyWrap(<NewArrivalsPage />),
+      },
+      {
         path: 'flash-deals',
         element: lazyWrap(<DealsPage />),
+      },
+      {
+        path: 'seller-fees',
+        element: lazyWrap(<SellerFeesPage />),
+      },
+      {
+        path: 'seller-policy',
+        element: lazyWrap(<SellerPolicyPage />),
+      },
+      {
+        path: 'coupons',
+        element: lazyWrap(<CouponCentrePage />),
+      },
+      {
+        path: 'cookie-policy',
+        element: lazyWrap(<CookiePolicyPage />),
       },
       {
         path: 'careers',
@@ -503,8 +588,16 @@ export const router = createBrowserRouter([
         element: lazyWrap(<BlogPage />),
       },
       {
+        path: 'blog/:slug',
+        element: lazyWrap(<BlogPostPage />),
+      },
+      {
         path: 'search',
         element: <ProductsPage />,
+      },
+      {
+        path: 'categories',
+        element: lazyWrap(<CategoriesPage />),
       },
       {
         path: 'categories/:slug',
@@ -583,6 +676,10 @@ export const router = createBrowserRouter([
       {
         path: 'earnings',
         element: lazyWrap(<VendorEarningsPage />),
+      },
+      {
+        path: 'analytics',
+        element: lazyWrap(<VendorAnalyticsPage />),
       },
       {
         path: 'payouts',
@@ -698,8 +795,16 @@ export const router = createBrowserRouter([
         element: lazyWrap(<AdminCommissionPage />),
       },
       {
+        path: 'payouts',
+        element: lazyWrap(<AdminPayoutsPage />),
+      },
+      {
         path: 'disputes',
         element: lazyWrap(<AdminDisputesPage />),
+      },
+      {
+        path: 'returns',
+        element: lazyWrap(<AdminReturnsPage />),
       },
       {
         path: 'reports',

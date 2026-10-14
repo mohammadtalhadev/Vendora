@@ -1,6 +1,16 @@
 import React from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Download, Heart, MapPin, Package, Scale, User as UserIcon } from 'lucide-react';
+import {
+  Download,
+  Heart,
+  MapPin,
+  Package,
+  RotateCcw,
+  Scale,
+  ShieldCheck,
+  Star,
+  User as UserIcon,
+} from 'lucide-react';
 import { useAuthStore } from '../../store/auth-store';
 import { useWishlistStore } from '../../store/wishlist-store';
 
@@ -65,6 +75,24 @@ const NAV_ITEMS: AccountNavItem[] = [
     label: 'Disputes & Claims',
     icon: <Scale className="h-4 w-4 shrink-0" aria-hidden="true" />,
     isActive: (p) => p === '/disputes' || p.startsWith('/disputes/'),
+  },
+  {
+    to: '/account/reviews',
+    label: 'My Reviews',
+    icon: <Star className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    isActive: (p) => p === '/account/reviews',
+  },
+  {
+    to: '/account/returns',
+    label: 'My Returns',
+    icon: <RotateCcw className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    isActive: (p) => p === '/account/returns',
+  },
+  {
+    to: '/account/settings',
+    label: 'Settings & Security',
+    icon: <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    isActive: (p) => p === '/account/settings',
   },
 ];
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  fetchMyReviews,
   fetchProductReviews,
   fetchVendorReviews,
   replyToReview,
@@ -13,6 +14,7 @@ export const reviewsKeys = {
   all: ['reviews'] as const,
   product: (productId: string, sort: ReviewSort) => ['reviews', 'product', productId, sort] as const,
   vendor: (sellerId: string) => ['reviews', 'vendor', sellerId] as const,
+  mine: ['reviews', 'mine'] as const,
 };
 
 export function useProductReviews(productId: string | undefined, sort: ReviewSort = 'recent') {
@@ -29,6 +31,15 @@ export function useVendorReviews(sellerId: string | null | undefined) {
     queryKey: reviewsKeys.vendor(sellerId ?? ''),
     queryFn: ({ signal }) => fetchVendorReviews(sellerId as string, signal),
     enabled: Boolean(sellerId),
+    staleTime: 1000 * 30,
+  });
+}
+
+export function useMyReviews(enabled = true) {
+  return useQuery({
+    queryKey: reviewsKeys.mine,
+    queryFn: ({ signal }) => fetchMyReviews(signal),
+    enabled,
     staleTime: 1000 * 30,
   });
 }

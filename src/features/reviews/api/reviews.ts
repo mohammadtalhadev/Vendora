@@ -103,6 +103,44 @@ export async function fetchProductReviews(
   return { reviews, breakdown: breakdownOf(reviews) };
 }
 
+/** A review the signed-in customer wrote, with the product it belongs to. */
+export interface MyReview extends ProductReview {
+  productTitle: string;
+  productSlug: string;
+  productImage: string | null;
+}
+
+/** The signed-in customer's own reviews, newest first (Account → My Reviews). */
+export async function fetchMyReviews(signal?: AbortSignal): Promise<MyReview[]> {
+  const { data: auth } = await supabase.auth.getUser();
+  const userId = auth.user?.id;
+  if (!userId) throw new Error('Sign in to see your reviews.');
+
+  let query = supabase
+    .from('reviews')
+    .select(`${REVIEW_SELECT}, product:products(title, slug, images)`)
+    .eq('author_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (signal) query = query.abortSignal(signal);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to load your reviews: ${error.message}`);
+
+  return (data ?? []).map((raw) => {
+    const row = raw as unknown as ReviewRow & {
+      product?: { title?: string; slug?: string; images?: string[] } | null;
+    };
+    const base = toReview(row);
+    return {
+      ...base,
+      productTitle: row.product?.title ?? 'Product',
+      productSlug: row.product?.slug ?? base.productId,
+      productImage: row.product?.images?.[0] ?? null,
+    };
+  });
+}
+
 export interface NewReview {
   productId: string;
   rating: number;

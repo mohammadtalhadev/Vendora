@@ -7,6 +7,7 @@ import {
   ClipboardList,
   RotateCcw,
   Wallet,
+  BarChart3,
   CreditCard,
   Tag,
   MessageSquare,
@@ -164,6 +165,12 @@ export const VendorNav: React.FC<VendorNavProps> = ({
           label: 'Earnings',
           accessibleName: 'Earnings',
           icon: Wallet,
+        },
+        {
+          to: '/vendor/analytics',
+          label: 'Analytics',
+          accessibleName: 'Analytics',
+          icon: BarChart3,
         },
         {
           to: '/vendor/payouts',

@@ -109,6 +109,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/refund-policy" className="hover:text-sun-orange transition-colors">Refund &amp; Return Policy</Link></li>
               <li><Link to="/privacy" className="hover:text-sun-orange transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms" className="hover:text-sun-orange transition-colors">Terms &amp; Conditions</Link></li>
+              <li><Link to="/cookie-policy" className="hover:text-sun-orange transition-colors">Cookie Policy</Link></li>
               <li><Link to="/faq" className="hover:text-sun-orange transition-colors">Help Center &amp; FAQ</Link></li>
             </ul>
           </div>
@@ -120,7 +121,8 @@ export const Footer: React.FC = () => {
               <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Sell on Vendora</Link></li>
               <li><Link to="/affiliates" className="hover:text-sun-orange transition-colors">Become an Affiliate</Link></li>
               <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Open Brand Store</Link></li>
-              <li><Link to="/become-a-seller" className="hover:text-sun-orange transition-colors">Vendor Guidelines &amp; Fees</Link></li>
+              <li><Link to="/seller-fees" className="hover:text-sun-orange transition-colors">Seller Fees</Link></li>
+              <li><Link to="/seller-policy" className="hover:text-sun-orange transition-colors">Seller Policy</Link></li>
             </ul>
           </div>
 
@@ -131,6 +133,9 @@ export const Footer: React.FC = () => {
               <li><Link to="/about" className="hover:text-sun-orange transition-colors">About Vendora</Link></li>
               <li><Link to="/careers" className="hover:text-sun-orange transition-colors">Careers &amp; Opportunities</Link></li>
               <li><Link to="/brands" className="hover:text-sun-orange transition-colors">Official Brand Stores</Link></li>
+              <li><Link to="/categories" className="hover:text-sun-orange transition-colors">All Categories</Link></li>
+              <li><Link to="/new-arrivals" className="hover:text-sun-orange transition-colors">New Arrivals</Link></li>
+              <li><Link to="/coupons" className="hover:text-sun-orange transition-colors">Coupon Centre</Link></li>
               <li><Link to="/deals" className="hover:text-sun-orange transition-colors">Flash Deals &amp; Discounts</Link></li>
               <li><Link to="/blog" className="hover:text-sun-orange transition-colors">The Vendora Journal</Link></li>
             </ul>

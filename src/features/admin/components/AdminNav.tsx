@@ -10,7 +10,9 @@ import {
   Layers,
   Percent,
   BarChart3,
+  RotateCcw,
   Scale,
+  Wallet,
   FolderOpen,
   Bell,
   Settings,
@@ -90,6 +92,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: Percent,
   },
   {
+    to: '/admin/payouts',
+    label: 'Payouts',
+    accessibleSubtitle: 'Vendor Payouts & Finance',
+    icon: Wallet,
+  },
+  {
     to: '/admin/reports',
     label: 'Reports',
     icon: BarChart3,
@@ -99,6 +107,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Disputes',
     accessibleSubtitle: 'Dispute Resolution',
     icon: Scale,
+  },
+  {
+    to: '/admin/returns',
+    label: 'Returns',
+    accessibleSubtitle: 'Returns & Refunds',
+    icon: RotateCcw,
   },
   {
     to: '/admin/media',

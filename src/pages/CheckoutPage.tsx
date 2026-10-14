@@ -289,7 +289,7 @@ export const CheckoutPage: React.FC = () => {
       },
       {
         // The mutation's onSuccess already clears the cart, the draft and the quote cache.
-        onSuccess: (placed) => navigate(`/orders/${placed.orderId}`),
+        onSuccess: (placed) => navigate(`/order-confirmation/${placed.orderId}`),
       },
     );
   };
