@@ -158,10 +158,20 @@ const SUPPORT_SCREENS: WorkspaceScreen[] = [
   { title: 'All Notifications', path: '/notifications', group: 'Support', desc: 'Every notice addressed to this account' },
 ];
 
+const RIDER_SCREENS: WorkspaceScreen[] = [
+  { title: 'Delivery Board', path: '/rider', group: 'Rider Hub', desc: 'Assigned parcels, handovers and exceptions' },
+  { title: 'My Deliveries', path: '/rider/deliveries', group: 'Rider Hub', desc: 'The parcels on your board right now' },
+  { title: 'Delivery History', path: '/rider/history', group: 'Rider Hub', desc: 'Parcels you have closed - delivered and failed' },
+  { title: 'Earnings', path: '/rider/earnings', group: 'Rider Hub', desc: 'Value of the parcels you delivered, and COD cash handled' },
+  { title: 'Rider Profile', path: '/rider/profile', group: 'Rider Hub', desc: 'Availability, contact details and vehicle' },
+  { title: 'All Notifications', path: '/notifications', group: 'Rider Account', desc: 'Every notice addressed to this account' },
+];
+
 const SCREENS_BY_ROLE: Record<string, WorkspaceScreen[]> = {
   admin: ADMIN_SCREENS,
   vendor: VENDOR_SCREENS,
   support: SUPPORT_SCREENS,
+  rider: RIDER_SCREENS,
 };
 
 const screensForRole = (roleKey: string): WorkspaceScreen[] => SCREENS_BY_ROLE[roleKey] ?? [];

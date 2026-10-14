@@ -7,11 +7,14 @@ import {
   verifyHandover,
   type RiderMove,
 } from '../api/board';
+import { fetchRiderHistory, fetchRiderLedger, updateRiderContact } from '../api/history';
 
 /** The board belongs to the signed-in rider, so it is keyed by them. */
 export const riderKeys = {
   all: ['rider'] as const,
   board: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'board'] as const,
+  history: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'history'] as const,
+  ledger: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'ledger'] as const,
 };
 
 function useRiderScope(): string | null | undefined {
@@ -23,6 +26,26 @@ export function useRiderBoard() {
   return useQuery({
     queryKey: riderKeys.board(userId),
     queryFn: ({ signal }) => fetchRiderBoard(signal),
+    enabled: Boolean(userId),
+  });
+}
+
+/** Closed parcels (delivered + failed), read from the rider's own delivery rows. */
+export function useRiderHistory() {
+  const userId = useRiderScope();
+  return useQuery({
+    queryKey: riderKeys.history(userId),
+    queryFn: ({ signal }) => fetchRiderHistory(signal),
+    enabled: Boolean(userId),
+  });
+}
+
+/** Every delivered parcel with its booked value and payment method, for the earnings screen. */
+export function useRiderLedger() {
+  const userId = useRiderScope();
+  return useQuery({
+    queryKey: riderKeys.ledger(userId),
+    queryFn: ({ signal }) => fetchRiderLedger(signal),
     enabled: Boolean(userId),
   });
 }
@@ -50,6 +73,10 @@ export function useRiderActions() {
     }),
     availability: useMutation({
       mutationFn: setAvailability,
+      onSuccess: refresh,
+    }),
+    profile: useMutation({
+      mutationFn: updateRiderContact,
       onSuccess: refresh,
     }),
   };

@@ -289,6 +289,15 @@ const AdminBrandsPage = lazyWithRetry(() =>
 const RiderDashboardPage = lazyWithRetry(() =>
   import('../pages/RiderDashboardPage').then((m) => ({ default: m.RiderDashboardPage })),
 );
+const RiderHistoryPage = lazyWithRetry(() =>
+  import('../pages/RiderHistoryPage').then((m) => ({ default: m.RiderHistoryPage })),
+);
+const RiderEarningsPage = lazyWithRetry(() =>
+  import('../pages/RiderEarningsPage').then((m) => ({ default: m.RiderEarningsPage })),
+);
+const RiderProfilePage = lazyWithRetry(() =>
+  import('../pages/RiderProfilePage').then((m) => ({ default: m.RiderProfilePage })),
+);
 const SupportDashboardPage = lazyWithRetry(() =>
   import('../pages/SupportDashboardPage').then((m) => ({ default: m.SupportDashboardPage })),
 );
@@ -907,6 +916,18 @@ export const router = createBrowserRouter([
       {
         path: 'deliveries/:id',
         element: lazyWrap(<RiderDashboardPage />),
+      },
+      {
+        path: 'history',
+        element: lazyWrap(<RiderHistoryPage />),
+      },
+      {
+        path: 'earnings',
+        element: lazyWrap(<RiderEarningsPage />),
+      },
+      {
+        path: 'profile',
+        element: lazyWrap(<RiderProfilePage />),
       },
     ],
   },

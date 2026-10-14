@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { RiderHeader } from '../features/rider/components/RiderHeader';
+import { RiderNav } from '../features/rider/components/RiderNav';
 import { HandoverVerificationModal } from '../features/rider/components/HandoverVerificationModal';
 import {
   ReportIssueModal,
@@ -489,6 +490,7 @@ export const RiderDashboardPage: React.FC = () => {
       roleBadgeText="DELIVERY RIDER"
       title="Delivery Rider Workspace"
       subtitle="Your assigned parcels, handovers and exceptions - read live from the dispatch board"
+      sidebar={<RiderNav />}
     >
       <div className="w-full space-y-4 pb-10 sm:space-y-6">
         {board.isError ? (

@@ -2339,6 +2339,10 @@ export type Database = {
       Args: {}
       Returns: Json
     },
+    "rider_delivery_ledger": {
+      Args: {}
+      Returns: Json
+    },
     "send_support_notification": {
       Args: {
         "p_user_id": string,

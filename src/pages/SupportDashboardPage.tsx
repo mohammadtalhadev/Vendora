@@ -17,6 +17,7 @@ import { useAuthStore } from '../store/auth-store';
 import { useCurrency } from '../store/currency-store';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { SupportHeader, type SupportQueueType } from '../features/support/components/SupportHeader';
+import { SupportNav } from '../features/support/components/SupportNav';
 import { DisputeQueueList, type QueueFilterTab } from '../features/support/components/DisputeQueueList';
 import { DisputeConversationThread } from '../features/support/components/DisputeConversationThread';
 import { DisputeContextBar } from '../features/support/components/DisputeContextBar';
@@ -176,6 +177,7 @@ export const SupportDashboardPage: React.FC = () => {
       role="support"
       title="Support & Dispute Resolution"
       subtitle="Escrow mediation, dispute triage, and customer protection desk"
+      sidebar={<SupportNav />}
     >
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 pb-8">
         {caseId ? (
