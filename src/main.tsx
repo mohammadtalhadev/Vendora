@@ -10,6 +10,16 @@ import { AuthProvider } from './lib/auth-context';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { isSupabaseConfigured } from './lib/supabase';
 import { reloadOnceForNewVersion } from './lib/chunk-recovery';
+import { captureException } from './lib/error-reporter';
+
+// Global error monitoring (Batch 44): render errors are reported by the
+// ErrorBoundary; everything else lands here.
+window.addEventListener('error', (event) => {
+  captureException(event.error ?? event.message, { source: 'window.error' });
+});
+window.addEventListener('unhandledrejection', (event) => {
+  captureException(event.reason, { source: 'unhandledrejection' });
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { captureException } from '../../lib/error-reporter';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -23,6 +24,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught render error:', error, info.componentStack);
+    captureException(error, { componentStack: info.componentStack });
   }
 
   private handleReload = () => {

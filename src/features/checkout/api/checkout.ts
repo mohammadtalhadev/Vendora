@@ -87,6 +87,10 @@ export interface PlacedOrder {
   grandTotal: number;
   paymentStatus: 'succeeded' | 'pending' | 'failed' | 'refunded';
   paymentDetails: { brand?: string; last4?: string; method?: string };
+  /** Gift-card money the server actually applied (0 when none / not launched). */
+  giftCardApplied?: number;
+  /** What remains payable after the gift card: grandTotal - giftCardApplied. */
+  amountDue?: number;
 }
 
 export interface PlaceOrderInput {
@@ -98,6 +102,8 @@ export interface PlaceOrderInput {
   customerNotes?: string | null;
   /** Only the brand and last four digits leave the browser; the number itself never does. */
   card?: { brand: string; last4: string };
+  /** Optional gift-card code; the server applies it only if gift cards exist. */
+  giftCardCode?: string | null;
 }
 
 type RpcRow = Record<string, unknown>;
@@ -187,6 +193,25 @@ export async function quoteCheckout(
   return readQuote(data as RpcRow);
 }
 
+/**
+ * Idempotency for one checkout attempt (Batch 44). Generated lazily on the
+ * first try and REUSED by every retry, double-click and resubmit of that
+ * attempt, so `place_order` can recognise a repeat and hand back the order
+ * it already booked instead of booking a second one. Cleared only after a
+ * successful order — the next checkout is a new attempt with a new key.
+ */
+let orderAttemptKey: string | null = null;
+
+function currentAttemptKey(): string {
+  if (!orderAttemptKey) orderAttemptKey = crypto.randomUUID();
+  return orderAttemptKey;
+}
+
+/** Start a fresh attempt (a successful order already clears the key itself). */
+export function resetOrderAttemptKey(): void {
+  orderAttemptKey = null;
+}
+
 /** Books the order. The money written is the money quoted, because both read one function. */
 export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
   if (input.paymentMethod === 'card' && !input.card) {
@@ -201,9 +226,12 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     p_delivery_options: input.deliveryOptions,
     p_card_brand: input.card?.brand,
     p_card_last4: input.card?.last4,
+    p_idempotency_key: currentAttemptKey(),
+    p_gift_card_code: input.giftCardCode?.trim() || undefined,
   });
   if (error) throw new Error(error.message);
   if (!data || typeof data !== 'object') throw new Error('Your order could not be placed. Please try again.');
+  resetOrderAttemptKey();
 
   const raw = data as RpcRow;
   const rows = Array.isArray(raw.subOrders) ? (raw.subOrders as RpcRow[]) : [];
@@ -231,5 +259,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     grandTotal: money(raw.grandTotal),
     paymentStatus: text(raw.paymentStatus) as PlacedOrder['paymentStatus'],
     paymentDetails: (raw.paymentDetails ?? {}) as PlacedOrder['paymentDetails'],
+    giftCardApplied: money(raw.giftCardApplied),
+    amountDue: raw.amountDue === undefined ? money(raw.grandTotal) : money(raw.amountDue),
   };
 }
