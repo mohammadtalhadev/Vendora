@@ -39,6 +39,8 @@ export const adminKeys = {
     ['admin', userId ?? 'anon', 'reports', params] as const,
   logistics: (userId: string | null | undefined) =>
     ['admin', userId ?? 'anon', 'logistics'] as const,
+  codSettlements: (userId: string | null | undefined) =>
+    ['admin', userId ?? 'anon', 'cod-settlements'] as const,
   settings: (userId: string | null | undefined) =>
     ['admin', userId ?? 'anon', 'settings'] as const,
   media: (userId: string | null | undefined) =>

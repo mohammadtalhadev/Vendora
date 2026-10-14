@@ -25,6 +25,13 @@ export interface RiderHistoryRow {
   gross: number;
   storeName: string;
   city: string;
+  /** COD cash stamps (Batch 42): what the rider recorded at the door, and when. */
+  codCollectedAmount: number | null;
+  codCollectedAt: string | null;
+  /** Set once an admin confirms the desk received the cash; the figure is then frozen. */
+  codHandedOverAt: string | null;
+  /** Storage path of the photo proof inside `delivery-proofs`, once attached. */
+  proofPhotoUrl: string | null;
 }
 
 export interface RiderLedgerRow {
@@ -69,7 +76,9 @@ export async function fetchRiderHistory(signal?: AbortSignal): Promise<RiderHist
 
   let deliveriesQuery = supabase
     .from('deliveries')
-    .select('id, sub_order_id, status, assigned_at, delivered_at, created_at, dropoff_details')
+    .select(
+      'id, sub_order_id, status, assigned_at, delivered_at, created_at, dropoff_details, cod_collected_amount, cod_collected_at, cod_handed_over_at, proof_photo_url',
+    )
     .eq('rider_id', riderId)
     .in('status', ['delivered', 'failed'])
     .order('created_at', { ascending: false });
@@ -112,6 +121,13 @@ export async function fetchRiderHistory(signal?: AbortSignal): Promise<RiderHist
       gross: sub ? num(sub.subtotal) + num(sub.shipping_fee) : 0,
       storeName: sub ? (storeById.get(text(sub.seller_id)) ?? '') : '',
       city: text(dropoff.city),
+      codCollectedAmount:
+        row.cod_collected_amount === null || row.cod_collected_amount === undefined
+          ? null
+          : num(row.cod_collected_amount),
+      codCollectedAt: nullableText(row.cod_collected_at),
+      codHandedOverAt: nullableText(row.cod_handed_over_at),
+      proofPhotoUrl: nullableText(row.proof_photo_url),
     };
   });
 }

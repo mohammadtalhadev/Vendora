@@ -119,3 +119,97 @@ export async function fetchLogisticsBoard(signal?: AbortSignal): Promise<Logisti
   if (error) throw rpcFailed('Failed to load the dispatch board', error.message);
   return mapBoard(data);
 }
+
+/**
+ * COD cash settlements (Batch 42). The cash trail lives on the delivery row:
+ * the rider stamps what they collected, an admin stamps the handover. Admins
+ * read every delivery (`deliveries_write_admin`), so this is a direct table
+ * read - the store and rider names are joined client-side from the same rows
+ * the dispatch board uses. `pending` is money still on the road; `handedOver`
+ * is the desk-confirmed history.
+ */
+export interface CodSettlementRow {
+  deliveryId: string;
+  orderId: string;
+  storeName: string;
+  riderName: string;
+  amount: number;
+  collectedAt: string | null;
+  handedOverAt: string | null;
+}
+
+export interface CodSettlements {
+  pending: CodSettlementRow[];
+  handedOver: CodSettlementRow[];
+}
+
+export async function fetchCodSettlements(signal?: AbortSignal): Promise<CodSettlements> {
+  let query = supabase
+    .from('deliveries')
+    .select(
+      'id, sub_order_id, rider_id, cod_collected_amount, cod_collected_at, cod_handed_over_at',
+    )
+    .not('cod_collected_at', 'is', null)
+    .order('cod_collected_at', { ascending: false })
+    .limit(200);
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query;
+  if (error) throw rpcFailed('Failed to load COD settlements', error.message);
+  const deliveries = asRows(data);
+  if (deliveries.length === 0) return { pending: [], handedOver: [] };
+
+  const subOrderIds = [...new Set(deliveries.map((row) => text(row.sub_order_id)).filter(Boolean))];
+  const { data: subData, error: subError } = await supabase
+    .from('sub_orders')
+    .select('id, seller_id, order_group_id')
+    .in('id', subOrderIds);
+  if (subError) throw rpcFailed('Failed to load COD settlements', subError.message);
+  const subs = asRows(subData);
+  const subById = new Map(subs.map((row) => [text(row.id), row] as const));
+
+  const sellerIds = [...new Set(subs.map((row) => text(row.seller_id)).filter(Boolean))];
+  const storeById = new Map<string, string>();
+  if (sellerIds.length > 0) {
+    const { data: storeData, error: storeError } = await supabase
+      .from('vendor_profiles')
+      .select('id, store_name')
+      .in('id', sellerIds);
+    if (storeError) throw rpcFailed('Failed to load COD settlements', storeError.message);
+    for (const row of asRows(storeData)) storeById.set(text(row.id), text(row.store_name));
+  }
+
+  const riderIds = [...new Set(deliveries.map((row) => text(row.rider_id)).filter(Boolean))];
+  const riderById = new Map<string, string>();
+  if (riderIds.length > 0) {
+    const { data: riderData, error: riderError } = await supabase
+      .from('rider_profiles')
+      .select('id, full_name')
+      .in('id', riderIds);
+    if (riderError) throw rpcFailed('Failed to load COD settlements', riderError.message);
+    for (const row of asRows(riderData)) riderById.set(text(row.id), text(row.full_name));
+  }
+
+  const rows: CodSettlementRow[] = deliveries.map((row) => {
+    const sub = subById.get(text(row.sub_order_id));
+    return {
+      deliveryId: text(row.id),
+      orderId: sub ? text(sub.order_group_id) : '',
+      storeName: sub ? (storeById.get(text(sub.seller_id)) ?? '') : '',
+      riderName: riderById.get(text(row.rider_id)) ?? '',
+      amount: num(row.cod_collected_amount),
+      collectedAt: nullableText(row.cod_collected_at),
+      handedOverAt: nullableText(row.cod_handed_over_at),
+    };
+  });
+
+  return {
+    pending: rows.filter((row) => row.handedOverAt === null),
+    handedOver: rows.filter((row) => row.handedOverAt !== null),
+  };
+}
+
+/** The desk confirms it physically received a rider's collected cash. */
+export async function confirmCodHandover(deliveryId: string): Promise<void> {
+  const { error } = await supabase.rpc('confirm_cod_handover', { p_delivery_id: deliveryId });
+  if (error) throw rpcFailed('Could not confirm the cash handover', error.message);
+}

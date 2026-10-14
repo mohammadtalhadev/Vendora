@@ -13,6 +13,7 @@ import {
 import { setGlobalCommission } from '../api/commission';
 import { savePlatformSettings, type PlatformSettingsPatch } from '../api/settings';
 import { setMediaStatus, type MediaStatus } from '../api/media';
+import { confirmCodHandover } from '../api/logistics';
 import { adminKeys, useAdminScope } from './admin-keys';
 
 /**
@@ -43,6 +44,14 @@ export function useAdminActions() {
   };
 
   return {
+    /** Confirms the desk received a rider's COD cash; the settlements list re-reads. */
+    confirmCodHandover: useMutation({
+      mutationFn: (deliveryId: string) => confirmCodHandover(deliveryId),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: adminKeys.codSettlements(userId) });
+        refresh();
+      },
+    }),
     setVendorStatus: useMutation({
       mutationFn: ({ vendorId, status, note }: { vendorId: string; status: 'active' | 'suspended'; note?: string }) =>
         setVendorStatus(vendorId, status, note),

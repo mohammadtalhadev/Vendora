@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent, ClipboardEvent, ChangeEvent } from 'react';
-import { ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Loader2, Camera, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,14 @@ export interface HandoverVerificationModalProps {
   error?: string | null;
   /** A verification is in flight. */
   submitting?: boolean;
+  /**
+   * Batch 42 photo proof: when the caller provides this, a successful code
+   * check moves the modal to a proof step instead of closing - the rider can
+   * attach a photo of the drop before they leave the door. The photo is
+   * additional proof, never a blocker: the parcel is already delivered, and
+   * "Done" closes with or without one.
+   */
+  onAttachProof?: (file: File) => Promise<void>;
 }
 
 export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps> = ({
@@ -34,8 +42,13 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
   onVerify,
   error,
   submitting = false,
+  onAttachProof,
 }) => {
   const [digits, setDigits] = useState<string[]>(['', '', '', '']);
+  const [verified, setVerified] = useState(false);
+  const [proofBusy, setProofBusy] = useState(false);
+  const [proofDone, setProofDone] = useState(false);
+  const [proofError, setProofError] = useState<string | null>(null);
 
   const inputRefs = [
     useRef<HTMLInputElement>(null),
@@ -48,6 +61,10 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
   useEffect(() => {
     if (isOpen) {
       setDigits(['', '', '', '']);
+      setVerified(false);
+      setProofBusy(false);
+      setProofDone(false);
+      setProofError(null);
       // Autofocus first input after brief paint
       const timer = setTimeout(() => {
         inputRefs[0].current?.focus();
@@ -58,14 +75,35 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
 
   // Success is not decided here: Postgres checks the code. When a submit that
   // was in flight finishes without the caller reporting an error, the caller
-  // has already re-read the board — close the modal.
+  // has already re-read the board — close the modal, or, when the caller
+  // wired photo proof, move to the proof step for this now-delivered parcel.
   const wasSubmitting = useRef(false);
   useEffect(() => {
     if (wasSubmitting.current && !submitting && !error) {
-      onClose();
+      if (onAttachProof) {
+        setVerified(true);
+      } else {
+        onClose();
+      }
     }
     wasSubmitting.current = submitting;
-  }, [submitting, error, onClose]);
+  }, [submitting, error, onClose, onAttachProof]);
+
+  const handleProofFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !onAttachProof || proofBusy || proofDone) return;
+    setProofBusy(true);
+    setProofError(null);
+    try {
+      await onAttachProof(file);
+      setProofDone(true);
+    } catch (err) {
+      setProofError(err instanceof Error ? err.message : 'The photo could not be attached.');
+    } finally {
+      setProofBusy(false);
+    }
+  };
 
   const handleDigitChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
@@ -165,6 +203,74 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
           </div>
         </div>
 
+        {verified ? (
+          <div className="space-y-4" data-testid="proof-step">
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+              <span>Handover confirmed - the parcel is delivered.</span>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-slate-700">
+                Add photo proof (recommended)
+              </span>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                A photo of the parcel at the door is stored as this delivery's proof. It is
+                additional evidence on top of the code - the delivery is complete either way.
+              </p>
+              {proofDone ? (
+                <div
+                  data-testid="proof-attached"
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-semibold text-slate-700"
+                >
+                  <Camera className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span>Photo proof attached to this delivery.</span>
+                </div>
+              ) : (
+                <label
+                  className={`flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition-all hover:border-sun-orange hover:text-sun-orange-600 ${proofBusy ? 'pointer-events-none opacity-60' : ''}`}
+                >
+                  {proofBusy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                  <span>{proofBusy ? 'Uploading…' : 'Take or choose a photo'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="sr-only"
+                    data-testid="proof-file-input"
+                    disabled={proofBusy}
+                    onChange={handleProofFile}
+                  />
+                </label>
+              )}
+              {proofError && (
+                <div
+                  role="alert"
+                  data-testid="proof-error"
+                  className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-medium text-rose-700"
+                >
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+                  <span>{proofError}</span>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="pt-2 sm:justify-end gap-2">
+              <Button
+                type="button"
+                variant="orange-cta"
+                onClick={onClose}
+                className="w-full sm:w-auto rounded-full min-h-[44px]"
+              >
+                Done
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
         <form onSubmit={handleConfirm} className="space-y-4">
           <div className="flex flex-col items-center gap-2">
             <label htmlFor="pin-digit-0" className="text-xs font-semibold text-slate-700">
@@ -230,6 +336,7 @@ export const HandoverVerificationModal: React.FC<HandoverVerificationModalProps>
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

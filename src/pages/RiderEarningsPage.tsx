@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { AlertTriangle, Banknote, CalendarDays, CheckCircle2, Loader2, RotateCcw, Truck } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { RiderNav } from '../features/rider/components/RiderNav';
-import { useRiderLedger } from '../features/rider/hooks/useRider';
+import { useRiderCodSummary, useRiderLedger } from '../features/rider/hooks/useRider';
 import { summariseLedger } from '../features/rider/api/history';
 import { useCurrency } from '../store/currency-store';
 import { cn } from '../lib/utils';
@@ -42,6 +42,7 @@ const Tile: React.FC<{
  */
 export const RiderEarningsPage: React.FC = () => {
   const ledger = useRiderLedger();
+  const cod = useRiderCodSummary();
   const { formatPrice } = useCurrency();
   const summary = useMemo(() => summariseLedger(ledger.data ?? []), [ledger.data]);
 
@@ -137,6 +138,58 @@ export const RiderEarningsPage: React.FC = () => {
                 icon={<Banknote className="h-4 w-4" />}
               />
             </div>
+
+            {/* COD cash position (Batch 42): the stamps on the rider's own delivery
+                rows, totalled by `rider_cod_summary` - cash still in hand is a
+                liability to the desk until an admin confirms the handover. */}
+            {cod.data && (
+              <section
+                aria-label="COD cash position"
+                data-testid="cod-summary"
+                className="rounded-3xl border border-amber-200/90 bg-amber-50/60 p-4 shadow-xs sm:p-5"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                    <Banknote className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-sm font-black text-slate-900">COD cash</h3>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                      Holding for the desk
+                    </div>
+                    <div data-testid="cod-pending" className="mt-0.5 font-mono text-lg font-black text-slate-900">
+                      {formatPrice(cod.data.collectedPending)}
+                    </div>
+                    <div className="text-[11px] font-medium text-slate-500">
+                      {cod.data.pendingCount} {cod.data.pendingCount === 1 ? 'delivery' : 'deliveries'} awaiting
+                      handover
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                      Collected today
+                    </div>
+                    <div data-testid="cod-today" className="mt-0.5 font-mono text-lg font-black text-slate-900">
+                      {formatPrice(cod.data.collectedToday)}
+                    </div>
+                    <div className="text-[11px] font-medium text-slate-500">Cash recorded since midnight</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                      Handed over
+                    </div>
+                    <div data-testid="cod-handed-over" className="mt-0.5 font-mono text-lg font-black text-slate-900">
+                      {formatPrice(cod.data.handedOverTotal)}
+                    </div>
+                    <div className="text-[11px] font-medium text-slate-500">
+                      Confirmed received by the desk, all time
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {summary.allTime.count === 0 ? (
               <div

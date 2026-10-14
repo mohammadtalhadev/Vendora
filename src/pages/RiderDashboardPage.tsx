@@ -23,6 +23,7 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { RiderHeader } from '../features/rider/components/RiderHeader';
 import { RiderNav } from '../features/rider/components/RiderNav';
 import { HandoverVerificationModal } from '../features/rider/components/HandoverVerificationModal';
+import { LocationShareControl } from '../features/rider/components/LocationShareControl';
 import {
   ReportIssueModal,
   type DeliveryIssueReason,
@@ -232,6 +233,9 @@ const DropCard: React.FC<DropCardProps> = ({
           </div>
         )}
 
+        {/* Live location (Batch 42): the rider's own opt-in share for this parcel. */}
+        <LocationShareControl deliveryId={drop.id} status={drop.status} />
+
         {drop.status === 'out_for_delivery' && !drop.needsHandoverCode && (
           <div className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
@@ -393,6 +397,12 @@ export const RiderDashboardPage: React.FC = () => {
   // leaves the board also leaves the modal.
   const [handoverId, setHandoverId] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
+  /**
+   * Batch 42: a verified drop leaves the board on the next read, which would unmount the
+   * handover modal before its photo-proof step can render. The drop is therefore snapshotted
+   * at the moment the code matches, and the modal lives on the snapshot until it is closed.
+   */
+  const [proofDrop, setProofDrop] = useState<RiderDrop | null>(null);
 
   const rider = board.data?.rider ?? null;
   const drops = board.data?.drops ?? [];
@@ -474,9 +484,16 @@ export const RiderDashboardPage: React.FC = () => {
   const submitHandover = async (drop: RiderDrop, code: string) => {
     try {
       await actions.handover.mutateAsync({ deliveryId: drop.id, code });
+      // The code matched: hold the drop so the modal's photo-proof step survives
+      // the board re-read that is about to take the delivered parcel off it.
+      setProofDrop(drop);
     } catch {
       /* shown through `handoverError` below */
     }
+  };
+
+  const attachProof = async (drop: RiderDrop, file: File) => {
+    await actions.proof.mutateAsync({ deliveryId: drop.id, file });
   };
 
   const groupSections = GROUP_DEFS.map((def) => ({ def, rows: grouped[def.key] })).filter(
@@ -791,18 +808,20 @@ export const RiderDashboardPage: React.FC = () => {
           <BoardLoading />
         )}
 
-        {handoverDrop && (
+        {(handoverDrop ?? proofDrop) && (
           <HandoverVerificationModal
             isOpen
             onClose={() => {
               setHandoverId(null);
+              setProofDrop(null);
               actions.handover.reset();
             }}
-            customerName={handoverDrop.address.fullName}
-            addressLine={handoverDrop.address.street}
+            customerName={(handoverDrop ?? proofDrop)!.address.fullName}
+            addressLine={(handoverDrop ?? proofDrop)!.address.street}
             submitting={actions.handover.isPending}
             error={handoverError}
-            onVerify={(code) => submitHandover(handoverDrop, code)}
+            onVerify={(code) => submitHandover((handoverDrop ?? proofDrop)!, code)}
+            onAttachProof={(file) => attachProof((handoverDrop ?? proofDrop)!, file)}
           />
         )}
 

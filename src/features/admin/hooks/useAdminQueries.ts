@@ -9,7 +9,7 @@ import { fetchCategoryTree } from '../api/categories';
 import { fetchCommissionOverview } from '../api/commission';
 import { fetchAuditQueue, fetchBroadcastLog } from '../api/audit';
 import { fetchReportSummary } from '../api/reports';
-import { fetchLogisticsBoard } from '../api/logistics';
+import { fetchCodSettlements, fetchLogisticsBoard } from '../api/logistics';
 import { fetchPlatformSettings } from '../api/settings';
 import { fetchAdminMediaLibrary } from '../api/media';
 import { adminKeys, useAdminScope } from './admin-keys';
@@ -208,6 +208,17 @@ export function useLogisticsBoard() {
   return useQuery({
     queryKey: adminKeys.logistics(userId),
     queryFn: ({ signal }) => fetchLogisticsBoard(signal),
+    enabled: Boolean(userId),
+    ...liveBoard,
+  });
+}
+
+/** COD cash awaiting a desk handover, plus the confirmed history (Batch 42). */
+export function useCodSettlements() {
+  const userId = useAdminScope();
+  return useQuery({
+    queryKey: adminKeys.codSettlements(userId),
+    queryFn: ({ signal }) => fetchCodSettlements(signal),
     enabled: Boolean(userId),
     ...liveBoard,
   });

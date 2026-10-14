@@ -1,8 +1,9 @@
-import React from 'react';
-import { AlertTriangle, History, Inbox, Loader2, MapPin, RotateCcw, Store } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertTriangle, Banknote, CheckCircle2, History, Inbox, Loader2, MapPin, RotateCcw, Store } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { RiderNav } from '../features/rider/components/RiderNav';
-import { useRiderHistory } from '../features/rider/hooks/useRider';
+import { useRiderActions, useRiderHistory, useRiderLedger } from '../features/rider/hooks/useRider';
+import type { RiderHistoryRow } from '../features/rider/api/history';
 import { StatusBadge } from '../components/ui/status-badge';
 import { useCurrency } from '../store/currency-store';
 
@@ -21,10 +22,115 @@ const stamp = (iso: string | null): string => {
  * here the moment it leaves the board - and a parcel dispatch gave another rider
  * never appears at all.
  */
+/**
+ * The COD block on a closed parcel (Batch 42). The order's payment method
+ * comes from the delivered ledger (orders holds it, and no rider policy opens
+ * that table); the cash state comes from the delivery row's own stamps. The
+ * amount offered is the parcel's booked gross - the order total the buyer was
+ * charged - and the rider can correct it to what was actually handed over
+ * before recording it. Once the desk confirms the handover, the row only
+ * reports the figure; the RPC refuses further writes.
+ */
+const CodBlock: React.FC<{ row: RiderHistoryRow; isCod: boolean }> = ({ row, isCod }) => {
+  const actions = useRiderActions();
+  const { formatPrice } = useCurrency();
+  const [amount, setAmount] = useState<string>(String(row.gross));
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  if (!isCod || row.status !== 'delivered') return null;
+
+  if (row.codHandedOverAt) {
+    return (
+      <div
+        data-testid="cod-handed-over"
+        className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-800"
+      >
+        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+        <span>
+          COD cash of {formatPrice(row.codCollectedAmount ?? 0)} handed over to the desk on{' '}
+          {stamp(row.codHandedOverAt)}.
+        </span>
+      </div>
+    );
+  }
+
+  if (row.codCollectedAt) {
+    return (
+      <div
+        data-testid="cod-collected"
+        className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-900"
+      >
+        <Banknote className="h-3.5 w-3.5 text-amber-600" />
+        <span>
+          Cash collected: {formatPrice(row.codCollectedAmount ?? 0)} at {stamp(row.codCollectedAt)} -
+          awaiting desk handover.
+        </span>
+      </div>
+    );
+  }
+
+  const submit = () => {
+    const parsed = Number(amount);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setLocalError('Enter the amount of cash you actually collected.');
+      return;
+    }
+    setLocalError(null);
+    actions.cod.mutate({ deliveryId: row.id, amount: parsed });
+  };
+
+  const serverError =
+    actions.cod.isError && actions.cod.error instanceof Error ? actions.cod.error.message : null;
+
+  return (
+    <div data-testid="cod-collect" className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-900">
+          <Banknote className="h-3.5 w-3.5 text-amber-600" />
+          COD to collect: {formatPrice(row.gross)}
+          <span className="font-medium text-amber-700">(order total)</span>
+        </span>
+        <span className="ml-auto flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            aria-label="Cash amount collected"
+            data-testid="cod-amount-input"
+            className="h-9 w-28 rounded-lg border border-amber-300 bg-white px-2 text-right font-mono text-xs font-bold text-slate-900 focus:border-sun-orange focus:outline-none"
+          />
+          <button
+            type="button"
+            data-testid="btn-mark-cod-collected"
+            disabled={actions.cod.isPending}
+            onClick={submit}
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-2xs transition-all hover:bg-amber-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {actions.cod.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+            <span>Mark cash collected</span>
+          </button>
+        </span>
+      </div>
+      {(localError || serverError) && (
+        <p role="alert" className="mt-1.5 text-[11px] font-medium text-rose-700">
+          {localError ?? serverError}
+        </p>
+      )}
+    </div>
+  );
+};
+
 export const RiderHistoryPage: React.FC = () => {
   const history = useRiderHistory();
+  const ledger = useRiderLedger();
   const { formatPrice } = useCurrency();
   const rows = history.data ?? [];
+  /** Payment method per delivered parcel, from the ledger read (see CodBlock). */
+  const paymentMethodByDelivery = new Map(
+    (ledger.data ?? []).map((row) => [row.deliveryId, row.paymentMethod] as const),
+  );
 
   const readError =
     history.isError && history.error instanceof Error
@@ -131,6 +237,11 @@ export const RiderHistoryPage: React.FC = () => {
                     </div>
                     <StatusBadge status={row.status} />
                   </div>
+                  {paymentMethodByDelivery.get(row.id) === 'cod' && row.status === 'delivered' && (
+                    <div className="basis-full">
+                      <CodBlock row={row} isCod />
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

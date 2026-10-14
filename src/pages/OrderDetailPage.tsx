@@ -6,6 +6,7 @@ import type { OrderGroupDerivedStatus } from '../lib/order-state-machine';
 import { useOrderDetail, useUpdateSubOrderStatus, useIssueDeliveryCode } from '../features/orders/hooks/useOrders';
 import { ApplyGiftCardCard } from '../features/rewards/components/ApplyGiftCardCard';
 import { TrackingTimeline } from '../features/orders/components/TrackingTimeline';
+import { LiveDeliveryTrackingCard } from '../features/rider/components/LiveDeliveryTracking';
 import { useCurrency } from '../store/currency-store';
 import { QueryState } from '../components/common/QueryState';
 import { Badge } from '../components/ui/badge';
@@ -412,6 +413,10 @@ export const OrderDetailPage: React.FC = () => {
               total={grandTotal}
               giftCardAmount={orderGroup.giftCardAmount}
             />
+
+            {/* Live rider position + photo proof (Batch 42): renders only when the
+                rider is actually sharing or a proof photo exists on this order. */}
+            <LiveDeliveryTrackingCard orderId={orderGroup.id} />
 
             {/* 3. Distinct Cards for each seller's Sub-Order */}
             <div className="space-y-6">

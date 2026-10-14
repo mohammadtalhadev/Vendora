@@ -8,6 +8,8 @@ import {
   type RiderMove,
 } from '../api/board';
 import { fetchRiderHistory, fetchRiderLedger, updateRiderContact } from '../api/history';
+import { fetchRiderCodSummary, markCodCollected } from '../api/cod';
+import { uploadDeliveryProof } from '../api/location';
 
 /** The board belongs to the signed-in rider, so it is keyed by them. */
 export const riderKeys = {
@@ -15,6 +17,7 @@ export const riderKeys = {
   board: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'board'] as const,
   history: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'history'] as const,
   ledger: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'ledger'] as const,
+  cod: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'cod'] as const,
 };
 
 function useRiderScope(): string | null | undefined {
@@ -36,6 +39,16 @@ export function useRiderHistory() {
   return useQuery({
     queryKey: riderKeys.history(userId),
     queryFn: ({ signal }) => fetchRiderHistory(signal),
+    enabled: Boolean(userId),
+  });
+}
+
+/** The rider's COD cash position: held for the desk vs already handed over (Batch 42). */
+export function useRiderCodSummary() {
+  const userId = useRiderScope();
+  return useQuery({
+    queryKey: riderKeys.cod(userId),
+    queryFn: ({ signal }) => fetchRiderCodSummary(signal),
     enabled: Boolean(userId),
   });
 }
@@ -78,6 +91,25 @@ export function useRiderActions() {
     profile: useMutation({
       mutationFn: updateRiderContact,
       onSuccess: refresh,
+    }),
+    /** Records the door cash on the delivery row; history and the cash totals re-read. */
+    cod: useMutation({
+      mutationFn: ({ deliveryId, amount }: { deliveryId: string; amount: number }) =>
+        markCodCollected(deliveryId, amount),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: riderKeys.history(userId) });
+        void queryClient.invalidateQueries({ queryKey: riderKeys.cod(userId) });
+        void queryClient.invalidateQueries({ queryKey: riderKeys.ledger(userId) });
+      },
+    }),
+    /** Uploads the proof photo and stamps its path; the board/history re-read the row. */
+    proof: useMutation({
+      mutationFn: ({ deliveryId, file }: { deliveryId: string; file: File }) =>
+        uploadDeliveryProof(deliveryId, file),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: riderKeys.history(userId) });
+        refresh();
+      },
     }),
   };
 }

@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 
 
+import { LiveDeliveryTrackingCard } from '../features/rider/components/LiveDeliveryTracking';
+
 import { useToast } from '../hooks/useToast';
 
 import { Toast } from '../components/common/Toast';
@@ -278,6 +280,15 @@ export const TrackOrderPage: React.FC = () => {
   const { trackingNumber: paramTracking } = useParams();
   const [searchParams] = useSearchParams();
   const { toast, showToast, hideToast } = useToast();
+
+  /**
+   * Batch 42 live tracking: when the value in the URL or the lookup box is a
+   * real order id (a UUID), the card under the lookup reads that order's live
+   * rider position from `get_order_delivery_live` - which only answers the
+   * order's own customer, its rider, or staff. Preset tracking numbers are
+   * not UUIDs, so nothing is queried for them.
+   */
+  const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   // Active Lookup Form States
   const [activeTab, setActiveTab] = useState<'awb' | 'order_id'>('awb');
@@ -569,6 +580,19 @@ export const TrackOrderPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+        {/* Batch 42: the real live position for a real order id, when one was
+            given - the card renders nothing until the rider actually shares. */}
+        {(() => {
+          const candidate = [paramTracking, consignInput.trim()].find(
+            (value) => value && UUID_PATTERN.test(value),
+          );
+          return candidate ? (
+            <div className="mb-5">
+              <LiveDeliveryTrackingCard orderId={candidate} />
+            </div>
+          ) : null;
+        })()}
 
         {/* =========================================================================
             4. Active Tracked Package Card (Card with Order Info, Milestones, Telemetry)

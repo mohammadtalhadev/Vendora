@@ -4,6 +4,7 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { formatPrice } from '../store/currency-store';
 import { useLogisticsBoard } from '../features/admin/hooks/useAdminQueries';
+import { CodSettlementSection } from '../features/admin/components/CodSettlementSection';
 import type { LogisticsQueueRow } from '../features/admin/api/logistics';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { StatusBadge } from '../components/ui/status-badge';
@@ -281,6 +282,9 @@ export const AdminLogisticsPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* COD cash settlements (Batch 42): rider-collected cash and its desk handover. */}
+        <CodSettlementSection />
       </div>
     </WorkspaceLayout>
   );
