@@ -11,11 +11,21 @@ import {
   Truck,
   MapPin,
   CreditCard,
+  Pencil,
+  History,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
-import { useAdminOrderDetail } from '../features/admin/hooks/useAdminQueries';
+import {
+  useAdminOrderDetail,
+  useLogisticsBoard,
+} from '../features/admin/hooks/useAdminQueries';
 import { refundSubOrder } from '../features/admin/api/disputes';
+import {
+  setAdminOrderPaymentStatus,
+  updateAdminOrderAddress,
+  type AdminOrderAddress,
+} from '../features/admin/api/orders';
 import { advanceSubOrderStatus } from '../features/orders/api/orders';
 import { formatPrice } from '../store/currency-store';
 import {
@@ -26,6 +36,22 @@ import {
   DialogDescription,
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { STATUS_LABELS } from '../components/ui/status-badge';
+import {
+  AdvancePackagesPanel,
+  PackageActionFailure,
+  PackageTrackingForm,
+  RefundPackagesPanel,
+  RiderPackagesPanel,
+} from '../features/admin/components/PackageActionPanels';
 
 const TERMINAL_STATUSES = new Set(['delivered', 'cancelled', 'refunded', 'returned', 'available']);
 
@@ -36,17 +62,91 @@ const TERMINAL_STATUSES = new Set(['delivered', 'cancelled', 'refunded', 'return
  * could not find the order). Every number here is a database number; an unknown
  * id is an error state, not an invented order.
  */
+const historyStatusLabel = (status: string): string =>
+  STATUS_LABELS[status] ?? status.replace(/_/g, ' ');
+
 export const AdminOrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { data: order, isLoading, isError, error, refetch } = useAdminOrderDetail(id ?? '');
+  const board = useLogisticsBoard();
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [adminActionMsg, setAdminActionMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Delivery-address correction (Batch 50): the draft is the form's working copy;
+  // nothing is written until the confirm step runs the audited RPC.
+  const [addressDraft, setAddressDraft] = useState<AdminOrderAddress | null>(null);
+  const [addressConfirming, setAddressConfirming] = useState(false);
+  const [addressFormError, setAddressFormError] = useState<string | null>(null);
+
+  // Payment-status correction (Batch 50): only ever offered while the order is
+  // `pending`; the reason is required because the audit row carries it.
+  const [paymentChoice, setPaymentChoice] = useState<'succeeded' | 'failed' | ''>('');
+  const [paymentReason, setPaymentReason] = useState('');
+  const [paymentConfirming, setPaymentConfirming] = useState(false);
+
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['admin'] });
     void refetch();
+  };
+
+  const fleet = board.data?.fleet ?? [];
+  const riderName = (riderId: string | null): string | null =>
+    riderId ? (fleet.find((rider) => rider.id === riderId)?.name ?? 'An assigned rider') : null;
+
+  const addressMutation = useMutation({
+    mutationFn: async (address: AdminOrderAddress) => {
+      if (!order) return;
+      await updateAdminOrderAddress(order.id, address);
+    },
+    onSuccess: () => {
+      setActionError(null);
+      setAdminActionMsg('Delivery address updated — the previous address stays in the audit log.');
+      setAddressDraft(null);
+      setAddressConfirming(false);
+      refresh();
+    },
+    onError: (err) => {
+      setAddressConfirming(false);
+      setActionError(err instanceof Error ? err.message : 'Address update failed.');
+    },
+  });
+
+  const paymentMutation = useMutation({
+    mutationFn: async (input: { status: 'succeeded' | 'failed'; reason: string }) => {
+      if (!order) return;
+      await setAdminOrderPaymentStatus(order.id, input.status, input.reason);
+    },
+    onSuccess: (_data, input) => {
+      setActionError(null);
+      setAdminActionMsg(
+        input.status === 'succeeded'
+          ? 'Payment marked as received — the correction is in the audit log.'
+          : 'Payment marked as failed — the correction is in the audit log.',
+      );
+      setPaymentConfirming(false);
+      setPaymentChoice('');
+      setPaymentReason('');
+      refresh();
+    },
+    onError: (err) => {
+      setPaymentConfirming(false);
+      setActionError(err instanceof Error ? err.message : 'Payment status correction failed.');
+    },
+  });
+
+  const setAddressField = (field: keyof AdminOrderAddress, value: string) =>
+    setAddressDraft((draft) => (draft ? { ...draft, [field]: value } : draft));
+
+  const submitAddressDraft = () => {
+    if (!addressDraft) return;
+    if (!addressDraft.street.trim() || !addressDraft.city.trim() || !addressDraft.phone.trim()) {
+      setAddressFormError('A delivery address needs a street, a city and a phone number.');
+      return;
+    }
+    setAddressFormError(null);
+    setAddressConfirming(true);
   };
 
   const refundMutation = useMutation({
@@ -276,10 +376,24 @@ export const AdminOrderDetailPage: React.FC = () => {
                           <span>Net Merchant Disbursal:</span>
                           <span className="font-bold text-emerald-700">{formatPrice(sub.netPayout)}</span>
                         </div>
+                        {sub.carrierName && (
+                          <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60 text-[11px]">
+                            <span>Carrier:</span>
+                            <span className="font-bold text-slate-900">{sub.carrierName}</span>
+                          </div>
+                        )}
                         {sub.trackingNumber && (
                           <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60 font-mono text-[11px]">
                             <span>Tracking:</span>
                             <span className="font-bold text-slate-900">{sub.trackingNumber}</span>
+                          </div>
+                        )}
+                        {(sub.riderId ?? sub.delivery?.riderId) && (
+                          <div className="flex justify-between text-slate-600 pt-1 border-t border-slate-200/60 text-[11px]">
+                            <span>Rider:</span>
+                            <span className="font-bold text-slate-900">
+                              {riderName(sub.riderId ?? sub.delivery?.riderId ?? null)}
+                            </span>
                           </div>
                         )}
                         {sub.licenseKey && (
@@ -290,6 +404,85 @@ export const AdminOrderDetailPage: React.FC = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Package history — the trail the state machine and the refund
+                        RPCs appended; it was fetched with the dossier all along. */}
+                    {sub.history.length > 0 && (
+                      <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 space-y-2">
+                        <p className="flex items-center gap-1.5 font-bold text-slate-700">
+                          <History className="h-3.5 w-3.5 text-slate-400" />
+                          Package history
+                        </p>
+                        <ol className="space-y-1.5">
+                          {sub.history.map((event, i) => (
+                            <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+                              <span className="font-bold text-slate-700">
+                                {historyStatusLabel(event.status)}
+                              </span>
+                              <span className="text-slate-400">
+                                {event.timestamp
+                                  ? new Date(event.timestamp).toLocaleString()
+                                  : ''}
+                              </span>
+                              <span className="text-slate-500">· {event.actor}</span>
+                              {event.note && <span className="text-slate-400">— {event.note}</span>}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {/* Per-package console actions — the same shared panels the order
+                        queue's row menu opens (PackageActionPanels). */}
+                    <div className="space-y-3 border-t border-slate-100 pt-4">
+                      <p className="font-bold text-slate-900 text-sm">Manage this package</p>
+                      <AdvancePackagesPanel
+                        lines={[
+                          { id: sub.id, status: sub.status, gross: sub.subtotal + sub.shippingFee },
+                        ]}
+                        onChanged={refresh}
+                      />
+                      <RefundPackagesPanel
+                        lines={[
+                          { id: sub.id, status: sub.status, gross: sub.subtotal + sub.shippingFee },
+                        ]}
+                        onChanged={refresh}
+                      />
+                      {sub.type === 'physical' &&
+                        (board.isPending ? (
+                          <p role="status" className="text-slate-500">
+                            Reading the rider fleet…
+                          </p>
+                        ) : board.isError ? (
+                          <PackageActionFailure text="The rider fleet could not be read, so rider assignment is unavailable here. Open the dispatch board to manage delivery." />
+                        ) : (
+                          <RiderPackagesPanel
+                            lines={[
+                              {
+                                id: sub.id,
+                                status: sub.status,
+                                gross: sub.subtotal + sub.shippingFee,
+                                type: sub.type,
+                                riderId: sub.riderId,
+                              },
+                            ]}
+                            fleet={fleet}
+                            onChanged={refresh}
+                          />
+                        ))}
+                      {sub.type === 'physical' && (
+                        <PackageTrackingForm
+                          line={{
+                            id: sub.id,
+                            status: sub.status,
+                            gross: sub.subtotal + sub.shippingFee,
+                            carrierName: sub.carrierName,
+                            trackingNumber: sub.trackingNumber,
+                          }}
+                          onChanged={refresh}
+                        />
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -298,11 +491,97 @@ export const AdminOrderDetailPage: React.FC = () => {
             {/* Delivery / Payment / Logistics — real fields only */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-2 text-xs">
-                <div className="flex items-center gap-2 text-slate-900 font-bold">
-                  <MapPin className="h-4 w-4 text-sun-orange" />
-                  <span>Delivery Destination</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-slate-900 font-bold">
+                    <MapPin className="h-4 w-4 text-sun-orange" />
+                    <span>Delivery Destination</span>
+                  </div>
+                  {order.shippingAddress && !addressDraft && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddressDraft(order.shippingAddress);
+                        setAddressConfirming(false);
+                        setAddressFormError(null);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit address
+                    </button>
+                  )}
                 </div>
-                {order.shippingAddress ? (
+                {addressDraft ? (
+                  <div className="space-y-2.5 pt-1">
+                    {(
+                      [
+                        ['fullName', 'Full name'],
+                        ['street', 'Street'],
+                        ['city', 'City'],
+                        ['state', 'State'],
+                        ['zipCode', 'ZIP code'],
+                        ['country', 'Country'],
+                        ['phone', 'Phone'],
+                      ] as [keyof AdminOrderAddress, string][]
+                    ).map(([field, label]) => (
+                      <label key={field} className="block" htmlFor={`address-${field}`}>
+                        <span className="mb-1 block text-[11px] font-semibold text-slate-500">
+                          {label}
+                        </span>
+                        <Input
+                          id={`address-${field}`}
+                          value={addressDraft[field]}
+                          onChange={(event) => setAddressField(field, event.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </label>
+                    ))}
+                    {addressFormError && (
+                      <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-medium text-rose-800">
+                        {addressFormError}
+                      </p>
+                    )}
+                    {addressConfirming ? (
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                        <p className="text-slate-700">
+                          Save this address on order #{order.id}? The previous address stays in
+                          the audit log.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={addressMutation.isPending}
+                          onClick={() => addressMutation.mutate(addressDraft)}
+                        >
+                          {addressMutation.isPending ? 'Saving…' : 'Confirm save'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={addressMutation.isPending}
+                          onClick={() => setAddressConfirming(false)}
+                        >
+                          Back
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button type="button" size="sm" onClick={submitAddressDraft}>
+                          Save address
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setAddressDraft(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : order.shippingAddress ? (
                   <>
                     <p className="font-bold text-slate-800">{order.shippingAddress.fullName}</p>
                     <p className="text-slate-500">{order.shippingAddress.street}</p>
@@ -330,6 +609,89 @@ export const AdminOrderDetailPage: React.FC = () => {
                 <p className="text-slate-500">
                   Refunded so far: <span className="font-bold text-slate-700">{formatPrice(order.refunded)}</span>
                 </p>
+                {order.paymentStatus === 'pending' && (
+                  <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <p className="font-bold text-slate-700">Correct this status</p>
+                    <p className="text-slate-500">
+                      This order is still pending — for a COD order, record what happened to the
+                      cash. Refunded is not offered here: refunds run through the package refund
+                      actions, so the refund rows and this status can never disagree.
+                    </p>
+                    <Select
+                      value={paymentChoice}
+                      onValueChange={(value) => {
+                        setPaymentChoice(value as 'succeeded' | 'failed');
+                        setPaymentConfirming(false);
+                      }}
+                    >
+                      <SelectTrigger
+                        aria-label="Corrected payment status"
+                        className="h-8 text-xs font-semibold text-slate-700"
+                      >
+                        <SelectValue placeholder="Choose the outcome" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="succeeded" className="text-xs">
+                          Paid — money received
+                        </SelectItem>
+                        <SelectItem value="failed" className="text-xs">
+                          Failed — money never arrived
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={paymentReason}
+                      onChange={(event) => {
+                        setPaymentReason(event.target.value);
+                        setPaymentConfirming(false);
+                      }}
+                      placeholder="Reason (kept in the audit log)"
+                      aria-label="Reason for the payment status correction"
+                      className="h-8 text-xs"
+                    />
+                    {paymentConfirming ? (
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                        <p className="text-slate-700">
+                          Mark this payment as{' '}
+                          {paymentChoice === 'succeeded' ? 'paid' : 'failed'}? The correction and
+                          its reason go into the audit log.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={paymentMutation.isPending || paymentChoice === ''}
+                          onClick={() =>
+                            paymentChoice &&
+                            paymentMutation.mutate({
+                              status: paymentChoice,
+                              reason: paymentReason.trim(),
+                            })
+                          }
+                        >
+                          {paymentMutation.isPending ? 'Applying…' : 'Confirm correction'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={paymentMutation.isPending}
+                          onClick={() => setPaymentConfirming(false)}
+                        >
+                          Back
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!paymentChoice || !paymentReason.trim()}
+                        onClick={() => setPaymentConfirming(true)}
+                      >
+                        Apply correction
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-2 text-xs">

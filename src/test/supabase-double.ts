@@ -1662,6 +1662,63 @@ export function createSupabaseDouble() {
       return { data: { subOrderId: sub.id, amount, reason: args.p_reason ?? null }, error: null };
     }
 
+    if (fn === 'admin_update_order_address') {
+      const denied = refuse('edit a delivery address');
+      if (denied) return denied;
+      const order = tables.orders.find((row) => row.id === args.p_order_group_id);
+      if (!order) return { data: null, error: { message: 'Order not found' } };
+      const address = (args.p_address ?? {}) as Row;
+      const blank = (value: unknown) => String(value ?? '').trim() === '';
+      // The snapshot reads back as a digital order without a street, so the RPC
+      // refuses a save that would silently unship the order.
+      if (blank(address.street) || blank(address.city) || blank(address.phone)) {
+        return {
+          data: null,
+          error: { message: 'A delivery address needs a street, a city and a phone number' },
+        };
+      }
+      const before = (order.shipping_address ?? null) as Row | null;
+      order.shipping_address = args.p_address;
+      audit('order.address_edit', 'order', String(order.id), before, args.p_address as Row);
+      return { data: { orderGroupId: order.id, shippingAddress: args.p_address }, error: null };
+    }
+
+    if (fn === 'admin_set_payment_status') {
+      const denied = refuse('correct a payment status');
+      if (denied) return denied;
+      const order = tables.orders.find((row) => row.id === args.p_order_group_id);
+      if (!order) return { data: null, error: { message: 'Order not found' } };
+      // 'refunded' is refused before the state checks, exactly as the SQL raises it:
+      // refunds stay with the package refund calls so the records cannot disagree.
+      if (args.p_status === 'refunded') {
+        return { data: null, error: { message: 'Use a package refund to mark an order refunded' } };
+      }
+      if (String(order.payment_status) !== 'pending') {
+        return {
+          data: null,
+          error: {
+            message: `Only a pending payment can be corrected (this order is ${String(order.payment_status)})`,
+          },
+        };
+      }
+      if (args.p_status !== 'succeeded' && args.p_status !== 'failed') {
+        return {
+          data: null,
+          error: { message: 'A pending payment can only be corrected to succeeded or failed' },
+        };
+      }
+      const before = String(order.payment_status);
+      order.payment_status = args.p_status;
+      audit(
+        'order.payment_status',
+        'order',
+        String(order.id),
+        { paymentStatus: before },
+        { paymentStatus: args.p_status, reason: args.p_reason ?? null },
+      );
+      return { data: { orderGroupId: order.id, paymentStatus: args.p_status }, error: null };
+    }
+
     if (fn === 'assign_rider') {
       // `assign_rider` is admin-only and refuses an unknown package or rider, in that
       // order; the delivery row follows the package, opening as `assigned`.
@@ -2674,7 +2731,14 @@ export function createSupabaseDouble() {
         if (sub.type !== 'physical') {
           return { data: null, error: { message: 'Digital packages have nothing to track' } };
         }
-        if (sub.seller_id !== vendorOfSession()) {
+        // The SQL admits the platform team and the support desk alongside the
+        // owning seller; the double mirrors that, or the console's tracking
+        // editor could never be exercised against it.
+        if (
+          !sessionHasRole('admin') &&
+          !sessionHasRole('support') &&
+          sub.seller_id !== vendorOfSession()
+        ) {
           return { data: null, error: { message: 'This package is not yours to update' } };
         }
         const tracking = String(args.p_tracking_number ?? '').trim();

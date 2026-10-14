@@ -350,3 +350,77 @@ export async function assignRider(
   const root = asRecord(data);
   return { subOrderId: text(root.subOrderId), riderId: text(root.riderId) };
 }
+
+/**
+ * Records the carrier and tracking number on a package from the console. The same
+ * `update_sub_order_tracking` the seller writes through — its guard already admits
+ * an admin — because `sub_orders` has no UPDATE policy for anyone; this wrapper is
+ * the admin spelling of `updatePackageTracking` in the vendor workspace.
+ */
+export async function updateAdminPackageTracking(
+  subOrderId: string,
+  carrierName: string,
+  trackingNumber: string,
+): Promise<{ subOrderId: string }> {
+  const { error } = await supabase.rpc('update_sub_order_tracking', {
+    p_sub_order_id: subOrderId,
+    p_carrier_name: carrierName,
+    p_tracking_number: trackingNumber,
+  });
+  if (error) throw rpcFailed('Could not record the tracking details', error.message);
+  return { subOrderId };
+}
+
+/**
+ * Corrects the delivery address snapshot on an order. The write goes through
+ * `admin_update_order_address` rather than the (RLS-permitted) raw table update so
+ * the change lands with the audit row the console's rule requires: audit rows are
+ * written by the RPCs that make the change they describe. The RPC validates the
+ * street, city and phone the address reader depends on.
+ */
+export async function updateAdminOrderAddress(
+  orderGroupId: string,
+  address: AdminOrderAddress,
+): Promise<{ orderGroupId: string; shippingAddress: AdminOrderAddress | null }> {
+  const { data, error } = await supabase.rpc('admin_update_order_address', {
+    p_order_group_id: orderGroupId,
+    p_address: {
+      fullName: address.fullName,
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      zipCode: address.zipCode,
+      country: address.country,
+      phone: address.phone,
+    },
+  });
+  if (error) throw rpcFailed('Could not save the delivery address', error.message);
+  const root = asRecord(data);
+  return {
+    orderGroupId: text(root.orderGroupId),
+    shippingAddress: readShippingAddress(root.shippingAddress),
+  };
+}
+
+/**
+ * Settles an order whose payment is still `pending` — in practice a COD order whose
+ * cash the desk has taken, which nothing else ever moves off `pending`. The RPC
+ * refuses `refunded` (refunds stay with the package refund calls, so the refund
+ * rows and the order status cannot disagree) and refuses to rewrite a status that
+ * has already settled; the reason is required here because it is what the audit
+ * row carries.
+ */
+export async function setAdminOrderPaymentStatus(
+  orderGroupId: string,
+  status: 'succeeded' | 'failed',
+  reason: string,
+): Promise<{ orderGroupId: string; paymentStatus: string }> {
+  const { data, error } = await supabase.rpc('admin_set_payment_status', {
+    p_order_group_id: orderGroupId,
+    p_status: status,
+    p_reason: reason,
+  });
+  if (error) throw rpcFailed('Could not correct the payment status', error.message);
+  const root = asRecord(data);
+  return { orderGroupId: text(root.orderGroupId), paymentStatus: text(root.paymentStatus) };
+}

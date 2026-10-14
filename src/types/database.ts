@@ -2699,6 +2699,14 @@ export type Database = {
       }
       Returns: Json
     },
+    "admin_set_payment_status": {
+      Args: {
+        "p_order_group_id": string,
+        "p_status": "pending" | "succeeded" | "failed" | "refunded",
+        "p_reason"?: string | null
+      }
+      Returns: Json
+    },
     "admin_set_review_hidden": {
       Args: {
         "p_review_id": string,
@@ -2746,6 +2754,13 @@ export type Database = {
         "p_is_active"?: boolean | null,
         "p_icon"?: string | null,
         "p_image"?: string | null
+      }
+      Returns: Json
+    },
+    "admin_update_order_address": {
+      Args: {
+        "p_order_group_id": string,
+        "p_address": Json
       }
       Returns: Json
     },
