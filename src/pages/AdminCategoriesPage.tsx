@@ -75,6 +75,8 @@ type CategoryView = {
   products: number;
   sellers: number;
   icon: string | null;
+  /** The storefront banner image (roots only — the tree carries no image for children). */
+  image: string | null;
 };
 
 type ModalState =
@@ -96,12 +98,12 @@ const rateLabel = (override: number | null): string =>
 
 const toRootView = (r: AdminCategoryRoot): CategoryView => ({
   id: r.id, name: r.name, slug: r.slug, isActive: r.isActive,
-  commissionOverride: r.commissionOverride, products: r.products, sellers: r.sellers, icon: r.icon,
+  commissionOverride: r.commissionOverride, products: r.products, sellers: r.sellers, icon: r.icon, image: r.image,
 });
 
 const toChildView = (c: AdminCategoryChild): CategoryView => ({
   id: c.id, name: c.name, slug: c.slug, isActive: c.isActive,
-  commissionOverride: c.commissionOverride, products: c.products, sellers: c.sellers, icon: null,
+  commissionOverride: c.commissionOverride, products: c.products, sellers: c.sellers, icon: null, image: null,
 });
 
 export const AdminCategoriesPage: React.FC = () => {
@@ -117,6 +119,7 @@ export const AdminCategoriesPage: React.FC = () => {
   const [formName, setFormName] = useState('');
   const [formSlug, setFormSlug] = useState('');
   const [formIcon, setFormIcon] = useState('laptop');
+  const [formImage, setFormImage] = useState('');
   const [formParent, setFormParent] = useState<string>('root');
 
   const [rateTarget, setRateTarget] = useState<CategoryView | null>(null);
@@ -199,6 +202,7 @@ export const AdminCategoriesPage: React.FC = () => {
     setFormName('');
     setFormSlug('');
     setFormIcon('laptop');
+    setFormImage('');
     setFormParent('root');
   };
 
@@ -207,6 +211,7 @@ export const AdminCategoriesPage: React.FC = () => {
     setFormName(node.name);
     setFormSlug(node.slug);
     setFormIcon(node.icon ?? 'laptop');
+    setFormImage(node.image ?? '');
     setFormParent('root');
   };
 
@@ -226,6 +231,9 @@ export const AdminCategoriesPage: React.FC = () => {
           slug,
           parentId: formParent === 'root' ? null : formParent,
           icon: formIcon,
+          // The banner image lives on root categories only (the tree and the
+          // storefront banner read it from there).
+          image: formParent === 'root' ? formImage.trim() || null : null,
         },
         {
           onSuccess: (created) => {
@@ -240,7 +248,7 @@ export const AdminCategoriesPage: React.FC = () => {
           categoryId: modal.node.id,
           name,
           slug,
-          ...(modal.isRoot ? { icon: formIcon } : {}),
+          ...(modal.isRoot ? { icon: formIcon, image: formImage.trim() || null } : {}),
         },
         {
           onSuccess: () => {
@@ -868,6 +876,32 @@ export const AdminCategoriesPage: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                </div>
+              ) : null}
+
+              {(modal?.mode === 'create' && formParent === 'root') ||
+              (modal?.mode === 'edit' && modal.isRoot) ? (
+                <div>
+                  <label htmlFor="cat-image" className="block font-bold text-slate-700 mb-1">Banner Image URL</label>
+                  <input
+                    id="cat-image"
+                    type="url"
+                    value={formImage}
+                    onChange={(e) => setFormImage(e.target.value)}
+                    placeholder="https://… (wide image, shown at the top of the category page)"
+                    className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Shown as the banner at the top of this category&apos;s storefront page. Paste a
+                    URL to set or replace it; a category without one simply opens on its heading.
+                  </p>
+                  {formImage.trim() !== '' && (
+                    <img
+                      src={formImage.trim()}
+                      alt="Banner preview"
+                      className="mt-2 h-20 w-full rounded-lg border border-slate-200 object-cover"
+                    />
+                  )}
                 </div>
               ) : null}
 
