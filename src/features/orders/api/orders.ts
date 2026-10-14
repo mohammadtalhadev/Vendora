@@ -57,7 +57,7 @@ const SUB_ORDER_SELECT =
 
 const ORDER_SELECT =
   'id, customer_id, customer_email, shipping_address, payment_method, payment_details, ' +
-  `payment_status, created_at, sub_orders(${SUB_ORDER_SELECT})`;
+  `payment_status, gift_card_amount, created_at, sub_orders(${SUB_ORDER_SELECT})`;
 
 const text = (value: unknown) => (value === null || value === undefined ? '' : String(value));
 
@@ -164,6 +164,7 @@ function mapOrderGroup(row: OrderRow): OrderGroup {
       last4: details.last4 === undefined ? undefined : text(details.last4),
     },
     paymentStatus: row.payment_status,
+    giftCardAmount: Number(row.gift_card_amount ?? 0),
     subOrderIds: subOrders.map((sub) => sub.id),
     createdAt: row.created_at,
   };

@@ -218,6 +218,8 @@ export interface OrderGroup {
   };
   /** Written by place_order: 'succeeded' for a captured card, 'pending' for cash. */
   paymentStatus?: 'pending' | 'succeeded' | 'failed' | 'refunded';
+  /** How much of this order's total gift cards have covered (orders.gift_card_amount). */
+  giftCardAmount: number;
   subOrderIds: string[];
   createdAt: string;
 }

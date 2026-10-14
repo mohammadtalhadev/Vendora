@@ -4,6 +4,7 @@ import type { SubOrder } from '../types/domain';
 import { deriveOrderGroupStatus } from '../lib/order-state-machine';
 import type { OrderGroupDerivedStatus } from '../lib/order-state-machine';
 import { useOrderDetail, useUpdateSubOrderStatus, useIssueDeliveryCode } from '../features/orders/hooks/useOrders';
+import { ApplyGiftCardCard } from '../features/rewards/components/ApplyGiftCardCard';
 import { TrackingTimeline } from '../features/orders/components/TrackingTimeline';
 import { useCurrency } from '../store/currency-store';
 import { QueryState } from '../components/common/QueryState';
@@ -308,6 +309,22 @@ export const OrderDetailPage: React.FC = () => {
                       {formatPrice(grandTotal)}
                     </p>
                   </div>
+                  {orderGroup.giftCardAmount > 0 && (
+                    <>
+                      <div className="h-8 w-px bg-slate-200" />
+                      <div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                          Gift Card
+                        </span>
+                        <p className="font-bold text-emerald-600">
+                          −{formatPrice(orderGroup.giftCardAmount)}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Due: {formatPrice(Math.max(0, grandTotal - orderGroup.giftCardAmount))}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -387,6 +404,14 @@ export const OrderDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Gift card application for COD orders (real RPC spend). */}
+            <ApplyGiftCardCard
+              orderId={orderGroup.id}
+              paymentMethod={orderGroup.paymentMethod}
+              total={grandTotal}
+              giftCardAmount={orderGroup.giftCardAmount}
+            />
 
             {/* 3. Distinct Cards for each seller's Sub-Order */}
             <div className="space-y-6">

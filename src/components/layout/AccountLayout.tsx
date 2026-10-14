@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Download,
+  Gift,
   Heart,
   MapPin,
   Package,
@@ -87,6 +88,12 @@ const NAV_ITEMS: AccountNavItem[] = [
     label: 'My Returns',
     icon: <RotateCcw className="h-4 w-4 shrink-0" aria-hidden="true" />,
     isActive: (p) => p === '/account/returns',
+  },
+  {
+    to: '/account/rewards',
+    label: 'Rewards & Gift Cards',
+    icon: <Gift className="h-4 w-4 shrink-0" aria-hidden="true" />,
+    isActive: (p) => p === '/account/rewards',
   },
   {
     to: '/account/settings',

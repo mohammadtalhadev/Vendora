@@ -10,6 +10,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useOrderDetail } from '../features/orders/hooks/useOrders';
+import { ApplyGiftCardCard } from '../features/rewards/components/ApplyGiftCardCard';
 import { StatusBadge } from '../components/ui/status-badge';
 import { useCurrency } from '../store/currency-store';
 
@@ -216,14 +217,32 @@ export const OrderConfirmationPage: React.FC = () => {
                   {totals.shipping > 0 ? formatPrice(totals.shipping) : 'Free'}
                 </dd>
               </div>
+              {orderGroup.giftCardAmount > 0 && (
+                <div className="flex justify-between">
+                  <dt className="text-slate-500 dark:text-slate-400">Gift card applied</dt>
+                  <dd className="font-semibold text-emerald-600">
+                    −{formatPrice(orderGroup.giftCardAmount)}
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between border-t border-slate-100 pt-3 text-base dark:border-white/5">
-                <dt className="font-black text-slate-900 dark:text-white">Total</dt>
+                <dt className="font-black text-slate-900 dark:text-white">
+                  {orderGroup.giftCardAmount > 0 ? 'Amount due' : 'Total'}
+                </dt>
                 <dd className="font-black text-slate-900 dark:text-white">
-                  {formatPrice(totals.total)}
+                  {formatPrice(totals.total - orderGroup.giftCardAmount)}
                 </dd>
               </div>
             </dl>
           </div>
+
+          {/* Gift card application for COD orders (real RPC spend). */}
+          <ApplyGiftCardCard
+            orderId={orderGroup.id}
+            paymentMethod={orderGroup.paymentMethod}
+            total={totals.total}
+            giftCardAmount={orderGroup.giftCardAmount}
+          />
         </section>
 
         {/* CTAs */}

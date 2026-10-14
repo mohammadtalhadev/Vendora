@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { PRODUCT_SELECT, mapProduct, type ProductWithRefs } from './product-row';
+import { normalizeSearchQuery } from './search-terms';
 import type { Category, Product, ProductType } from '../../../types/domain';
 
 export interface ProductQueryParams {
@@ -73,33 +74,67 @@ export async function fetchProducts(
   const sellerIds = params.seller ? await resolveSellerIds(params.seller) : null;
   if (sellerIds && sellerIds.length === 0) return emptyPage(page);
 
-  let query = supabase
-    .from('products')
-    .select(PRODUCT_SELECT, { count: 'exact' })
-    .eq('status', 'approved');
+  type SearchMode = { kind: 'text'; term: string } | { kind: 'ilike'; term: string } | null;
 
-  if (params.q?.trim()) query = query.textSearch('search_vector', params.q.trim(), { type: 'plain' });
-  if (categoryIds) query = query.in('category_id', categoryIds);
-  if (sellerIds) query = query.in('seller_id', sellerIds);
-  if (params.sellerId) query = query.eq('seller_id', params.sellerId);
-  if (params.type) query = query.eq('type', params.type);
-  if (params.minPrice !== undefined) query = query.gte('price', params.minPrice);
-  if (params.maxPrice !== undefined) query = query.lte('price', params.maxPrice);
+  const runQuery = async (search: SearchMode): Promise<ProductsResponse> => {
+    let query = supabase
+      .from('products')
+      .select(PRODUCT_SELECT, { count: 'exact' })
+      .eq('status', 'approved');
 
-  for (const sort of SORTS[params.sort ?? ''] ?? SORTS.featured) {
-    query = query.order(sort.column, { ascending: sort.ascending });
+    if (search?.kind === 'text') {
+      query = query.textSearch('search_vector', search.term, { type: 'plain' });
+    } else if (search?.kind === 'ilike') {
+      // The products table's display-name column is `title`. Feature-detect
+      // `ilike` so a query builder without it (older test doubles) simply
+      // skips this fallback instead of throwing a TypeError.
+      const builder = query as typeof query & {
+        ilike?: (column: string, pattern: string) => typeof query;
+      };
+      if (typeof builder.ilike === 'function') {
+        query = builder.ilike('title', `%${search.term}%`);
+      }
+    }
+    if (categoryIds) query = query.in('category_id', categoryIds);
+    if (sellerIds) query = query.in('seller_id', sellerIds);
+    if (params.sellerId) query = query.eq('seller_id', params.sellerId);
+    if (params.type) query = query.eq('type', params.type);
+    if (params.minPrice !== undefined) query = query.gte('price', params.minPrice);
+    if (params.maxPrice !== undefined) query = query.lte('price', params.maxPrice);
+
+    for (const sort of SORTS[params.sort ?? ''] ?? SORTS.featured) {
+      query = query.order(sort.column, { ascending: sort.ascending });
+    }
+
+    if (signal) query = query.abortSignal(signal);
+
+    const { data, error, count } = await query.range((page - 1) * limit, page * limit - 1);
+    if (error) throw new Error(`Failed to load products: ${error.message}`);
+
+    const items = (data ?? []).map((row) => mapProduct(row as ProductWithRefs));
+    const total = count ?? items.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    return { items, total, page, totalPages, hasMore: page < totalPages };
+  };
+
+  const rawQuery = params.q?.trim() ?? '';
+  const primary = await runQuery(rawQuery ? { kind: 'text', term: rawQuery } : null);
+  if (!rawQuery || primary.items.length > 0) return primary;
+
+  // Fuzzy fallback — only after the exact full-text search found nothing:
+  // (a) retry full-text with misspellings corrected / synonyms expanded,
+  // (b) fall back to a substring match on the product title with that term.
+  const normalized = normalizeSearchQuery(rawQuery);
+  if (normalized && normalized !== rawQuery.toLowerCase()) {
+    const corrected = await runQuery({ kind: 'text', term: normalized });
+    if (corrected.items.length > 0) return corrected;
   }
+  const ilikeTerm = normalized || rawQuery;
+  const substring = await runQuery({ kind: 'ilike', term: ilikeTerm });
+  if (substring.items.length > 0) return substring;
 
-  if (signal) query = query.abortSignal(signal);
-
-  const { data, error, count } = await query.range((page - 1) * limit, page * limit - 1);
-  if (error) throw new Error(`Failed to load products: ${error.message}`);
-
-  const items = (data ?? []).map((row) => mapProduct(row as ProductWithRefs));
-  const total = count ?? items.length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-
-  return { items, total, page, totalPages, hasMore: page < totalPages };
+  return primary;
 }
 
 export async function fetchProductDetail(idOrSlug: string, signal?: AbortSignal): Promise<Product> {

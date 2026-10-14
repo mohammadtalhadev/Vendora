@@ -49,6 +49,15 @@ const AccountReturnsPage = lazyWithRetry(() =>
 const AccountSettingsPage = lazyWithRetry(() =>
   import('../pages/AccountSettingsPage').then((m) => ({ default: m.AccountSettingsPage })),
 );
+const AccountRewardsPage = lazyWithRetry(() =>
+  import('../pages/AccountRewardsPage').then((m) => ({ default: m.AccountRewardsPage })),
+);
+const GiftCardsPage = lazyWithRetry(() =>
+  import('../pages/GiftCardsPage').then((m) => ({ default: m.GiftCardsPage })),
+);
+const RecentlyViewedPage = lazyWithRetry(() =>
+  import('../pages/RecentlyViewedPage').then((m) => ({ default: m.RecentlyViewedPage })),
+);
 const ComparePage = lazyWithRetry(() =>
   import('../pages/ComparePage').then((m) => ({ default: m.ComparePage })),
 );
@@ -425,7 +434,19 @@ export const router = createBrowserRouter([
             path: 'account/settings',
             element: lazyWrap(<AccountSettingsPage />),
           },
+          {
+            path: 'account/rewards',
+            element: lazyWrap(<AccountRewardsPage />),
+          },
         ],
+      },
+      {
+        path: 'gift-cards',
+        element: lazyWrap(<GiftCardsPage />),
+      },
+      {
+        path: 'recently-viewed',
+        element: lazyWrap(<RecentlyViewedPage />),
       },
       {
         path: 'order-confirmation/:orderId',

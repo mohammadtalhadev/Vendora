@@ -490,6 +490,178 @@ export type Database = {
         }
       ]
     },
+    "gift_card_transactions": {
+      Row: {
+        "id": string,
+        "card_id": string,
+        "actor_id": string | null,
+        "order_id": string | null,
+        "kind": string,
+        "amount": number,
+        "balance_after": number,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "card_id": string,
+        "actor_id"?: string | null,
+        "order_id"?: string | null,
+        "kind": string,
+        "amount": number,
+        "balance_after": number,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "card_id"?: string,
+        "actor_id"?: string | null,
+        "order_id"?: string | null,
+        "kind"?: string,
+        "amount"?: number,
+        "balance_after"?: number,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "gift_card_transactions_actor_id_fkey"
+          columns: ["actor_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "gift_card_transactions_card_id_fkey"
+          columns: ["card_id"]
+          isOneToOne: false
+          referencedRelation: "gift_cards"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "gift_card_transactions_order_id_fkey"
+          columns: ["order_id"]
+          isOneToOne: false
+          referencedRelation: "orders"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "gift_cards": {
+      Row: {
+        "id": string,
+        "code_hash": string,
+        "code_last4": string,
+        "purchaser_id": string | null,
+        "recipient_email": string,
+        "message": string | null,
+        "initial_amount": number,
+        "balance": number,
+        "status": string,
+        "expires_at": string,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "code_hash": string,
+        "code_last4": string,
+        "purchaser_id"?: string | null,
+        "recipient_email"?: string,
+        "message"?: string | null,
+        "initial_amount": number,
+        "balance": number,
+        "status"?: string,
+        "expires_at"?: string,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "code_hash"?: string,
+        "code_last4"?: string,
+        "purchaser_id"?: string | null,
+        "recipient_email"?: string,
+        "message"?: string | null,
+        "initial_amount"?: number,
+        "balance"?: number,
+        "status"?: string,
+        "expires_at"?: string,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "gift_cards_purchaser_id_fkey"
+          columns: ["purchaser_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "loyalty_accounts": {
+      Row: {
+        "user_id": string,
+        "points": number,
+        "lifetime_earned": number,
+        "created_at": string,
+        "updated_at": string
+      }
+      Insert: {
+        "user_id": string,
+        "points"?: number,
+        "lifetime_earned"?: number,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Update: {
+        "user_id"?: string,
+        "points"?: number,
+        "lifetime_earned"?: number,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "loyalty_accounts_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: true
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "loyalty_transactions": {
+      Row: {
+        "id": string,
+        "user_id": string,
+        "kind": string,
+        "points": number,
+        "ref": string | null,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "user_id": string,
+        "kind": string,
+        "points": number,
+        "ref"?: string | null,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "user_id"?: string,
+        "kind"?: string,
+        "points"?: number,
+        "ref"?: string | null,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "loyalty_transactions_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
     "media_items": {
       Row: {
         "id": string,
@@ -701,7 +873,8 @@ export type Database = {
         "payment_method": "card" | "cod",
         "payment_details": Json,
         "payment_status": "pending" | "succeeded" | "failed" | "refunded",
-        "created_at": string
+        "created_at": string,
+        "gift_card_amount": number
       }
       Insert: {
         "id"?: string,
@@ -711,7 +884,8 @@ export type Database = {
         "payment_method"?: "card" | "cod",
         "payment_details"?: Json,
         "payment_status"?: "pending" | "succeeded" | "failed" | "refunded",
-        "created_at"?: string
+        "created_at"?: string,
+        "gift_card_amount"?: number
       }
       Update: {
         "id"?: string,
@@ -721,7 +895,8 @@ export type Database = {
         "payment_method"?: "card" | "cod",
         "payment_details"?: Json,
         "payment_status"?: "pending" | "succeeded" | "failed" | "refunded",
-        "created_at"?: string
+        "created_at"?: string,
+        "gift_card_amount"?: number
       }
       Relationships: [
         {
@@ -1018,7 +1193,8 @@ export type Database = {
         "updated_at": string,
         "account_status": "active" | "suspended" | "banned",
         "account_status_reason": string | null,
-        "account_status_at": string | null
+        "account_status_at": string | null,
+        "referral_code": string | null
       }
       Insert: {
         "id": string,
@@ -1033,7 +1209,8 @@ export type Database = {
         "updated_at"?: string,
         "account_status"?: "active" | "suspended" | "banned",
         "account_status_reason"?: string | null,
-        "account_status_at"?: string | null
+        "account_status_at"?: string | null,
+        "referral_code"?: string | null
       }
       Update: {
         "id"?: string,
@@ -1048,7 +1225,8 @@ export type Database = {
         "updated_at"?: string,
         "account_status"?: "active" | "suspended" | "banned",
         "account_status_reason"?: string | null,
-        "account_status_at"?: string | null
+        "account_status_at"?: string | null,
+        "referral_code"?: string | null
       }
       Relationships: [
         {
@@ -1121,6 +1299,48 @@ export type Database = {
           columns: ["vendor_id"]
           isOneToOne: false
           referencedRelation: "vendor_profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "referrals": {
+      Row: {
+        "id": string,
+        "referrer_id": string,
+        "referee_id": string,
+        "status": string,
+        "created_at": string,
+        "rewarded_at": string | null
+      }
+      Insert: {
+        "id"?: string,
+        "referrer_id": string,
+        "referee_id": string,
+        "status"?: string,
+        "created_at"?: string,
+        "rewarded_at"?: string | null
+      }
+      Update: {
+        "id"?: string,
+        "referrer_id"?: string,
+        "referee_id"?: string,
+        "status"?: string,
+        "created_at"?: string,
+        "rewarded_at"?: string | null
+      }
+      Relationships: [
+        {
+          foreignKeyName: "referrals_referee_id_fkey"
+          columns: ["referee_id"]
+          isOneToOne: false
+          referencedRelation: "users"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "referrals_referrer_id_fkey"
+          columns: ["referrer_id"]
+          isOneToOne: false
+          referencedRelation: "users"
           referencedColumns: ["id"]
         }
       ]
@@ -2130,6 +2350,21 @@ export type Database = {
       }
       Returns: Json
     },
+    "apply_gift_card": {
+      Args: {
+        "p_code": string,
+        "p_user_id": string,
+        "p_amount": number
+      }
+      Returns: number
+    },
+    "apply_gift_card_to_order": {
+      Args: {
+        "p_code": string,
+        "p_order_id": string
+      }
+      Returns: Json
+    },
     "assign_dispute": {
       Args: {
         "p_dispute_id": string,
@@ -2144,6 +2379,15 @@ export type Database = {
       }
       Returns: Json
     },
+    "award_loyalty": {
+      Args: {
+        "p_user": string,
+        "p_points": number,
+        "p_kind": string,
+        "p_ref": string
+      }
+      Returns: boolean
+    },
     "broadcast_notification": {
       Args: {
         "p_role_target": string,
@@ -2157,6 +2401,12 @@ export type Database = {
     "cart_lines_for": {
       Args: {
         "p_uid": string
+      }
+      Returns: Json
+    },
+    "check_gift_card": {
+      Args: {
+        "p_code": string
       }
       Returns: Json
     },
@@ -2212,6 +2462,33 @@ export type Database = {
       Args: {}
       Returns: number
     },
+    "generate_gift_card_code": {
+      Args: {}
+      Returns: string
+    },
+    "get_my_gift_cards": {
+      Args: {}
+      Returns: Json
+    },
+    "get_my_rewards": {
+      Args: {}
+      Returns: Json
+    },
+    "gift_card_apply_core": {
+      Args: {
+        "p_code": string,
+        "p_user_id": string,
+        "p_amount": number,
+        "p_order_id": string
+      }
+      Returns: number
+    },
+    "gift_card_hash": {
+      Args: {
+        "p_code": string
+      }
+      Returns: string
+    },
     "has_role": {
       Args: {
         "check_role": "customer" | "vendor" | "admin" | "support" | "rider"
@@ -2245,6 +2522,12 @@ export type Database = {
         "p_sub_order_id": string
       }
       Returns: Json
+    },
+    "link_referral": {
+      Args: {
+        "p_code": string
+      }
+      Returns: boolean
     },
     "moderate_product": {
       Args: {
@@ -2289,6 +2572,14 @@ export type Database = {
       }
       Returns: Json
     },
+    "purchase_gift_card": {
+      Args: {
+        "p_recipient_email": string,
+        "p_amount": number,
+        "p_message"?: string | null
+      }
+      Returns: Json
+    },
     "qa_question_is_untouched": {
       Args: {
         "p_id": string,
@@ -2297,6 +2588,12 @@ export type Database = {
         "p_customer_name": string
       }
       Returns: boolean
+    },
+    "redeem_loyalty_points": {
+      Args: {
+        "p_points": number
+      }
+      Returns: Json
     },
     "reply_to_review": {
       Args: {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User,
   Lock,
@@ -33,12 +33,53 @@ import { useAuth } from '../lib/auth-context';
 import { useCartStore } from '../store/cart-store';
 import { submitVendorApplication } from '../features/vendor/api/applications';
 import { resendSignupConfirmation, verifySignupOtp } from '../features/auth/api/session';
+import { linkReferral } from '../features/rewards/api/rewards';
 import { OtpInput } from '../components/ui/otp-input';
+
+/**
+ * Best-effort referral link (Batch 39): if the visitor arrived through a
+ * referral link, the stored code is linked to the new account once a
+ * session exists. A failure here must never break sign-up, and the stored
+ * code is cleared either way so it cannot link a later, unrelated signup.
+ */
+async function linkStoredReferral(): Promise<void> {
+  let code: string | null;
+  try {
+    code = localStorage.getItem('vendora_ref');
+  } catch {
+    return;
+  }
+  if (!code) return;
+  try {
+    await linkReferral(code);
+  } catch {
+    // Referral linking is best-effort; the account itself is already made.
+  }
+  try {
+    localStorage.removeItem('vendora_ref');
+  } catch {
+    // Storage unavailable: nothing more to do.
+  }
+}
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signUp, signInWithProvider } = useAuth();
   const { mergeGuestCartIntoUser } = useCartStore();
+
+  // A referral link lands here as ?ref=CODE: stash the code so it can be
+  // linked after sign-up succeeds (there is no account to link before).
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      try {
+        localStorage.setItem('vendora_ref', ref);
+      } catch {
+        // Storage unavailable: the referral simply is not carried.
+      }
+    }
+  }, [searchParams]);
 
   // Active Role Toggle: 'customer' | 'seller'
   const [activeRole, setActiveRole] = useState<'customer' | 'seller'>('customer');
@@ -117,6 +158,7 @@ export const RegisterPage: React.FC = () => {
     setOtpError(null);
     try {
       const user = await verifySignupOtp(confirmation.email, otpCode);
+      await linkStoredReferral();
       if (confirmation.kind === 'seller') {
         navigate('/become-a-seller');
       } else {
@@ -208,6 +250,7 @@ export const RegisterPage: React.FC = () => {
         return;
       }
 
+      await linkStoredReferral();
       mergeGuestCartIntoUser(user.id);
       navigate('/');
     } catch (err: unknown) {
@@ -277,6 +320,7 @@ export const RegisterPage: React.FC = () => {
         return;
       }
 
+      await linkStoredReferral();
       navigate('/become-a-seller');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Merchant application submission failed';

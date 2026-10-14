@@ -16,6 +16,7 @@ import {
   type ProductItem,
 } from '../features/products';
 import { useProducts } from '../features/catalog/hooks/useProducts';
+import { recentlyViewedToProduct, useRecentlyViewed } from '../features/catalog/recently-viewed';
 import {
   SectionHeading,
   DealsStrip,
@@ -231,6 +232,14 @@ export const HomePage: React.FC = () => {
   const beautyItems = useMemo<ProductItem[]>(
     () => (beautyData?.items ?? []).map(domainProductToCardItem),
     [beautyData],
+  );
+
+  // Recently Viewed rail: the shopper's own browser-local history,
+  // rendered through the same card mapping as the live catalogue shelves.
+  const recentlyViewed = useRecentlyViewed();
+  const recentlyViewedItems = useMemo<ProductItem[]>(
+    () => recentlyViewed.map((item) => domainProductToCardItem(recentlyViewedToProduct(item))),
+    [recentlyViewed],
   );
 
   const { data: homeData } = useProducts({ category: 'home-kitchen', sort: 'best_selling', page: 1, limit: 20 });
@@ -760,6 +769,38 @@ export const HomePage: React.FC = () => {
               isInWishlist={isInWishlist}
             />
           </div>
+        )}
+
+        {/* =========================================================================
+            3D-1B. Recently Viewed — the shopper's own history on this device
+            ========================================================================= */}
+        {recentlyViewedItems.length > 0 && (
+          <section className="reveal mb-14" aria-label="Recently viewed">
+            <SectionHeading
+              title="Recently Viewed"
+              action={
+                <Link
+                  to="/recently-viewed"
+                  className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 transition-colors hover:bg-orange-100"
+                >
+                  <span>View All</span>
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              }
+            />
+            <div className="flex gap-4 overflow-x-auto scroll-smooth no-scrollbar py-1">
+              {recentlyViewedItems.map((product) => (
+                <div key={product.id} className="w-44 shrink-0 sm:w-52">
+                  <ProductCard
+                    product={product}
+                    onAddToCart={handleAddToCart}
+                    onToggleWishlist={handleToggleWishlist}
+                    isWishlisted={isInWishlist(product.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* =========================================================================

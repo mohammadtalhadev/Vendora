@@ -1,4 +1,4 @@
-import React, { useState, useId, useMemo } from 'react';
+import React, { useState, useId, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Star,
@@ -22,6 +22,7 @@ import {
   Play,
 } from 'lucide-react';
 import { useProductDetail } from '../features/catalog/hooks/useProducts';
+import { recordRecentlyViewed } from '../features/catalog/recently-viewed';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
 import { useCurrency } from '../store/currency-store';
@@ -48,6 +49,12 @@ export const ProductDetailPage: React.FC = () => {
   useReveal();
   const navigate = useNavigate();
   const { data: product, isLoading, isError, error, refetch } = useProductDetail(productId || '');
+
+  // Recently Viewed: snapshot this product into the browser-local history.
+  useEffect(() => {
+    if (product) recordRecentlyViewed(product);
+  }, [product]);
+
   const { addItem } = useCartStore();
   const { isInWishlist, toggleWishlist } = useWishlistStore();
   const { formatPrice } = useCurrency();
