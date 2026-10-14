@@ -172,7 +172,7 @@ export const RiderNav: React.FC<RiderNavProps> = ({ className, onNavigate }) => 
         <div className="space-y-3">
           {navSections.map((section) => (
             <div key={section.title} className="space-y-0.5">
-              <div className="px-3 pt-1.5 pb-1 text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+              <div className="px-3 pt-1.5 pb-1 text-[10px] font-bold text-slate-400 dark:text-slate-500">
                 {section.title}
               </div>
               {section.items.map((item, idx) => {

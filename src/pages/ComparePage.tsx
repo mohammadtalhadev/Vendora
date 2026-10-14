@@ -177,7 +177,7 @@ export const ComparePage: React.FC = () => {
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-100 dark:border-white/10">
-                <th className="w-56 p-6 bg-slate-50/70 dark:bg-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <th className="w-56 p-6 bg-slate-50/70 dark:bg-slate-800 text-xs font-bold text-slate-400 dark:text-slate-500">
                   Feature / Parameter
                 </th>
                 {items.map((item) => (
@@ -201,7 +201,7 @@ export const ComparePage: React.FC = () => {
                         />
                       </div>
 
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                      <div className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 mb-1">
                         {item.brand?.trim() || '—'}
                       </div>
 

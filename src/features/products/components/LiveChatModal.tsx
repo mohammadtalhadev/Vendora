@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Send, Store, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../../../store/auth-store';
+import { useOverlayA11y } from '../../../hooks/useOverlayA11y';
 import {
   fetchChatMessages,
   findOrCreateProductThread,
@@ -55,6 +56,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
 
   const isPlatformSeller = !sellerId || sellerId === 'platform';
   const canChat = Boolean(user) && !isPlatformSeller && Boolean(productId);
+  const panelRef = useOverlayA11y<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen || !canChat || !sellerId || !productId || !user) return;
@@ -103,7 +105,14 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-      <div className="relative flex h-[520px] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Chat with ${sellerName}`}
+        className="relative flex h-[520px] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-4">
           <div className="flex items-center gap-3">

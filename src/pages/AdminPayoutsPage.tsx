@@ -186,7 +186,7 @@ export const AdminPayoutsPage: React.FC = () => {
         {/* Summary */}
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-black text-slate-400">
               Awaiting release
             </span>
             <p className="mt-1 font-outfit text-2xl font-black text-slate-900">
@@ -197,7 +197,7 @@ export const AdminPayoutsPage: React.FC = () => {
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-black text-slate-400">
               Paid out (shown)
             </span>
             <p className="mt-1 font-outfit text-2xl font-black text-slate-900">
@@ -206,7 +206,7 @@ export const AdminPayoutsPage: React.FC = () => {
             <p className="text-[11px] text-slate-500">Completed payouts in this ledger view</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-black text-slate-400">
               Failed
             </span>
             <p className="mt-1 font-outfit text-2xl font-black text-slate-900">

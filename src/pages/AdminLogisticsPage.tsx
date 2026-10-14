@@ -213,25 +213,25 @@ export const AdminLogisticsPage: React.FC = () => {
         {/* Stats — each tile is a count produced by the board read, not a demo total. */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Riders Available</span>
+            <span className="text-[11px] font-bold text-slate-400">Riders Available</span>
             <div className="text-xl font-black text-slate-900 mt-1">{counts.ridersAvailable}</div>
             <span className="text-[11px] text-emerald-600 font-bold">of {board.fleet.length} registered riders</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Awaiting Pickup</span>
+            <span className="text-[11px] font-bold text-slate-400">Awaiting Pickup</span>
             <div className="text-xl font-black text-slate-900 mt-1">{counts.awaitingPickup}</div>
             <span className="text-[11px] text-blue-600 font-bold">Packages not yet dispatched</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In-Transit Parcels</span>
+            <span className="text-[11px] font-bold text-slate-400">In-Transit Parcels</span>
             <div className="text-xl font-black text-slate-900 mt-1">{counts.inTransit}</div>
             <span className="text-[11px] text-slate-500 font-bold">{counts.delivered} delivered</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Failed / Exceptions</span>
+            <span className="text-[11px] font-bold text-slate-400">Failed / Exceptions</span>
             <div className="text-xl font-black text-rose-600 mt-1">{counts.failed}</div>
             <span className="text-[11px] text-rose-600 font-bold">Deliveries that did not complete</span>
           </div>

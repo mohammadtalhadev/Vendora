@@ -74,7 +74,7 @@ const DisputeThread: React.FC<{ dispute: VendorDispute }> = ({ dispute }) => {
     <div className="space-y-4 text-xs">
       <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-1">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <span className="text-[10px] font-bold text-slate-400">
             Reason filed
           </span>
           <span className="font-mono text-[10px] text-slate-400">{dispute.id.slice(0, 8)}</span>
@@ -228,7 +228,7 @@ export const VendorSupportPage: React.FC = () => {
               key={tile.label}
               className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-1"
             >
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="text-[10px] font-bold text-slate-400">
                 {tile.label}
               </div>
               <div className="text-2xl font-black text-slate-900 tabular-nums">{tile.value}</div>

@@ -142,7 +142,7 @@ export const ContactPage: React.FC = () => {
         {/* Header */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
           <div className="lg:col-span-7 space-y-4">
-            <span className="glass-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            <span className="glass-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-600">
               <Phone className="h-3.5 w-3.5 text-sun-orange" />
               Vendora Care
             </span>
@@ -167,7 +167,7 @@ export const ContactPage: React.FC = () => {
 
           {/* Response times */}
           <div className="glass-card lg:col-span-5 rounded-[26px] border border-white/80 bg-white/75 p-6 backdrop-blur-xl shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500">
+            <div className="flex items-center gap-2 text-xs font-black text-slate-500">
               <Clock className="h-4 w-4 text-sun-orange" />
               Response times
             </div>
@@ -233,7 +233,7 @@ export const ContactPage: React.FC = () => {
             <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="contact-name" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <label htmlFor="contact-name" className="block text-[11px] font-bold text-slate-500">
                     Your name
                   </label>
                   <input
@@ -254,7 +254,7 @@ export const ContactPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="contact-email" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <label htmlFor="contact-email" className="block text-[11px] font-bold text-slate-500">
                     Email
                   </label>
                   <input
@@ -277,7 +277,7 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="contact-order" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <label htmlFor="contact-order" className="block text-[11px] font-bold text-slate-500">
                   Order reference <span className="font-medium normal-case tracking-normal text-slate-400">(optional)</span>
                 </label>
                 <input
@@ -292,7 +292,7 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="contact-message" className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <label htmlFor="contact-message" className="block text-[11px] font-bold text-slate-500">
                   How can we help?
                 </label>
                 <textarea
@@ -372,7 +372,7 @@ export const ContactPage: React.FC = () => {
               <div className="mt-4 space-y-4">
                 {OFFICES.map((office) => (
                   <div key={office.city}>
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-500">{office.city}</p>
+                    <p className="text-xs font-black text-slate-500">{office.city}</p>
                     <p className="mt-0.5 text-[11px] font-bold text-slate-700">{office.role}</p>
                     {office.lines.map((line) => (
                       <p key={line} className="text-[11px] leading-relaxed text-slate-500">

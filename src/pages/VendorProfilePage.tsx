@@ -361,7 +361,7 @@ export const VendorProfilePage: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-bold text-slate-400">
                       Seller application
                     </span>
                     <p className="mt-0.5 text-sm font-black text-slate-900">
@@ -372,7 +372,7 @@ export const VendorProfilePage: React.FC = () => {
                     )}
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-bold text-slate-400">
                       Store record
                     </span>
                     <p className="mt-0.5 text-sm font-black text-slate-900">
@@ -389,7 +389,7 @@ export const VendorProfilePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-2 border-t border-slate-100 pt-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className="text-[10px] font-bold text-slate-400">
                     Frozen against a seller write
                   </span>
                   <p className="text-[11px] text-slate-500">
@@ -406,7 +406,7 @@ export const VendorProfilePage: React.FC = () => {
 
           <div className="space-y-6">
             <section className={CARD}>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-black text-slate-400">
                 Account
               </span>
               <div className="flex items-center gap-3">

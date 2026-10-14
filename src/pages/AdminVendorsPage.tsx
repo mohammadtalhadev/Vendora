@@ -280,7 +280,7 @@ export const AdminVendorsPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Card 1: Total Vendors */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>TOTAL VENDORS</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                 <Store className="h-4 w-4" />
@@ -315,7 +315,7 @@ export const AdminVendorsPage: React.FC = () => {
 
           {/* Card 2: Pending Verification */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>PENDING VERIFICATION</span>
             </div>
             <div className="mt-3 flex items-center gap-2.5">
@@ -402,7 +402,7 @@ export const AdminVendorsPage: React.FC = () => {
 
           {/* Card 3: Active Vendor Health */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>MERCHANT HEALTH</span>
             </div>
             {/* Counted over every store by the queue read, not over the page on screen. */}
@@ -430,7 +430,7 @@ export const AdminVendorsPage: React.FC = () => {
 
           {/* Card 4: Gross booked across the platform */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>GROSS BOOKED (EVERY STORE)</span>
             </div>
             <div className="mt-3 flex items-baseline gap-2.5">

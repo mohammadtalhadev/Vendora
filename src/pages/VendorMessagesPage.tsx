@@ -227,7 +227,7 @@ export const VendorMessagesPage: React.FC = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-[11px] font-bold text-slate-400">
               COMMUNICATIONS <span className="text-slate-300">/</span> MESSAGES
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -252,7 +252,7 @@ export const VendorMessagesPage: React.FC = () => {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className={KPI_GRID}>
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
               <span>Conversations</span>
               <Inbox className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
@@ -263,7 +263,7 @@ export const VendorMessagesPage: React.FC = () => {
           </div>
 
           <div className={KPI_GRID}>
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
               <span>Unread</span>
               <MessageSquare className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
@@ -275,7 +275,7 @@ export const VendorMessagesPage: React.FC = () => {
           </div>
 
           <div className={KPI_GRID}>
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
               <span>Awaiting your reply</span>
               <Clock className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
@@ -287,7 +287,7 @@ export const VendorMessagesPage: React.FC = () => {
           </div>
 
           <div className={KPI_GRID}>
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
               <span>Urgent / escalated</span>
               <AlertTriangle className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
@@ -452,7 +452,7 @@ export const VendorMessagesPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-bold text-slate-400">
                       Set status
                     </span>
                     {STATUSES.map((status) => (
@@ -545,7 +545,7 @@ export const VendorMessagesPage: React.FC = () => {
 
                 <div className="space-y-2.5 border-t border-slate-200 bg-white p-3.5">
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="shrink-0 text-[10px] font-bold text-slate-400">
                       Prefill
                     </span>
                     {QUICK_REPLIES.map((reply) => (

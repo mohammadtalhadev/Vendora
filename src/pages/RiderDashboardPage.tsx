@@ -129,7 +129,7 @@ const DropCard: React.FC<DropCardProps> = ({
           </span>
           <div>
             <div className="text-sm font-bold text-slate-900">{drop.storeName}</div>
-            <div className="font-mono text-[11px] font-semibold text-slate-500">
+            <div className="font-mono text-xs font-semibold text-slate-500">
               Parcel {shortId(drop.subOrderId)}
             </div>
           </div>
@@ -137,7 +137,7 @@ const DropCard: React.FC<DropCardProps> = ({
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold',
+              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold',
               meta.tone
             )}
           >
@@ -150,7 +150,7 @@ const DropCard: React.FC<DropCardProps> = ({
               data-testid="btn-open-drop"
               aria-label={`Open parcel ${shortId(drop.subOrderId)} as its own page`}
               title="Open parcel on its own page"
-              className="inline-flex min-h-[32px] items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex min-h-[32px] items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900"
             >
               <span>Open</span>
               <ChevronRight className="h-3.5 w-3.5" />
@@ -162,7 +162,7 @@ const DropCard: React.FC<DropCardProps> = ({
       <div className="space-y-3.5 p-4">
         {/* Buyer */}
         <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+          <span className="text-xs font-extrabold text-slate-500">
             Recipient
           </span>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -176,7 +176,7 @@ const DropCard: React.FC<DropCardProps> = ({
 
         {/* Address */}
         <div className="rounded-2xl border border-slate-100 bg-white p-3.5">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+          <span className="text-xs font-extrabold text-slate-500">
             Deliver to
           </span>
           <div className="mt-1.5 flex items-start gap-2">
@@ -205,12 +205,12 @@ const DropCard: React.FC<DropCardProps> = ({
         {/* Value + timestamps */}
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 px-3.5 py-2.5">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-extrabold text-slate-500">
               Value of parcel
             </span>
             <div className="font-mono text-base font-black text-slate-900">{formatPrice(drop.gross)}</div>
           </div>
-          <div className="space-y-1 text-right text-[11px] font-medium text-slate-500">
+          <div className="space-y-1 text-right text-xs font-medium text-slate-500">
             {placedAt && (
               <div className="flex items-center justify-end gap-1.5">
                 <Clock className="h-3 w-3 text-amber-600" />
@@ -237,7 +237,7 @@ const DropCard: React.FC<DropCardProps> = ({
         <LocationShareControl deliveryId={drop.id} status={drop.status} />
 
         {drop.status === 'out_for_delivery' && !drop.needsHandoverCode && (
-          <div className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600">
+          <div className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
             <span>
               No handover code on this parcel, so it cannot be closed from the bike. The desk settles
@@ -258,7 +258,7 @@ const DropCard: React.FC<DropCardProps> = ({
             >
               <Package className="h-4 w-4" />
               <span>Collected</span>
-              <span className="text-[11px] font-semibold opacity-80">→ shipped</span>
+              <span className="text-xs font-semibold opacity-80">→ shipped</span>
               <ChevronRight className="h-4 w-4" />
             </button>
           )}
@@ -273,7 +273,7 @@ const DropCard: React.FC<DropCardProps> = ({
             >
               <Navigation className="h-4 w-4" />
               <span>On the way</span>
-              <span className="text-[11px] font-semibold opacity-80">→ out_for_delivery</span>
+              <span className="text-xs font-semibold opacity-80">→ out_for_delivery</span>
               <ChevronRight className="h-4 w-4" />
             </button>
           )}
@@ -288,7 +288,7 @@ const DropCard: React.FC<DropCardProps> = ({
             >
               <ShieldCheck className="h-4 w-4" />
               <span>Deliver</span>
-              <span className="text-[11px] font-semibold opacity-80">code check</span>
+              <span className="text-xs font-semibold opacity-80">code check</span>
               <ChevronRight className="h-4 w-4" />
             </button>
           )}
@@ -319,7 +319,7 @@ const CountTile: React.FC<{
 }> = ({ testId, label, value, hint, icon, tone }) => (
   <div className="rounded-3xl border border-slate-200/90 bg-white p-3.5 shadow-xs sm:p-4">
     <div className="flex items-center justify-between text-slate-500">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+      <span className="text-xs font-bold text-slate-500">{label}</span>
       <span className={cn('flex h-7 w-7 items-center justify-center rounded-xl', tone)}>{icon}</span>
     </div>
     <div className="mt-2 flex items-baseline gap-1">
@@ -328,7 +328,7 @@ const CountTile: React.FC<{
       </span>
       <span className="text-xs text-slate-500">parcels</span>
     </div>
-    <div className="mt-1 text-[11px] font-medium text-slate-500">{hint}</div>
+    <div className="mt-1 text-xs font-medium text-slate-500">{hint}</div>
   </div>
 );
 
@@ -366,7 +366,7 @@ const BoardError: React.FC<{ message: string; retrying: boolean; onRetry: () => 
       <div>
         <p className="text-sm font-black text-rose-950">Your board could not be read</p>
         <p className="mt-1 text-xs font-medium text-rose-900">{message}</p>
-        <p className="mt-2 text-[11px] text-rose-700">
+        <p className="mt-2 text-xs text-rose-700">
           No parcels are listed, because a route the database never sent is not something this screen
           can invent. Retry, or sign in again if the message mentions your rider profile.
         </p>
@@ -554,10 +554,10 @@ export const RiderDashboardPage: React.FC = () => {
             {counts && !deliveryId && (
               <section aria-label="Your load on the board" className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-extrabold text-slate-500">
                     Your load
                   </span>
-                  <span className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                  <span className="flex items-center gap-2 text-xs font-medium text-slate-500">
                     {rider && rider.slaCeilingHours > 0 && (
                       <span>Handling window {rider.slaCeilingHours}h</span>
                     )}
@@ -566,7 +566,7 @@ export const RiderDashboardPage: React.FC = () => {
                       data-testid="btn-refresh-board"
                       disabled={board.isFetching}
                       onClick={() => void board.refetch()}
-                      className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {board.isFetching ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -628,7 +628,7 @@ export const RiderDashboardPage: React.FC = () => {
                   type="button"
                   data-testid="btn-dismiss-move-error"
                   onClick={() => actions.move.reset()}
-                  className="inline-flex min-h-[32px] items-center rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-rose-700"
+                  className="inline-flex min-h-[32px] items-center rounded-full bg-rose-600 px-3 py-1 text-xs font-bold text-white hover:bg-rose-700"
                 >
                   Dismiss
                 </button>
@@ -641,17 +641,17 @@ export const RiderDashboardPage: React.FC = () => {
                   <Link
                     to="/rider/deliveries"
                     data-testid="btn-back-to-board"
-                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50"
+                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
                     <span>Back to the board</span>
                   </Link>
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/90 bg-white px-4 py-2.5 shadow-2xs">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-xs font-extrabold text-slate-500">
                       One parcel, from your board
                     </span>
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-[11px] font-bold text-slate-500">
+                      <span className="font-mono text-xs font-bold text-slate-500">
                         delivery {shortId(detailDrop.id)} · package {shortId(detailDrop.subOrderId)}
                       </span>
                       <button
@@ -660,7 +660,7 @@ export const RiderDashboardPage: React.FC = () => {
                         disabled={board.isFetching}
                         onClick={() => void board.refetch()}
                         title="Re-read the dispatch board behind this parcel"
-                        className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {board.isFetching ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
@@ -748,9 +748,9 @@ export const RiderDashboardPage: React.FC = () => {
                     <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                       <div>
                         <h2 className="text-sm font-black text-slate-900">{section.def.title}</h2>
-                        <p className="text-[11px] text-slate-500">{section.def.hint}</p>
+                        <p className="text-xs text-slate-500">{section.def.hint}</p>
                       </div>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">
                         {section.rows.length}
                       </span>
                     </div>
@@ -776,12 +776,12 @@ export const RiderDashboardPage: React.FC = () => {
                     <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                       <div>
                         <h2 className="text-sm font-black text-slate-900">Reported / on hold</h2>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           Left by a delivery report - the store or the desk decides the next step, or you
                           can take it out again.
                         </p>
                       </div>
-                      <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-bold text-rose-800">
+                      <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-800">
                         {holdRows.length}
                       </span>
                     </div>

@@ -235,7 +235,7 @@ export function DataTable<T>({
       <div className="overflow-x-auto">
         <table aria-label={ariaLabel} aria-busy={isLoading || undefined} className="w-full text-left text-xs">
           {caption != null && <caption className="sr-only">{caption}</caption>}
-          <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold text-slate-500">
             <tr>
               {selectionEnabled && (
                 <th scope="col" className="py-3 px-4 w-10 text-center">

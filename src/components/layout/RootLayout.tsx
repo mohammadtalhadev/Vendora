@@ -4,6 +4,7 @@ import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
 import { Footer } from './Footer';
 import { ScrollManager } from '../ScrollManager';
+import { SkipLink } from '../common/SkipLink';
 import { CURRENCY_LOCKED_TO_PKR, useCurrencyStore } from '../../store/currency-store';
 
 // All pages across the website include the global Navbar, Footer, and ambient chrome.
@@ -26,6 +27,7 @@ export const RootLayout: React.FC = () => {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-900 dark:text-slate-100">
+      <SkipLink />
       <ScrollManager />
       {/* =========================================================================
           Ethereal Luminous Ambient Orbs (Whole Website Storefront)
@@ -41,7 +43,7 @@ export const RootLayout: React.FC = () => {
 
       <div className="relative z-10 flex min-h-screen flex-col">
         {!isChromeless && <Navbar />}
-        <main className={`flex-1 ${isChromeless ? '' : 'pb-16 md:pb-0'}`}>
+        <main id="main-content" tabIndex={-1} className={`flex-1 ${isChromeless ? '' : 'pb-16 md:pb-0'}`}>
           <Outlet />
         </main>
         {!isChromeless && <BottomNav />}

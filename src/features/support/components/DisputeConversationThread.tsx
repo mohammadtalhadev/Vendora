@@ -272,7 +272,7 @@ export const DisputeConversationThread: React.FC<DisputeConversationThreadProps>
                 data-testid="canned-responses-menu"
                 className="absolute bottom-full left-0 z-30 mb-2 w-72 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl sm:w-80"
               >
-                <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="px-2.5 py-1 text-[11px] font-bold text-slate-400">
                   Saved by this desk
                 </div>
                 <div className="mt-1 max-h-64 space-y-1 overflow-y-auto">

@@ -121,7 +121,7 @@ const QuickAddContent: React.FC<QuickAddContentProps> = ({ onSave, onClose }) =>
   };
 
   const labelClass =
-    'block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5';
+    'block text-xs font-bold text-slate-600 mb-1.5';
 
   return (
     <>

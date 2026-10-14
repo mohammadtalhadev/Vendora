@@ -155,7 +155,7 @@ export const InvoicePage: React.FC = () => {
 
               {/* Line Items Table */}
               <div className="py-8 border-b border-slate-200 dark:border-white/10 print:border-slate-300">
-                <h3 className="font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-xs mb-4">
+                <h3 className="font-bold text-slate-400 dark:text-slate-500 text-xs mb-4">
                   Order Packages & Line Items
                 </h3>
                 <table className="w-full text-left text-xs">

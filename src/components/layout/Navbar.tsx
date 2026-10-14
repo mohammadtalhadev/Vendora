@@ -461,7 +461,7 @@ export const Navbar: React.FC = () => {
                   aria-label="Search suggestions"
                   className="absolute left-0 top-14 z-50 w-full overflow-hidden rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-2 shadow-2xl animate-in fade-in text-slate-800"
                 >
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400">
                     Search Suggestions
                   </div>
                   {suggestions.map((s, index) => (
@@ -661,7 +661,7 @@ export const Navbar: React.FC = () => {
                   {/* Internal Workspace Quick Access if User has permission */}
                   {user && (user.roles.includes('admin') || user.roles.includes('vendor') || user.roles.includes('rider') || user.roles.includes('support')) && (
                     <div className="border-t border-slate-100 pt-2 mb-2 space-y-1">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1">
+                      <div className="text-[10px] font-bold text-slate-400 px-2 mb-1">
                         Workspace Access
                       </div>
                       {user.roles.includes('admin') && (
@@ -739,7 +739,7 @@ export const Navbar: React.FC = () => {
                   {/* Demo Persona Switcher — local development only, never in production builds */}
                   {import.meta.env.DEV && (
                   <div className="border-t border-slate-100 pt-2">
-                    <div className="px-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <div className="px-2 pb-1 text-[10px] font-bold text-slate-400">
                       Switch Demo Persona
                     </div>
                     <div className="grid grid-cols-2 gap-1">
@@ -900,7 +900,7 @@ export const Navbar: React.FC = () => {
                 {/* PKR-only lock: static market row instead of the selector. */}
                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-700">
                       Market Currency
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800">

@@ -60,7 +60,7 @@ export const ForbiddenPage: React.FC = () => {
         <div className="glass-panel-elevated mt-8 rounded-3xl p-6 text-left border border-white/90 dark:border-white/10 shadow-xl">
           <div className="flex items-center gap-2 mb-4">
             <KeyRound className="h-4 w-4 text-amber-500" />
-            <h3 className="font-outfit text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            <h3 className="font-outfit text-xs font-black text-slate-700 dark:text-slate-300">
               Switch to an authorized role:
             </h3>
           </div>

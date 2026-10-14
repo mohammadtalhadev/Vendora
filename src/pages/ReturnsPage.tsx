@@ -360,7 +360,7 @@ export const ReturnsPage: React.FC = () => {
 
             {/* Eligible Items for Return */}
             <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-6 shadow-sm space-y-4">
-              <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-400">
+              <h3 className="font-outfit text-xs font-bold text-slate-400">
                 {lookupQuery ? `Delivered Packages in Order #${matchedGroup?.id ?? lookupQuery}` : 'Delivered Packages Eligible for Return'}
               </h3>
 

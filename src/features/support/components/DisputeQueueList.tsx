@@ -112,7 +112,7 @@ export const DisputeQueueList: React.FC<DisputeQueueListProps> = ({
       {/* Filter Pills Header */}
       <div className="p-3.5 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <h2 className="text-xs font-bold text-slate-500">
             Dispute Triage Queue
           </h2>
           <span className="text-[11px] font-medium text-slate-400">

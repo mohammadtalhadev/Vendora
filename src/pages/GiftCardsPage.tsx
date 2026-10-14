@@ -119,7 +119,7 @@ export const GiftCardsPage: React.FC = () => {
         ) : (
           <div className="mt-4 space-y-4">
             <div>
-              <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Amount</span>
+              <span className="mb-2 block text-xs font-bold text-slate-500">Amount</span>
               <div className="flex flex-wrap gap-2">
                 {AMOUNT_PRESETS.map((preset) => (
                   <button
@@ -158,7 +158,7 @@ export const GiftCardsPage: React.FC = () => {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="gift-recipient" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label htmlFor="gift-recipient" className="mb-1.5 block text-xs font-bold text-slate-500">
                   Recipient email
                 </label>
                 <input
@@ -171,7 +171,7 @@ export const GiftCardsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label htmlFor="gift-message" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label htmlFor="gift-message" className="mb-1.5 block text-xs font-bold text-slate-500">
                   Message (optional)
                 </label>
                 <input
@@ -228,7 +228,7 @@ export const GiftCardsPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-black text-slate-900 dark:text-white">{formatPrice(card.balance)}</p>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <p className="text-[11px] font-semibold text-slate-400">
                       of {formatPrice(card.initialAmount)} · {card.status}
                     </p>
                   </div>

@@ -118,7 +118,7 @@ export const LiveDeliveryTrackingCard: React.FC<{ orderId: string }> = ({ orderI
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-sun-orange">
           <MapPin className="h-4 w-4" />
         </div>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+        <h3 className="text-xs font-bold text-slate-800">
           Live delivery tracking
         </h3>
       </div>

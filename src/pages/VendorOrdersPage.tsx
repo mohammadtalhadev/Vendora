@@ -493,7 +493,7 @@ export const VendorOrdersPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Card 1: All Orders */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>All Orders</span>
               <FileText className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
@@ -508,7 +508,7 @@ export const VendorOrdersPage: React.FC = () => {
 
           {/* Card 2: To Pack */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <div className="flex items-center gap-1.5">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                 <span>To Pack</span>
@@ -530,7 +530,7 @@ export const VendorOrdersPage: React.FC = () => {
 
           {/* Card 3: Ready for Pickup */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>Ready for Pickup</span>
               <Truck className="h-4 w-4 text-blue-500" aria-hidden="true" />
             </div>
@@ -546,7 +546,7 @@ export const VendorOrdersPage: React.FC = () => {
 
           {/* Card 4: Shipped & In Transit */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>Shipped &amp; In Transit</span>
               <Truck className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>

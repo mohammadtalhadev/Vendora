@@ -192,7 +192,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
 
               {/* Title & Info */}
               <div className="mt-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                <p className="text-[10px] font-semibold text-slate-400">
                   {item.category}
                 </p>
                 <Link

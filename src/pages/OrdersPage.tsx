@@ -332,11 +332,11 @@ export const OrdersPage: React.FC = () => {
   const sidebarChipClass = (active: boolean, tone: 'plain' | 'count') =>
     active
       ? tone === 'count'
-        ? 'rounded-full px-2 py-0.5 text-[10px] font-bold bg-white/20 text-white'
-        : 'text-[10px] text-white/90 font-semibold'
+        ? 'rounded-full px-2 py-0.5 text-xs font-bold bg-white/20 text-white'
+        : 'text-xs text-white/90 font-semibold'
       : tone === 'count'
-        ? 'rounded-full px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-        : 'text-[10px] text-slate-400 dark:text-slate-500 font-semibold';
+        ? 'rounded-full px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+        : 'text-xs text-slate-500 dark:text-slate-500 font-semibold';
 
   return (
     <div className="space-y-6">
@@ -377,11 +377,11 @@ export const OrdersPage: React.FC = () => {
               className="text-left rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 cursor-pointer hover:border-sun-orange/40 transition-colors"
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Active Orders</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Active Orders</span>
                 <Truck className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">{activeCount}</div>
-              <span className="text-[11px] font-semibold text-slate-500">
+              <span className="text-xs font-semibold text-slate-500">
                 {ordersQuery.isLoading
                   ? 'Loading…'
                   : activeCount === 0
@@ -392,22 +392,22 @@ export const OrdersPage: React.FC = () => {
 
             <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4">
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Delivered</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Delivered</span>
                 <CheckCircle2 className="h-4 w-4 text-purple-500" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">{completedCount}</div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-xs text-slate-500">
                 {completedCount === 0 ? 'No order group fully delivered yet' : 'Order groups fully delivered'}
               </span>
             </div>
 
             <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4">
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Total Orders</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Total Orders</span>
                 <Package className="h-4 w-4 text-rose-500" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">{orderGroups.length}</div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-xs text-slate-500">
                 {orderGroups.length === 0 ? 'No orders on this account' : 'On your account'}
               </span>
             </div>
@@ -418,11 +418,11 @@ export const OrdersPage: React.FC = () => {
               className="text-left rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 cursor-pointer hover:border-rose-400 transition-colors"
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Saved Wishlist</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Saved Wishlist</span>
                 <Heart className="h-4 w-4 text-rose-400" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">{wishlistCount}</div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-xs text-slate-500">
                 {wishlistCount === 0 ? 'Nothing saved yet' : 'Items you saved'}
               </span>
             </button>
@@ -553,11 +553,11 @@ export const OrdersPage: React.FC = () => {
                                 <h3 className="font-outfit text-sm font-bold text-slate-900 dark:text-white">
                                   Order #{og.id}
                                 </h3>
-                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>
+                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${badge.className}`}>
                                   {badge.label}
                                 </span>
                               </div>
-                              <p className="mt-1 text-[11px] text-slate-500">
+                              <p className="mt-1 text-xs text-slate-500">
                                 Placed {formatPlacedDate(og.createdAt)} • {subs.length} package{subs.length === 1 ? '' : 's'}
                                 {' • '}
                                 {og.paymentMethod === 'cod' ? 'Cash on delivery' : 'Card'}
@@ -581,13 +581,13 @@ export const OrdersPage: React.FC = () => {
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
                                     {so.sellerType === 'platform' ? 'Vendora' : so.sellerName}
                                   </span>
                                   <h4 className="font-outfit text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-1">
                                     {so.items[0]?.title || `${so.items.length} item${so.items.length === 1 ? '' : 's'}`}
                                   </h4>
-                                  <p className="text-[11px] text-slate-500">
+                                  <p className="text-xs text-slate-500">
                                     {DERIVED_BADGE[deriveOrderGroupStatus([so.status])].label} •{' '}
                                     {so.items.length} line{so.items.length === 1 ? '' : 's'}
                                     {/* Carrier and tracking are only stated when the row records them. */}
@@ -600,7 +600,7 @@ export const OrdersPage: React.FC = () => {
                                     {formatPrice(so.subtotal + so.shippingFee)}
                                   </div>
                                   {so.shippingFee === 0 && (
-                                    <span className="text-[10px] font-semibold text-emerald-600">Free delivery</span>
+                                    <span className="text-xs font-semibold text-emerald-600">Free delivery</span>
                                   )}
                                 </div>
                               </div>
@@ -643,7 +643,7 @@ export const OrdersPage: React.FC = () => {
                     <p
                       role="alert"
                       aria-live="assertive"
-                      className="mb-3 rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-900/40 p-3 text-[11px] font-bold text-rose-700 dark:text-rose-300"
+                      className="mb-3 rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/30 dark:border-rose-900/40 p-3 text-xs font-bold text-rose-700 dark:text-rose-300"
                     >
                       {cartError}
                     </p>
@@ -685,7 +685,7 @@ export const OrdersPage: React.FC = () => {
                               <h4 className="font-outfit mt-3 text-xs font-bold text-slate-900 dark:text-white line-clamp-2 group-hover:text-sun-orange transition-colors">
                                 {entry.line.title}
                               </h4>
-                              <p className="text-[10px] text-slate-400">
+                              <p className="text-xs text-slate-500">
                                 {entry.line.sellerType === 'platform' ? 'Sold by Vendora' : `Sold by ${entry.line.sellerName}`}
                               </p>
                             </div>
@@ -697,7 +697,7 @@ export const OrdersPage: React.FC = () => {
                                 </span>
                                 <Link
                                   to={`/products/${entry.line.productId}`}
-                                  className="block text-[10px] font-bold text-sun-orange hover:underline"
+                                  className="block text-xs font-bold text-sun-orange hover:underline"
                                 >
                                   Live price &amp; stock
                                 </Link>
@@ -760,7 +760,7 @@ export const OrdersPage: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                     <div className="rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 p-4 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
                         <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                         Address On Your Latest Order
                       </div>
@@ -769,17 +769,17 @@ export const OrdersPage: React.FC = () => {
                           <div className="mt-2 text-xs font-bold text-slate-900 dark:text-white">
                             {formatAddressLine(latestAddress.address)}
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">
+                          <p className="text-xs text-slate-500 mt-0.5">
                             {latestAddress.address.fullName}
                             {latestAddress.address.phone ? ` • ${latestAddress.address.phone}` : ''}
                           </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">Used on order #{latestAddress.orderGroupId}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Used on order #{latestAddress.orderGroupId}</p>
                         </>
                       ) : (
                         <p
                           role="status"
                           aria-live="polite"
-                          className="mt-2 text-[11px] text-slate-500 leading-relaxed"
+                          className="mt-2 text-xs text-slate-500 leading-relaxed"
                         >
                           {ordersQuery.isLoading
                             ? 'Loading your orders…'
@@ -796,7 +796,7 @@ export const OrdersPage: React.FC = () => {
                     </div>
 
                     <div className="rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 p-4 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
                         <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
                         Payment On Your Latest Order
                       </div>
@@ -805,16 +805,16 @@ export const OrdersPage: React.FC = () => {
                           <div className="mt-2 text-xs font-bold text-slate-900 dark:text-white">
                             {paymentLabel(latestPayment)}
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">
+                          <p className="text-xs text-slate-500 mt-0.5">
                             {latestPayment.status ? PAYMENT_STATUS_LABEL[latestPayment.status] : 'No payment status recorded'}
                           </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">Recorded on order #{latestPayment.orderGroupId}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Recorded on order #{latestPayment.orderGroupId}</p>
                         </>
                       ) : (
                         <p
                           role="status"
                           aria-live="polite"
-                          className="mt-2 text-[11px] text-slate-500 leading-relaxed"
+                          className="mt-2 text-xs text-slate-500 leading-relaxed"
                         >
                           {ordersQuery.isLoading
                             ? 'Loading your orders…'
@@ -831,14 +831,14 @@ export const OrdersPage: React.FC = () => {
                     </div>
 
                     <div className="rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 p-4 border border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
                         <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
                         Digital Licences
                       </div>
                       <div className="mt-2 font-outfit text-xl font-black text-slate-900 dark:text-white">
                         {licensedSubs.length}
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         {licensedSubs.length === 0
                           ? 'No licence has been issued to this account yet.'
                           : 'Issued on packages you bought.'}
@@ -868,7 +868,7 @@ export const OrdersPage: React.FC = () => {
                             ? `Order #${inTransitGroup.id} is in transit`
                             : 'No shipments are in transit right now'}
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
+                      <p className="mt-1 text-xs text-slate-500">
                         {orderGroups.length === 0
                           ? 'No order value recorded yet.'
                           : `Booked total across your ${orderGroups.length} order group${orderGroups.length === 1 ? '' : 's'}: ${formatPrice(recordedValue)}`}
@@ -923,7 +923,7 @@ export const OrdersPage: React.FC = () => {
                         <RotateCcw className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">1. Request a Return</div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                      <p className="text-xs text-slate-500 leading-relaxed">
                         Delivered items can be submitted for return directly from your order details within 30 days of arrival.
                       </p>
                     </div>
@@ -933,7 +933,7 @@ export const OrdersPage: React.FC = () => {
                         <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">2. Vendor Verification</div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                      <p className="text-xs text-slate-500 leading-relaxed">
                         The vendor reviews your request and issues prepaid shipping instructions for return transit.
                       </p>
                     </div>
@@ -943,7 +943,7 @@ export const OrdersPage: React.FC = () => {
                         <Truck className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">3. Prompt Reimbursement</div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                      <p className="text-xs text-slate-500 leading-relaxed">
                         Once received and verified, your refund is credited directly to your original payment method.
                       </p>
                     </div>
@@ -951,7 +951,7 @@ export const OrdersPage: React.FC = () => {
 
                   {/* Active Return Requests (real packages awaiting vendor review) */}
                   <div>
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                    <h3 className="font-outfit text-xs font-bold text-slate-400 mb-3">
                       Active Return Requests ({openReturns.length})
                     </h3>
                     {ordersQuery.isLoading ? (
@@ -978,10 +978,10 @@ export const OrdersPage: React.FC = () => {
                                 <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                                   {so.items[0]?.title || so.sellerName}
                                 </h4>
-                                <p className="text-[11px] text-slate-500">
+                                <p className="text-xs text-slate-500">
                                   Order #{so.orderGroupId} • {so.status === 'return_approved' ? 'Approved by seller' : 'Awaiting seller review'}
                                 </p>
-                                {so.returnReason && <p className="text-[11px] text-slate-500">Reason: {so.returnReason}</p>}
+                                {so.returnReason && <p className="text-xs text-slate-500">Reason: {so.returnReason}</p>}
                               </div>
                             </div>
                             <div className="text-right shrink-0 text-xs font-bold text-slate-900 dark:text-white">
@@ -995,7 +995,7 @@ export const OrdersPage: React.FC = () => {
 
                   {/* Delivered items eligible to open a return (real delivered packages) */}
                   <div>
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                    <h3 className="font-outfit text-xs font-bold text-slate-400 mb-3">
                       Delivered Items Eligible for Return ({deliveredSubs.length})
                     </h3>
                     {ordersQuery.isLoading ? (
@@ -1020,7 +1020,7 @@ export const OrdersPage: React.FC = () => {
                               </div>
                               <div>
                                 <h4 className="text-xs font-bold text-slate-900 dark:text-white">{so.items[0]?.title || so.sellerName}</h4>
-                                <p className="text-[11px] text-slate-500">
+                                <p className="text-xs text-slate-500">
                                   Order #{so.orderGroupId} • {so.sellerName} • {formatPrice(so.subtotal + so.shippingFee)}
                                   {so.carrierName ? ` • ${so.carrierName}` : ''}
                                   {so.trackingNumber ? ` • ${so.trackingNumber}` : ''}
@@ -1091,7 +1091,7 @@ export const OrdersPage: React.FC = () => {
                             </div>
                             <Link
                               to={`/orders/${entry.orderGroupId}`}
-                              className="text-[11px] font-bold text-sun-orange hover:underline"
+                              className="text-xs font-bold text-sun-orange hover:underline"
                             >
                               Order #{entry.orderGroupId}
                             </Link>
@@ -1107,7 +1107,7 @@ export const OrdersPage: React.FC = () => {
                             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                               {formatAddressLine(entry.address)}
                             </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">
+                            <p className="text-xs text-slate-500 mt-0.5">
                               {[entry.address.city, entry.address.state].filter(Boolean).join(', ')}
                               {entry.address.country ? ` • ${entry.address.country}` : ''}
                             </p>
@@ -1167,7 +1167,7 @@ export const OrdersPage: React.FC = () => {
                               <h4 className="font-outfit text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                                 {paymentLabel(payment)}
                               </h4>
-                              <p className="text-[11px] text-slate-500 mt-0.5">
+                              <p className="text-xs text-slate-500 mt-0.5">
                                 {payment.status ? PAYMENT_STATUS_LABEL[payment.status] : 'No payment status recorded'} •{' '}
                                 first booked {formatPlacedDate(payment.placedAt)} on order #{payment.orderGroupId}
                               </p>
@@ -1240,7 +1240,7 @@ export const OrdersPage: React.FC = () => {
                     <p className="text-xs font-bold text-slate-900 dark:text-white">
                       No dispute list is available to this page
                     </p>
-                    <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
                       Disputes are opened and frozen by the support desk from their console, and this build
                       exposes no customer-side read of them, so there is nothing to show or count here. The
                       support desk can raise a case for any package on your account.
@@ -1290,14 +1290,14 @@ export const OrdersPage: React.FC = () => {
                     onSubmit={(event) => void submitPassword(event)}
                     className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-5 space-y-3"
                   >
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <h3 className="font-outfit text-xs font-bold text-slate-600 dark:text-slate-300">
                       Update Account Password
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label
                           htmlFor="new-password"
-                          className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase"
+                          className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase"
                         >
                           New Password
                         </label>
@@ -1316,7 +1316,7 @@ export const OrdersPage: React.FC = () => {
                       <div>
                         <label
                           htmlFor="confirm-password"
-                          className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase"
+                          className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase"
                         >
                           Confirm New Password
                         </label>
@@ -1345,7 +1345,7 @@ export const OrdersPage: React.FC = () => {
                           {passwordMessage.text}
                         </p>
                       ) : (
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-xs text-slate-500">
                           Supabase verifies this request with your signed-in session, so there is no current
                           password field; it may ask you to sign in again first.
                         </p>
@@ -1361,7 +1361,7 @@ export const OrdersPage: React.FC = () => {
                     </div>
                   </form>
 
-                  <p className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 text-[11px] text-slate-500 leading-relaxed">
+                  <p className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 text-xs text-slate-500 leading-relaxed">
                     Two-factor sign-in, biometric or passkey login and a device or session list are not
                     offered: this backend exposes no factor enrolment and no session-termination endpoint, so
                     a switch here would report a state it cannot change.
@@ -1380,13 +1380,13 @@ export const OrdersPage: React.FC = () => {
           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           <h4 className="font-outfit text-xs font-bold">Buyer Protection &amp; Guarantees</h4>
         </div>
-        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
           Every shipment is backed by Vendora Buyer Protection. Orders are securely tracked from vendor dispatch
           through final doorstep delivery, with full refund coverage on eligible returns.
         </p>
         <Link
           to="/terms"
-          className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
         >
           <span>Terms &amp; Refund Policies</span>
           <ArrowRight className="h-3 w-3" aria-hidden="true" />
@@ -1410,7 +1410,7 @@ export const OrdersPage: React.FC = () => {
 
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <span className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+              <span className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">
                 Packages on your account
               </span>
               {subOrders.length === 0 ? (
@@ -1429,7 +1429,7 @@ export const OrdersPage: React.FC = () => {
               )}
             </div>
 
-            <p className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/40 p-3 text-[11px] text-amber-800 dark:text-amber-300">
+            <p className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/40 p-3 text-xs text-amber-800 dark:text-amber-300">
               Filing a dispute from here isn&apos;t available: the platform has no customer-side
               dispute-creation service, so submitting would not open a case or freeze any payout. Our support
               desk opens and freezes disputes from their console — please contact support to raise a claim.

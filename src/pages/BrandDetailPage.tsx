@@ -80,7 +80,7 @@ export const BrandDetailPage: React.FC = () => {
     return (
       <div className="flex min-h-[55vh] flex-col items-center justify-center p-8">
         <div className="mb-3 h-10 w-10 animate-spin rounded-full border-4 border-sun-orange border-t-transparent" />
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+        <span className="text-xs font-bold text-slate-400">
           Loading brand…
         </span>
       </div>

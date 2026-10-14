@@ -436,7 +436,7 @@ export const VendorSettingsPage: React.FC = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-[11px] font-bold text-slate-400">
               SETTINGS <span className="text-slate-300">/</span> STORE
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">

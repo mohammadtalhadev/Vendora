@@ -717,7 +717,7 @@ export const VendorProductsPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Card 1: Total listings */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>TOTAL LISTINGS</span>
               <Box className="h-4 w-4 text-slate-400" aria-hidden="true" />
             </div>
@@ -732,7 +732,7 @@ export const VendorProductsPage: React.FC = () => {
 
           {/* Card 2: Approved listings */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>APPROVED LISTINGS</span>
               <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
             </div>
@@ -747,7 +747,7 @@ export const VendorProductsPage: React.FC = () => {
 
           {/* Card 3: Low / Out of Stock */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>LOW / OUT OF STOCK</span>
               <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
             </div>
@@ -767,7 +767,7 @@ export const VendorProductsPage: React.FC = () => {
 
           {/* Card 4: In moderation */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>IN MODERATION</span>
               <span className="h-2 w-2 rounded-full bg-rose-500" />
             </div>

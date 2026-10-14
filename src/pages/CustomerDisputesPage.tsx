@@ -178,7 +178,7 @@ export const CustomerDisputesPage: React.FC = () => {
           {/* Left: Disputes Queue List (4 cols) */}
           <div className="lg:col-span-4 space-y-3">
             <div className="flex items-center justify-between px-2 mb-1">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500">
                 Active Claims ({disputes.length})
               </h3>
               <span className="text-[11px] font-bold text-slate-400">Real-time status</span>

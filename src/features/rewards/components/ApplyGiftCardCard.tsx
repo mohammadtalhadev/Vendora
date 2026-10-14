@@ -54,7 +54,7 @@ export const ApplyGiftCardCard: React.FC<ApplyGiftCardCardProps> = ({
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-sun-orange">
           <Gift className="h-4 w-4" aria-hidden="true" />
         </span>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100">
+        <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100">
           Apply a gift card
         </h3>
       </div>

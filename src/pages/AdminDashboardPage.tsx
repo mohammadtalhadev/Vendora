@@ -25,6 +25,15 @@ import {
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { useAdminDashboard } from '../features/admin/hooks/useAdminQueries';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { UpdatedAgo } from '../components/common/UpdatedAgo';
 import { useAdminLive } from '../features/admin/hooks/useLive';
 import { exportToCsv } from '../lib/export-csv';
@@ -38,6 +47,9 @@ const PERIOD_DAYS: Record<'30d' | '3m' | '6m' | '1y', number> = {
 
 const money = (value: number) =>
   `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** Compact axis tick for the Recharts dashboards (Batch 49): $12k, not $12,000.00. */
+const axisMoney = (value: number) => (value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${value}`);
 
 /** `round(gmv / nullif(orders, 0))` is NULL until the window has orders: say that, do not print $0.00. */
 const aov = (value: number | null) => (value === null ? 'No orders in this window' : money(value));
@@ -106,30 +118,15 @@ export const AdminDashboardPage: React.FC = () => {
       <button
         type="button"
         onClick={() => void dashboard.refetch()}
-        className="ml-auto shrink-0 rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+        className="ml-auto shrink-0 rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
       >
         Retry
       </button>
     </div>
   );
 
-  // Monthly series from `admin_dashboard`, plotted against the largest month in the window.
+  // Monthly series from `admin_dashboard`; Recharts scales it (Batch 49).
   const monthly = data?.monthly ?? [];
-  const salesMax = Math.max(1, ...monthly.map((m) => m.gross));
-  const firstX = monthly.length === 1 ? 450 : 5;
-  const lastX = monthly.length === 1 ? 450 : 895;
-  const linePoints = (pick: (m: (typeof monthly)[number]) => number) =>
-    monthly
-      .map((m, i) => {
-        const x = monthly.length === 1 ? 450 : (i / (monthly.length - 1)) * 890 + 5;
-        const y = 190 - (pick(m) / salesMax) * 170;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
-  const areaPoints = (pts: string) => (pts ? `${firstX},190 ${pts} ${lastX},190` : '');
-  const grossLine = linePoints((m) => m.gross);
-  const netLine = linePoints((m) => m.net);
-  const lastPoint = monthly.length > 0 ? `${lastX},${(190 - (monthly[monthly.length - 1].gross / salesMax) * 170).toFixed(1)}` : '';
 
   const commissionMax = Math.max(1, ...monthly.map((m) => m.commission));
 
@@ -160,7 +157,7 @@ export const AdminDashboardPage: React.FC = () => {
                 this only says how fresh they are, with a small manual re-read beside it. */}
             <UpdatedAgo
               updatedAt={dashboard.dataUpdatedAt}
-              className="text-[11px] font-medium text-slate-400"
+              className="text-xs font-medium text-slate-500"
             />
             <button
               type="button"
@@ -202,11 +199,11 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">Approve Vendors</p>
-                    <p className="text-[10px] text-slate-400 truncate">Merchant onboarding</p>
+                    <p className="text-xs text-slate-500 truncate">Merchant onboarding</p>
                   </div>
                 </div>
                 {data.sellers.awaitingReview > 0 && (
-                  <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                  <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 border border-amber-200">
                     {data.sellers.awaitingReview}
                   </span>
                 )}
@@ -222,11 +219,11 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">Product Moderation</p>
-                    <p className="text-[10px] text-slate-400 truncate">Catalog verification</p>
+                    <p className="text-xs text-slate-500 truncate">Catalog verification</p>
                   </div>
                 </div>
                 {data.catalog.pendingReview > 0 && (
-                  <span className="shrink-0 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
+                  <span className="shrink-0 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700 border border-purple-200">
                     {data.catalog.pendingReview}
                   </span>
                 )}
@@ -242,11 +239,11 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">Resolve Disputes</p>
-                    <p className="text-[10px] text-slate-400 truncate">Resolution center</p>
+                    <p className="text-xs text-slate-500 truncate">Resolution center</p>
                   </div>
                 </div>
                 {data.trust.openDisputes > 0 && (
-                  <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
+                  <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 border border-rose-200">
                     {data.trust.openDisputes}
                   </span>
                 )}
@@ -263,10 +260,10 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">Export Report</p>
-                    <p className="text-[10px] text-slate-400 truncate">Executive CSV</p>
+                    <p className="text-xs text-slate-500 truncate">Executive CSV</p>
                   </div>
                 </div>
-                <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                <span className="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                   CSV
                 </span>
               </button>
@@ -281,7 +278,7 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">System Settings</p>
-                    <p className="text-[10px] text-slate-400 truncate">Global controls</p>
+                    <p className="text-xs text-slate-500 truncate">Global controls</p>
                   </div>
                 </div>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-slate-900 group-hover:translate-x-0.5 transition-all" />
@@ -335,7 +332,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <div className="text-2xl font-bold tracking-tight text-slate-900">
                     {money(data.kpis.commission)}
                   </div>
-                  <div className="mt-1 text-[11px] font-normal text-slate-400">
+                  <div className="mt-1 text-xs font-normal text-slate-500">
                     from booked volume in the last {data.days} days
                   </div>
                 </div>
@@ -354,7 +351,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <div className="text-2xl font-bold tracking-tight text-slate-900">
                     {data.sellers.active}
                   </div>
-                  <div className="mt-1 text-[11px] font-normal text-slate-400">
+                  <div className="mt-1 text-xs font-normal text-slate-500">
                     {data.sellers.suspended} suspended, {data.sellers.awaitingReview} awaiting review
                   </div>
                 </div>
@@ -373,7 +370,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <div className="text-2xl font-bold tracking-tight text-slate-900">
                     {data.catalog.approved}
                   </div>
-                  <div className="mt-1 text-[11px] text-slate-400 truncate">
+                  <div className="mt-1 text-xs text-slate-500 truncate">
                     ({data.catalog.pendingReview} in moderation)
                   </div>
                 </div>
@@ -388,7 +385,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-slate-900">Orders</span>
-                    <span className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                    <span className="rounded border border-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                       Last {data.days} days
                     </span>
                   </div>
@@ -420,7 +417,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-slate-900">Total Revenue</span>
-                    <span className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                    <span className="rounded border border-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                       Monthly booked
                     </span>
                   </div>
@@ -444,26 +441,31 @@ export const AdminDashboardPage: React.FC = () => {
 
                 <div className="mt-6 h-28 w-full">
                   {monthly.length === 0 ? (
-                    <p className="text-[11px] text-slate-400 pt-10 text-center">
+                    <p className="text-xs text-slate-500 pt-10 text-center">
                       No monthly history in this window.
                     </p>
                   ) : (
-                    <svg viewBox="0 0 900 200" preserveAspectRatio="none" className="h-full w-full overflow-visible">
-                      <polygon points={areaPoints(grossLine)} fill="rgba(15,23,42,0.08)" />
-                      <polyline
-                        points={grossLine}
-                        fill="none"
-                        stroke="#0F172A"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                        <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 11, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis hide domain={[0, 'dataMax']} />
+                        <Tooltip formatter={(value) => [money(Number(value)), 'Gross booked']} />
+                        <Area
+                          type="monotone"
+                          dataKey="gross"
+                          stroke="#0F172A"
+                          strokeWidth={2.5}
+                          fill="rgba(15,23,42,0.08)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   )}
-                </div>
-                <div className="mt-2 flex justify-between text-[10px] text-slate-400 font-medium">
-                  {monthly.map((m) => (
-                    <span key={m.month}>{m.label}</span>
-                  ))}
                 </div>
               </div>
 
@@ -473,7 +475,7 @@ export const AdminDashboardPage: React.FC = () => {
                     <span className="text-sm font-semibold text-slate-900">Commission Overview</span>
                     <span className="text-xs font-bold text-slate-900">{money(data.kpis.commission)}</span>
                   </div>
-                  <div className="mt-1 flex justify-between text-[11px] text-slate-400">
+                  <div className="mt-1 flex justify-between text-xs text-slate-500">
                     <span>Commission from booked volume</span>
                     <span className="font-medium text-slate-600">Net to sellers {money(data.kpis.netToSellers)}</span>
                   </div>
@@ -481,11 +483,11 @@ export const AdminDashboardPage: React.FC = () => {
 
                 <div className="mt-5 space-y-3">
                   {monthly.length === 0 ? (
-                    <p className="text-[11px] text-slate-400">No monthly commission history in this window.</p>
+                    <p className="text-xs text-slate-500">No monthly commission history in this window.</p>
                   ) : (
                     monthly.map((m) => (
                       <div key={m.month}>
-                        <div className="flex justify-between text-[11px] font-medium text-slate-600 mb-1">
+                        <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
                           <span>{m.label}</span>
                           <span className="font-semibold text-slate-900">{money(m.commission)}</span>
                         </div>
@@ -567,53 +569,56 @@ export const AdminDashboardPage: React.FC = () => {
                   <p className="text-xs text-slate-400">No sales months recorded in this window.</p>
                 </div>
               ) : (
-                <>
-                  <div className="mt-6 h-56 w-full">
-                    <svg viewBox="0 0 900 200" preserveAspectRatio="none" className="h-full w-full overflow-visible">
+                <div className="mt-6 h-56 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
                       <defs>
                         <linearGradient id="grossSalesGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0F172A" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#0F172A" stopOpacity="0.02" />
+                          <stop offset="0%" stopColor="#0F172A" stopOpacity={0.25} />
+                          <stop offset="100%" stopColor="#0F172A" stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="netSalesGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.02" />
+                          <stop offset="0%" stopColor="#94A3B8" stopOpacity={0.3} />
+                          <stop offset="100%" stopColor="#94A3B8" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-
-                      <polygon points={areaPoints(grossLine)} fill="url(#grossSalesGrad)" />
-                      <polygon points={areaPoints(netLine)} fill="url(#netSalesGrad)" />
-
-                      <polyline
-                        points={netLine}
-                        fill="none"
+                      <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={axisMoney}
+                        width={48}
+                      />
+                      <Tooltip
+                        formatter={(value, name) => [
+                          money(Number(value)),
+                          name === 'gross' ? 'Gross booked' : 'Net to sellers',
+                        ]}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="net"
                         stroke="#64748B"
-                        strokeWidth="2"
-                        strokeLinecap="round"
+                        strokeWidth={2}
+                        fill="url(#netSalesGrad)"
                       />
-                      <polyline
-                        points={grossLine}
-                        fill="none"
+                      <Area
+                        type="monotone"
+                        dataKey="gross"
                         stroke="#0F172A"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
+                        strokeWidth={2.5}
+                        fill="url(#grossSalesGrad)"
                       />
-
-                      {lastPoint && (
-                        <>
-                          <circle cx={lastX} cy={Number(lastPoint.split(',')[1])} r="4" fill="#0F172A" />
-                          <circle cx={lastX} cy={Number(lastPoint.split(',')[1])} r="2" fill="#FFFFFF" />
-                        </>
-                      )}
-                    </svg>
-                  </div>
-
-                  <div className="mt-3 flex justify-between text-[10px] text-slate-400 font-medium px-1">
-                    {monthly.map((m) => (
-                      <span key={m.month}>{m.label}</span>
-                    ))}
-                  </div>
-                </>
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               )}
 
               <div className="mt-4 flex items-center justify-center gap-6 border-t border-slate-100 pt-3 text-xs">
@@ -639,7 +644,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <Store className="h-4 w-4" />
                     </div>
                     {data.sellers.awaitingReview > 0 && (
-                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
                         Needs Review
                       </span>
                     )}
@@ -674,7 +679,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <ShieldAlert className="h-4 w-4" />
                     </div>
                     {data.catalog.pendingReview > 0 && (
-                      <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-[10px] font-bold text-purple-700">
+                      <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-bold text-purple-700">
                         Pending
                       </span>
                     )}
@@ -709,7 +714,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <Scale className="h-4 w-4" />
                     </div>
                     {data.trust.openDisputes > 0 && (
-                      <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold text-rose-700">
+                      <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700">
                         Open
                       </span>
                     )}
@@ -762,7 +767,7 @@ export const AdminDashboardPage: React.FC = () => {
 
                   <div className="mt-4 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <span className="text-xs font-bold text-slate-500">
                         TOTAL PAYOUTS PENDING
                       </span>
                       <div className="text-2xl font-bold tracking-tight text-slate-900 mt-0.5">
@@ -778,7 +783,7 @@ export const AdminDashboardPage: React.FC = () => {
                     {data.topVendors.length === 0 ? (
                       <div className="py-8 text-center text-slate-400">
                         <Store className="h-6 w-6 mx-auto mb-2 opacity-40" />
-                        <p className="text-[11px]">No vendor has booked volume in this window yet.</p>
+                        <p className="text-xs">No vendor has booked volume in this window yet.</p>
                       </div>
                     ) : (
                       data.topVendors.map((vendor) => (
@@ -795,7 +800,7 @@ export const AdminDashboardPage: React.FC = () => {
                               <p className="text-xs font-bold text-slate-900 truncate leading-tight group-hover:text-blue-600 transition-colors">
                                 {vendor.storeName}
                               </p>
-                              <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
+                              <p className="text-xs text-slate-500 truncate leading-tight mt-0.5">
                                 {vendor.packages} packages
                               </p>
                             </div>
@@ -804,7 +809,7 @@ export const AdminDashboardPage: React.FC = () => {
                             <p className="text-xs font-bold text-slate-900 leading-tight">
                               {money(vendor.gross)}
                             </p>
-                            <p className="text-[11px] font-semibold leading-tight mt-0.5 text-slate-500">
+                            <p className="text-xs font-semibold leading-tight mt-0.5 text-slate-500">
                               {money(vendor.commission)} commission
                             </p>
                           </div>
@@ -831,7 +836,7 @@ export const AdminDashboardPage: React.FC = () => {
                     {Object.entries(data.stages).length === 0 ? (
                       <div className="py-8 text-center text-slate-400">
                         <Package className="h-6 w-6 mx-auto mb-2 opacity-40" />
-                        <p className="text-[11px]">No packages recorded in this window yet.</p>
+                        <p className="text-xs">No packages recorded in this window yet.</p>
                       </div>
                     ) : (
                       Object.entries(data.stages).map(([status, count]) => (

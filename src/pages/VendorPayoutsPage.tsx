@@ -131,7 +131,7 @@ export const VendorPayoutsPage: React.FC = () => {
     {
       key: 'requested',
       header: 'REQUESTED',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 text-slate-600 font-medium',
       cell: (row) =>
         new Date(row.createdAt).toLocaleString('en-US', {
@@ -145,8 +145,8 @@ export const VendorPayoutsPage: React.FC = () => {
     {
       key: 'reference',
       header: 'REFERENCE',
-      headerClassName: 'text-[11px]',
-      className: 'py-3.5 font-mono font-bold text-slate-900 text-[11px]',
+      headerClassName: 'text-xs',
+      className: 'py-3.5 font-mono font-bold text-slate-900 text-xs',
       cell: (row) => (
         <button
           onClick={() => row.reference && handleCopyRef(row.reference)}
@@ -165,28 +165,28 @@ export const VendorPayoutsPage: React.FC = () => {
     {
       key: 'rail',
       header: 'RAIL',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-medium text-slate-700',
       cell: (row) => row.method,
     },
     {
       key: 'amount',
       header: 'AMOUNT',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-bold text-slate-900',
       cell: (row) => money(row.amount),
     },
     {
       key: 'fee',
       header: 'FEE',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-semibold text-rose-600',
       cell: (row) => (row.fee === 0 ? '$0.00' : `-${money(row.fee)}`),
     },
     {
       key: 'deposit',
       header: 'DEPOSIT',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-semibold text-slate-900',
       cell: (row) => money(row.deposit),
     },
@@ -194,18 +194,18 @@ export const VendorPayoutsPage: React.FC = () => {
       key: 'status',
       header: 'STATUS',
       align: 'right',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (row) => (
         <>
           {row.status === 'processing' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-200">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" aria-hidden="true" />
               Processing
             </span>
           )}
-          {row.status === 'completed' && <StatusBadge status="completed" className="text-[11px]" />}
-          {row.status === 'failed' && <StatusBadge status="failed" className="text-[11px]" />}
+          {row.status === 'completed' && <StatusBadge status="completed" className="text-xs" />}
+          {row.status === 'failed' && <StatusBadge status="failed" className="text-xs" />}
         </>
       ),
     },
@@ -320,7 +320,7 @@ export const VendorPayoutsPage: React.FC = () => {
         {/* ── Page Header ───────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-xs font-bold text-slate-500">
               FINANCIAL MANAGEMENT <span className="text-slate-300">/</span> PAYOUTS
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -413,7 +413,7 @@ export const VendorPayoutsPage: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="text-xs font-bold text-slate-500">
                 AVAILABLE NOW
               </div>
               <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -432,7 +432,7 @@ export const VendorPayoutsPage: React.FC = () => {
                   }}
                 />
               </div>
-              <div className="mt-1.5 text-[10px] text-slate-400">
+              <div className="mt-1.5 text-xs text-slate-500">
                 of {wallet ? money(wallet.lifetimeNet) : '—'} lifetime net earned
               </div>
             </div>
@@ -441,10 +441,10 @@ export const VendorPayoutsPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-xs font-bold text-slate-500">
                   HELD IN RESERVE
                 </span>
-                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
                   {reservePct === null ? '—' : `${reservePct.toFixed(1)}%`}
                 </span>
               </div>
@@ -464,7 +464,7 @@ export const VendorPayoutsPage: React.FC = () => {
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="text-xs font-bold text-slate-500">
                 TOTAL PAID OUT
               </div>
               <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -474,7 +474,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 {payouts.length} payout{payouts.length === 1 ? '' : 's'} on record
               </div>
             </div>
-            <div className="mt-4 pt-2 text-[11px] text-slate-500 border-t border-slate-100 flex items-center justify-between">
+            <div className="mt-4 pt-2 text-xs text-slate-500 border-t border-slate-100 flex items-center justify-between">
               <span>Awaiting the bank</span>
               <span className="font-bold text-slate-900">
                 {wallet ? `${pendingPayouts.length} · ${money(pendingAmount)}` : '—'}
@@ -484,7 +484,7 @@ export const VendorPayoutsPage: React.FC = () => {
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="text-xs font-bold text-slate-500">
                 PAYOUT CADENCE
               </div>
               <div className="mt-3 text-2xl font-extrabold text-slate-900">
@@ -499,7 +499,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div className="mt-4 pt-2 text-[11px] text-slate-400 border-t border-slate-100">
+            <div className="mt-4 pt-2 text-xs text-slate-500 border-t border-slate-100">
               The label is your own setting; nothing here leaves the platform until you request a
               payout.
             </div>
@@ -542,13 +542,13 @@ export const VendorPayoutsPage: React.FC = () => {
                 </div>
 
                 <div className="text-right sm:border-l sm:border-slate-200 sm:pl-6 shrink-0">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div className="text-xs font-bold text-slate-500">
                     AVAILABLE TO REQUEST
                   </div>
                   <div className="text-2xl font-black text-slate-900">
                     {wallet ? money(wallet.available) : '—'}
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     {wallet ? `${money(wallet.lifetimeNet)} earned · ${money(wallet.paidOut)} out · ${money(wallet.reserve)} reserved` : '—'}
                   </div>
                 </div>
@@ -557,21 +557,21 @@ export const VendorPayoutsPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
                   <div className="font-bold text-slate-900">1 · Request</div>
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     <code>request_payout</code> re-reads your available balance and refuses more
                     than it holds.
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
                   <div className="font-bold text-slate-900">2 · Fee</div>
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Instant costs {money(INSTANT_FEE_RATE * 100).replace('.00', '')}% of the
                     amount; standard ACH costs nothing. The database sets it, not this page.
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
                   <div className="font-bold text-slate-900">3 · Bank leg</div>
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     No bank rail is connected in this build, so nothing marks a payout completed.
                   </p>
                 </div>
@@ -697,7 +697,7 @@ export const VendorPayoutsPage: React.FC = () => {
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-bold text-slate-900">Deposit Accounts</h2>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-bold text-slate-500">
                   {accounts.length} SAVED
                 </span>
               </div>
@@ -706,7 +706,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 <div
                   role="alert"
                   aria-live="assertive"
-                  className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-[11px] font-semibold text-rose-800 flex items-start gap-2"
+                  className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-800 flex items-start gap-2"
                 >
                   <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" aria-hidden="true" />
                   <span>{bankError}</span>
@@ -723,7 +723,7 @@ export const VendorPayoutsPage: React.FC = () => {
                   <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center">
                     <Building2 className="h-5 w-5 mx-auto text-slate-300 mb-2" aria-hidden="true" />
                     <p className="text-xs font-bold text-slate-700">No deposit account yet</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Add one so a payout has somewhere to be sent.
                     </p>
                   </div>
@@ -745,23 +745,23 @@ export const VendorPayoutsPage: React.FC = () => {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-slate-900 text-xs">{acc.bankName}</span>
                           {acc.isDefault && (
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.2 text-xs font-bold text-emerald-700 border border-emerald-200">
                               Default
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">
+                        <div className="text-xs text-slate-500 mt-0.5">
                           {acc.holderName} · {acc.accountType} · •••• {acc.maskedAccount}
                         </div>
                         {acc.maskedRouting && (
-                          <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                          <div className="text-xs font-mono text-slate-500 mt-0.5">
                             Routing {acc.maskedRouting}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                    <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-xs">
                       <span className="text-slate-400">
                         Saved {new Date(acc.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
@@ -808,7 +808,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                   <div>
                     <div className="font-bold text-slate-900">Reserve rate</div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-xs text-slate-500">
                       Held from lifetime net earnings
                     </div>
                   </div>
@@ -820,7 +820,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                   <div>
                     <div className="font-bold text-slate-900">Reserve held</div>
-                    <div className="text-[11px] text-slate-500">Not requestable yet</div>
+                    <div className="text-xs text-slate-500">Not requestable yet</div>
                   </div>
                   <div className="text-right font-black text-slate-900 text-sm">
                     {wallet ? money(wallet.reserve) : '—'}
@@ -830,7 +830,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                   <div>
                     <div className="font-bold text-slate-900">Instant rail fee</div>
-                    <div className="text-[11px] text-slate-500">Set by request_payout</div>
+                    <div className="text-xs text-slate-500">Set by request_payout</div>
                   </div>
                   <div className="text-right font-black text-slate-900 text-sm">1.5%</div>
                 </div>
@@ -838,7 +838,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-slate-900">Payout label</div>
-                    <div className="text-[11px] text-slate-500">Store Settings text</div>
+                    <div className="text-xs text-slate-500">Store Settings text</div>
                   </div>
                   <div className="text-right font-black text-slate-900 text-sm">
                     {profile?.payoutSchedule || 'Not set'}
@@ -848,7 +848,7 @@ export const VendorPayoutsPage: React.FC = () => {
 
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 flex items-start gap-2.5 text-xs text-slate-500">
                 <Info className="h-4 w-4 text-slate-600 shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-[11px] leading-relaxed">
+                <p className="text-xs leading-relaxed">
                   Changing the reserve rate or the payout label is a Store Settings write. No
                   deposit network, FDIC coverage or tax form is wired into this build, so nothing
                   here promises a bank arrival date.
@@ -906,7 +906,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => wallet && setPayoutAmount(wallet.available.toFixed(2))}
-                  className="mt-1 text-[11px] font-bold text-slate-900 hover:underline cursor-pointer"
+                  className="mt-1 text-xs font-bold text-slate-900 hover:underline cursor-pointer"
                 >
                   Use all {wallet ? money(wallet.available) : '—'}
                 </button>
@@ -945,14 +945,14 @@ export const VendorPayoutsPage: React.FC = () => {
                 <div
                   role="alert"
                   aria-live="assertive"
-                  className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-[11px] text-rose-800 flex items-start gap-2"
+                  className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 flex items-start gap-2"
                 >
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
                   <span>{payoutError}</span>
                 </div>
               )}
 
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-800 flex items-start gap-2">
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 flex items-start gap-2">
                 <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" aria-hidden="true" />
                 <span>
                   Booking this writes a <code>payouts</code> row and an audit entry. No banking
@@ -1084,7 +1084,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 <div
                   role="alert"
                   aria-live="assertive"
-                  className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-[11px] text-rose-800 flex items-start gap-2"
+                  className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 flex items-start gap-2"
                 >
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" aria-hidden="true" />
                   <span>{bankError}</span>

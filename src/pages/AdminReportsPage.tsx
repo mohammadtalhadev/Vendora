@@ -293,7 +293,7 @@ export const AdminReportsPage: React.FC = () => {
               {/* KPI Cards — totals the RPC computed for this window */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                     <span>GROSS MARKETPLACE VOLUME</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                       <DollarSign className="h-4 w-4" />
@@ -308,7 +308,7 @@ export const AdminReportsPage: React.FC = () => {
                 </div>
 
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                     <span>PLATFORM COMMISSION</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                       <Percent className="h-4 w-4" />
@@ -325,7 +325,7 @@ export const AdminReportsPage: React.FC = () => {
                 </div>
 
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                     <span>NET TO SELLERS</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                       <Wallet className="h-4 w-4" />
@@ -340,7 +340,7 @@ export const AdminReportsPage: React.FC = () => {
                 </div>
 
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                     <span>AVG ORDER VALUE (AOV)</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600 border border-slate-100">
                       <ShoppingCart className="h-4 w-4" />
@@ -427,7 +427,7 @@ export const AdminReportsPage: React.FC = () => {
 
                     <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                       <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="text-[10px] font-bold text-slate-400">
                           Shipping Charged
                         </div>
                         <div className="mt-0.5 text-sm font-extrabold text-slate-900">
@@ -436,7 +436,7 @@ export const AdminReportsPage: React.FC = () => {
                         <div className="text-slate-500">Physical packages only</div>
                       </div>
                       <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="text-[10px] font-bold text-slate-400">
                           Digital Goods Volume
                         </div>
                         <div className="mt-0.5 text-sm font-extrabold text-slate-900">
@@ -445,7 +445,7 @@ export const AdminReportsPage: React.FC = () => {
                         <div className="text-slate-500">Gross of digital sub-orders</div>
                       </div>
                       <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="text-[10px] font-bold text-slate-400">
                           Refunds Issued
                         </div>
                         <div className="mt-0.5 text-sm font-extrabold text-slate-900">

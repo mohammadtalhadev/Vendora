@@ -148,7 +148,7 @@ export const VendorPromotionsPage: React.FC = () => {
       key: 'code',
       header: 'CODE & CAMPAIGN',
       sortValue: (promo) => promo.code,
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (promo) => (
         <>
@@ -156,7 +156,7 @@ export const VendorPromotionsPage: React.FC = () => {
             {promo.title || 'Untitled campaign'}
           </div>
           <div className="mt-1 flex items-center gap-1.5">
-            <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800">
+            <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-800">
               {promo.code}
             </span>
             <button
@@ -178,7 +178,7 @@ export const VendorPromotionsPage: React.FC = () => {
             </button>
           </div>
           {promo.description && (
-            <div className="mt-1 max-w-xs text-[11px] text-slate-400">
+            <div className="mt-1 max-w-xs text-xs text-slate-500">
               {promo.description}
             </div>
           )}
@@ -188,13 +188,13 @@ export const VendorPromotionsPage: React.FC = () => {
     {
       key: 'discount',
       header: 'DISCOUNT',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (promo) => (
         <>
           <div className="font-bold text-slate-900">{discountLabel(promo)}</div>
           {promo.maxDiscount !== undefined && (
-            <div className="text-[11px] text-slate-500">
+            <div className="text-xs text-slate-500">
               Capped at {money(promo.maxDiscount)}
             </div>
           )}
@@ -205,7 +205,7 @@ export const VendorPromotionsPage: React.FC = () => {
       key: 'minimum',
       header: 'MINIMUM / CAP',
       sortValue: (promo) => promo.minimumOrder,
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (promo) => (
         <>
@@ -214,7 +214,7 @@ export const VendorPromotionsPage: React.FC = () => {
               ? `Spend ${money(promo.minimumOrder)}`
               : 'No minimum'}
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-slate-500">
             Cap {promo.usageLimit.toLocaleString()} claim(s)
           </div>
         </>
@@ -224,14 +224,14 @@ export const VendorPromotionsPage: React.FC = () => {
       key: 'window',
       header: 'WINDOW',
       sortValue: (promo) => (promo.startsAt ? new Date(promo.startsAt).getTime() : null),
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (promo) => (
         <>
           <div className="font-semibold text-slate-900">
             {promo.startsAt || promo.endsAt ? 'Scheduled window' : 'Always open'}
           </div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-xs text-slate-500">
             {promo.startsAt ? dateLabel(promo.startsAt) : 'from creation'}
             {' → '}
             {promo.endsAt ? dateLabel(promo.endsAt) : 'no end'}
@@ -243,7 +243,7 @@ export const VendorPromotionsPage: React.FC = () => {
       key: 'redemptions',
       header: 'REDEMPTIONS',
       sortValue: (promo) => promo.usageCount,
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (promo) => {
         const pct = promo.usageLimit
@@ -251,7 +251,7 @@ export const VendorPromotionsPage: React.FC = () => {
           : 0;
         return (
           <>
-            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-slate-700">
+            <div className="mb-1 flex items-center justify-between text-xs font-semibold text-slate-700">
               <span>
                 {promo.usageCount} / {promo.usageLimit.toLocaleString()}
               </span>
@@ -270,13 +270,13 @@ export const VendorPromotionsPage: React.FC = () => {
     {
       key: 'status',
       header: 'STATUS',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (promo) => {
         const status = statusOf(promo, now);
         return (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[status]}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-bold ${STATUS_STYLE[status]}`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
             {STATUS_TEXT[status]}
@@ -288,7 +288,7 @@ export const VendorPromotionsPage: React.FC = () => {
       key: 'actions',
       header: 'ACTIONS',
       align: 'right',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (promo) => (
         <div className="flex items-center justify-end gap-1.5">
@@ -297,7 +297,7 @@ export const VendorPromotionsPage: React.FC = () => {
             onClick={() => void handleToggle(promo)}
             disabled={setActive.isPending}
             aria-label={`${promo.active ? 'Switch off' : 'Switch on'} ${promo.code}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             {promo.active ? (
               <>
@@ -314,7 +314,7 @@ export const VendorPromotionsPage: React.FC = () => {
             onClick={() => askDelete(promo)}
             disabled={remove.isPending}
             aria-label={`Delete ${promo.code}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:border-rose-300 hover:text-rose-600 disabled:opacity-50"
           >
             <Trash2 className="h-3 w-3" aria-hidden="true" /> Delete
           </button>
@@ -501,7 +501,7 @@ export const VendorPromotionsPage: React.FC = () => {
         {/* ── Header ──────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-xs font-bold text-slate-500">
               MARKETING <span className="text-slate-300">/</span> PROMOTIONS
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -562,7 +562,7 @@ export const VendorPromotionsPage: React.FC = () => {
         {/* ── KPI cards ───────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-bold text-slate-500">
               CLAIMABLE RIGHT NOW
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -574,7 +574,7 @@ export const VendorPromotionsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-bold text-slate-500">
               REDEMPTIONS BOOKED
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">{redemptions}</div>
@@ -584,7 +584,7 @@ export const VendorPromotionsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-bold text-slate-500">
               CAP CONSUMED
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -596,7 +596,7 @@ export const VendorPromotionsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-bold text-slate-500">
               SWITCHED OFF
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -636,7 +636,7 @@ export const VendorPromotionsPage: React.FC = () => {
                 >
                   <span className="capitalize">{tab === 'off' ? 'Switched off' : tab}</span>
                   <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                    className={`rounded-full px-1.5 py-0.5 text-xs font-semibold ${
                       activeTab === tab ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
                     }`}
                   >
@@ -765,18 +765,18 @@ export const VendorPromotionsPage: React.FC = () => {
                   className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/60 p-3 text-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
                       {idx + 1}
                     </div>
                     <div>
                       <div className="font-mono font-bold text-slate-900">{promo.code}</div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-xs text-slate-500">
                         {discountLabel(promo)} · {promo.usageCount} claim(s)
                       </div>
                     </div>
                   </div>
                   <span
-                    className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[statusOf(promo, now)]}`}
+                    className={`rounded-full border px-2 py-0.5 text-xs font-bold ${STATUS_STYLE[statusOf(promo, now)]}`}
                   >
                     {STATUS_TEXT[statusOf(promo, now)]}
                   </span>
@@ -784,7 +784,7 @@ export const VendorPromotionsPage: React.FC = () => {
               ))}
             </div>
 
-            <p className="border-t border-slate-100 pt-3 text-[11px] text-slate-400">
+            <p className="border-t border-slate-100 pt-3 text-xs text-slate-500">
               There is no revenue-attribution table behind this list. The database records that a code
               was applied and how many times, not what the discounted order earned.
             </p>
@@ -823,18 +823,18 @@ export const VendorPromotionsPage: React.FC = () => {
                 ],
               ].map(([title, body], idx) => (
                 <li key={idx} className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
                     {idx + 1}
                   </span>
                   <span>
                     <span className="block font-bold text-slate-900">{title}</span>
-                    <span className="mt-0.5 block text-[11px] text-slate-500">{body}</span>
+                    <span className="mt-0.5 block text-xs text-slate-500">{body}</span>
                   </span>
                 </li>
               ))}
             </ol>
 
-            <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
+            <p className="rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
               There is no flash-deal engine, product-scope filter, or nomination programme wired into
               this build. <code className="font-mono">promotions</code> has no column for which SKUs a
               code covers, so every code here is storewide.
@@ -1015,7 +1015,7 @@ export const VendorPromotionsPage: React.FC = () => {
                 />
                 <span>
                   <span className="block font-bold text-slate-900">Switched on</span>
-                  <span className="mt-0.5 block text-[11px] text-slate-500">
+                  <span className="mt-0.5 block text-xs text-slate-500">
                     An inactive row still exists, but checkout rejects it outright.
                   </span>
                 </span>
@@ -1077,11 +1077,11 @@ export const VendorPromotionsPage: React.FC = () => {
                   <div key={promo.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                     <div className="flex items-center justify-between font-bold text-slate-900">
                       <span className="font-mono">{promo.code}</span>
-                      <span className="text-[10px] uppercase text-slate-500">
+                      <span className="text-xs uppercase text-slate-500">
                         {STATUS_TEXT[statusOf(promo, now)]}
                       </span>
                     </div>
-                    <div className="mt-1 text-[11px] text-slate-500">
+                    <div className="mt-1 text-xs text-slate-500">
                       {promo.startsAt ? dateLabel(promo.startsAt) : 'from creation'}
                       {' → '}
                       {promo.endsAt ? dateLabel(promo.endsAt) : 'no end date'}

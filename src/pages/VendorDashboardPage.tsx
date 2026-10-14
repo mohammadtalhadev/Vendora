@@ -39,6 +39,17 @@ import { useVendorLive } from '../features/vendor/hooks/useLive';
 import { useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
 import { useShippingSettings } from '../features/vendor/hooks/useVendorStore';
 import { useCurrency } from '../store/currency-store';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 /** The picker's labels mapped onto the months of history the earnings RPC should read. */
 const RANGE_MONTHS: Record<'30D' | '3M' | 'YTD', number> = {
@@ -243,7 +254,6 @@ export const VendorDashboardPage: React.FC = () => {
   // Monthly series, in order, straight from `vendor_earnings`.
   const months = earnings.data?.months ?? [];
   const maxMonthGross = months.reduce((max, m) => Math.max(max, m.gross), 0);
-  const maxMonthPackages = months.reduce((max, m) => Math.max(max, m.packages), 0);
   const lastMonth = months[months.length - 1];
   const previousMonth = months[months.length - 2];
   const monthChangePct =
@@ -254,21 +264,12 @@ export const VendorDashboardPage: React.FC = () => {
   const trend = (value: number | null) =>
     value === null ? null : `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}%`;
 
-  // SVG points across a 900x200 box, scaled to the biggest month in the window. With nothing
-  // settled there is no ratio to take, so the series is empty and each chart prints its own
-  // "nothing settled" state instead of a line plotted from a zero division.
-  const seriesPoints = (pick: (m: (typeof months)[number]) => number) =>
-    maxMonthGross > 0
-      ? months
-          .map((m, i) => {
-            const x = months.length === 1 ? 450 : (i / (months.length - 1)) * 890 + 5;
-            const y = 190 - (pick(m) / maxMonthGross) * 170;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-          })
-          .join(' ')
-      : '';
-  const grossPoints = seriesPoints((m) => m.gross);
-  const netPoints = seriesPoints((m) => m.net);
+  // Recharts rows for the three dashboard charts (Batch 49 — the hand-plotted
+  // SVG polylines are gone; Recharts scales the same `vendor_earnings` series
+  // and gives it real axes and tooltips). With nothing settled the series is
+  // empty and each chart prints its own "nothing settled" state.
+  const chartMonths = months.map((m) => ({ ...m, label: monthLabel(m.month) }));
+  const axisPrice = (value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`);
 
   // Dynamic low stock items, split the same way the store aggregate splits them: `low` is above
   // zero and at or below the threshold the dashboard RPC was asked to count at, `sold out` is at
@@ -344,7 +345,7 @@ export const VendorDashboardPage: React.FC = () => {
         meta: `Catalog SKU • ${p.stock} units on hand`,
         icon: <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />,
         badge: (
-          <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 text-xs font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             {p.status || 'draft'}
           </span>
         ),
@@ -435,28 +436,28 @@ export const VendorDashboardPage: React.FC = () => {
     {
       key: 'id',
       header: 'Sub-Order ID',
-      headerClassName: 'text-[11px]',
-      className: 'font-mono font-bold text-slate-900 dark:text-white text-[11px]',
+      headerClassName: 'text-xs',
+      className: 'font-mono font-bold text-slate-900 dark:text-white text-xs',
       cell: (order) => <>#{order.id}</>,
     },
     {
       key: 'customer',
       header: 'Customer',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'font-medium text-slate-700 dark:text-slate-300',
       cell: (order) => order.buyerEmail || 'No buyer contact on this order',
     },
     {
       key: 'product',
       header: 'Product',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       cell: (order) => (
         <>
           <span className="font-medium text-slate-900 dark:text-slate-100 truncate block max-w-xs">
             {order.items[0]?.title || 'Package contents unavailable'}
           </span>
           {order.items.length > 1 && (
-            <span className="text-[10px] text-slate-400">
+            <span className="text-xs text-slate-500">
               +{order.items.length - 1} more line
               {order.items.length > 2 ? 's' : ''}
             </span>
@@ -467,14 +468,14 @@ export const VendorDashboardPage: React.FC = () => {
     {
       key: 'amount',
       header: 'Amount',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'font-bold text-slate-900 dark:text-white',
       cell: (order) => formatPrice(order.gross),
     },
     {
       key: 'status',
       header: 'Status',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       cell: (order) => {
         switch (order.status) {
           case 'placed':
@@ -521,7 +522,7 @@ export const VendorDashboardPage: React.FC = () => {
       key: 'action',
       header: 'Action',
       align: 'right',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       cell: (order) => (
         <>
           {order.status === 'placed' && (
@@ -555,13 +556,13 @@ export const VendorDashboardPage: React.FC = () => {
             </Button>
           )}
           {order.status === 'ready_for_pickup' && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               Staged
               <Check className="h-3 w-3" aria-hidden="true" />
             </span>
           )}
           {!isSellerActionStage(order.status) && (
-            <span className="text-[11px] font-semibold text-slate-400">
+            <span className="text-xs font-semibold text-slate-500">
               No seller action at this stage
             </span>
           )}
@@ -663,7 +664,7 @@ export const VendorDashboardPage: React.FC = () => {
                 manual re-read of every queue at once. */}
             <UpdatedAgo
               updatedAt={dashboard.dataUpdatedAt}
-              className="hidden text-[11px] font-medium text-slate-400 sm:inline"
+              className="hidden text-xs font-medium text-slate-500 sm:inline"
             />
 
             {/* Refresh Metrics Button */}
@@ -710,10 +711,10 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-900 dark:text-white truncate">Add Product</p>
-                <p className="text-[10px] text-slate-400 truncate">New listing</p>
+                <p className="text-xs text-slate-500 truncate">New listing</p>
               </div>
             </div>
-            <span className="shrink-0 text-[10px] font-bold text-sun-orange-600 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 px-1.5 py-0.5 rounded">
+            <span className="shrink-0 text-xs font-bold text-sun-orange-600 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 px-1.5 py-0.5 rounded">
               + New
             </span>
           </button>
@@ -729,10 +730,10 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-900 dark:text-white truncate">Manage Orders</p>
-                <p className="text-[10px] text-slate-400 truncate">Fulfillment queue</p>
+                <p className="text-xs text-slate-500 truncate">Fulfillment queue</p>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+            <span className="shrink-0 rounded-full bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
               {orders.length}
             </span>
           </Link>
@@ -748,10 +749,10 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-900 dark:text-white truncate">Stock Console</p>
-                <p className="text-[10px] text-slate-400 truncate">Inventory health</p>
+                <p className="text-xs text-slate-500 truncate">Inventory health</p>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+            <span className="shrink-0 rounded-full bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
               {restockProducts.length} need restock
             </span>
           </Link>
@@ -768,10 +769,10 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-900 dark:text-white truncate">Export Report</p>
-                <p className="text-[10px] text-slate-400 truncate">Store CSV ledger</p>
+                <p className="text-xs text-slate-500 truncate">Store CSV ledger</p>
               </div>
             </div>
-            <span className="shrink-0 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-1.5 py-0.5 rounded">
+            <span className="shrink-0 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-1.5 py-0.5 rounded">
               CSV
             </span>
           </button>
@@ -789,7 +790,7 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-slate-900 dark:text-white truncate">Public Storefront</p>
-                <p className="text-[10px] text-slate-400 truncate">Customer preview</p>
+                <p className="text-xs text-slate-500 truncate">Customer preview</p>
               </div>
             </div>
             <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-all" />
@@ -899,7 +900,7 @@ export const VendorDashboardPage: React.FC = () => {
                 <span className="font-semibold">Requires action</span>
                 {/* The store's own saved handling window, not a courier SLA the database
                     has no record of. */}
-                <span className="text-[11px] text-slate-400 truncate">
+                <span className="text-xs text-slate-500 truncate">
                   {handlingWindow
                     ? `(store handling window: ${handlingWindow})`
                     : '(no handling window saved)'}
@@ -931,7 +932,7 @@ export const VendorDashboardPage: React.FC = () => {
               </div>
               <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <span className="capitalize">{activeProfile?.status === 'suspended' ? 'Store suspended' : 'Store active'}</span>
-                <span className="text-[11px] font-normal text-slate-400">
+                <span className="text-xs font-normal text-slate-500">
                   ({activeProfile?.reviewCount ?? 0} review{(activeProfile?.reviewCount ?? 0) === 1 ? '' : 's'} from buyers)
                 </span>
               </div>
@@ -948,7 +949,7 @@ export const VendorDashboardPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">Orders Processed</span>
-                <span className="rounded border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                <span className="rounded border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                   Monthly
                 </span>
               </div>
@@ -963,31 +964,29 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
 
             {/* Packages settled per calendar month, from `vendor_earnings`. */}
-            <div className="mt-6 flex h-32 items-end justify-between gap-2 px-1">
+            <div className="mt-6 h-32 w-full text-slate-900 dark:text-slate-100">
               {months.length > 0 ? (
-                months.map((m) => (
-                  <div
-                    key={m.month}
-                    className="flex flex-1 flex-col items-center gap-1.5 h-full justify-end"
-                    title={`${m.packages} package${m.packages === 1 ? '' : 's'} settled in ${monthLabel(m.month)}`}
-                  >
-                    <div
-                      className="w-full rounded-xs bg-slate-900 dark:bg-slate-100 transition-all duration-300 hover:bg-orange-500"
-                      style={{
-                        height: `${
-                          maxMonthPackages > 0
-                            ? Math.max(4, (m.packages / maxMonthPackages) * 100)
-                            : 4
-                        }%`,
-                      }}
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartMonths} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
                     />
-                    <span className="text-[10px] font-medium text-slate-400">
-                      {monthLabel(m.month)}
-                    </span>
-                  </div>
-                ))
+                    <YAxis hide />
+                    <Tooltip
+                      formatter={(value) => [
+                        `${Number(value)} package${Number(value) === 1 ? '' : 's'} settled`,
+                        'Packages',
+                      ]}
+                    />
+                    <Bar dataKey="packages" fill="currentColor" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="w-full text-center text-[11px] text-slate-400 self-center">
+                <div className="flex h-full w-full items-center justify-center text-center text-xs text-slate-500">
                   {earnings.isPending ? 'Loading the monthly series…' : 'No settled packages yet'}
                 </div>
               )}
@@ -999,7 +998,7 @@ export const VendorDashboardPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">Gross Volume</span>
-                <span className="rounded border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                <span className="rounded border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                   {salesTimeRange === '30D' ? 'Last month' : salesTimeRange === '3M' ? 'Last 3 months' : 'Year to date'}
                 </span>
               </div>
@@ -1017,27 +1016,24 @@ export const VendorDashboardPage: React.FC = () => {
             <div className="mt-6">
               <div className="h-28 w-full">
                 {months.length > 1 && maxMonthGross > 0 ? (
-                  <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="h-full w-full overflow-visible">
-                    <polyline
-                      fill="none"
-                      strokeWidth="2.5"
-                      className="stroke-sun-orange"
-                      points={months
-                        .map((m, i) => {
-                          const x = (i / (months.length - 1)) * 290 + 5;
-                          const y = 90 - (m.gross / maxMonthGross) * 75;
-                          return `${x.toFixed(1)},${y.toFixed(1)}`;
-                        })
-                        .join(' ')}
-                    />
-                    {months.map((m, i) => {
-                      const x = (i / (months.length - 1)) * 290 + 5;
-                      const y = 90 - (m.gross / maxMonthGross) * 75;
-                      return <circle key={m.month} cx={x} cy={y} r="3" className="fill-sun-orange" />;
-                    })}
-                  </svg>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartMonths} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                      <XAxis dataKey="label" hide />
+                      <YAxis hide domain={[0, 'dataMax']} />
+                      <Tooltip formatter={(value) => [formatPrice(Number(value)), 'Gross settled']} />
+                      <Area
+                        type="monotone"
+                        dataKey="gross"
+                        stroke="var(--color-sun-orange)"
+                        strokeWidth={2.5}
+                        fill="var(--color-sun-orange)"
+                        fillOpacity={0.12}
+                        dot={{ r: 3, fill: 'var(--color-sun-orange)', strokeWidth: 0 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[11px] text-slate-400">
+                  <div className="flex h-full items-center justify-center text-xs text-slate-500">
                     {earnings.isPending
                       ? 'Loading the volume series…'
                       : months.length === 1
@@ -1046,7 +1042,7 @@ export const VendorDashboardPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="mt-2 flex justify-between text-[10px] text-slate-400 font-medium">
+              <div className="mt-2 flex justify-between text-xs text-slate-500 font-medium">
                 {months.length > 0 ? (
                   <>
                     <span>{monthLabel(months[0].month)}</span>
@@ -1068,7 +1064,7 @@ export const VendorDashboardPage: React.FC = () => {
                   {formatPrice(kpis.netPayoutNum)} / {formatPrice(kpis.grossSalesNum)}
                 </span>
               </div>
-              <div className="mt-1 flex justify-between text-[11px] text-slate-400">
+              <div className="mt-1 flex justify-between text-xs text-slate-500">
                 <span>Net payout yield</span>
                 <span className="font-medium text-emerald-600 dark:text-emerald-400">
                   {netRetentionPct ? `${netRetentionPct}% net retained` : 'nothing booked yet'}
@@ -1085,7 +1081,7 @@ export const VendorDashboardPage: React.FC = () => {
                   { label: `Platform Commission (${commissionPct}%)`, pct: commissionPct, color: 'bg-orange-500' },
                 ].map((item) => (
                   <div key={item.label}>
-                    <div className="flex justify-between text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    <div className="flex justify-between text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       <span>{item.label}</span>
                       <span className="font-semibold text-slate-900 dark:text-slate-100">{item.pct}%</span>
                     </div>
@@ -1098,11 +1094,11 @@ export const VendorDashboardPage: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-[11px] text-slate-400">
+                <p className="text-xs text-slate-500">
                   Retention is shown once the store has booked its first package.
                 </p>
               )}
-              <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
                 <span>Payout schedule</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 capitalize">
                   {activeProfile?.payoutSchedule ?? 'not set'} ·{' '}
@@ -1169,31 +1165,51 @@ export const VendorDashboardPage: React.FC = () => {
           {/* Settled gross and net payout per calendar month, both from `vendor_earnings`. */}
           <div className="mt-6 h-56 w-full">
             {months.length > 0 && maxMonthGross > 0 ? (
-              <svg viewBox="0 0 900 200" preserveAspectRatio="none" className="h-full w-full overflow-visible">
-                <defs>
-                  <linearGradient id="vendorGrossGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" style={{ stopColor: 'var(--color-sun-orange)' }} stopOpacity="0.25" />
-                    <stop offset="100%" style={{ stopColor: 'var(--color-sun-orange)' }} stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-
-                <polygon
-                  points={`5,190 ${grossPoints} 895,190`}
-                  fill="url(#vendorGrossGrad)"
-                />
-                <polyline
-                  points={grossPoints}
-                  fill="none"
-                  strokeWidth="2.5"
-                  className="stroke-sun-orange"
-                />
-                <polyline
-                  points={netPoints}
-                  fill="none"
-                  stroke="#3B82F6"
-                  strokeWidth="2"
-                />
-              </svg>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartMonths} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
+                  <defs>
+                    <linearGradient id="vendorGrossGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FF7A1A" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="#FF7A1A" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={axisPrice}
+                    width={48}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      formatPrice(Number(value)),
+                      name === 'gross' ? 'Gross settled' : 'Net payout',
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="net"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                    fill="#3B82F6"
+                    fillOpacity={0.06}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="gross"
+                    stroke="var(--color-sun-orange)"
+                    strokeWidth={2.5}
+                    fill="url(#vendorGrossGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
                 {earnings.isPending
@@ -1201,13 +1217,6 @@ export const VendorDashboardPage: React.FC = () => {
                   : 'Nothing has settled yet - this chart fills in as payouts are booked.'}
               </div>
             )}
-          </div>
-
-          {/* X-axis month labels */}
-          <div className="mt-3 flex justify-between text-[10px] text-slate-400 font-medium px-1">
-            {months.map((m) => (
-              <span key={m.month}>{monthLabel(m.month)}</span>
-            ))}
           </div>
 
           {/* Legend */}
@@ -1220,7 +1229,7 @@ export const VendorDashboardPage: React.FC = () => {
               <span className="h-2.5 w-2.5 rounded-xs bg-blue-500" />
               <span className="font-medium text-slate-500 dark:text-slate-400">Net payout</span>
             </div>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-xs text-slate-500">
               Lifetime split: {formatPrice(physicalSales)} physical ·{' '}
               {formatPrice(digitalSales)} digital
             </span>
@@ -1238,7 +1247,7 @@ export const VendorDashboardPage: React.FC = () => {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600">
                   <Clock className="h-4 w-4" />
                 </div>
-                <span className="rounded-full border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                <span className="rounded-full border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300">
                   {placedCount} Pending
                 </span>
               </div>
@@ -1281,7 +1290,7 @@ export const VendorDashboardPage: React.FC = () => {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600">
                   <Boxes className="h-4 w-4" />
                 </div>
-                <span className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">
+                <span className="rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300">
                   {confirmedCount} in Queue
                 </span>
               </div>
@@ -1328,7 +1337,7 @@ export const VendorDashboardPage: React.FC = () => {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600">
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <span className="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                <span className="rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                   {readyCount} Staged
                 </span>
               </div>
@@ -1449,7 +1458,7 @@ export const VendorDashboardPage: React.FC = () => {
                         {error ? 'This queue is unknown - the read failed' : 'No customer sub-orders yet'}
                       </p>
                       {!error && (
-                        <p className="text-[11px] text-slate-400">Incoming buyer orders for {storeName} will appear here in real-time.</p>
+                        <p className="text-xs text-slate-500">Incoming buyer orders for {storeName} will appear here in real-time.</p>
                       )}
                     </div>
                   }
@@ -1489,7 +1498,7 @@ export const VendorDashboardPage: React.FC = () => {
               <div className="mt-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-xs font-bold text-slate-500">
                       Booked by buyers
                     </span>
                     <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
@@ -1500,7 +1509,7 @@ export const VendorDashboardPage: React.FC = () => {
                     {liveListings} approved {liveListings === 1 ? 'listing' : 'listings'}
                   </span>
                 </div>
-                <p className="mt-2 text-[10px] text-slate-400">
+                <p className="mt-2 text-xs text-slate-500">
                   Includes freight, which the commission is not taken on ·{' '}
                   {formatPrice(kpis.commissionDeductedNum)} commission ·{' '}
                   {formatPrice(kpis.netPayoutNum)} net to the store
@@ -1512,7 +1521,7 @@ export const VendorDashboardPage: React.FC = () => {
                 {dashboard.isPending ? (
                   <div className="py-8 text-center text-slate-400">
                     <Boxes className="h-6 w-6 mx-auto mb-2 opacity-40 animate-pulse" />
-                    <p className="text-[10px] text-slate-400">Reading your delivered sales…</p>
+                    <p className="text-xs text-slate-500">Reading your delivered sales…</p>
                   </div>
                 ) : topProducts.length === 0 ? (
                   <div className="py-8 text-center text-slate-400">
@@ -1520,7 +1529,7 @@ export const VendorDashboardPage: React.FC = () => {
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                       No delivered sales yet
                     </p>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-xs text-slate-500">
                       A listing ranks here once its package is delivered, or a digital key is
                       issued.
                     </p>
@@ -1532,7 +1541,7 @@ export const VendorDashboardPage: React.FC = () => {
                         <span className="font-bold text-slate-400 text-xs w-4">#{idx + 1}</span>
                         <div className="min-w-0">
                           <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-sun-orange transition-colors">{p.title}</div>
-                          <div className="text-[10px] text-slate-400">
+                          <div className="text-xs text-slate-500">
                             {p.units} {p.units === 1 ? 'unit' : 'units'} delivered
                           </div>
                         </div>
@@ -1570,13 +1579,13 @@ export const VendorDashboardPage: React.FC = () => {
                     {soldOutListings > 0 ? ` · ${soldOutListings} sold out` : ' · none sold out'}
                   </p>
                   {tiles && aggregateLowStock !== lowStockProducts.length && (
-                    <p className="mt-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                    <p className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
                       The store aggregate counted {aggregateLowStock} at its own moment; this
                       catalog read holds {lowStockProducts.length}.
                     </p>
                   )}
                 </div>
-                <span className={`rounded px-2 py-0.5 text-[10px] font-bold border ${
+                <span className={`rounded px-2 py-0.5 text-xs font-bold border ${
                   restockProducts.length > 0
                     ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60'
                     : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
@@ -1590,7 +1599,7 @@ export const VendorDashboardPage: React.FC = () => {
                   <div className="py-6 text-center text-slate-400">
                     <CheckCircle2 className="h-6 w-6 text-emerald-500 mx-auto mb-2" />
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Catalog Inventory Healthy</p>
-                    <p className="text-[10px] text-slate-400">All {products.length} catalog listings are above the {LOW_STOCK_AT} unit reorder threshold.</p>
+                    <p className="text-xs text-slate-500">All {products.length} catalog listings are above the {LOW_STOCK_AT} unit reorder threshold.</p>
                   </div>
                 ) : (
                   restockProducts.slice(0, 4).map((item, idx) => (
@@ -1599,11 +1608,11 @@ export const VendorDashboardPage: React.FC = () => {
                         <span className="font-mono text-slate-400 font-bold">0{idx + 1}</span>
                         <div>
                           <div className="font-bold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-xs">{item.title}</div>
-                          <div className="text-[10px] text-slate-400">{item.brand || item.category}</div>
+                          <div className="text-xs text-slate-500">{item.brand || item.category}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-bold border ${
                           item.stock === 0
                             ? 'bg-rose-50 text-rose-700 border-rose-200'
                             : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -1659,7 +1668,7 @@ export const VendorDashboardPage: React.FC = () => {
                         <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">
                           {act.title}
                         </p>
-                        <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5">
+                        <p className="text-xs text-slate-500 truncate leading-tight mt-0.5">
                           {act.meta}
                         </p>
                       </div>

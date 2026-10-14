@@ -769,7 +769,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                 <div className="space-y-4 py-2 text-xs">
                   <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 border border-slate-100">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      <span className="text-[10px] font-bold text-slate-400 block mb-1">
                         Billed To
                       </span>
                       <p className="font-bold text-slate-900">{order.shippingAddress?.fullName ?? 'Digital delivery'}</p>
@@ -784,7 +784,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      <span className="text-[10px] font-bold text-slate-400 block mb-1">
                         Marketplace Facilitator
                       </span>
                       <p className="font-bold text-slate-900">Vendora Marketplace</p>

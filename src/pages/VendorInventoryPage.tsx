@@ -588,7 +588,7 @@ export const VendorInventoryPage: React.FC = () => {
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
               <table className="w-full text-left border-collapse text-xs" aria-label="Physical listings and stock levels">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 font-bold uppercase tracking-wider text-slate-500 text-[11px]">
+                  <tr className="border-b border-slate-100 bg-slate-50/60 font-bold text-slate-500 text-[11px]">
                     <th scope="col" className="p-4">
                       Product Details
                       <span className="sr-only">Product &amp; Variant</span>

@@ -81,7 +81,7 @@ const FacetSections: React.FC<FacetSectionsProps> = ({
     <>
       {/* Category */}
       <div className="space-y-1.5 pt-2">
-        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
           Category
         </h4>
         <button
@@ -113,7 +113,7 @@ const FacetSections: React.FC<FacetSectionsProps> = ({
       {/* Brand — options read from the approved catalogue itself */}
       {brands.length > 0 && (
         <div className="space-y-1.5 pt-2">
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
             Brand
           </h4>
           <div className="max-h-44 space-y-1.5 overflow-y-auto pr-1">
@@ -147,7 +147,7 @@ const FacetSections: React.FC<FacetSectionsProps> = ({
 
       {/* Minimum rating */}
       <div className="space-y-1.5 pt-2">
-        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
           Rating
         </h4>
         {RATING_OPTIONS.map((option) => {
@@ -174,7 +174,7 @@ const FacetSections: React.FC<FacetSectionsProps> = ({
 
       {/* Availability */}
       <div className="space-y-2 pt-2">
-        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
           Availability
         </h4>
         <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -463,7 +463,7 @@ export const ProductsPage: React.FC = () => {
                 <div className="font-outfit text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-none">
                   {total.toLocaleString()}
                 </div>
-                <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mt-1">
+                <div className="text-[10px] font-extrabold text-slate-400 mt-1">
                   Products
                 </div>
               </div>
@@ -490,7 +490,7 @@ export const ProductsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-[11px] font-bold text-slate-400 hover:text-sun-orange transition-colors cursor-pointer uppercase tracking-wider"
+                className="text-[11px] font-bold text-slate-400 hover:text-sun-orange transition-colors cursor-pointer"
               >
                 Reset All
               </button>
@@ -509,7 +509,7 @@ export const ProductsPage: React.FC = () => {
 
             {/* Price Range Filter — min/max are real server-side bounds */}
             <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+              <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
                 Price Range ({currencyConfig.code})
               </h4>
               <div className="flex items-center gap-2 text-xs">
@@ -738,7 +738,7 @@ export const ProductsPage: React.FC = () => {
                       </Link>
 
                       <div className="flex-1 min-w-0 space-y-1.5 text-left">
-                        <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        <div className="text-[10px] font-black text-slate-400">
                           {product.category}
                         </div>
                         <Link to={`/products/${product.id}`}>
@@ -924,7 +924,7 @@ export const ProductsPage: React.FC = () => {
                   <h5 className="font-bold text-xs uppercase text-slate-400">Price ({currencyConfig.code})</h5>
                   <div className="flex items-center gap-2 text-xs">
                     <div className="flex-1">
-                      <label htmlFor="m-min-price" className="block text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">
+                      <label htmlFor="m-min-price" className="block text-[10px] font-bold text-slate-400 mb-1">
                         Min ({currencyConfig.symbol})
                       </label>
                       <input
@@ -940,7 +940,7 @@ export const ProductsPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1">
-                      <label htmlFor="m-max-price" className="block text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">
+                      <label htmlFor="m-max-price" className="block text-[10px] font-bold text-slate-400 mb-1">
                         Max ({currencyConfig.symbol})
                       </label>
                       <input

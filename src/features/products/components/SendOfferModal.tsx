@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Tag } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
+import { useOverlayA11y } from '../../../hooks/useOverlayA11y';
 
 interface SendOfferModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const { formatPrice, config: currencyConfig } = useCurrency();
+  const panelRef = useOverlayA11y<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -37,7 +39,14 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Send price offer"
+        className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+      >
         <button
           onClick={onClose}
           className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"

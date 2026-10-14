@@ -175,7 +175,7 @@ const panelClass =
 const inputClass =
   'mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-sun-orange';
 const labelClass = 'block text-xs font-bold text-slate-700 dark:text-slate-300';
-const chipClass = 'rounded-full px-2 py-0.5 text-[10px] font-bold';
+const chipClass = 'rounded-full px-2 py-0.5 text-xs font-bold';
 
 const Banner: React.FC<{
   tone: 'success' | 'error' | 'info';
@@ -246,7 +246,7 @@ const AsyncBlock: React.FC<{
     return (
       <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-5 space-y-1.5">
         <h4 className="font-outfit text-xs font-bold text-slate-900 dark:text-white">{emptyTitle}</h4>
-        <p className="text-[11px] text-slate-500 leading-relaxed">{emptyMessage}</p>
+        <p className="text-xs text-slate-500 leading-relaxed">{emptyMessage}</p>
       </div>
     );
   }
@@ -822,7 +822,7 @@ export const AccountProfilePage: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-outfit text-xs font-bold text-slate-900 dark:text-white">Returns, refunds &amp; disputes</h4>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-xs text-slate-500">
                   Manage eligible returns and track refund progress.{' '}
                   <Link to="/refund-policy" className="font-bold text-sun-orange hover:underline">
                     Refund policy
@@ -851,13 +851,13 @@ export const AccountProfilePage: React.FC = () => {
               className="text-left cursor-pointer rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 hover:border-orange-200 transition-colors"
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">In progress</span>
+                <span className="text-xs font-bold uppercase tracking-wider">In progress</span>
                 <Truck className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
                 {ordersQuery.isLoading || ordersUnavailable ? '—' : activePackages.length}
               </div>
-              <span className="text-[11px] font-semibold text-sun-orange">Placed, in transit, or in a return</span>
+              <span className="text-xs font-semibold text-sun-orange">Placed, in transit, or in a return</span>
             </button>
 
             <button
@@ -867,13 +867,13 @@ export const AccountProfilePage: React.FC = () => {
               className="text-left cursor-pointer rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 hover:border-purple-200 transition-colors"
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Delivered</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Delivered</span>
                 <CheckCircle2 className="h-4 w-4 text-purple-500" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
                 {ordersQuery.isLoading || ordersUnavailable ? '—' : deliveredPackages.length}
               </div>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-xs text-slate-500">
                 {ordersQuery.isLoading || ordersUnavailable
                   ? 'Your packages'
                   : `${returnablePackages.length} eligible for a return`}
@@ -889,13 +889,13 @@ export const AccountProfilePage: React.FC = () => {
               className="text-left cursor-pointer rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 hover:border-rose-200 transition-colors"
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Undelivered value</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Undelivered value</span>
                 <Lock className="h-4 w-4 text-rose-500" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">
                 {ordersQuery.isLoading || ordersUnavailable ? '—' : formatPrice(inProgressTotal)}
               </div>
-              <span className="text-[11px] text-slate-500">Subtotal + shipping on open packages</span>
+              <span className="text-xs text-slate-500">Subtotal + shipping on open packages</span>
             </button>
 
             <Link
@@ -904,11 +904,11 @@ export const AccountProfilePage: React.FC = () => {
               className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 hover:border-rose-200 transition-colors block"
             >
               <div className="flex items-center justify-between text-slate-400 mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Saved Wishlist</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Saved Wishlist</span>
                 <Heart className="h-4 w-4 text-rose-400" aria-hidden="true" />
               </div>
               <div className="font-outfit text-2xl font-black text-slate-900 dark:text-white">{wishlistCount}</div>
-              <span className="text-[11px] text-slate-500">Items on your saved list</span>
+              <span className="text-xs text-slate-500">Items on your saved list</span>
             </Link>
           </div>
         </div>
@@ -950,8 +950,8 @@ export const AccountProfilePage: React.FC = () => {
                       <span
                         className={
                           selected
-                            ? 'text-[10px] text-white/90 font-semibold'
-                            : 'text-[10px] text-slate-400 dark:text-slate-500 font-semibold'
+                            ? 'text-xs text-white/90 font-semibold'
+                            : 'text-xs text-slate-500 dark:text-slate-500 font-semibold'
                         }
                       >
                         {tabHints[tab.key]}
@@ -1016,15 +1016,15 @@ export const AccountProfilePage: React.FC = () => {
                               onChange={handleAvatarPick}
                               disabled={avatarBusy}
                             />
-                            <span className="text-[11px] text-slate-500">JPG, PNG or WebP, up to 2 MB.</span>
+                            <span className="text-xs text-slate-500">JPG, PNG or WebP, up to 2 MB.</span>
                           </div>
                           {avatarError && (
-                            <p role="alert" className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                            <p role="alert" className="text-xs font-bold text-rose-600 dark:text-rose-400">
                               {avatarError}
                             </p>
                           )}
                           {avatarNotice && (
-                            <p role="status" className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                            <p role="status" className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                               {avatarNotice}
                             </p>
                           )}
@@ -1045,7 +1045,7 @@ export const AccountProfilePage: React.FC = () => {
                             onChange={(event) => setNameDraft(event.target.value)}
                             className={inputClass}
                           />
-                          <p className="mt-1 text-[11px] text-slate-500">
+                          <p className="mt-1 text-xs text-slate-500">
                             Saved as <code className="font-mono">profiles.name</code> through the session layer, then
                             re-read from the server.
                           </p>
@@ -1067,7 +1067,7 @@ export const AccountProfilePage: React.FC = () => {
                           />
                           {isVendorAccount ? (
                             <>
-                              <p className="mt-1 text-[11px] text-slate-500">
+                              <p className="mt-1 text-xs text-slate-500">
                                 Seller accounts can&apos;t change their sign-in email here — the address is tied to
                                 your store, payouts and order records, so an admin has to make this change for you.
                               </p>
@@ -1083,24 +1083,24 @@ export const AccountProfilePage: React.FC = () => {
                               role="status"
                               className="mt-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/30 p-3.5 space-y-1.5"
                             >
-                              <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+                              <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
                                 Confirmation sent to {emailSentTo}
                               </p>
-                              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                              <p className="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">
                                 Open the link in that inbox to finish. Your sign-in email only changes once you do —
                                 until then, keep signing in with {user.email}.
                               </p>
                               <button
                                 type="button"
                                 onClick={() => setEmailSentTo(null)}
-                                className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 underline"
+                                className="text-xs font-bold text-emerald-800 dark:text-emerald-300 underline"
                               >
                                 Use a different email
                               </button>
                             </div>
                           ) : (
                             <>
-                              <p className="mt-1 text-[11px] text-slate-500">
+                              <p className="mt-1 text-xs text-slate-500">
                                 To change it, enter the new address below. We email it a confirmation link, and the
                                 change only takes effect once that link is opened.
                               </p>
@@ -1133,7 +1133,7 @@ export const AccountProfilePage: React.FC = () => {
                                 </Button>
                               </div>
                               {emailError && (
-                                <p role="alert" className="mt-1.5 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                                <p role="alert" className="mt-1.5 text-xs font-bold text-rose-600 dark:text-rose-400">
                                   {emailError}
                                 </p>
                               )}
@@ -1164,7 +1164,7 @@ export const AccountProfilePage: React.FC = () => {
                       </div>
 
                       <div className="border-t border-slate-100 dark:border-slate-800 pt-5 flex flex-wrap items-center gap-3">
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           Your password is changed under Security, along with what this account cannot change.
                         </p>
                         <Button
@@ -1184,31 +1184,31 @@ export const AccountProfilePage: React.FC = () => {
                 {/* Quick cards, both derived from real order rows */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-5 shadow-sm space-y-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-500">
                       Most Recent Delivery Address
                     </span>
                     {ordersQuery.isLoading ? (
-                      <p className="text-[11px] text-slate-500" role="status" aria-live="polite">
+                      <p className="text-xs text-slate-500" role="status" aria-live="polite">
                         Loading your orders…
                       </p>
                     ) : ordersQuery.isError ? (
-                      <p className="text-[11px] text-rose-600 font-bold" role="alert" aria-live="assertive">{messageOf(ordersQuery.error)}</p>
+                      <p className="text-xs text-rose-600 font-bold" role="alert" aria-live="assertive">{messageOf(ordersQuery.error)}</p>
                     ) : addressEntries[0] ? (
                       <>
                         <h4 className="font-outfit text-xs font-bold text-slate-900 dark:text-white">
                           {addressEntries[0].street}
                         </h4>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           {[addressEntries[0].city, addressEntries[0].state].filter(Boolean).join(' • ')}
                           {addressEntries[0].phone ? ` • ${addressEntries[0].phone}` : ''}
                         </p>
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-xs text-slate-500">
                           Used on {addressEntries[0].orders} order{addressEntries[0].orders === 1 ? '' : 's'}, last on{' '}
                           {dateOf(addressEntries[0].lastUsedAt)}
                         </p>
                       </>
                     ) : (
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-xs text-slate-500">
                         No delivered address yet — orders set their address at checkout.
                       </p>
                     )}
@@ -1222,15 +1222,15 @@ export const AccountProfilePage: React.FC = () => {
                   </div>
 
                   <div className="rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-5 shadow-sm space-y-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-500">
                       Most Recent Payment Method
                     </span>
                     {ordersQuery.isLoading ? (
-                      <p className="text-[11px] text-slate-500" role="status" aria-live="polite">
+                      <p className="text-xs text-slate-500" role="status" aria-live="polite">
                         Loading your orders…
                       </p>
                     ) : ordersQuery.isError ? (
-                      <p className="text-[11px] text-rose-600 font-bold" role="alert" aria-live="assertive">{messageOf(ordersQuery.error)}</p>
+                      <p className="text-xs text-rose-600 font-bold" role="alert" aria-live="assertive">{messageOf(ordersQuery.error)}</p>
                     ) : paymentEntries[0] ? (
                       <>
                         <h4 className="font-outfit text-xs font-bold text-slate-900 dark:text-white">
@@ -1238,13 +1238,13 @@ export const AccountProfilePage: React.FC = () => {
                             ? 'Cash on delivery'
                             : `${paymentEntries[0].brand || 'Card'}${paymentEntries[0].last4 ? ` ending ${paymentEntries[0].last4}` : ''}`}
                         </h4>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           Used on {paymentEntries[0].orders} order{paymentEntries[0].orders === 1 ? '' : 's'}, last on{' '}
                           {dateOf(paymentEntries[0].lastUsedAt)}
                         </p>
                       </>
                     ) : (
-                      <p className="text-[11px] text-slate-500">No payment recorded on any order yet.</p>
+                      <p className="text-xs text-slate-500">No payment recorded on any order yet.</p>
                     )}
                     <button
                       type="button"
@@ -1335,7 +1335,7 @@ export const AccountProfilePage: React.FC = () => {
                                 {pkg.items[0]?.title || 'Package contents'}
                                 {pkg.items.length > 1 ? ` + ${pkg.items.length - 1} more` : ''}
                               </h4>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-xs text-slate-500">
                                 {pkg.sellerName || 'Seller'} • placed {dateOf(pkg.createdAt)}
                                 {pkg.carrierName && pkg.trackingNumber
                                   ? ` • ${pkg.carrierName} ${pkg.trackingNumber}`
@@ -1353,7 +1353,7 @@ export const AccountProfilePage: React.FC = () => {
                       ))}
                     </ul>
                     {subOrders.length > 8 && (
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-xs text-slate-500">
                         Showing your 8 most recent packages of {subOrders.length}.
                       </p>
                     )}
@@ -1400,7 +1400,7 @@ export const AccountProfilePage: React.FC = () => {
                   )}
 
                   <div className="space-y-4">
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <h3 className="font-outfit text-xs font-bold text-slate-400">
                       Delivered packages you can return
                     </h3>
                     <AsyncBlock
@@ -1441,7 +1441,7 @@ export const AccountProfilePage: React.FC = () => {
                                 <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                   {pkg.items[0]?.title || pkg.sellerName}
                                 </h4>
-                                <p className="text-[11px] text-slate-500">
+                                <p className="text-xs text-slate-500">
                                   Order #{pkg.orderGroupId} • {formatPrice(grossOf(pkg))}
                                 </p>
                               </div>
@@ -1460,7 +1460,7 @@ export const AccountProfilePage: React.FC = () => {
                   </div>
 
                   <div className="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-5">
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <h3 className="font-outfit text-xs font-bold text-slate-400">
                       Returns in progress on your account
                     </h3>
                     {ordersQuery.isLoading ? (
@@ -1468,7 +1468,7 @@ export const AccountProfilePage: React.FC = () => {
                         Loading…
                       </p>
                     ) : openReturns.length === 0 ? (
-                      <p className="text-[11px] text-slate-500">No return is waiting on a decision right now.</p>
+                      <p className="text-xs text-slate-500">No return is waiting on a decision right now.</p>
                     ) : (
                       <ul className="space-y-2">
                         {openReturns.map((pkg) => (
@@ -1480,11 +1480,11 @@ export const AccountProfilePage: React.FC = () => {
                               <span className="font-mono text-xs font-bold text-slate-900 dark:text-white">
                                 {pkg.id.slice(0, 8)}
                               </span>
-                              <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 truncate">
+                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 truncate">
                                 {pkg.items[0]?.title || pkg.sellerName} • Order #{pkg.orderGroupId}
                               </p>
                               {pkg.returnReason && (
-                                <p className="text-[11px] text-slate-500 mt-0.5">Reason on file: {pkg.returnReason}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Reason on file: {pkg.returnReason}</p>
                               )}
                             </div>
                             <span className={`${chipClass} bg-amber-200 text-amber-900 shrink-0`}>
@@ -1494,7 +1494,7 @@ export const AccountProfilePage: React.FC = () => {
                         ))}
                       </ul>
                     )}
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       Refund amounts and return decisions are written by the seller and the support desk; this page only
                       requests the return. See the{' '}
                       <Link to="/refund-policy" className="font-bold text-sun-orange hover:underline">
@@ -1586,13 +1586,13 @@ export const AccountProfilePage: React.FC = () => {
                     <p className="text-xs text-slate-500">Loading your saved addresses…</p>
                   ) : addressesQuery.isError ? (
                     <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/20 p-4 space-y-2">
-                      <p className="text-[11px] text-rose-600 font-bold" role="alert" aria-live="assertive">
+                      <p className="text-xs text-rose-600 font-bold" role="alert" aria-live="assertive">
                         {messageOf(addressesQuery.error)}
                       </p>
                       <button
                         type="button"
                         onClick={() => void addressesQuery.refetch()}
-                        className="text-[11px] font-bold text-sun-orange hover:underline cursor-pointer"
+                        className="text-xs font-bold text-sun-orange hover:underline cursor-pointer"
                       >
                         Retry
                       </button>
@@ -1633,24 +1633,24 @@ export const AccountProfilePage: React.FC = () => {
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
                                 {addr.type === 'home' ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-2.5 py-0.5 text-[11px] font-bold">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-2.5 py-0.5 text-xs font-bold">
                                     <Home className="h-3 w-3" />
                                     <span>Home</span>
                                   </span>
                                 ) : addr.type === 'work' ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50 px-2.5 py-0.5 text-[11px] font-bold">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50 px-2.5 py-0.5 text-xs font-bold">
                                     <Building2 className="h-3 w-3" />
                                     <span>Work</span>
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 text-[11px] font-bold">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 text-xs font-bold">
                                     <MapPin className="h-3 w-3" />
                                     <span>{addr.label || 'Other'}</span>
                                   </span>
                                 )}
 
                                 {addr.isDefault && (
-                                  <span className="rounded-full bg-sun-orange/10 text-sun-orange border border-sun-orange/30 px-2 py-0.5 text-[10px] font-bold">
+                                  <span className="rounded-full bg-sun-orange/10 text-sun-orange border border-sun-orange/30 px-2 py-0.5 text-xs font-bold">
                                     Default
                                   </span>
                                 )}
@@ -1692,7 +1692,7 @@ export const AccountProfilePage: React.FC = () => {
                               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                 {addr.street}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-xs text-slate-500">
                                 {[addr.city, addr.state, addr.zipCode, addr.country].filter(Boolean).join(', ')}
                               </p>
                             </div>
@@ -1702,7 +1702,7 @@ export const AccountProfilePage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => addressActions.setDefault.mutate(addr.id)}
-                                  className="text-[11px] font-bold text-sun-orange hover:underline cursor-pointer"
+                                  className="text-xs font-bold text-sun-orange hover:underline cursor-pointer"
                                 >
                                   Set as default address
                                 </button>
@@ -1717,10 +1717,10 @@ export const AccountProfilePage: React.FC = () => {
                   {addressEntries.length > 0 && (
                     <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
                       <div>
-                        <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <h3 className="font-outfit text-xs font-bold text-slate-500 dark:text-slate-400">
                           Addresses From Previous Orders
                         </h3>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           Historic delivery snapshots recorded from your booked orders.
                         </p>
                       </div>
@@ -1747,16 +1747,16 @@ export const AccountProfilePage: React.FC = () => {
                                   setAddressZipCode(entry.zipCode || '');
                                   setAddressCountry(entry.country || 'Pakistan');
                                 }}
-                                className="text-[10px] font-bold text-sun-orange hover:underline cursor-pointer"
+                                className="text-xs font-bold text-sun-orange hover:underline cursor-pointer"
                               >
                                 + Save as Home/Work
                               </button>
                             </div>
-                            <p className="text-slate-600 dark:text-slate-400 text-[11px]">{entry.street}</p>
-                            <p className="text-[11px] text-slate-500">
+                            <p className="text-slate-600 dark:text-slate-400 text-xs">{entry.street}</p>
+                            <p className="text-xs text-slate-500">
                               {[entry.city, entry.state, entry.zipCode, entry.country].filter(Boolean).join(', ')}
                             </p>
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-xs text-slate-500">
                               Used on {entry.orders} order{entry.orders === 1 ? '' : 's'} • last {dateOf(entry.lastUsedAt)}
                             </p>
                           </li>
@@ -1810,13 +1810,13 @@ export const AccountProfilePage: React.FC = () => {
                     <p className="text-xs text-slate-500">Loading your saved payment methods…</p>
                   ) : paymentsQuery.isError ? (
                     <div className="rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-950/20 p-4 space-y-2">
-                      <p className="text-[11px] text-rose-600 font-bold" role="alert" aria-live="assertive">
+                      <p className="text-xs text-rose-600 font-bold" role="alert" aria-live="assertive">
                         {messageOf(paymentsQuery.error)}
                       </p>
                       <button
                         type="button"
                         onClick={() => void paymentsQuery.refetch()}
-                        className="text-[11px] font-bold text-sun-orange hover:underline cursor-pointer"
+                        className="text-xs font-bold text-sun-orange hover:underline cursor-pointer"
                       >
                         Retry
                       </button>
@@ -1864,7 +1864,7 @@ export const AccountProfilePage: React.FC = () => {
                                     : `${pm.brand} •••• ${pm.last4}`}
                                 </h4>
                                 {pm.cardholderName && (
-                                  <p className="text-[11px] text-slate-500">{pm.cardholderName}</p>
+                                  <p className="text-xs text-slate-500">{pm.cardholderName}</p>
                                 )}
                               </div>
                             </div>
@@ -1888,7 +1888,7 @@ export const AccountProfilePage: React.FC = () => {
                             </button>
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
                             <div>
                               {pm.expiryMonth && pm.expiryYear ? (
                                 <span>Expires {pm.expiryMonth}/{pm.expiryYear}</span>
@@ -1899,7 +1899,7 @@ export const AccountProfilePage: React.FC = () => {
 
                             <div className="flex items-center gap-2">
                               {pm.isDefault ? (
-                                <span className="rounded-full bg-sun-orange/10 text-sun-orange border border-sun-orange/30 px-2.5 py-0.5 text-[10px] font-bold">
+                                <span className="rounded-full bg-sun-orange/10 text-sun-orange border border-sun-orange/30 px-2.5 py-0.5 text-xs font-bold">
                                   Default
                                 </span>
                               ) : (
@@ -1922,10 +1922,10 @@ export const AccountProfilePage: React.FC = () => {
                   {paymentEntries.length > 0 && (
                     <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
                       <div>
-                        <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <h3 className="font-outfit text-xs font-bold text-slate-500 dark:text-slate-400">
                           Payment Instruments Used On Previous Orders
                         </h3>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           The payment method snapshot recorded on your settled orders.
                         </p>
                       </div>
@@ -1937,7 +1937,7 @@ export const AccountProfilePage: React.FC = () => {
                             className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 p-3.5 text-xs"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[10px]">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs">
                                 {entry.method === 'cod' ? 'COD' : (entry.brand || 'CARD').slice(0, 4).toUpperCase()}
                               </div>
                               <div>
@@ -1946,12 +1946,12 @@ export const AccountProfilePage: React.FC = () => {
                                     ? 'Cash on delivery'
                                     : `${entry.brand || 'Card'}${entry.last4 ? ` ending ${entry.last4}` : ''}`}
                                 </span>
-                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                <p className="text-xs text-slate-500 mt-0.5">
                                   Used on {entry.orders} order{entry.orders === 1 ? '' : 's'} • last {dateOf(entry.lastUsedAt)}
                                 </p>
                               </div>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-500 self-start sm:self-auto">
+                            <span className="text-xs font-bold text-slate-500 self-start sm:self-auto">
                               {entry.method === 'cod' ? 'Settled on delivery' : 'Charged at checkout'}
                             </span>
                           </li>
@@ -2048,7 +2048,7 @@ export const AccountProfilePage: React.FC = () => {
                               {dateOf(caseRow.createdAt)}
                             </p>
                             {caseRow.resolutionNote && (
-                              <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1.5">
+                              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5">
                                 Decision on file: {caseRow.resolutionNote}
                               </p>
                             )}
@@ -2065,7 +2065,7 @@ export const AccountProfilePage: React.FC = () => {
                         </li>
                       ))}
                     </ul>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       Replies happen in the case thread on the seller and support sides; a customer cannot change a case
                       status from here, and this page does not offer a button that pretends to.
                     </p>
@@ -2092,10 +2092,10 @@ export const AccountProfilePage: React.FC = () => {
                   </div>
 
                   <div className="space-y-3 max-w-xl">
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <h3 className="font-outfit text-xs font-bold text-slate-600 dark:text-slate-300">
                       Sign-in credentials
                     </h3>
-                    <ul className="space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
+                    <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
                       <li className="flex items-start gap-2">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
                         <span>
@@ -2114,7 +2114,7 @@ export const AccountProfilePage: React.FC = () => {
                   </div>
 
                   <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-5 space-y-3 max-w-xl">
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <h3 className="font-outfit text-xs font-bold text-slate-600 dark:text-slate-300">
                       Update Account Password
                     </h3>
 
@@ -2156,7 +2156,7 @@ export const AccountProfilePage: React.FC = () => {
                                 onChange={(event) => setConfirmPassword(event.target.value)}
                                 className={inputClass}
                               />
-                              <p className="mt-1 text-[11px] text-slate-500">
+                              <p className="mt-1 text-xs text-slate-500">
                                 No current-password field: this session&rsquo;s token is what proves the request, and the
                                 server enforces the minimum length. Its message appears below if it rejects the password.
                               </p>
@@ -2209,10 +2209,10 @@ export const AccountProfilePage: React.FC = () => {
                   </div>
 
                   <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-5 space-y-2 max-w-xl">
-                    <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <h3 className="font-outfit text-xs font-bold text-slate-600 dark:text-slate-300">
                       Not available on this account
                     </h3>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       Two-factor authentication, biometric passkeys, trusted-device lists and any &ldquo;trust score&rdquo;
                       have no column, policy or function behind them in this product, so no toggle is offered for them —
                       a switch that only moves itself would be a lie about your security posture.
@@ -2223,7 +2223,7 @@ export const AccountProfilePage: React.FC = () => {
                     <h3 className="font-outfit text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
                       Closing your account
                     </h3>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       There is no self-service deletion here: no function, edge function or owner-writable column deletes
                       or anonymises a customer account, and the moderation field on your profile row only holds
                       &ldquo;active&rdquo;, &ldquo;suspended&rdquo; or &ldquo;banned&rdquo; — which an admin sets, not you.
@@ -2249,16 +2249,16 @@ export const AccountProfilePage: React.FC = () => {
           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           <h4 className="font-outfit text-xs font-bold">Buyer Protection &amp; Returns</h4>
         </div>
-        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
           Need help with an item? You can request a return, exchange, or submit an inquiry directly from your
           order details. Our buyer protection ensures prompt resolution and hassle-free refunds.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link to="/returns" className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link to="/returns" className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
             <span>Returns hub</span>
             <ArrowRight className="h-3 w-3" aria-hidden="true" />
           </Link>
-          <Link to="/shipping-policy" className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link to="/shipping-policy" className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
             <span>Shipping policy</span>
             <ArrowRight className="h-3 w-3" aria-hidden="true" />
           </Link>
@@ -2327,7 +2327,7 @@ export const AccountProfilePage: React.FC = () => {
                 ))}
               </select>
               {returnablePackages.length === 0 && (
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className="mt-1 text-xs text-slate-500">
                   You have no delivered physical package to return yet.
                 </p>
               )}
@@ -2353,7 +2353,7 @@ export const AccountProfilePage: React.FC = () => {
             </div>
 
             <fieldset className="rounded-2xl border border-slate-200 dark:border-slate-700 p-3">
-              <legend className="px-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+              <legend className="px-1 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">
                 What you want
               </legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
@@ -2789,7 +2789,7 @@ export const AccountProfilePage: React.FC = () => {
                       Card Number *
                     </label>
                     {cardNumber.length >= 4 && (
-                      <span className="text-[10px] font-bold text-sun-orange">
+                      <span className="text-xs font-bold text-sun-orange">
                         {detectCardBrand(cardNumber)}
                       </span>
                     )}
@@ -2865,7 +2865,7 @@ export const AccountProfilePage: React.FC = () => {
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Cash on Delivery (COD)
                 </h4>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   Save Cash on Delivery as your default checkout choice. You can settle physically when the package is delivered.
                 </p>
               </div>

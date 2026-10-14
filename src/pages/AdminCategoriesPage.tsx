@@ -402,7 +402,7 @@ export const AdminCategoriesPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Categories</span>
+                  <span className="text-[11px] font-bold text-slate-400">Total Categories</span>
                   <div className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
                     <Layers className="h-3.5 w-3.5" />
                   </div>
@@ -415,7 +415,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
               <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Categorized Listings</span>
+                  <span className="text-[11px] font-bold text-slate-400">Categorized Listings</span>
                   <div className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
                     <Package className="h-3.5 w-3.5" />
                   </div>
@@ -426,7 +426,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
               <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Rate Overrides</span>
+                  <span className="text-[11px] font-bold text-slate-400">Rate Overrides</span>
                   <div className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
                     <Percent className="h-3.5 w-3.5" />
                   </div>
@@ -437,7 +437,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
               <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Uncategorized Listings</span>
+                  <span className="text-[11px] font-bold text-slate-400">Uncategorized Listings</span>
                   <div className="flex h-6 w-6 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-600">
                     <AlertTriangle className="h-3.5 w-3.5" />
                   </div>
@@ -497,7 +497,7 @@ export const AdminCategoriesPage: React.FC = () => {
                       className="w-full text-left text-xs"
                       aria-label="Categories and taxonomy"
                     >
-                      <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold text-slate-500">
                         <tr>
                           <th scope="col" className="w-10 px-3 py-3 text-center">#</th>
                           <th scope="col" className="px-4 py-3">Category &amp; Taxonomy</th>

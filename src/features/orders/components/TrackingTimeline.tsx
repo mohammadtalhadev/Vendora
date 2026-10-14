@@ -290,7 +290,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
 
           <div className="mt-5 flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:flex-row sm:items-center">
             <div className="flex items-center gap-3 overflow-hidden">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <span className="text-xs font-semibold text-slate-400">
                 Key:
               </span>
               <code
@@ -580,7 +580,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-4 w-4 text-sun-orange" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                  <span className="text-[11px] font-bold text-slate-800">
                     Delivery Verification PIN
                   </span>
                 </div>
@@ -634,7 +634,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({
       {/* 5. Timestamped Event Log */}
       <div className="border-t border-slate-200/80 pt-5" data-testid="tracking-event-log">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+          <h4 className="flex items-center gap-2 text-xs font-bold text-slate-600">
             <Clock className="h-4 w-4 text-slate-400" />
             <span>Audit History & Event Log ({subOrder.history.length})</span>
           </h4>

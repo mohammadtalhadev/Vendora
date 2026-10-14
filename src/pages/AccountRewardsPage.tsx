@@ -84,13 +84,13 @@ export const AccountRewardsPage: React.FC = () => {
             <div className="mt-4 flex flex-wrap gap-6">
               <div>
                 <p className="font-outfit text-3xl font-black text-slate-900 dark:text-white">{points.toLocaleString()}</p>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Points balance</p>
+                <p className="text-[11px] font-semibold text-slate-400">Points balance</p>
               </div>
               <div>
                 <p className="font-outfit text-3xl font-black text-slate-900 dark:text-white">
                   {rewards.lifetimeEarned.toLocaleString()}
                 </p>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Lifetime earned</p>
+                <p className="text-[11px] font-semibold text-slate-400">Lifetime earned</p>
               </div>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-slate-500">

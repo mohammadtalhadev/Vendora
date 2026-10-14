@@ -861,3 +861,37 @@ html.dark a.text-slate-600:not([class*="dark:text-"]) {
     transition: none !important;
   }
 }
+/* ==========================================================================
+   Accessibility foundation (Batch 49)
+   - Global :focus-visible ring: keyboard focus is always visible, mouse
+     clicks stay ring-free. More specific component styles (ui/button,
+     ui/input focus rings) keep winning where they exist — this is the
+     floor for everything that ships no focus style of its own.
+   - .skip-link: visually hidden until focused, then pinned top-left.
+     Every shell renders one as its first focusable element, targeting
+     #main-content (the <main> of RootLayout and WorkspaceLayout).
+   ========================================================================== */
+:focus-visible {
+  outline: 2px solid var(--color-sun-orange);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  border-radius: 9999px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus-visible {
+  top: 0.75rem;
+  color: #ffffff;
+}

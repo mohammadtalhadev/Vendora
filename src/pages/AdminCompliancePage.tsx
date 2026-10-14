@@ -34,7 +34,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
       <div className="text-2xl font-black text-slate-900">{value.toLocaleString()}</div>
-      <div className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="mt-0.5 text-[11px] font-bold text-slate-500">{label}</div>
     </div>
   );
 }
@@ -218,7 +218,7 @@ export const AdminCompliancePage: React.FC = () => {
                     <Stat label="Resolved · denied" value={data.protection.resolvedDenied} />
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
                       <div className="text-2xl font-black text-slate-900">{formatPrice(data.protection.refundsTotal)}</div>
-                      <div className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                      <div className="mt-0.5 text-[11px] font-bold text-slate-500">
                         Refunded · {data.protection.refundsCount.toLocaleString()} claims
                       </div>
                     </div>

@@ -6,8 +6,29 @@ import { useVendorBalance, useVendorEarnings } from '../features/vendor/hooks/us
 import { useVendorPackages } from '../features/vendor/hooks/useVendorPackages';
 import { StatusBadge } from '../components/ui/status-badge';
 import { formatPrice } from '../store/currency-store';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 const MONTHS = 12;
+
+/** 'YYYY-MM' from the earnings RPC to the month's short name. */
+const monthLabel = (month: string) => {
+  const [year, number] = month.split('-');
+  const date = new Date(Number(year), Number(number) - 1, 1);
+  return Number.isNaN(date.getTime())
+    ? month
+    : date.toLocaleDateString('en-US', { month: 'short' });
+};
+
+/** Compact axis tick: 12k, not 12,000. Full values live in the tooltip. */
+const axisPrice = (value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`);
 
 /**
  * Vendor Analytics (/vendor/analytics). A read-only roll-up of the same
@@ -113,7 +134,7 @@ export const VendorAnalyticsPage: React.FC = () => {
                 },
               ].map((card) => (
                 <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-                  <span className="flex items-center gap-1.5 text-[10px] font-black tracking-wider text-slate-400 uppercase">
+                  <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400">
                     <card.icon className="h-3.5 w-3.5" aria-hidden="true" /> {card.label}
                   </span>
                   <p className="mt-1.5 font-outfit text-2xl font-black text-slate-900">{card.value}</p>
@@ -143,26 +164,37 @@ export const VendorAnalyticsPage: React.FC = () => {
                   complete.
                 </p>
               ) : (
-                <div className="mt-6 flex h-48 items-end gap-2 sm:gap-3" role="img" aria-label="Monthly gross and net earnings chart">
-                  {series.map((m) => (
-                    <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
-                      <div className="flex h-36 w-full items-end justify-center gap-1">
-                        <div
-                          className="w-3 rounded-t bg-slate-300 sm:w-4"
-                          style={{ height: `${Math.max(2, (m.gross / maxGross) * 100)}%` }}
-                          title={`${m.month} gross ${formatPrice(m.gross)}`}
-                        />
-                        <div
-                          className="w-3 rounded-t bg-sun-orange sm:w-4"
-                          style={{ height: `${Math.max(2, (m.net / maxGross) * 100)}%` }}
-                          title={`${m.month} net ${formatPrice(m.net)}`}
-                        />
-                      </div>
-                      <span className="text-[9px] font-bold text-slate-400">
-                        {m.month.slice(0, 3)}
-                      </span>
-                    </div>
-                  ))}
+                <div className="mt-6 h-48 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={series.map((m) => ({ ...m, label: monthLabel(m.month) }))}
+                      margin={{ top: 4, right: 8, bottom: 0, left: 8 }}
+                    >
+                      <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={0}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={axisPrice}
+                        width={40}
+                      />
+                      <Tooltip
+                        formatter={(value, name) => [
+                          formatPrice(Number(value)),
+                          name === 'gross' ? 'Gross' : 'Net after commission',
+                        ]}
+                      />
+                      <Bar dataKey="gross" fill="#cbd5e1" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="net" fill="#FF7A1A" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </section>

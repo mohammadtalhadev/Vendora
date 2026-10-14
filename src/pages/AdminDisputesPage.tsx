@@ -250,7 +250,7 @@ export const AdminDisputesPage: React.FC = () => {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Open Cases</span>
+                  <span className="text-xs font-bold text-slate-500">Open Cases</span>
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                     <Clock className="h-4 w-4" />
                   </div>
@@ -261,7 +261,7 @@ export const AdminDisputesPage: React.FC = () => {
 
               <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Escalated to Admin</span>
+                  <span className="text-xs font-bold text-slate-500">Escalated to Admin</span>
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
                     <ShieldAlert className="h-4 w-4" />
                   </div>
@@ -272,7 +272,7 @@ export const AdminDisputesPage: React.FC = () => {
 
               <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Resolved Cases</span>
+                  <span className="text-xs font-bold text-slate-500">Resolved Cases</span>
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                     <CheckCircle2 className="h-4 w-4" />
                   </div>
@@ -283,7 +283,7 @@ export const AdminDisputesPage: React.FC = () => {
 
               <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Open Exposure</span>
+                  <span className="text-xs font-bold text-slate-500">Open Exposure</span>
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                     <DollarSign className="h-4 w-4" />
                   </div>

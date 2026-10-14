@@ -136,28 +136,28 @@ export const SupportTicketDetailPage: React.FC = () => {
               className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-xs shadow-2xs"
             >
               <span className="inline-flex items-center gap-1.5">
-                <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">Status</span>
+                <span className="text-[10px] font-extrabold text-slate-400">Status</span>
                 <TicketStatusBadge status={ticket.status} />
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">Priority</span>
+                <span className="text-[10px] font-extrabold text-slate-400">Priority</span>
                 <TicketPriorityBadge priority={ticket.priority} />
               </span>
               <span className="inline-flex items-center gap-1.5 text-slate-600">
-                <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">Category</span>
+                <span className="text-[10px] font-extrabold text-slate-400">Category</span>
                 <span className="font-semibold">{categoryLabel(ticket.category)}</span>
               </span>
               <span className="inline-flex items-center gap-1.5 text-slate-600">
-                <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">Customer</span>
+                <span className="text-[10px] font-extrabold text-slate-400">Customer</span>
                 <span className="font-semibold">{ticket.customerName || ticket.customerEmail}</span>
               </span>
               <span className="inline-flex items-center gap-1.5 text-slate-600">
-                <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">Agent</span>
+                <span className="text-[10px] font-extrabold text-slate-400">Agent</span>
                 <span className="font-semibold">{ticket.agentName ?? 'Unassigned'}</span>
               </span>
               {ticket.orderId && (
                 <span className="inline-flex items-center gap-1.5 text-slate-600">
-                  <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">Order</span>
+                  <span className="text-[10px] font-extrabold text-slate-400">Order</span>
                   <span className="font-mono font-semibold">#{ticket.orderId.slice(0, 8).toUpperCase()}</span>
                 </span>
               )}
@@ -211,7 +211,7 @@ export const SupportTicketDetailPage: React.FC = () => {
               <section className="lg:col-span-5">
                 <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
                   <div>
-                    <h3 className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
+                    <h3 className="text-[10px] font-extrabold text-slate-400">
                       Assigned agent
                     </h3>
                     <select
@@ -241,7 +241,7 @@ export const SupportTicketDetailPage: React.FC = () => {
                   </div>
 
                   <div className="border-t border-slate-100 pt-3">
-                    <h3 className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
+                    <h3 className="text-[10px] font-extrabold text-slate-400">
                       Move the ticket
                     </h3>
                     <div className="mt-2 grid grid-cols-2 gap-2">

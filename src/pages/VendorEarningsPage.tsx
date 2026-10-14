@@ -29,6 +29,16 @@ import {
 } from '../components/ui/dialog';
 import { exportToCsv } from '../lib/export-csv';
 import { useVendorBalance, useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
+import {
+  Area,
+  CartesianGrid,
+  Line,
+  ComposedChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 /** The picker's labels mapped onto the months of history `vendor_earnings` reads. */
 const RANGE_MONTHS: Record<'30d' | '90d' | '1y' | 'ytd', number> = {
@@ -40,6 +50,9 @@ const RANGE_MONTHS: Record<'30d' | '90d' | '1y' | 'ytd', number> = {
 
 const money = (value: number) =>
   `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** Compact axis tick for the earnings chart (Batch 49): $12k, not $12,000.00. */
+const axisMoney = (value: number) => (value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${value}`);
 
 /** 'YYYY-MM' from the RPC to the month's short name. */
 const monthLabel = (month: string) => {
@@ -91,17 +104,9 @@ export const VendorEarningsPage: React.FC = () => {
     [series],
   );
 
-  /** A polyline across a 900x200 box, scaled to the biggest month in the window. */
-  const points = (pick: (m: (typeof series)[number]) => number) =>
-    series
-      .map((m, i) => {
-        const x = series.length === 1 ? 450 : (i / (series.length - 1)) * 890 + 5;
-        const y = maxMonth > 0 ? 190 - (pick(m) / maxMonth) * 170 : 190;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
-  const grossPoints = points((m) => m.gross);
-  const netPoints = points((m) => m.net);
+  // Recharts rows (Batch 49 — the hand-plotted SVG polylines are gone;
+  // Recharts scales this same series and adds real axes and tooltips).
+  const chartSeries = series.map((m) => ({ ...m, label: monthLabel(m.month) }));
 
   const filteredLedger = useMemo(
     () =>
@@ -134,7 +139,7 @@ export const VendorEarningsPage: React.FC = () => {
     {
       key: 'settled',
       header: 'SETTLED',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 text-slate-600 font-medium',
       cell: (r) =>
         new Date(r.settledAt).toLocaleDateString('en-US', {
@@ -146,8 +151,8 @@ export const VendorEarningsPage: React.FC = () => {
     {
       key: 'package',
       header: 'PACKAGE',
-      headerClassName: 'text-[11px]',
-      className: 'py-3.5 font-mono text-slate-900 font-bold text-[11px]',
+      headerClassName: 'text-xs',
+      className: 'py-3.5 font-mono text-slate-900 font-bold text-xs',
       cell: (r) => (
         <Link to={`/vendor/orders/${r.id}`} className="hover:underline">
           #{r.id.slice(0, 8)}
@@ -157,10 +162,10 @@ export const VendorEarningsPage: React.FC = () => {
     {
       key: 'type',
       header: 'TYPE',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (r) => (
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 capitalize">
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700 capitalize">
           {r.type}
         </span>
       ),
@@ -168,35 +173,35 @@ export const VendorEarningsPage: React.FC = () => {
     {
       key: 'goods',
       header: 'GOODS',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-semibold text-slate-900',
       cell: (r) => money(r.subtotal),
     },
     {
       key: 'freight',
       header: 'FREIGHT',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 text-slate-500',
       cell: (r) => money(r.shipping),
     },
     {
       key: 'gross',
       header: 'GROSS',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-semibold text-slate-900',
       cell: (r) => money(r.gross),
     },
     {
       key: 'commission',
       header: 'COMMISSION',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-semibold text-rose-600',
       cell: (r) => (r.fees === 0 ? '$0.00' : `-${money(r.fees)}`),
     },
     {
       key: 'net',
       header: 'NET',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5 font-bold',
       cell: (r) => (
         <span className={r.net >= 0 ? 'text-emerald-700' : 'text-rose-600'}>
@@ -208,16 +213,16 @@ export const VendorEarningsPage: React.FC = () => {
       key: 'status',
       header: 'STATUS',
       align: 'right',
-      headerClassName: 'text-[11px]',
+      headerClassName: 'text-xs',
       className: 'py-3.5',
       cell: (r) =>
         isSettled(r.status) ? (
-          <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold text-[11px]">
+          <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold text-xs">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
             Settled
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold text-[11px]">
+          <span className="inline-flex items-center gap-1.5 text-amber-700 font-bold text-xs">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
             {r.status.replace(/_/g, ' ')}
           </span>
@@ -276,7 +281,7 @@ export const VendorEarningsPage: React.FC = () => {
         {/* ── Page Header ───────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-xs font-bold text-slate-500">
               FINANCIAL MANAGEMENT <span className="text-slate-300">/</span> EARNINGS
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -333,7 +338,7 @@ export const VendorEarningsPage: React.FC = () => {
         {/* ── KPI Cards ─────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-bold text-slate-500">
               GROSS BOOKED
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -346,10 +351,10 @@ export const VendorEarningsPage: React.FC = () => {
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-bold text-slate-500">
                 NET TO YOUR STORE
               </span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
                 goods − commission
               </span>
             </div>
@@ -364,7 +369,7 @@ export const VendorEarningsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-bold text-slate-500">
               MARKETPLACE COMMISSION
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -378,7 +383,7 @@ export const VendorEarningsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="text-xs font-bold text-slate-500">
               AVAILABLE TO WITHDRAW
             </div>
             <div className="mt-3 text-3xl font-extrabold text-slate-900">
@@ -413,50 +418,51 @@ export const VendorEarningsPage: React.FC = () => {
                     <p className="text-xs font-semibold text-slate-600">
                       Nothing booked in this window
                     </p>
-                    <p className="text-[11px] mt-0.5">
+                    <p className="text-xs mt-0.5">
                       Widen the range, or the chart fills as packages settle.
                     </p>
                   </div>
                 ) : (
-                  <>
-                    <svg viewBox="0 0 900 200" className="w-full h-full overflow-visible">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={chartSeries} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
                       <defs>
                         <linearGradient id="grossGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0f172a" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#0f172a" stopOpacity="0.02" />
+                          <stop offset="0%" stopColor="#0f172a" stopOpacity={0.25} />
+                          <stop offset="100%" stopColor="#0f172a" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <line x1="0" y1="30" x2="900" y2="30" stroke="#f1f5f9" strokeDasharray="4 4" />
-                      <line x1="0" y1="75" x2="900" y2="75" stroke="#f1f5f9" strokeDasharray="4 4" />
-                      <line x1="0" y1="120" x2="900" y2="120" stroke="#f1f5f9" strokeDasharray="4 4" />
-                      <line x1="0" y1="190" x2="900" y2="190" stroke="#e2e8f0" />
-                      <polyline
-                        points={`5,190 ${grossPoints} 895,190`}
-                        fill="url(#grossGradient)"
-                        stroke="none"
+                      <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        axisLine={false}
+                        tickLine={false}
                       />
-                      <polyline
-                        points={grossPoints}
-                        fill="none"
-                        stroke="#0f172a"
-                        strokeWidth="3"
-                        strokeLinecap="round"
+                      <YAxis
+                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={axisMoney}
+                        width={48}
                       />
-                      <polyline
-                        points={netPoints}
-                        fill="none"
+                      <Tooltip
+                        formatter={(value, name) => [
+                          money(Number(value)),
+                          name === 'gross' ? 'Gross booked' : 'Net to store',
+                        ]}
+                      />
+                      <Area type="monotone" dataKey="gross" stroke="none" fill="url(#grossGradient)" />
+                      <Line type="monotone" dataKey="gross" stroke="#0f172a" strokeWidth={3} dot={false} />
+                      <Line
+                        type="monotone"
+                        dataKey="net"
                         stroke="#64748b"
-                        strokeWidth="2"
+                        strokeWidth={2}
                         strokeDasharray="4 4"
-                        strokeLinecap="round"
+                        dot={false}
                       />
-                    </svg>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 px-1">
-                      {series.map((m) => (
-                        <span key={m.month}>{monthLabel(m.month)}</span>
-                      ))}
-                    </div>
-                  </>
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 )}
               </div>
 
@@ -472,29 +478,29 @@ export const VendorEarningsPage: React.FC = () => {
 
             <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="text-xs font-bold text-slate-500">
                   Average Month (Gross)
                 </div>
                 <div className="mt-1 text-lg font-black text-slate-900">{money(avgMonthGross)}</div>
-                <div className="text-[10px] text-slate-400">across {series.length} months</div>
+                <div className="text-xs text-slate-500">across {series.length} months</div>
               </div>
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="text-xs font-bold text-slate-500">
                   Peak Month (Gross)
                 </div>
                 <div className="mt-1 text-lg font-black text-slate-900">
                   {peakMonth ? money(peakMonth.gross) : '—'}
                 </div>
-                <div className="text-[10px] text-slate-400">
+                <div className="text-xs text-slate-500">
                   {peakMonth ? longMonth(peakMonth.month) : 'no month has booked yet'}
                 </div>
               </div>
               <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="text-xs font-bold text-slate-500">
                   Avg Net Per Package
                 </div>
                 <div className="mt-1 text-lg font-black text-slate-900">{money(avgNetPerPackage)}</div>
-                <div className="text-[10px] text-slate-400">
+                <div className="text-xs text-slate-500">
                   {totals ? `over ${totals.packages} package${totals.packages === 1 ? '' : 's'}` : '—'}
                 </div>
               </div>
@@ -593,7 +599,7 @@ export const VendorEarningsPage: React.FC = () => {
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                  <div className="text-xs font-bold uppercase tracking-wider text-emerald-800">
                     NET IN THIS WINDOW
                   </div>
                   <div className="text-2xl font-black text-slate-900">
@@ -601,7 +607,7 @@ export const VendorEarningsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] font-medium text-emerald-700">
+                  <div className="text-xs font-medium text-emerald-700">
                     Lifetime net across all windows
                   </div>
                   <span className="inline-block mt-0.5 rounded-full bg-emerald-600 px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
@@ -609,7 +615,7 @@ export const VendorEarningsPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <p className="mt-2 text-[10px] text-emerald-800/80">
+              <p className="mt-2 text-xs text-emerald-800/80">
                 Settled {totals ? money(totals.settled) : '—'} of that is already in your balance;
                 the rest waits on delivery.
               </p>
@@ -798,13 +804,13 @@ export const VendorEarningsPage: React.FC = () => {
                   ))}
                 </select>
                 {monthsWithData.length === 0 && (
-                  <p className="mt-1 text-[11px] text-slate-400">
+                  <p className="mt-1 text-xs text-slate-500">
                     No month in this window has booked anything yet.
                   </p>
                 )}
               </div>
 
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-500">
                 There is no PDF generator behind this screen: the CSV is the auditable statement, and
                 your browser can print it to PDF from there.
               </p>

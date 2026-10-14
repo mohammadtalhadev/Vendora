@@ -109,7 +109,7 @@ export const CodSettlementSection: React.FC = () => {
           )}
 
           <div className="space-y-2">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <h4 className="text-[11px] font-bold text-slate-400">
               Awaiting handover ({data.pending.length})
             </h4>
             {data.pending.length === 0 ? (
@@ -132,7 +132,7 @@ export const CodSettlementSection: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <h4 className="text-[11px] font-bold text-slate-400">
               Handed over ({data.handedOver.length})
             </h4>
             {data.handedOver.length === 0 ? (

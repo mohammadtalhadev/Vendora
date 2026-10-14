@@ -118,7 +118,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
 
           {/* Star Rating Selector */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-xs font-bold text-slate-700">
               Overall Rating <span className="text-coral">*</span>
             </label>
             <div className="mt-2 flex items-center gap-1.5">
@@ -154,7 +154,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
           <div>
             <label
               htmlFor="review-title"
-              className="block text-xs font-bold uppercase tracking-wider text-slate-700"
+              className="block text-xs font-bold text-slate-700"
             >
               Review Title <span className="text-coral">*</span>
             </label>
@@ -172,7 +172,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
           <div>
             <label
               htmlFor="review-comment"
-              className="block text-xs font-bold uppercase tracking-wider text-slate-700"
+              className="block text-xs font-bold text-slate-700"
             >
               Your Feedback <span className="text-coral">*</span>
             </label>

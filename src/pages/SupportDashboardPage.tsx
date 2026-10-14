@@ -256,7 +256,7 @@ export const SupportDashboardPage: React.FC = () => {
                   className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-xs shadow-2xs"
                 >
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-extrabold text-slate-400">
                       Status
                     </span>
                     <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-bold text-slate-800">
@@ -264,7 +264,7 @@ export const SupportDashboardPage: React.FC = () => {
                     </span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-extrabold text-slate-400">
                       Urgency
                     </span>
                     <span
@@ -280,19 +280,19 @@ export const SupportDashboardPage: React.FC = () => {
                     </span>
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-slate-600">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-extrabold text-slate-400">
                       Package
                     </span>
                     <span className="capitalize">{humanize(caseRow.packageStatus)}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-slate-600">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-extrabold text-slate-400">
                       Agent
                     </span>
                     <span>{caseRow.agentName ?? 'Unassigned'}</span>
                   </span>
                   <span className="ml-auto inline-flex items-baseline gap-1.5 font-mono font-bold text-slate-900">
-                    <span className="font-sans text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="font-sans text-[10px] font-extrabold text-slate-400">
                       Still owed
                     </span>
                     <span data-testid="case-remaining">{formatPrice(Math.max(caseRow.remainingGross, 0))}</span>

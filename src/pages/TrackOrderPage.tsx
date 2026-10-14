@@ -205,7 +205,7 @@ const PackageCard: React.FC<{ subOrder: SubOrder; group: OrderGroup }> = ({ subO
 
       {subOrder.history.length > 0 ? (
         <div className="mt-5 border-t border-slate-100 pt-4 dark:border-white/10">
-          <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <h4 className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400">
             What has happened so far
           </h4>
           <ul className="mt-2.5 space-y-2">
@@ -335,7 +335,7 @@ export const TrackOrderPage: React.FC = () => {
                 <div className="flex-1 space-y-1.5">
                   <label
                     htmlFor="track-query"
-                    className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+                    className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300"
                   >
                     Order ID or tracking number
                   </label>

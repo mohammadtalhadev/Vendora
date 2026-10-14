@@ -62,7 +62,7 @@ export const TermsPage: React.FC = () => {
         <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-10 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl space-y-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-sun-orange">
+              <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 px-3.5 py-1 text-xs font-black uppercase tracking-wider text-sun-orange">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 <span>INSTITUTIONAL COMPLIANCE REGIME 2026</span>
               </div>
@@ -90,19 +90,19 @@ export const TermsPage: React.FC = () => {
           {/* Meta Information Bar */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-5 border-t border-slate-100 dark:border-white/5 text-xs">
             <div className="p-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">LAST REVISED</span>
+              <span className="text-xs font-bold text-slate-500 uppercase block">LAST REVISED</span>
               <span className="font-bold text-slate-900 dark:text-white">January 15, 2026</span>
             </div>
             <div className="p-2 border-l border-slate-100 dark:border-white/5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">EFFECTIVE DATE</span>
+              <span className="text-xs font-bold text-slate-500 uppercase block">EFFECTIVE DATE</span>
               <span className="font-bold text-slate-900 dark:text-white">February 1, 2026</span>
             </div>
             <div className="p-2 border-l border-slate-100 dark:border-white/5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">LAST UPDATED</span>
+              <span className="text-xs font-bold text-slate-500 uppercase block">LAST UPDATED</span>
               <span className="font-bold text-indigo-600 dark:text-indigo-400">12 October 2026</span>
             </div>
             <div className="p-2 border-l border-slate-100 dark:border-white/5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">JURISDICTION</span>
+              <span className="text-xs font-bold text-slate-500 uppercase block">JURISDICTION</span>
               <span className="font-bold text-emerald-600 dark:text-emerald-400">Contractual Treaty &amp; Arbitration</span>
             </div>
           </div>
@@ -114,7 +114,7 @@ export const TermsPage: React.FC = () => {
           <div className="lg:col-span-4 sticky top-32 space-y-4">
             <div className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-3">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-black text-slate-500">
                   TABLE OF CLAUSES
                 </span>
                 <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 text-sun-orange px-2 py-0.5 text-[9px] font-black">
@@ -135,7 +135,7 @@ export const TermsPage: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-[11px] text-slate-400">{c.num}</span>
+                      <span className="font-mono text-xs text-slate-500">{c.num}</span>
                       <span className="truncate">{c.title}</span>
                     </div>
                     <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />
@@ -150,10 +150,10 @@ export const TermsPage: React.FC = () => {
                 <Lock className="h-4 w-4" />
                 <span>Published Version</span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 This page is the terms currently in force. Material changes are dated here and announced to registered members before they take effect.
               </p>
-              <div className="text-[10px] font-mono bg-white dark:bg-slate-900 p-2 rounded-xl border border-blue-100 dark:border-white/5 text-slate-500">
+              <div className="text-xs font-mono bg-white dark:bg-slate-900 p-2 rounded-xl border border-blue-100 dark:border-white/5 text-slate-500">
                 Effective 12 October 2026
               </div>
             </div>
@@ -164,10 +164,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 1.0 */}
             <div id="clause-1" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-600 dark:text-slate-300">
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-black uppercase text-slate-600 dark:text-slate-300">
                   CLAUSE 1.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">FOUNDATIONAL FRAMEWORK</span>
+                <span className="text-xs font-bold text-slate-500">FOUNDATIONAL FRAMEWORK</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 1. User Agreement &amp; Platform Scope
@@ -182,7 +182,7 @@ export const TermsPage: React.FC = () => {
                     <UserCheck className="h-4 w-4 text-sun-orange" />
                     <span>Verified Buyer</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <p className="text-xs text-slate-500 leading-relaxed">
                     Any registered account possessing clean identity verification and adherence to fair return conduct guidelines.
                   </p>
                 </div>
@@ -191,7 +191,7 @@ export const TermsPage: React.FC = () => {
                     <Store className="h-4 w-4 text-indigo-600" />
                     <span>Verified Merchant</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <p className="text-xs text-slate-500 leading-relaxed">
                     Commercial seller executing KYC verification, authentic inventory sourcing, and compliance with Vendora SafeVault SLAs.
                   </p>
                 </div>
@@ -201,10 +201,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 2.0 */}
             <div id="clause-2" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                <span className="rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 px-2.5 py-0.5 text-xs font-black uppercase">
                   CLAUSE 2.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">FINANCIAL PROTECTION</span>
+                <span className="text-xs font-bold text-slate-500">FINANCIAL PROTECTION</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 2. Buyer Protection &amp; SafeVault™ Escrow Terms
@@ -215,21 +215,21 @@ export const TermsPage: React.FC = () => {
 
               {/* Escrow 3-Stage Progress Timeline */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/5 space-y-3">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                <span className="text-xs font-black text-slate-500 block">
                   SAFEVAULT ESCROW RESOLUTION CYCLE
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                   <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-white/5">
-                    <span className="text-[10px] font-black text-sun-orange block">1. Inspection Guarantee</span>
-                    <span className="text-[11px] text-slate-500">Immediate deposit into escrow</span>
+                    <span className="text-xs font-black text-sun-orange block">1. Inspection Guarantee</span>
+                    <span className="text-xs text-slate-500">Immediate deposit into escrow</span>
                   </div>
                   <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-white/5">
-                    <span className="text-[10px] font-black text-indigo-600 block">2. 7 to 30 Day Inspection</span>
-                    <span className="text-[11px] text-slate-500">Window to report any discrepancies</span>
+                    <span className="text-xs font-black text-indigo-600 block">2. 7 to 30 Day Inspection</span>
+                    <span className="text-xs text-slate-500">Window to report any discrepancies</span>
                   </div>
                   <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-white/5">
-                    <span className="text-[10px] font-black text-emerald-600 block">3. Merchant Release</span>
-                    <span className="text-[11px] text-slate-500">Automated payout upon clean verification</span>
+                    <span className="text-xs font-black text-emerald-600 block">3. Merchant Release</span>
+                    <span className="text-xs text-slate-500">Automated payout upon clean verification</span>
                   </div>
                 </div>
               </div>
@@ -251,10 +251,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 3.0 */}
             <div id="clause-3" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-orange-100 text-sun-orange dark:bg-orange-950/60 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                <span className="rounded-full bg-orange-100 text-sun-orange dark:bg-orange-950/60 px-2.5 py-0.5 text-xs font-black uppercase">
                   CLAUSE 3.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">MERCHANT ECONOMICS &amp; CONDUCT</span>
+                <span className="text-xs font-bold text-slate-500">MERCHANT ECONOMICS &amp; CONDUCT</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 3. Vendor Guidelines &amp; Commission Structure
@@ -266,13 +266,13 @@ export const TermsPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/5 space-y-1">
                   <span className="font-outfit text-lg font-black text-sun-orange">Listing Fee: $0</span>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs text-slate-500">
                     Commission is charged only on settled orders, at the rate published for the product's category.
                   </p>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/5 space-y-1">
                   <span className="font-outfit text-lg font-black text-indigo-600">14-Day Payout SLA</span>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs text-slate-500">
                     Cleared funds automatically disburse to your local IBAN or Stripe Connect account bi-weekly.
                   </p>
                 </div>
@@ -282,10 +282,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 4.0 */}
             <div id="clause-4" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                <span className="rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 px-2.5 py-0.5 text-xs font-black uppercase">
                   CLAUSE 4.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">DISPATCH &amp; FULFILLMENT</span>
+                <span className="text-xs font-bold text-slate-500">DISPATCH &amp; FULFILLMENT</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 4. Express Delivery (3–6 Hour) Terms &amp; Conditions
@@ -313,10 +313,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 5.0 */}
             <div id="clause-5" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                <span className="rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 px-2.5 py-0.5 text-xs font-black uppercase">
                   CLAUSE 5.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">RETURNS &amp; REFUNDS</span>
+                <span className="text-xs font-bold text-slate-500">RETURNS &amp; REFUNDS</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 5. Returns, Refunds &amp; Inspection Audit Period
@@ -346,10 +346,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 6.0 */}
             <div id="clause-6" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                <span className="rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300 px-2.5 py-0.5 text-xs font-black uppercase">
                   CLAUSE 6.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">DATA PRIVACY &amp; SECURITY</span>
+                <span className="text-xs font-bold text-slate-500">DATA PRIVACY &amp; SECURITY</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 6. Privacy Policy &amp; Consumer Data Rights
@@ -359,7 +359,7 @@ export const TermsPage: React.FC = () => {
                   <span className="font-outfit font-black text-slate-900 dark:text-white text-sm">
                     Zero Third-Party Data Monetization
                   </span>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs text-slate-500">
                     We never sell customer identities, telemetry logs, or purchasing records to third-party ad brokers.
                   </p>
                 </div>
@@ -367,7 +367,7 @@ export const TermsPage: React.FC = () => {
                   <span className="font-outfit font-black text-slate-900 dark:text-white text-sm">
                     Right to Erasure &amp; Data Export
                   </span>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs text-slate-500">
                     Users can download a full archive of their order receipts or request permanent GDPR-compliant erasure at any time.
                   </p>
                 </div>
@@ -377,10 +377,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 7.0 */}
             <div id="clause-7" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 px-2.5 py-0.5 text-[10px] font-black uppercase">
+                <span className="rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 px-2.5 py-0.5 text-xs font-black uppercase">
                   CLAUSE 7.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">BRAND PROTECTION &amp; IP</span>
+                <span className="text-xs font-bold text-slate-500">BRAND PROTECTION &amp; IP</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 7. Anti-Counterfeiting &amp; Intellectual Property Enforcement
@@ -393,15 +393,15 @@ export const TermsPage: React.FC = () => {
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="p-2 bg-white dark:bg-slate-900 rounded-xl">
                     <strong className="block text-amber-700 font-black">Strike 1</strong>
-                    <span className="text-[10px] text-slate-500">Listing Removed</span>
+                    <span className="text-xs text-slate-500">Listing Removed</span>
                   </div>
                   <div className="p-2 bg-white dark:bg-slate-900 rounded-xl">
                     <strong className="block text-orange-600 font-black">Strike 2</strong>
-                    <span className="text-[10px] text-slate-500">14-Day Suspension</span>
+                    <span className="text-xs text-slate-500">14-Day Suspension</span>
                   </div>
                   <div className="p-2 bg-white dark:bg-slate-900 rounded-xl">
                     <strong className="block text-rose-600 font-black">Strike 3</strong>
-                    <span className="text-[10px] text-slate-500">Permanent Ban</span>
+                    <span className="text-xs text-slate-500">Permanent Ban</span>
                   </div>
                 </div>
               </div>
@@ -410,10 +410,10 @@ export const TermsPage: React.FC = () => {
             {/* Clause 8.0 */}
             <div id="clause-8" className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl space-y-4">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] font-black uppercase text-slate-600 dark:text-slate-300">
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-black uppercase text-slate-600 dark:text-slate-300">
                   CLAUSE 8.0
                 </span>
-                <span className="text-[11px] font-bold text-slate-400">LEGAL JURISDICTION</span>
+                <span className="text-xs font-bold text-slate-500">LEGAL JURISDICTION</span>
               </div>
               <h2 className="font-outfit text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 8. Dispute Arbitration &amp; Territorial Jurisdiction
@@ -427,14 +427,14 @@ export const TermsPage: React.FC = () => {
             <div className="rounded-3xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 p-6 sm:p-8 shadow-[0_15px_35px_rgba(15,23,42,0.05)] backdrop-blur-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-sun-orange block">
+                  <span className="text-xs font-black uppercase tracking-wider text-sun-orange block">
                     DIRECT INSTITUTIONAL CHANNELS
                   </span>
                   <h3 className="font-outfit text-xl font-black text-slate-900 dark:text-white">
                     Contact Legal &amp; Compliance Team
                   </h3>
                 </div>
-                <span className="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-[10px] font-extrabold border border-emerald-200">
+                <span className="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-extrabold border border-emerald-200">
                   Active Legal Registry
                 </span>
               </div>
@@ -445,7 +445,7 @@ export const TermsPage: React.FC = () => {
                     <Scale className="h-4 w-4 text-sun-orange" />
                     <span>Legal Counsel</span>
                   </div>
-                  <a href="mailto:legal@vendora.market" className="text-sun-orange font-semibold text-[11px] hover:underline block">
+                  <a href="mailto:legal@vendora.market" className="text-sun-orange font-semibold text-xs hover:underline block">
                     legal@vendora.market
                   </a>
                 </div>
@@ -455,7 +455,7 @@ export const TermsPage: React.FC = () => {
                     <ShieldCheck className="h-4 w-4 text-indigo-600" />
                     <span>Merchant Audit</span>
                   </div>
-                  <a href="mailto:compliance@vendora.market" className="text-indigo-600 font-semibold text-[11px] hover:underline block">
+                  <a href="mailto:compliance@vendora.market" className="text-indigo-600 font-semibold text-xs hover:underline block">
                     compliance@vendora.market
                   </a>
                 </div>
@@ -465,7 +465,7 @@ export const TermsPage: React.FC = () => {
                     <Building2 className="h-4 w-4 text-slate-700" />
                     <span>Registered Office</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 block">
+                  <span className="text-xs text-slate-500 block">
                     Vendora Multivendor HQ, Karachi &amp; Dubai
                   </span>
                 </div>

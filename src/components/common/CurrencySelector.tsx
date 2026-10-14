@@ -63,7 +63,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         <div className="flex items-center justify-between mb-2 px-1">
           <div className="flex items-center gap-1.5">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-700">
               Market Currency
             </span>
           </div>
@@ -137,7 +137,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
           <div className="flex items-center justify-between px-2.5 py-2 border-b border-slate-100">
             <div className="flex items-center gap-1.5">
               <Zap className="h-3.5 w-3.5 text-orange-500 fill-orange-500" />
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-800">
+              <span className="text-[11px] font-extrabold text-slate-800">
                 Live Google Rates
               </span>
             </div>

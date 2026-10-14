@@ -132,7 +132,7 @@ export const AccountReviewsPage: React.FC = () => {
                   )}
                   {review.sellerReply && (
                     <div className="mt-3 rounded-2xl bg-slate-50 p-3.5 dark:bg-slate-800/60">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <span className="text-[10px] font-black text-slate-400">
                         Seller reply
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">

@@ -289,7 +289,7 @@ export const NotificationsPage: React.FC = () => {
             <div className="flex-1 max-w-md">
               <label
                 htmlFor="notice-page-filter"
-                className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500"
+                className="mb-1 block text-[11px] font-bold text-slate-500"
               >
                 Filters the loaded page
               </label>

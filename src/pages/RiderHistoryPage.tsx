@@ -198,7 +198,7 @@ export const RiderHistoryPage: React.FC = () => {
           </div>
         ) : (
           <section aria-label="Your closed deliveries" className="space-y-3">
-            <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center gap-2 text-[11px] font-extrabold text-slate-400">
               <History className="h-3.5 w-3.5" />
               <span>{rows.length} closed parcels</span>
             </div>

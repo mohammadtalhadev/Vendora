@@ -18,7 +18,7 @@ const Tile: React.FC<{
 }> = ({ testId, label, count, value, hint, icon, tone }) => (
   <div className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5">
     <div className="flex items-center justify-between text-slate-500">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+      <span className="text-[11px] font-bold text-slate-400">{label}</span>
       <span className={cn('flex h-7 w-7 items-center justify-center rounded-xl', tone)}>{icon}</span>
     </div>
     <div className="mt-2 flex items-baseline gap-1.5">

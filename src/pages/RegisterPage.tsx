@@ -470,7 +470,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Email-code (OTP) entry — the typed path to the same
                         verification the link performs (Batch 36). */}
                     <div className="mt-6">
-                      <span className="mb-2.5 block text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                      <span className="mb-2.5 block text-[11px] font-black text-slate-500 dark:text-slate-400">
                         Enter the 6-digit code
                       </span>
                       <OtpInput
@@ -638,7 +638,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Full Name & Email */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="customerName" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="customerName" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Full Name
                         </label>
                         <div className="relative flex items-center">
@@ -656,7 +656,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="customerEmail" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="customerEmail" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Personal Email Address
                         </label>
                         <div className="relative flex items-center">
@@ -677,7 +677,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Phone (+92) & City Selection */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="customerPhone" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="customerPhone" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Mobile Phone
                         </label>
                         <div className="flex gap-2">
@@ -699,7 +699,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="customerCity" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="customerCity" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Delivery City / Region
                         </label>
                         <div className="relative flex items-center">
@@ -731,7 +731,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Password & Confirm Password */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="customerPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="customerPassword" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Password
                         </label>
                         <div className="relative flex items-center">
@@ -780,7 +780,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="customerConfirmPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="customerConfirmPassword" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Confirm Password
                         </label>
                         <div className="relative flex items-center">
@@ -888,7 +888,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Store Name & Slug */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="storeName" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="storeName" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Store / Brand Name
                         </label>
                         <div className="relative flex items-center">
@@ -906,7 +906,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="storeSlug" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="storeSlug" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Custom Store Slug URL
                         </label>
                         <div className="relative flex items-center">
@@ -927,7 +927,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Category & Legal Representative */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="categoryFocus" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="categoryFocus" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Primary Business Category
                         </label>
                         <div className="relative flex items-center">
@@ -953,7 +953,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="ownerName" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="ownerName" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Merchant Owner / Legal Rep
                         </label>
                         <div className="relative flex items-center">
@@ -974,7 +974,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Business Email & WhatsApp */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="businessEmail" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="businessEmail" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Official Business Email
                         </label>
                         <div className="relative flex items-center">
@@ -992,7 +992,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="businessPhone" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="businessPhone" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Business WhatsApp / Support
                         </label>
                         <div className="flex gap-2">
@@ -1017,7 +1017,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Tax NTN & Short Description */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="taxNtn" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="taxNtn" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Tax NTN / CNIC Number <span className="text-[10px] text-slate-400 lowercase">(for verified payouts)</span>
                         </label>
                         <div className="relative flex items-center">
@@ -1034,7 +1034,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="storeDescription" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="storeDescription" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Short Store Description
                         </label>
                         <div className="relative flex items-center">
@@ -1054,7 +1054,7 @@ export const RegisterPage: React.FC = () => {
                     {/* Password & Confirm */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="sellerPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="sellerPassword" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Merchant Portal Password
                         </label>
                         <div className="relative flex items-center">
@@ -1102,7 +1102,7 @@ export const RegisterPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label htmlFor="sellerConfirmPassword" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        <label htmlFor="sellerConfirmPassword" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                           Confirm Password
                         </label>
                         <div className="relative flex items-center">
@@ -1198,7 +1198,7 @@ export const RegisterPage: React.FC = () => {
                 {/* Dynamic Role Header */}
                 <div className="mb-6">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 shadow-2xs mb-3">
-                    <span className="font-outfit font-bold text-[11px] uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <span className="font-outfit font-bold text-[11px] text-slate-700 dark:text-slate-300">
                       {activeRole === 'customer' ? 'Shopper Privileges' : 'Merchant Privileges'}
                     </span>
                   </div>

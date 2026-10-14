@@ -37,7 +37,7 @@ export const OrderConfirmationPage: React.FC = () => {
     return (
       <div className="flex min-h-[55vh] flex-col items-center justify-center p-8">
         <div className="mb-3 h-10 w-10 animate-spin rounded-full border-4 border-sun-orange border-t-transparent" />
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+        <span className="text-xs font-bold text-slate-400">
           Loading your order…
         </span>
       </div>
@@ -110,7 +110,7 @@ export const OrderConfirmationPage: React.FC = () => {
         {/* Order facts */}
         <section className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-3xl border border-white/80 bg-white/80 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
-            <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="flex items-center gap-2 text-[10px] font-black text-slate-400">
               {isCod ? (
                 <Banknote className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               ) : (
@@ -134,7 +134,7 @@ export const OrderConfirmationPage: React.FC = () => {
             )}
           </div>
           <div className="rounded-3xl border border-white/80 bg-white/80 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
-            <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="flex items-center gap-2 text-[10px] font-black text-slate-400">
               <Package className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               Packages
             </span>
@@ -148,7 +148,7 @@ export const OrderConfirmationPage: React.FC = () => {
             </p>
           </div>
           <div className="rounded-3xl border border-white/80 bg-white/80 p-5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
-            <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span className="flex items-center gap-2 text-[10px] font-black text-slate-400">
               <MapPin className="h-4 w-4 text-sun-orange" aria-hidden="true" />
               Deliver to
             </span>

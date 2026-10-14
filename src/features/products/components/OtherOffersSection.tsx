@@ -81,7 +81,7 @@ export const OtherOffersSection: React.FC<OtherOffersSectionProps> = ({
       <div className="mt-4 hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-slate-100 text-slate-400 font-semibold text-[11px] uppercase tracking-wider">
+            <tr className="border-b border-slate-100 text-slate-400 font-semibold text-[11px]">
               <th className="py-3 px-3">Seller Name</th>
               <th className="py-3 px-3">Merchant Rating</th>
               <th className="py-3 px-3">Condition</th>

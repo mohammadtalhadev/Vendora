@@ -29,6 +29,7 @@ import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
 import { useCompareStore } from '../store/compare-store';
 import { useToast } from '../hooks/useToast';
+import { useOverlayA11y } from '../hooks/useOverlayA11y';
 import { Toast } from '../components/common/Toast';
 import { openCartDrawer } from '../features/cart/open-cart';
 import { formatDeliveryWindow } from '../lib/delivery-estimate';
@@ -123,6 +124,7 @@ export const ProductDetailPage: React.FC = () => {
   const [shareCopied, setShareCopied] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const zoomPanelRef = useOverlayA11y<HTMLDivElement>(isZoomOpen, () => setIsZoomOpen(false));
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -589,27 +591,27 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   <span className="text-xs font-bold text-slate-700">Quantity:</span>
 
-                  <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-1.5 py-1 shadow-2xs">
+                  <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-1 py-1 shadow-2xs">
                     <button
                       type="button"
                       onClick={() => handleQuantityChange(-1)}
                       disabled={quantity <= 1}
-                      className="flex h-6 w-6 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
                       aria-label="Decrease quantity"
                     >
-                      <Minus className="h-3 w-3" />
+                      <Minus className="h-4 w-4" />
                     </button>
-                    <span className="w-8 text-center text-xs font-bold text-slate-900">
+                    <span className="w-10 text-center text-sm font-bold text-slate-900">
                       {quantity}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleQuantityChange(1)}
                       disabled={effectiveStock > 0 && quantity >= effectiveStock}
-                      className="flex h-6 w-6 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
                       aria-label="Increase quantity"
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-4 w-4" />
                     </button>
                   </div>
 
@@ -940,7 +942,14 @@ export const ProductDetailPage: React.FC = () => {
             {/* 1. Zoom Lightbox Modal */}
             {isZoomOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-sm">
-                <div className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+                <div
+                  ref={zoomPanelRef}
+                  tabIndex={-1}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Product image zoom"
+                  className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl border border-slate-200"
+                >
                   <button
                     type="button"
                     onClick={() => setIsZoomOpen(false)}

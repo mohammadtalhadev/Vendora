@@ -181,7 +181,7 @@ export const AdminProductsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">TOTAL SUBMISSIONS</span>
+            <span className="text-[11px] font-bold text-slate-400">TOTAL SUBMISSIONS</span>
             <div className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
               <Layers className="h-3.5 w-3.5" />
             </div>
@@ -200,7 +200,7 @@ export const AdminProductsPage: React.FC = () => {
 
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">PENDING REVIEW</span>
+            <span className="text-[11px] font-bold text-slate-400">PENDING REVIEW</span>
             <div className="flex h-6 w-6 items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-amber-600">
               <Hourglass className="h-3.5 w-3.5" />
             </div>
@@ -218,7 +218,7 @@ export const AdminProductsPage: React.FC = () => {
 
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">APPROVAL RATE</span>
+            <span className="text-[11px] font-bold text-slate-400">APPROVAL RATE</span>
             <div className="flex h-6 w-6 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-600">
               <CheckCircle2 className="h-3.5 w-3.5" />
             </div>
@@ -234,7 +234,7 @@ export const AdminProductsPage: React.FC = () => {
 
         <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">POLICY VIOLATIONS</span>
+            <span className="text-[11px] font-bold text-slate-400">POLICY VIOLATIONS</span>
             <div className="flex h-6 w-6 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-600">
               <ShieldAlert className="h-3.5 w-3.5" />
             </div>

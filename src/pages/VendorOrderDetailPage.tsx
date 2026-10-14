@@ -257,7 +257,7 @@ export const VendorOrderDetailPage: React.FC = () => {
         {/* Fulfillment Lifecycle Stepper Action Bar */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold text-slate-500">
               Merchant Fulfillment Stepper
             </span>
             <span className="text-xs text-slate-500">

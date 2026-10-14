@@ -60,7 +60,7 @@ export const SellerSpotlight: React.FC<SellerSpotlightProps> = ({ vendors }) => 
             <p className="mt-3 text-sm font-extrabold tracking-tight text-slate-900 group-hover:text-sun-orange transition-colors line-clamp-1">
               {vendor.storeName}
             </p>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{vendor.category}</p>
+            <p className="text-[10px] font-semibold text-slate-400">{vendor.category}</p>
             <div className="mt-3 flex items-center justify-between text-[11px]">
               <span className="inline-flex items-center gap-1 font-bold text-slate-700">
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />

@@ -287,14 +287,14 @@ export const OrderDetailPage: React.FC = () => {
                 {/* Financial Summary Pill Box */}
                 <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-xs">
                   <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-semibold text-slate-400">
                       Subtotal
                     </span>
                     <p className="font-bold text-slate-900">{formatPrice(itemsSubtotal)}</p>
                   </div>
                   <div className="h-8 w-px bg-slate-200" />
                   <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-semibold text-slate-400">
                       Shipping
                     </span>
                     <p className="font-bold text-slate-900">
@@ -303,7 +303,7 @@ export const OrderDetailPage: React.FC = () => {
                   </div>
                   <div className="h-8 w-px bg-slate-200" />
                   <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-semibold text-slate-400">
                       Grand Total
                     </span>
                     <p className="text-base font-extrabold text-sun-orange-600">
@@ -314,7 +314,7 @@ export const OrderDetailPage: React.FC = () => {
                     <>
                       <div className="h-8 w-px bg-slate-200" />
                       <div>
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                        <span className="text-[11px] font-semibold text-slate-400">
                           Gift Card
                         </span>
                         <p className="font-bold text-emerald-600">
@@ -340,7 +340,7 @@ export const OrderDetailPage: React.FC = () => {
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-sun-orange">
                       <MapPin className="h-4 w-4" />
                     </div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    <h3 className="text-xs font-bold text-slate-800">
                       Shipping Address
                     </h3>
                   </div>
@@ -376,7 +376,7 @@ export const OrderDetailPage: React.FC = () => {
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                       <CreditCard className="h-4 w-4" />
                     </div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    <h3 className="text-xs font-bold text-slate-800">
                       Payment Details
                     </h3>
                   </div>
@@ -571,7 +571,7 @@ export const OrderDetailPage: React.FC = () => {
                     <div className="p-5 sm:p-6 space-y-6">
                       {/* Package Items List */}
                       <div>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <h4 className="text-xs font-bold text-slate-500">
                           Package Items ({subOrder.items.length})
                         </h4>
                         <div className="mt-3 divide-y divide-slate-100">

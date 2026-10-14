@@ -94,7 +94,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
       {/* 1. What the case is */}
       <div className="p-4">
         <div className="mb-3 flex items-start justify-between gap-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Case</h3>
+          <h3 className="text-xs font-bold text-slate-500">Case</h3>
           <span
             data-testid="resolution-status-badge"
             className={cn(
@@ -157,7 +157,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
       {/* 3. Money: the one action that leaves the platform */}
       {!closed && (
         <div className="p-4">
-          <h4 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">Refund</h4>
+          <h4 className="mb-2.5 text-xs font-bold text-slate-500">Refund</h4>
           <button
             type="button"
             data-testid="btn-full-refund"
@@ -174,7 +174,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
               <DollarSign className="h-4 w-4 text-amber-400" />
               {owed > 0 ? `Refund everything owed (${money(owed)})` : 'Nothing left to refund on this package'}
             </span>
-            <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-slate-200">
+            <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-extrabold text-slate-200">
               Buyer credit
             </span>
           </button>
@@ -246,7 +246,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
 
       {/* 4. The ruling on the case */}
       <div className="p-4">
-        <h4 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">Ruling</h4>
+        <h4 className="mb-2.5 text-xs font-bold text-slate-500">Ruling</h4>
         {!closed && (
           <textarea
             rows={2}
@@ -311,7 +311,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
 
       {/* 5. Who works it */}
       <div className="p-4">
-        <h4 className="mb-2.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+        <h4 className="mb-2.5 flex items-center gap-1.5 text-xs font-bold text-slate-500">
           <UserCheck className="h-3.5 w-3.5" />
           <span>Hand over</span>
         </h4>

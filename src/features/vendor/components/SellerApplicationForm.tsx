@@ -152,7 +152,7 @@ export const ApplicationPendingCard: FC<ApplicationPendingCardProps> = ({
 
       {/* What happens next */}
       <div className="mx-auto mt-8 max-w-md rounded-2xl border border-slate-100 bg-slate-50/60 p-5 text-left">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+        <h3 className="text-xs font-bold text-slate-500 mb-3">
           What Happens Next
         </h3>
         <ul className="space-y-3 text-xs text-slate-600">

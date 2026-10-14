@@ -220,7 +220,7 @@ export const VendorReviewsPage: React.FC = () => {
         {/* ── Breadcrumb & Header ─────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-[11px] font-bold text-slate-400">
               STORE PERFORMANCE <span className="text-slate-300">/</span> REVIEWS
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -264,7 +264,7 @@ export const VendorReviewsPage: React.FC = () => {
           {/* Card 1: Overall Store Score */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                 <span>OVERALL STORE SCORE</span>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                   {stats.total} review{stats.total === 1 ? '' : 's'}
@@ -298,7 +298,7 @@ export const VendorReviewsPage: React.FC = () => {
           {/* Card 2: Star Distribution */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                 <span>STAR DISTRIBUTION</span>
                 <span className="text-slate-400 font-semibold text-[10px]">{stats.total} Total</span>
               </div>
@@ -335,7 +335,7 @@ export const VendorReviewsPage: React.FC = () => {
           {/* Card 3: Sentiment Index */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                 <span>SENTIMENT INDEX</span>
                 <span className="text-[10px] font-bold text-slate-500">Not connected</span>
               </div>
@@ -353,7 +353,7 @@ export const VendorReviewsPage: React.FC = () => {
           {/* Card 4: Merchant Replies */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                 <span>MERCHANT RESPONSE</span>
                 <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                   {Math.round(stats.answeredShare * 100)}% answered

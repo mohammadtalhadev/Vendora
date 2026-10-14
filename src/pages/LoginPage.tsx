@@ -354,7 +354,7 @@ export const LoginPage: React.FC = () => {
               {/* Minimal Divider */}
               <div className="relative my-6 flex items-center justify-center">
                 <div className="w-full h-px bg-slate-200 dark:bg-white/10" />
-                <span className="absolute px-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-xs text-slate-500 font-semibold uppercase tracking-wider rounded-full border border-slate-200 dark:border-white/10 shadow-2xs">
+                <span className="absolute px-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-xs text-slate-500 font-semibold rounded-full border border-slate-200 dark:border-white/10 shadow-2xs">
                   Or Continue
                 </span>
               </div>

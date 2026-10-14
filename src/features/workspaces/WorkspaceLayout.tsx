@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ScrollManager } from '../../components/ScrollManager';
+import { SkipLink } from '../../components/common/SkipLink';
 import { useLenisWrapper } from '../../hooks/useLenisWrapper';
 import {
   Store,
@@ -630,6 +631,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   return (
     <div className={cn("workspace-shell h-screen max-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-none dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-row font-sans transition-colors duration-200 relative isolate", panelShellClass)}>
+      <SkipLink />
       <ScrollManager />
       {/* Ambient soft glow mesh for Frosted Glass depth */}
       <div className="workspace-mesh-bg" aria-hidden="true">
@@ -733,12 +735,12 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       ref={searchPanelRef}
                       className="absolute top-10 left-0 w-80 lg:w-96 rounded-2xl border border-white/80 dark:border-white/10 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-1"
                     >
-                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                      <div className="px-3 py-1.5 text-xs font-bold text-slate-500 flex items-center justify-between">
                         <span>Quick Navigation</span>
                         <span>{searchResults.length} reachable screens</span>
                       </div>
                       {searchResults.length === 0 ? (
-                        <p className="px-3 py-6 text-center text-[11px] text-slate-400">
+                        <p className="px-3 py-6 text-center text-xs text-slate-500">
                           No screen this role can open matches “{searchQuery.trim()}”.
                         </p>
                       ) : (
@@ -768,7 +770,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                                 <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-sun-orange transition-colors">
                                   {item.title}
                                 </div>
-                                <div className="text-[11px] text-slate-400 truncate max-w-[220px]">
+                                <div className="text-xs text-slate-500 truncate max-w-[220px]">
                                   {item.desc}
                                 </div>
                               </div>
@@ -937,7 +939,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     tabIndex={-1}
                     className="absolute top-10 right-0 w-56 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1 focus:outline-none"
                   >
-                    <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="px-2.5 py-1 text-xs font-bold text-slate-500">
                       Quick Create
                     </div>
                     <Link
@@ -950,7 +952,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       </div>
                       <div>
                         <div>Product</div>
-                        <div className="text-[10px] font-normal text-slate-400">First-party listing</div>
+                        <div className="text-xs font-normal text-slate-500">First-party listing</div>
                       </div>
                     </Link>
                     <Link
@@ -963,7 +965,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       </div>
                       <div>
                         <div>Banner</div>
-                        <div className="text-[10px] font-normal text-slate-400">Storefront showcase</div>
+                        <div className="text-xs font-normal text-slate-500">Storefront showcase</div>
                       </div>
                     </Link>
                   </div>
@@ -993,7 +995,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     tabIndex={-1}
                     className="absolute top-10 right-0 w-56 rounded-2xl border border-white/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1 focus:outline-none"
                   >
-                    <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="px-2.5 py-1 text-xs font-bold text-slate-500">
                       Store Actions
                     </div>
                     <Link
@@ -1006,7 +1008,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       </div>
                       <div>
                         <div>Product Listing</div>
-                        <div className="text-[10px] font-normal text-slate-400">Create new item</div>
+                        <div className="text-xs font-normal text-slate-500">Create new item</div>
                       </div>
                     </Link>
                     <Link
@@ -1019,7 +1021,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       </div>
                       <div>
                         <div>Promo Code</div>
-                        <div className="text-[10px] font-normal text-slate-400">Discount your store issues</div>
+                        <div className="text-xs font-normal text-slate-500">Discount your store issues</div>
                       </div>
                     </Link>
                     <Link
@@ -1032,7 +1034,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       </div>
                       <div>
                         <div>Upload Media</div>
-                        <div className="text-[10px] font-normal text-slate-400">Images &amp; banners</div>
+                        <div className="text-xs font-normal text-slate-500">Images &amp; banners</div>
                       </div>
                     </Link>
                   </div>
@@ -1104,7 +1106,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
-                      <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 px-1.5 py-0.2 text-[10px] font-bold text-sun-orange-600">
+                      <span className="rounded-full bg-orange-100 dark:bg-orange-950/60 px-1.5 py-0.2 text-xs font-bold text-sun-orange-600">
                         {notificationReadout}
                       </span>
                     </div>
@@ -1119,14 +1121,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                           unreadCount === null ||
                           unreadCount === 0
                         }
-                        className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-sun-orange-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-sun-orange-600 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {markingAllRead ? 'Marking…' : 'Mark all read'}
                       </button>
                       <Link
                         to={effectiveRole === 'admin' ? '/admin/notifications' : '/notifications'}
                         onClick={() => setIsNotificationsOpen(false)}
-                        className="text-[11px] font-semibold text-sun-orange-600 hover:underline"
+                        className="text-xs font-semibold text-sun-orange-600 hover:underline"
                       >
                         View All
                       </Link>
@@ -1134,7 +1136,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   </div>
 
                   {notificationWriteError && (
-                    <p role="alert" className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] font-semibold text-rose-700">
+                    <p role="alert" className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-semibold text-rose-700">
                       {notificationWriteError}
                     </p>
                   )}
@@ -1143,7 +1145,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   <div
                     role="group"
                     aria-label="Filter notices by type"
-                    className="grid grid-cols-4 gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold mb-2"
+                    className="grid grid-cols-4 gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold mb-2"
                   >
                     {NOTIFICATION_TABS.map((tab) => (
                       <button
@@ -1165,17 +1167,17 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
                   <div aria-busy={notificationsLoading}>
                   {notificationsLoading && notificationRows === null ? (
-                    <p role="status" className="py-6 text-center text-[11px] text-slate-400">Reading your notifications…</p>
+                    <p role="status" className="py-6 text-center text-xs text-slate-500">Reading your notifications…</p>
                   ) : notificationsError ? (
                     <div role="alert" className="py-6 text-center">
-                      <p className="text-[11px] font-bold text-rose-700 dark:text-rose-400">
+                      <p className="text-xs font-bold text-rose-700 dark:text-rose-400">
                         Your notifications could not be read
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-400">{notificationsError}</p>
+                      <p className="mt-1 text-xs text-slate-500">{notificationsError}</p>
                       <button
                         type="button"
                         onClick={() => void loadNotifications(notificationTab)}
-                        className="mt-2 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
+                        className="mt-2 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800"
                       >
                         Read them again
                       </button>
@@ -1183,7 +1185,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   ) : (notificationRows?.length ?? 0) === 0 ? (
                     <div role="status" className="py-6 text-center">
                       <BellOff className="mx-auto h-5 w-5 text-slate-300 dark:text-slate-600" aria-hidden="true" />
-                      <p className="mt-1.5 text-[11px] text-slate-400">
+                      <p className="mt-1.5 text-xs text-slate-500">
                         No notice is addressed to this account in this category.
                       </p>
                     </div>
@@ -1201,9 +1203,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                       >
                         <div className="flex items-start justify-between gap-1">
                           <p className="font-bold text-slate-900 dark:text-slate-100 leading-snug">{n.title}</p>
-                          <span className="text-[10px] text-slate-400 shrink-0">{relativeTime(n.createdAt)}</span>
+                          <span className="text-xs text-slate-500 shrink-0">{relativeTime(n.createdAt)}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{n.message}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{n.message}</p>
                         <div className="mt-2 flex items-center justify-between">
                           <span className={cn(
                             "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
@@ -1221,7 +1223,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                                 setIsNotificationsOpen(false);
                                 readNotification(n);
                               }}
-                              className="text-[11px] font-bold text-sun-orange-600 hover:underline"
+                              className="text-xs font-bold text-sun-orange-600 hover:underline"
                             >
                               Open →
                             </Link>
@@ -1231,7 +1233,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                               onClick={() => readNotification(n)}
                               disabled={n.readAt !== null}
                               aria-label={`Mark “${n.title}” read`}
-                              className="text-[11px] font-bold text-slate-500 hover:text-sun-orange-600 disabled:opacity-40"
+                              className="text-xs font-bold text-slate-500 hover:text-sun-orange-600 disabled:opacity-40"
                             >
                               {n.readAt !== null ? 'Read' : 'Mark read'}
                             </button>
@@ -1291,11 +1293,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   {/* Identity & Role Badge */}
                   <div className="px-2.5 py-2 border-b border-slate-100 dark:border-slate-800 mb-1">
                     <div className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">{userName}</div>
-                    <div className="text-[11px] text-slate-400 truncate">{userEmail}</div>
+                    <div className="text-xs text-slate-500 truncate">{userEmail}</div>
                     <div className="mt-2">
                       <span
                         className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-normal shadow-2xs',
+                          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold tracking-normal shadow-2xs',
                           badgeStyle.bg,
                           badgeStyle.text,
                           badgeStyle.border,
@@ -1367,6 +1369,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             the wrapper-mode Lenis from useLenisWrapper smooths it instead
             (it is bound to this element, so the attribute does not block it). */}
         <main
+          id="main-content"
+          tabIndex={-1}
           ref={mainScrollRef}
           data-lenis-prevent
           data-scroll-reset
@@ -1435,7 +1439,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 <span id="workspace-mobile-drawer-title" className="text-base font-bold text-slate-900 dark:text-white">Navigation</span>
                 <span
                   className={cn(
-                    'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
+                    'rounded-full px-2 py-0.5 text-xs font-bold uppercase',
                     badgeStyle.bg,
                     badgeStyle.text,
                   )}
@@ -1517,7 +1521,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               />
             </div>
 
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="text-xs leading-relaxed text-slate-500">
               This writes the signed-in session only. The profile row in the database keeps the
               name and email staff set when the account was provisioned, so a reload can restore
               what is stored there.
@@ -1562,7 +1566,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 <Search className="h-3.5 w-3.5 text-indigo-500" />
                 Keyboard
               </div>
-              <ul className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+              <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
                 {shortcutRows.map((row) => (
                   <li key={row.keys} className="flex items-start gap-2">
                     <kbd className="shrink-0 px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">
@@ -1580,7 +1584,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
                   Screens for this role
                 </div>
-                <ul className="grid grid-cols-2 gap-1 text-[11px]">
+                <ul className="grid grid-cols-2 gap-1 text-xs">
                   {reachableScreens.slice(0, 8).map((screen) => (
                     <li key={screen.path}>
                       <Link

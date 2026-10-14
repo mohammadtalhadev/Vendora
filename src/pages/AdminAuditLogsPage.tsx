@@ -92,19 +92,19 @@ export const AdminAuditLogsPage: React.FC = () => {
     {
       key: 'timestamp',
       header: 'Timestamp',
-      className: 'p-4 font-mono text-slate-500 text-[11px] whitespace-nowrap',
-      headerClassName: 'p-4 text-[11px]',
+      className: 'p-4 font-mono text-slate-500 text-xs whitespace-nowrap',
+      headerClassName: 'p-4 text-xs',
       cell: (log) => formatStamp(log.createdAt),
     },
     {
       key: 'actor',
       header: 'Staff Actor',
       className: 'p-4',
-      headerClassName: 'p-4 text-[11px]',
+      headerClassName: 'p-4 text-xs',
       cell: (log) => (
         <>
           <span className="font-bold text-slate-900 block">{log.actorName || '—'}</span>
-          <span className="text-[10px] text-slate-400">{log.actorRole}</span>
+          <span className="text-xs text-slate-500">{log.actorRole}</span>
         </>
       ),
     },
@@ -115,9 +115,9 @@ export const AdminAuditLogsPage: React.FC = () => {
       key: 'action',
       header: 'Action Type',
       className: 'p-4',
-      headerClassName: 'p-4 text-[11px]',
+      headerClassName: 'p-4 text-xs',
       cell: (log) => (
-        <span className={`rounded-full font-bold px-2 py-0.5 text-[10px] ${actionTone(log.action)}`}>
+        <span className={`rounded-full font-bold px-2 py-0.5 text-xs ${actionTone(log.action)}`}>
           {log.action}
         </span>
       ),
@@ -126,12 +126,12 @@ export const AdminAuditLogsPage: React.FC = () => {
       key: 'entity',
       header: 'Entity',
       className: 'p-4 font-medium text-slate-800',
-      headerClassName: 'p-4 text-[11px]',
+      headerClassName: 'p-4 text-xs',
       cell: (log) =>
         log.entityType ? (
           <>
             <span className="block">{log.entityType}</span>
-            <span className="text-[11px] font-normal text-slate-400 font-mono break-all">
+            <span className="text-xs font-normal text-slate-500 font-mono break-all">
               {log.entityId ?? ''}
             </span>
           </>
@@ -142,8 +142,8 @@ export const AdminAuditLogsPage: React.FC = () => {
     {
       key: 'ip',
       header: 'IP / Session',
-      className: 'p-4 font-mono text-[11px] text-slate-400',
-      headerClassName: 'p-4 text-[11px]',
+      className: 'p-4 font-mono text-xs text-slate-500',
+      headerClassName: 'p-4 text-xs',
       cell: (log) => log.ipAddress ?? '—',
     },
     {
@@ -151,12 +151,12 @@ export const AdminAuditLogsPage: React.FC = () => {
       header: 'State Diff',
       align: 'right',
       className: 'p-4',
-      headerClassName: 'p-4 text-[11px]',
+      headerClassName: 'p-4 text-xs',
       cell: (log) => (
         <button
           type="button"
           onClick={() => setActiveDiffLog(log)}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
         >
           <FileCode className="h-3 w-3 text-slate-500" />
           View Diff
@@ -242,7 +242,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                 actionFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              All Actions <span className="text-[10px] opacity-70">({queue.total})</span>
+              All Actions <span className="text-xs opacity-70">({queue.total})</span>
             </button>
             {queue.actions.map((facet) => (
               <button
@@ -258,7 +258,7 @@ export const AdminAuditLogsPage: React.FC = () => {
                   actionFilter === facet.action ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                {facet.action} <span className="text-[10px] opacity-70">({facet.count})</span>
+                {facet.action} <span className="text-xs opacity-70">({facet.count})</span>
               </button>
             ))}
           </div>
@@ -316,7 +316,7 @@ export const AdminAuditLogsPage: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">Audit State Transition Diff</h3>
-                  <span className="text-slate-500 font-mono text-[11px]">Action: {activeDiffLog.action}</span>
+                  <span className="text-slate-500 font-mono text-xs">Action: {activeDiffLog.action}</span>
                 </div>
                 <button
                   type="button"
@@ -330,36 +330,36 @@ export const AdminAuditLogsPage: React.FC = () => {
 
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 pt-4 md:grid-cols-3">
                 <div>
-                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Staff actor</dt>
+                  <dt className="text-xs font-bold text-slate-500">Staff actor</dt>
                   <dd className="mt-0.5 font-bold text-slate-900">
                     {activeDiffLog.actorName || '—'}
-                    <span className="block text-[10px] font-medium text-slate-400">
+                    <span className="block text-xs font-medium text-slate-500">
                       {activeDiffLog.actorRole}
                     </span>
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Entity</dt>
+                  <dt className="text-xs font-bold text-slate-500">Entity</dt>
                   <dd className="mt-0.5 font-bold text-slate-900">
                     {activeDiffLog.entityType ?? '—'}
-                    <span className="block break-all font-mono text-[10px] font-medium text-slate-400">
+                    <span className="block break-all font-mono text-xs font-medium text-slate-500">
                       {activeDiffLog.entityId ?? ''}
                     </span>
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recorded at</dt>
+                  <dt className="text-xs font-bold text-slate-500">Recorded at</dt>
                   <dd className="mt-0.5 font-bold text-slate-900">{formatStamp(activeDiffLog.createdAt)}</dd>
                 </div>
                 <div>
-                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">IP address</dt>
+                  <dt className="text-xs font-bold text-slate-500">IP address</dt>
                   <dd className="mt-0.5 font-mono font-bold text-slate-900">
                     {activeDiffLog.ipAddress ?? 'Not recorded'}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Entry ID</dt>
-                  <dd className="mt-0.5 break-all font-mono text-[10px] font-medium text-slate-500">
+                  <dt className="text-xs font-bold text-slate-500">Entry ID</dt>
+                  <dd className="mt-0.5 break-all font-mono text-xs font-medium text-slate-500">
                     {activeDiffLog.id}
                   </dd>
                 </div>
@@ -372,10 +372,10 @@ export const AdminAuditLogsPage: React.FC = () => {
               ) : (
                 <div className="py-4 grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <span className="font-bold text-rose-700 uppercase tracking-wider text-[10px] block">
+                    <span className="font-bold text-rose-700 uppercase tracking-wider text-xs block">
                       Before State (Pre-Execution)
                     </span>
-                    <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-[11px]">
+                    <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-xs">
                       {activeDiffLog.before === null
                         ? 'Nothing recorded'
                         : JSON.stringify(activeDiffLog.before, null, 2)}
@@ -383,10 +383,10 @@ export const AdminAuditLogsPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <span className="font-bold text-emerald-700 uppercase tracking-wider text-[10px] block">
+                    <span className="font-bold text-emerald-700 uppercase tracking-wider text-xs block">
                       After State (Committed)
                     </span>
-                    <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-[11px]">
+                    <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl overflow-x-auto font-mono text-xs">
                       {activeDiffLog.after === null
                         ? 'Nothing recorded'
                         : JSON.stringify(activeDiffLog.after, null, 2)}

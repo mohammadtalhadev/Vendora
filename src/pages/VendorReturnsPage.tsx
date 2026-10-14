@@ -420,7 +420,7 @@ export const VendorReturnsPage: React.FC = () => {
         {/* ── Page header ─────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="text-[11px] font-bold text-slate-400">
               ORDER MANAGEMENT <span className="text-slate-300">/</span> RETURNS
             </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
@@ -467,7 +467,7 @@ export const VendorReturnsPage: React.FC = () => {
         {/* ── KPI cards ───────────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>WAITING ON YOU</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-100 bg-amber-50 text-amber-600">
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
@@ -483,7 +483,7 @@ export const VendorReturnsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>APPROVED · RMA ISSUED</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
                 <Check className="h-4 w-4" aria-hidden="true" />
@@ -498,7 +498,7 @@ export const VendorReturnsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>REFUNDS RECORDED</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 text-slate-600">
                 <ShieldQuestion className="h-4 w-4" aria-hidden="true" />
@@ -511,7 +511,7 @@ export const VendorReturnsPage: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
               <span>RETURNS PER PACKAGE</span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-600">
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />

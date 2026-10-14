@@ -264,7 +264,7 @@ export const BecomeSellerPage: React.FC = () => {
         <div className="mt-16 rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 dark:border-slate-800 pb-6 mb-6">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
+              <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
                 Guaranteed Tiered Commission Structure
               </span>
               <h2 className="font-outfit text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
@@ -282,12 +282,12 @@ export const BecomeSellerPage: React.FC = () => {
                   <Calculator className="h-3.5 w-3.5 text-sun-orange" aria-hidden="true" />
                   Earnings Simulator
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">Real-Time Estimator</span>
+                <span className="text-xs text-slate-500 font-mono">Real-Time Estimator</span>
               </div>
               <div className="space-y-2">
                 <label
                   htmlFor="monthly-sales"
-                  className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+                  className="block text-xs font-bold text-slate-500"
                 >
                   Monthly Sales
                 </label>
@@ -298,16 +298,16 @@ export const BecomeSellerPage: React.FC = () => {
                   onChange={(e) => setMonthlySales(Math.max(0, Number(e.target.value)))}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-white focus:outline-hidden"
                 />
-                <p className="text-[10px] text-slate-400">
+                <p className="text-xs text-slate-500">
                   Entered in the platform&apos;s base unit; shown in your selected currency.
                 </p>
                 <div className="flex items-baseline justify-between pt-1">
-                  <span className="text-[11px] text-slate-600 dark:text-slate-400">Est. Net Take-Home (IBFT Payout):</span>
+                  <span className="text-xs text-slate-600 dark:text-slate-400">Est. Net Take-Home (IBFT Payout):</span>
                   <span className="font-outfit text-sm font-black text-rose-600 dark:text-rose-400">
                     {formatPrice(netTakeHome)}
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 flex justify-between">
+                <div className="text-xs text-slate-500 flex justify-between">
                   <span>Applied Platform Fee ({platformFeePercent}%):</span>
                   <span>{formatPrice(platformFee)}</span>
                 </div>
@@ -319,7 +319,7 @@ export const BecomeSellerPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold text-[11px]">
+                <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-500 font-semibold text-xs">
                   <th className="py-3 px-4">Product Category</th>
                   <th className="py-3 px-4">Standard Commission</th>
                   <th className="py-3 px-4">Introductory 90-Day Rate</th>
@@ -337,12 +337,12 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                     <div>
                       <div>Electronics &amp; Audio</div>
-                      <span className="text-[10px] font-normal text-slate-400">Phones, TWS, Home Audio, Components</span>
+                      <span className="text-xs font-normal text-slate-500">Phones, TWS, Home Audio, Components</span>
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">5.5%</td>
                   <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-[10px] font-bold border border-rose-200">
+                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
                       0.0% Free
                     </span>
                   </td>
@@ -359,12 +359,12 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                     <div>
                       <div>Fashion, Apparel &amp; Leather</div>
-                      <span className="text-[10px] font-normal text-slate-400">Fabricated Lawn, Footwear, Handcrafted Leather</span>
+                      <span className="text-xs font-normal text-slate-500">Fabricated Lawn, Footwear, Handcrafted Leather</span>
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">7.0%</td>
                   <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-[10px] font-bold border border-rose-200">
+                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
                       0.0% Free
                     </span>
                   </td>
@@ -381,12 +381,12 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                     <div>
                       <div>Beauty, Skincare &amp; Wellness</div>
-                      <span className="text-[10px] font-normal text-slate-400">Organic Serums, Dermatics, Scents</span>
+                      <span className="text-xs font-normal text-slate-500">Organic Serums, Dermatics, Scents</span>
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">4.5%</td>
                   <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-[10px] font-bold border border-rose-200">
+                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
                       0.0% Free
                     </span>
                   </td>
@@ -403,12 +403,12 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                     <div>
                       <div>Home, Kitchen &amp; Artisanal Decor</div>
-                      <span className="text-[10px] font-normal text-slate-400">Blue Pottery Multan, Brass, Crockery</span>
+                      <span className="text-xs font-normal text-slate-500">Blue Pottery Multan, Brass, Crockery</span>
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">4.0%</td>
                   <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-[10px] font-bold border border-rose-200">
+                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
                       0.0% Free
                     </span>
                   </td>
@@ -425,12 +425,12 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                     <div>
                       <div>Digital Downloads &amp; Software</div>
-                      <span className="text-[10px] font-normal text-slate-400">Templates, Fonts, Licensed Utility Apps</span>
+                      <span className="text-xs font-normal text-slate-500">Templates, Fonts, Licensed Utility Apps</span>
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">4.0%</td>
                   <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-[10px] font-bold border border-rose-200">
+                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
                       0.0% Free
                     </span>
                   </td>
@@ -448,7 +448,7 @@ export const BecomeSellerPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="mt-16 space-y-6">
           <div className="text-center max-w-2xl mx-auto">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
+            <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
               SBP COMPLIANT ESCROW SETTLEMENT REGIME
             </span>
             <h2 className="font-outfit text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
@@ -470,7 +470,7 @@ export const BecomeSellerPage: React.FC = () => {
                   <Lock className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
+                  <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
                     Step 01 • Order Placed
                   </span>
                   <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white mt-0.5">
@@ -482,7 +482,7 @@ export const BecomeSellerPage: React.FC = () => {
                 </p>
               </div>
               <div className="mt-6 pt-3 border-t border-slate-100 dark:border-white/5 relative z-10">
-                <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
                   <Check className="h-3 w-3" aria-hidden="true" />
                   Zero cancellation &amp; risk
                 </span>
@@ -499,7 +499,7 @@ export const BecomeSellerPage: React.FC = () => {
                   <Clock className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">
+                  <span className="text-xs font-bold uppercase tracking-wider text-purple-600">
                     Step 02 • Quality Inspection
                   </span>
                   <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white mt-0.5">
@@ -511,7 +511,7 @@ export const BecomeSellerPage: React.FC = () => {
                 </p>
               </div>
               <div className="mt-6 pt-3 border-t border-slate-100 dark:border-white/5 relative z-10">
-                <span className="text-[11px] font-bold text-purple-600 flex items-center gap-1">
+                <span className="text-xs font-bold text-purple-600 flex items-center gap-1">
                   <Check className="h-3 w-3" aria-hidden="true" />
                   Automated dispute protection
                 </span>
@@ -528,7 +528,7 @@ export const BecomeSellerPage: React.FC = () => {
                   <Building2 className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
                     Step 03 • Instant Disbursement
                   </span>
                   <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white mt-0.5">
@@ -540,7 +540,7 @@ export const BecomeSellerPage: React.FC = () => {
                 </p>
               </div>
               <div className="mt-6 pt-3 border-t border-slate-100 dark:border-white/5 relative z-10">
-                <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
                   <Check className="h-3 w-3" aria-hidden="true" />
                   Instant transaction validation
                 </span>
@@ -554,7 +554,7 @@ export const BecomeSellerPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="mt-16 rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm">
           <div className="mb-6">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-sun-orange">
+            <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
               Operations &amp; Logistics Standard
             </span>
             <h2 className="font-outfit text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
@@ -579,7 +579,7 @@ export const BecomeSellerPage: React.FC = () => {
                   <Zap className="h-3.5 w-3.5 fill-sun-orange text-sun-orange" aria-hidden="true" />
                   <span>Bykea Express Fast-Track</span>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Pack within 60 minutes when order placed with Bykea Fulfillment badge for same-market express delivery.
                 </p>
               </div>
@@ -594,7 +594,7 @@ export const BecomeSellerPage: React.FC = () => {
                 <h4 className="font-outfit text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                   Standard National Orders
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   <strong>24 to 48 Hours</strong> maximum to pack and hand over to our national courier network (TCS / Leopard / Trax).
                 </p>
               </div>
@@ -606,7 +606,7 @@ export const BecomeSellerPage: React.FC = () => {
                 <h4 className="font-outfit text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                   Karachi Same–City Express
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   <strong>3 to 6 Hours</strong> dispatch window for orders qualifying under the PKR 4,500 Bykea cutoff.
                 </p>
               </div>
@@ -618,7 +618,7 @@ export const BecomeSellerPage: React.FC = () => {
                 <h4 className="font-outfit text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                   Tamper–Proof Packaging
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   All consignments must be securely packed with tamper-evident tape and carton security seals.
                 </p>
               </div>
@@ -630,7 +630,7 @@ export const BecomeSellerPage: React.FC = () => {
                 <h4 className="font-outfit text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                   Cancellation &amp; Fault Rate
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Seller fault cancellations must remain strictly below <strong>1.5%</strong> to maintain Top Seller badge.
                 </p>
               </div>
@@ -643,7 +643,7 @@ export const BecomeSellerPage: React.FC = () => {
         {/* ========================================================================= */}
         <div className="mt-16 rounded-3xl border border-white/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm">
           <div className="mb-6">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-500">
               Fair Business &amp; Integrity Charter
             </span>
             <h2 className="font-outfit text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
@@ -663,10 +663,10 @@ export const BecomeSellerPage: React.FC = () => {
                 </div>
                 <span className="font-outfit text-sm font-bold text-rose-600 dark:text-rose-400">Anti–Counterfeit Pledge</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 Vendora operates zero tolerance on counterfeit or imitation merchandise. Any vendor found distributing imitation goods will face immediate account closure, forfeiture of escrow funds, and blacklisting.
               </p>
-              <div className="mt-auto pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
+              <div className="mt-auto pt-2 text-xs font-bold text-slate-500 border-t border-slate-100 dark:border-white/5">
                 Personal punitive fine of 100,000 PKR if breach occurs
               </div>
             </div>
@@ -678,10 +678,10 @@ export const BecomeSellerPage: React.FC = () => {
                 </div>
                 <span className="font-outfit text-sm font-bold text-purple-600 dark:text-purple-400">Authentic Photography</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 Every listing must use actual products photographed in white/neutral studio light. Stock 3D render mockups without real products will fail onboarding review.
               </p>
-              <div className="mt-auto pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
+              <div className="mt-auto pt-2 text-xs font-bold text-slate-500 border-t border-slate-100 dark:border-white/5">
                 Minimum 3 distinct angles, 1000x1000px on clean background
               </div>
             </div>
@@ -693,10 +693,10 @@ export const BecomeSellerPage: React.FC = () => {
                 </div>
                 <span className="font-outfit text-sm font-bold text-blue-600 dark:text-blue-400">Communication Etiquette</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 All interactions via Buyer-Seller Messaging must maintain professional courtesy. Diverting customers to external WhatsApp/Direct bank transfers is strictly prohibited and results in immediate delisting.
               </p>
-              <div className="mt-auto pt-2 text-[10px] font-bold text-slate-400 border-t border-slate-100 dark:border-white/5">
+              <div className="mt-auto pt-2 text-xs font-bold text-slate-500 border-t border-slate-100 dark:border-white/5">
                 Encrypted messaging recorded for escrow audit
               </div>
             </div>
@@ -708,16 +708,16 @@ export const BecomeSellerPage: React.FC = () => {
               <AlertOctagon className="h-4 w-4 text-rose-500" aria-hidden="true" />
               Prohibited Goods &amp; Services:
             </span>
-            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
+            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
               Medical Prescription Drugs
             </span>
-            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
+            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
               Unapproved Dietary Supplements
             </span>
-            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
+            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
               Replicas &amp; Counterfeits
             </span>
-            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
+            <span className="rounded-full bg-white/70 dark:bg-white/5 border border-white/80 dark:border-white/10 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
               Unauthorized Copyrighted Items
             </span>
           </div>
