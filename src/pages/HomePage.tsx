@@ -28,6 +28,7 @@ import { useHeroPortrait, useHeroSlides } from '../features/home/api/hero-banner
 import { TrustStrip } from '../components/common/TrustStrip';
 import { Toast } from '../components/common/Toast';
 import { CountdownTimer } from '../components/common/CountdownTimer';
+import { CategoryPill } from '../components/common/CategoryPill';
 import { GridSkeleton, Skeleton } from '../components/common/QueryState';
 import { useToast } from '../hooks/useToast';
 
@@ -451,23 +452,15 @@ export const HomePage: React.FC = () => {
             inline={
               /* Parent category pills: only show categories that have products on sale */
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                {parentCategoriesWithSales.map((cat) => {
-                  const isSelected = selectedSaleCategory === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setSelectedSaleCategory(cat.id)}
-                      className={`cursor-pointer rounded-full px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
-                        isSelected
-                          ? 'border border-sun-orange bg-sun-orange text-white shadow-md shadow-orange-500/25 font-bold'
-                          : 'border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
-                    >
-                      {cat.name}
-                    </button>
-                  );
-                })}
+                {parentCategoriesWithSales.map((cat) => (
+                  <CategoryPill
+                    key={cat.id}
+                    selected={selectedSaleCategory === cat.id}
+                    onClick={() => setSelectedSaleCategory(cat.id)}
+                  >
+                    {cat.name}
+                  </CategoryPill>
+                ))}
               </div>
             }
             action={
@@ -889,7 +882,11 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             4B. Digital Goods & Software Vault
             ========================================================================= */}
-        <DigitalShowcase onAddToCart={handleAddToCart} />
+        <DigitalShowcase
+          onAddToCart={handleAddToCart}
+          onToggleWishlist={handleToggleWishlist}
+          isInWishlist={isInWishlist}
+        />
 
 
 

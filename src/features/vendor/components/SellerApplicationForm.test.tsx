@@ -442,11 +442,14 @@ describe('Seller Onboarding & Application Workflow', () => {
       ).toBeInTheDocument();
       expect(screen.getByText(/automated split/i)).toBeInTheDocument();
 
-      // Benefit 3: Platform Reach
+      // Benefit 3: Platform Reach — Batch 51 removed the fabricated
+      // "500,000+ Buyers" badge (no such count exists); the card now
+      // claims only a growing marketplace.
       expect(
         screen.getByRole('heading', { name: /massive platform reach/i }),
       ).toBeInTheDocument();
-      expect(screen.getByText(/500,000\+ buyers/i)).toBeInTheDocument();
+      expect(screen.getByText(/^growing marketplace$/i)).toBeInTheDocument();
+      expect(screen.queryByText(/500,000\+ buyers/i)).not.toBeInTheDocument();
 
       // Also renders application form for new applicants
       expect(screen.getByLabelText(/business name/i)).toBeInTheDocument();

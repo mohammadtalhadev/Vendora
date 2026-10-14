@@ -25,6 +25,13 @@ import { useReveal } from '../../../hooks/useReveal';
  * so printing it for a zero-review store would repeat the fake-signal
  * problem this rewrite removes. When the directory is empty or fails to
  * load, the section renders nothing rather than placeholder stores.
+ *
+ * Batch 51 (owner points) asked for orders-delivered and response-time on
+ * these cards too. Neither has a public data source today: order counts
+ * live in `sub_orders`, which no public policy or aggregate view exposes
+ * (it would take a migration), and seller response time is not recorded
+ * anywhere. Both are deliberately omitted rather than estimated — the
+ * stat row carries only the real rating/review rollup.
  */
 export const BrandSpotlight: React.FC = () => {
   useReveal();
@@ -120,20 +127,24 @@ export const BrandSpotlight: React.FC = () => {
                     {blurb}
                   </p>
                 )}
-                {store.reviewCount > 0 && (
-                  <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-100/70 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
-                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              </div>
+
+              {/* Bottom: the card's one minimal stat row — the store's real
+                  rating/review rollup on the left (only when it has reviews),
+                  Visit Store on the right. */}
+              <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[11px]">
+                {store.reviewCount > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-slate-600">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                     <span>
                       {store.rating.toFixed(1)} · {store.reviewCount}{' '}
                       {store.reviewCount === 1 ? 'review' : 'reviews'}
                     </span>
-                  </div>
+                  </span>
+                ) : (
+                  <span aria-hidden="true" />
                 )}
-              </div>
-
-              {/* Bottom: Visit Store */}
-              <div className="mt-4 flex items-center justify-end border-t border-slate-100 pt-3 text-[11px]">
-                <span className="inline-flex items-center gap-1 font-bold text-sun-orange group-hover:underline">
+                <span className="inline-flex shrink-0 items-center gap-1 font-bold text-sun-orange group-hover:underline">
                   Visit Store <ArrowUpRight className="h-3 w-3" />
                 </span>
               </div>

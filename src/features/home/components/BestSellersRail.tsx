@@ -8,6 +8,7 @@ import { useReveal } from '../../../hooks/useReveal';
 import { SectionHeading } from './SectionHeading';
 import { RailEmptyState } from '../../products/components/RailEmptyState';
 import { GridSkeleton, Skeleton } from '../../../components/common/QueryState';
+import { CategoryPill } from '../../../components/common/CategoryPill';
 
 export interface BestSellersRailProps {
   onAddToCart?: (product: ProductItem) => void;
@@ -92,11 +93,16 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
     );
   }
 
+  // One badge standard for every rank (Batch 51, owner points): the same
+  // pill geometry, ring and shadow for all positions — the top three keep
+  // their medal colours, the rest join the card's own frosted-white badge
+  // family (the review pill and wishlist button) instead of the old dark
+  // slate slab that matched nothing else on the card.
   const getRankBadgeClass = (rank: number) => {
-    if (rank === 1) return 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 shadow-md shadow-amber-500/30';
-    if (rank === 2) return 'bg-slate-300 text-slate-900 ring-2 ring-slate-200 shadow-sm';
-    if (rank === 3) return 'bg-amber-700 text-amber-50 ring-2 ring-amber-600 shadow-sm';
-    return 'bg-slate-900/80 text-white backdrop-blur-xs';
+    if (rank === 1) return 'bg-amber-400 text-slate-950 ring-amber-300 shadow-amber-500/30';
+    if (rank === 2) return 'bg-slate-300 text-slate-900 ring-slate-200 shadow-slate-400/20';
+    if (rank === 3) return 'bg-amber-700 text-amber-50 ring-amber-600 shadow-amber-700/25';
+    return 'bg-white/90 text-slate-700 ring-slate-200 backdrop-blur-xs shadow-slate-900/5';
   };
 
   return (
@@ -113,23 +119,15 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
         subtitle="Top-rated products ranked by genuine customer review volume"
         action={
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {visibleTabs.map((tab) => {
-            const isActive = effectiveCategory === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSelectedCategory(tab.id)}
-                className={`cursor-pointer whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-200 ${
-                  isActive
-                    ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25 border border-sun-orange'
-                    : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/80'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+          {visibleTabs.map((tab) => (
+            <CategoryPill
+              key={tab.id}
+              selected={effectiveCategory === tab.id}
+              onClick={() => setSelectedCategory(tab.id)}
+            >
+              {tab.label}
+            </CategoryPill>
+          ))}
           </div>
         }
       />
@@ -158,7 +156,7 @@ export const BestSellersRail: React.FC<BestSellersRailProps> = ({
 
                 {/* Rank Badge */}
                 <span
-                  className={`absolute left-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-xl text-xs font-black ${getRankBadgeClass(
+                  className={`absolute left-2.5 top-2.5 flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-black ring-2 shadow-md ${getRankBadgeClass(
                     item.rank
                   )}`}
                 >

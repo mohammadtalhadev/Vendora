@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { ProductCard, type ProductItem } from './ProductCard';
 import { RailEmptyState } from './RailEmptyState';
+import { CategoryPill } from '../../../components/common/CategoryPill';
 
 export interface CarouselChildCategory {
   id: string;
@@ -144,23 +145,15 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
 
             {/* Subcategory switcher pills (Up to 4 categories) */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-              {sanitizedTabs.map((sub) => {
-                const isSelected = currentTabId === sub.id;
-                return (
-                  <button
-                    key={sub.id}
-                    type="button"
-                    onClick={() => handleTabClick(sub.id)}
-                    className={`cursor-pointer rounded-full px-4 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap backdrop-blur-md ${
-                      isSelected
-                        ? 'border border-sun-orange bg-orange-500/10 text-sun-orange shadow-2xs font-bold'
-                        : 'border border-slate-200/80 bg-white/70 text-slate-800 hover:border-slate-300 hover:bg-white hover:text-slate-900'
-                    }`}
-                  >
-                    {sub.name}
-                  </button>
-                );
-              })}
+              {sanitizedTabs.map((sub) => (
+                <CategoryPill
+                  key={sub.id}
+                  selected={currentTabId === sub.id}
+                  onClick={() => handleTabClick(sub.id)}
+                >
+                  {sub.name}
+                </CategoryPill>
+              ))}
             </div>
           </div>
         </div>
@@ -210,35 +203,24 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
+            <CategoryPill
+              size="sm"
+              selected={!activeChildId}
               onClick={() => handleChildClick('')}
-              className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
-                !activeChildId
-                  ? 'bg-sun-orange text-white shadow-xs'
-                  : 'bg-white/90 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/70'
-              }`}
             >
               All {activeSub.name}
-            </button>
+            </CategoryPill>
 
-            {activeChildCategories.map((child) => {
-              const isChildActive = activeChildId === child.id;
-              return (
-                <button
-                  key={child.id}
-                  type="button"
-                  onClick={() => handleChildClick(child.id)}
-                  className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
-                    isChildActive
-                      ? 'bg-sun-orange text-white shadow-xs'
-                      : 'bg-white/90 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/70'
-                  }`}
-                >
-                  {child.name}
-                </button>
-              );
-            })}
+            {activeChildCategories.map((child) => (
+              <CategoryPill
+                key={child.id}
+                size="sm"
+                selected={activeChildId === child.id}
+                onClick={() => handleChildClick(child.id)}
+              >
+                {child.name}
+              </CategoryPill>
+            ))}
           </div>
         </div>
       )}

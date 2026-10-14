@@ -18,7 +18,6 @@ import {
   Camera,
   MessageSquare,
   CheckCircle2,
-  X,
   RotateCcw,
   DollarSign,
   Users,
@@ -37,7 +36,6 @@ export const BecomeSellerPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const [monthlySales, setMonthlySales] = useState(350000);
-  const [showApplicationModal, setShowApplicationModal] = useState(false);
 
   // Merchant application status (Supabase-authoritative profile mirrored in the auth store).
   const vendorStatus = user?.vendorStatus ?? 'none';
@@ -69,7 +67,8 @@ export const BecomeSellerPage: React.FC = () => {
         {/* ========================================================================= */}
         {/* 1. Hero Section & Value Propositions                                      */}
         {/* ========================================================================= */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+        <div className="mx-auto max-w-3xl space-y-5 rounded-[32px] border border-white/80 bg-white/70 px-6 py-10 text-center shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70 sm:px-10">
+          <Badge variant="vendora-platform">Become a Seller</Badge>
           <h1 className="font-outfit text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
             Transparent Pricing. Fair Growth.{' '}
             <span className="bg-gradient-to-r from-sun-orange to-rose-600 bg-clip-text text-transparent">
@@ -78,9 +77,23 @@ export const BecomeSellerPage: React.FC = () => {
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
-            Enable and grow Vendora partners with verified Pakistani merchants — featuring regulated escrow payout schedules, fair selling charters, and market-leading commission structures.
+            Join the verified Pakistani merchants selling on Vendora — category commission published up front, a dispute desk that protects both sides of every order, and payouts to your bank account on a weekly cycle.
           </p>
 
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 ring-1 ring-slate-200/80 dark:bg-slate-800/80 dark:ring-slate-700">
+              <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+              Published fee schedule
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 ring-1 ring-slate-200/80 dark:bg-slate-800/80 dark:ring-slate-700">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+              Dispute desk on every order
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 ring-1 ring-slate-200/80 dark:bg-slate-800/80 dark:ring-slate-700">
+              <Clock className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+              Weekly payouts
+            </span>
+          </div>
         </div>
 
         {/* ========================================================================= */}
@@ -132,7 +145,7 @@ export const BecomeSellerPage: React.FC = () => {
                 <Users className="h-6 w-6" aria-hidden="true" />
               </div>
               <div className="flex items-center gap-2 mb-1.5">
-                <Badge variant="secondary" size="sm">500,000+ Buyers</Badge>
+                <Badge variant="secondary" size="sm">Growing Marketplace</Badge>
                 <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">High-Intent Traffic</span>
               </div>
               <h3 className="font-outfit text-lg font-bold text-slate-900 dark:text-white">
@@ -265,13 +278,17 @@ export const BecomeSellerPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 dark:border-slate-800 pb-6 mb-6">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
-                Guaranteed Tiered Commission Structure
+                Tiered Commission Structure
               </span>
               <h2 className="font-outfit text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
                 Official Category Commission Schedule
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Compare Vendora's fair rates against legacy marketplaces in Pakistan. Every verified store enjoys zero listing fees for the first quarter.
+                Compare Vendora's rates against legacy marketplaces in Pakistan. The live, binding schedule is published on the{' '}
+                <Link to="/seller-fees" className="font-bold text-sun-orange hover:underline">
+                  Seller Fees
+                </Link>{' '}
+                page.
               </p>
             </div>
 
@@ -322,8 +339,7 @@ export const BecomeSellerPage: React.FC = () => {
                 <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-500 font-semibold text-xs">
                   <th className="py-3 px-4">Product Category</th>
                   <th className="py-3 px-4">Standard Commission</th>
-                  <th className="py-3 px-4">Introductory 90-Day Rate</th>
-                  <th className="py-3 px-4">Gateway &amp; Escrow Fee</th>
+                  <th className="py-3 px-4">Gateway Fee</th>
                   <th className="py-3 px-4">Payout Cadence</th>
                   <th className="py-3 px-4 text-right">Industry Benchmark</th>
                 </tr>
@@ -341,11 +357,6 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">5.5%</td>
-                  <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
-                      0.0% Free
-                    </span>
-                  </td>
                   <td className="py-4 px-4 text-slate-500">0% Standard (Absorbed)</td>
                   <td className="py-4 px-4 font-semibold text-purple-600">Every Monday</td>
                   <td className="py-4 px-4 text-right text-slate-400 font-mono">12% – 15%</td>
@@ -363,11 +374,6 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">7.0%</td>
-                  <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
-                      0.0% Free
-                    </span>
-                  </td>
                   <td className="py-4 px-4 text-slate-500">0% Standard (Absorbed)</td>
                   <td className="py-4 px-4 font-semibold text-purple-600">Every Monday</td>
                   <td className="py-4 px-4 text-right text-slate-400 font-mono">15% – 20%</td>
@@ -385,11 +391,6 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">4.5%</td>
-                  <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
-                      0.0% Free
-                    </span>
-                  </td>
                   <td className="py-4 px-4 text-slate-500">0% Standard (Absorbed)</td>
                   <td className="py-4 px-4 font-semibold text-purple-600">Every Monday</td>
                   <td className="py-4 px-4 text-right text-slate-400 font-mono">14% – 18%</td>
@@ -407,11 +408,6 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">4.0%</td>
-                  <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
-                      0.0% Free
-                    </span>
-                  </td>
                   <td className="py-4 px-4 text-slate-500">0% Standard (Absorbed)</td>
                   <td className="py-4 px-4 font-semibold text-purple-600">Every Monday</td>
                   <td className="py-4 px-4 text-right text-slate-400 font-mono">10% – 15%</td>
@@ -429,11 +425,6 @@ export const BecomeSellerPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-4 px-4 font-outfit font-black text-slate-900 dark:text-white">4.0%</td>
-                  <td className="py-4 px-4">
-                    <span className="rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 px-2 py-0.5 text-xs font-bold border border-rose-200">
-                      0.0% Free
-                    </span>
-                  </td>
                   <td className="py-4 px-4 text-slate-500">0% Standard (Absorbed)</td>
                   <td className="py-4 px-4 font-semibold text-purple-600">Every Monday</td>
                   <td className="py-4 px-4 text-right text-slate-400 font-mono">15% – 25%</td>
@@ -444,18 +435,18 @@ export const BecomeSellerPage: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* 3. Escrow Protection & Payout Protocol (3 Big Cards)                       */}
+        {/* 3. Payment Protection & Payouts (3 Big Cards)                              */}
         {/* ========================================================================= */}
         <div className="mt-16 space-y-6">
           <div className="text-center max-w-2xl mx-auto">
             <span className="text-xs font-bold uppercase tracking-wider text-sun-orange">
-              SBP COMPLIANT ESCROW SETTLEMENT REGIME
+              How Payouts Work
             </span>
             <h2 className="font-outfit text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-              Escrow Protection &amp; Payout Protocol
+              Payment Protection &amp; Payouts
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Never worry about unpaid COD or delayed disbursements. Your funds are secured from order checkout to doorstep settlement.
+              From checkout to settlement, every package follows the same published rules — commission frozen at order time, disputes handled by the desk, settled balances paid out weekly.
             </p>
           </div>
 
@@ -474,17 +465,17 @@ export const BecomeSellerPage: React.FC = () => {
                     Step 01 • Order Placed
                   </span>
                   <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                    Escrow Vault Lock
+                    Commission Frozen at Checkout
                   </h3>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  When a buyer purchases a consignment, funds are held in SBP-compliant escrow bank security accounts (Meezan Bank Trust). Capital is fully insulated from operational risk.
+                  When a buyer checks out, the order records the price, the published category commission and your net for every package. Those figures never change afterwards — what you saw at order time is what settles.
                 </p>
               </div>
               <div className="mt-6 pt-3 border-t border-slate-100 dark:border-white/5 relative z-10">
                 <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
                   <Check className="h-3 w-3" aria-hidden="true" />
-                  Zero cancellation &amp; risk
+                  Figures locked on the order record
                 </span>
               </div>
             </div>
@@ -500,20 +491,20 @@ export const BecomeSellerPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-purple-600">
-                    Step 02 • Quality Inspection
+                    Step 02 • Delivery &amp; Disputes
                   </span>
                   <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                    7–Day Customer Inspection
+                    Dispute Desk Review
                   </h3>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Upon confirmed delivery by courier partner (TCS, Bykea, Leopard), a 7-day inspection window starts. Unless a dispute is lodged within 168 hours, funds automatically transition to "Approved Settlement".
+                  After delivery, the buyer can raise a dispute from their order if something is wrong. While a dispute is open, that package&apos;s payout is held and the dispute desk reviews the evidence from both sides before it settles.
                 </p>
               </div>
               <div className="mt-6 pt-3 border-t border-slate-100 dark:border-white/5 relative z-10">
                 <span className="text-xs font-bold text-purple-600 flex items-center gap-1">
                   <Check className="h-3 w-3" aria-hidden="true" />
-                  Automated dispute protection
+                  Both sides heard before settlement
                 </span>
               </div>
             </div>
@@ -529,20 +520,20 @@ export const BecomeSellerPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
-                    Step 03 • Instant Disbursement
+                    Step 03 • Weekly Payout
                   </span>
                   <h3 className="font-outfit text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                    Monday 11:30 AM IBFT Transfer
+                    Paid to Your Bank Account
                   </h3>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Every Monday at 09:30 AM PKT, approved balances are disbursed directly into your Pakistani bank account (Meezan, HBL, Standard Chartered, or EasyPaisa/JazzCash) without deduction fees.
+                  Settled balances build up in your vendor account. Request a payout from your dashboard and the amount is transferred to your registered Pakistani bank account on the weekly payout cycle.
                 </p>
               </div>
               <div className="mt-6 pt-3 border-t border-slate-100 dark:border-white/5 relative z-10">
                 <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
                   <Check className="h-3 w-3" aria-hidden="true" />
-                  Instant transaction validation
+                  Track every payout in your dashboard
                 </span>
               </div>
             </div>
@@ -664,7 +655,7 @@ export const BecomeSellerPage: React.FC = () => {
                 <span className="font-outfit text-sm font-bold text-rose-600 dark:text-rose-400">Anti–Counterfeit Pledge</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Vendora operates zero tolerance on counterfeit or imitation merchandise. Any vendor found distributing imitation goods will face immediate account closure, forfeiture of escrow funds, and blacklisting.
+                Vendora operates zero tolerance on counterfeit or imitation merchandise. Any vendor found distributing imitation goods will face immediate account closure, forfeiture of pending payouts, and blacklisting.
               </p>
               <div className="mt-auto pt-2 text-xs font-bold text-slate-500 border-t border-slate-100 dark:border-white/5">
                 Personal punitive fine of 100,000 PKR if breach occurs
@@ -697,7 +688,7 @@ export const BecomeSellerPage: React.FC = () => {
                 All interactions via Buyer-Seller Messaging must maintain professional courtesy. Diverting customers to external WhatsApp/Direct bank transfers is strictly prohibited and results in immediate delisting.
               </p>
               <div className="mt-auto pt-2 text-xs font-bold text-slate-500 border-t border-slate-100 dark:border-white/5">
-                Encrypted messaging recorded for escrow audit
+                Messaging is recorded for dispute review
               </div>
             </div>
           </div>
@@ -723,79 +714,8 @@ export const BecomeSellerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* 6. Bottom Call to Action Banner (Rich Gradient & Glowing Ethereal Orbs)   */}
-        {/* ========================================================================= */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/80 dark:border-white/10 bg-gradient-to-br from-orange-50/90 via-white/85 to-cyan-50/75 dark:from-slate-900/90 dark:via-slate-800/80 dark:to-slate-900/90 backdrop-blur-2xl p-8 sm:p-14 shadow-xl text-center space-y-5">
-          {/* Ambient Glowing Orbs inside CTA */}
-          <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-            <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-gradient-to-tr from-sun-orange-200/50 via-sun-orange-100/60 to-transparent blur-[90px] dark:from-sun-orange/15 pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-gradient-to-bl from-aqua-100/60 via-[#F1F5F9]/70 to-transparent blur-[90px] dark:from-aqua/15 pointer-events-none" />
-          </div>
-
-          <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
-            <h2 className="font-outfit text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-              Ready to scale your brand across Pakistan?
-            </h2>
-
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              Register your store in less than five minutes. Benefit from 0% commission for 90 days, automated dispatch integrations, and direct bank weekly payouts.
-            </p>
-
-            <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => setShowApplicationModal(true)}
-                className="rounded-2xl bg-gradient-to-r from-sun-orange to-[#FF9040] hover:from-sun-orange-600 hover:to-sun-orange px-7 py-3.5 text-xs font-bold text-white shadow-lg shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <span>Apply as a Merchant</span>
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => alert('Downloading official Vendora Seller Handbook 2026 PDF...')}
-                className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md px-6 py-3.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-white shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <Download className="h-4 w-4" aria-hidden="true" />
-                <span>Download Seller Handbook (PDF)</span>
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Merchant Application Modal */}
-      {showApplicationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="seller-onboarding-title"
-            className="relative w-full max-w-2xl rounded-3xl border border-white/80 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl my-8"
-          >
-            <button
-              type="button"
-              onClick={() => setShowApplicationModal(false)}
-              aria-label="Close merchant application form"
-              title="Close"
-              className="absolute top-4 right-4 h-8 w-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 flex items-center justify-center font-bold"
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <div className="mb-6">
-              <h3
-                id="seller-onboarding-title"
-                className="font-outfit text-xl font-black text-slate-900 dark:text-white"
-              >
-                Start Your Merchant Onboarding
-              </h3>
-              <p className="text-xs text-slate-500">Fast 5-minute verification with SBP Escrow account activation.</p>
-            </div>
-            <SellerApplicationForm />
-          </div>
-        </div>
-      )}
     </div>
   );
 };
