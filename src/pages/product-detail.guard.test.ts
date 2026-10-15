@@ -68,6 +68,25 @@ describe('product page fabrication pins', () => {
 
 });
 
+describe('product page overlays stay portaled (Batch 127)', () => {
+  // The live-chat overlay rendered inline in the page subtree was captured
+  // by an ancestor containing block and opened pinned to the bottom of the
+  // page, clipped (owner screenshot + live guest repro). All three PDP
+  // overlays render through a portal to document.body — the Batch 114
+  // BackToTopButton pattern — so their fixed positioning is the viewport's.
+  it('the live chat, send offer and zoom overlays all use createPortal', () => {
+    expect(read('features/products/components/LiveChatModal.tsx')).toContain('createPortal');
+    expect(read('features/products/components/SendOfferModal.tsx')).toContain('createPortal');
+    expect(read(PDP)).toContain('createPortal');
+  });
+
+  it('the live chat shows no composer when no chat can happen', () => {
+    const source = read('features/products/components/LiveChatModal.tsx');
+    expect(source).toContain('{canChat && (');
+    expect(source).toContain('Sign in to message seller');
+  });
+});
+
 describe('product page out-of-stock parity', () => {
   it('the desktop buy box disables its CTAs at zero stock, like the mobile bar', () => {
     const source = read(PDP);

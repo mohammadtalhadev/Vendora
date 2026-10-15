@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { X, Send, Store, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../../../store/auth-store';
@@ -38,6 +39,16 @@ const toFeedMessage = (m: ChatMessage): FeedMessage => ({
  * replies arrive from the database (vendors answer from their workspace) — this
  * modal never fabricates a seller reply, which the previous version did locally
  * and then persisted as if the seller had written it.
+ *
+ * Batch 127: the overlay renders through a portal to document.body (the
+ * BackToTopButton Batch 114 pattern). Rendered inline inside the routed page
+ * subtree, the fixed overlay was captured by an ancestor containing block and
+ * landed pinned to the bottom of the page, clipped, instead of centred in the
+ * viewport — the owner's screenshot and a live guest repro both showed it
+ * hanging off the bottom edge. A guest (or a first-party listing) also no
+ * longer gets the full 520px chat shell with every control disabled: the
+ * panel shrinks to the sign-in / handled-by-support notice and the composer
+ * (quick prompts + input) only exists when a chat can actually happen.
  */
 export const LiveChatModal: React.FC<LiveChatModalProps> = ({
   isOpen,
@@ -103,7 +114,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
     'Do you offer warranty coverage?',
   ];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
       <div
         ref={panelRef}
@@ -111,7 +122,9 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={`Chat with ${sellerName}`}
-        className="relative flex h-[520px] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        className={`relative flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${
+          canChat ? 'h-[520px]' : 'h-auto max-h-[85vh]'
+        }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-4">
@@ -145,13 +158,23 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
         {/* Message Feed */}
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {!user && (
-            <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
-              Please{' '}
-              <Link to="/login" className="font-bold text-sun-orange hover:underline">
-                sign in
-              </Link>{' '}
-              to message this seller.
-            </p>
+            <div className="rounded-2xl bg-slate-50 px-4 py-4 text-center">
+              <p className="text-xs leading-relaxed text-slate-600">
+                Please sign in to message this seller.
+              </p>
+              <Link
+                to="/login"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-sun-orange px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-sun-orange-600"
+              >
+                Sign in to message seller
+              </Link>
+              <p className="mt-2.5 text-[11px] text-slate-500">
+                New to Vendora?{' '}
+                <Link to="/register" className="font-bold text-sun-orange hover:underline">
+                  Create an account
+                </Link>
+              </p>
+            </div>
           )}
           {user && isPlatformSeller && (
             <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
@@ -187,7 +210,11 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
           )}
         </div>
 
-        {/* Quick Prompts */}
+        {/* Quick Prompts — only when a chat can actually happen; a guest or a
+            first-party listing gets the compact notice above, not a row of
+            permanently disabled chips (Batch 127). */}
+        {canChat && (
+        <>
         <div className="flex gap-1.5 overflow-x-auto border-t border-slate-100 bg-slate-50/50 px-3 py-2" data-lenis-prevent>
           {quickPrompts.map((prompt, idx) => (
             <button
@@ -228,7 +255,10 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
             </button>
           </form>
         </div>
+        </>
+        )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

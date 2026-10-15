@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { X, CheckCircle, Tag } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
@@ -24,6 +25,11 @@ interface SendOfferModalProps {
  * workspace. The previous version persisted nothing — it showed a success
  * screen promising an emailed reply, priced in a hard-coded dollar sign,
  * for an offer no one ever received.
+ *
+ * Batch 127: rendered through a portal to document.body, like the live-chat
+ * modal — inline inside the routed page subtree, this fixed overlay family
+ * could be captured by an ancestor containing block and land at the bottom
+ * of the page instead of centred in the viewport (see LiveChatModal).
  */
 export const SendOfferModal: React.FC<SendOfferModalProps> = ({
   isOpen,
@@ -84,7 +90,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
       <div
         ref={panelRef}
@@ -218,6 +224,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

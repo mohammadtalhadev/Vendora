@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Star,
@@ -1147,8 +1148,12 @@ export const ProductDetailPage: React.FC = () => {
             {/* ========================================================= */}
             {/* INTERACTIVE MODALS                                        */}
             {/* ========================================================= */}
-            {/* 1. Zoom Lightbox Modal */}
-            {isZoomOpen && (
+            {/* 1. Zoom Lightbox Modal — portaled to document.body like the
+                page's other overlays (Batch 127): inline, a fixed overlay in
+                this subtree can be captured by an ancestor containing block
+                and land at the bottom of the page instead of the viewport. */}
+            {isZoomOpen &&
+              createPortal(
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-sm">
                 <div
                   ref={zoomPanelRef}
@@ -1184,7 +1189,8 @@ export const ProductDetailPage: React.FC = () => {
                     </a>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body,
             )}
 
             {/* 2. Send Offer Modal */}
