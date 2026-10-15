@@ -69,7 +69,9 @@ describe('uploadAvatar', () => {
 
   it('surfaces a storage refusal and leaves the profile untouched', async () => {
     supabaseDouble.failStorageUpload('new row violates row-level security policy');
-    await expect(uploadAvatar(photo())).rejects.toThrow(/Photo upload failed/);
+    await expect(uploadAvatar(photo())).rejects.toThrow(/Failed to save your profile/);
+    // The storage service's raw wording never reaches the caller.
+    await expect(uploadAvatar(photo())).rejects.not.toThrow(/violates row-level security/);
     const row = supabaseDouble.tables.profiles.find((r) => r.id === USER);
     expect(row?.avatar_url).toBeNull();
   });

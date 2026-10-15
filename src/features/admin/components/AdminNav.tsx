@@ -44,135 +44,170 @@ interface NavItem {
   end?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
   {
-    to: '/admin',
-    label: 'Dashboard',
-    accessibleSubtitle: 'Overview',
-    icon: LayoutDashboard,
-    end: true,
+    title: 'Overview',
+    items: [
+      {
+        to: '/admin',
+        label: 'Dashboard',
+        accessibleSubtitle: 'Overview',
+        icon: LayoutDashboard,
+        end: true,
+      },
+    ],
   },
   {
-    to: '/admin/vendors',
-    label: 'Vendors',
-    accessibleSubtitle: 'Vendor Approvals',
-    icon: Store,
+    title: 'Products',
+    items: [
+      {
+        to: '/admin/products',
+        label: 'Product Moderation',
+        icon: ShieldCheck,
+        end: true,
+      },
+      {
+        to: '/admin/add-product',
+        label: 'Add Product',
+        accessibleSubtitle: 'Create Product',
+        icon: PlusCircle,
+        end: true,
+      },
+      {
+        to: '/admin/categories',
+        label: 'Categories',
+        icon: Layers,
+      },
+      {
+        to: '/admin/brands',
+        label: 'Brand Registry',
+        accessibleSubtitle: 'Brand Gating & IP',
+        icon: ShieldAlert,
+      },
+      {
+        to: '/admin/media',
+        label: 'Files & Media',
+        accessibleSubtitle: 'Asset Repository',
+        icon: FolderOpen,
+      },
+      {
+        to: '/admin/cms',
+        label: 'CMS & Banners',
+        accessibleSubtitle: 'Homepage & Deals',
+        icon: Sparkles,
+      },
+    ],
   },
   {
-    to: '/admin/products',
-    label: 'Product Moderation',
-    icon: ShieldCheck,
-    end: true,
+    title: 'People',
+    items: [
+      {
+        to: '/admin/vendors',
+        label: 'Vendors',
+        accessibleSubtitle: 'Vendor Approvals',
+        icon: Store,
+      },
+      {
+        to: '/admin/users',
+        label: 'Users',
+        icon: Users,
+      },
+    ],
   },
   {
-    to: '/admin/add-product',
-    label: 'Add Product',
-    accessibleSubtitle: 'Create Product',
-    icon: PlusCircle,
-    end: true,
+    title: 'Orders & Service',
+    items: [
+      {
+        to: '/admin/orders',
+        label: 'Orders',
+        icon: ShoppingBag,
+      },
+      {
+        to: '/admin/returns',
+        label: 'Returns',
+        accessibleSubtitle: 'Returns & Refunds',
+        icon: RotateCcw,
+      },
+      {
+        to: '/admin/disputes',
+        label: 'Disputes',
+        accessibleSubtitle: 'Dispute Resolution',
+        icon: Scale,
+      },
+      {
+        to: '/admin/reviews',
+        label: 'Reviews',
+        accessibleSubtitle: 'Review Moderation',
+        icon: Star,
+      },
+    ],
   },
   {
-    to: '/admin/orders',
-    label: 'Orders',
-    icon: ShoppingBag,
+    title: 'Finance',
+    items: [
+      {
+        to: '/admin/commission',
+        label: 'Commission',
+        accessibleSubtitle: 'Commission Settings',
+        icon: Percent,
+      },
+      {
+        to: '/admin/payouts',
+        label: 'Payouts',
+        accessibleSubtitle: 'Vendor Payouts & Finance',
+        icon: Wallet,
+      },
+      {
+        to: '/admin/reports',
+        label: 'Reports',
+        icon: BarChart3,
+      },
+      {
+        to: '/admin/compliance',
+        label: 'Tax Compliance',
+        accessibleSubtitle: 'Facilitator & 1099-K',
+        icon: Landmark,
+      },
+    ],
   },
   {
-    to: '/admin/reviews',
-    label: 'Reviews',
-    accessibleSubtitle: 'Review Moderation',
-    icon: Star,
-  },
-  {
-    to: '/admin/users',
-    label: 'Users',
-    icon: Users,
-  },
-  {
-    to: '/admin/categories',
-    label: 'Categories',
-    icon: Layers,
-  },
-  {
-    to: '/admin/commission',
-    label: 'Commission',
-    accessibleSubtitle: 'Commission Settings',
-    icon: Percent,
-  },
-  {
-    to: '/admin/payouts',
-    label: 'Payouts',
-    accessibleSubtitle: 'Vendor Payouts & Finance',
-    icon: Wallet,
-  },
-  {
-    to: '/admin/reports',
-    label: 'Reports',
-    icon: BarChart3,
-  },
-  {
-    to: '/admin/disputes',
-    label: 'Disputes',
-    accessibleSubtitle: 'Dispute Resolution',
-    icon: Scale,
-  },
-  {
-    to: '/admin/returns',
-    label: 'Returns',
-    accessibleSubtitle: 'Returns & Refunds',
-    icon: RotateCcw,
-  },
-  {
-    to: '/admin/media',
-    label: 'Files & Media',
-    accessibleSubtitle: 'Asset Repository',
-    icon: FolderOpen,
-  },
-  {
-    to: '/admin/brands',
-    label: 'Brand Registry',
-    accessibleSubtitle: 'Brand Gating & IP',
-    icon: ShieldAlert,
-  },
-  {
-    to: '/admin/cms',
-    label: 'CMS & Banners',
-    accessibleSubtitle: 'Homepage & Deals',
-    icon: Sparkles,
-  },
-  {
-    to: '/admin/logistics',
-    label: 'Fleet Logistics',
-    accessibleSubtitle: 'Rider Dispatch Console',
-    icon: Truck,
-  },
-  {
-    to: '/admin/compliance',
-    label: 'Tax Compliance',
-    accessibleSubtitle: 'Facilitator & 1099-K',
-    icon: Landmark,
-  },
-  {
-    to: '/admin/audit-logs',
-    label: 'Audit Logs',
-    accessibleSubtitle: 'Security Event Stream',
-    icon: FileCode,
-  },
-  {
-    to: '/admin/notifications',
-    label: 'Notifications',
-    icon: Bell,
-  },
-  {
-    to: '/admin/settings',
-    label: 'Platform Settings',
-    accessibleSubtitle: 'Platform & System Settings',
-    icon: Settings,
-  },
-  {
-    to: '/admin/profile',
-    label: 'Admin Profile',
-    accessibleSubtitle: 'Account & Security Settings',
-    icon: UserCheck,
+    title: 'System',
+    items: [
+      {
+        to: '/admin/logistics',
+        label: 'Fleet Logistics',
+        accessibleSubtitle: 'Rider Dispatch Console',
+        icon: Truck,
+      },
+      {
+        to: '/admin/notifications',
+        label: 'Notifications',
+        icon: Bell,
+      },
+      {
+        to: '/admin/audit-logs',
+        label: 'Audit Logs',
+        accessibleSubtitle: 'Security Event Stream',
+        icon: FileCode,
+      },
+      {
+        to: '/admin/settings',
+        label: 'Platform Settings',
+        accessibleSubtitle: 'Platform & System Settings',
+        icon: Settings,
+      },
+      {
+        to: '/admin/profile',
+        label: 'Admin Profile',
+        accessibleSubtitle: 'Account & Security Settings',
+        icon: UserCheck,
+      },
+    ],
   },
 ];
 
@@ -217,35 +252,42 @@ export const AdminNav: React.FC<AdminNavProps> = ({ className, onNavigate }) => 
       {/* ── 2. Center Scrollable Section: Only navigation options scroll (flex-1 overflow-y-auto) ── */}
       <div
         data-lenis-prevent
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar px-3 py-2 space-y-0.5"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar px-3 py-2 space-y-3"
       >
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                cn(
-                  'group flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium transition-all select-none',
-                  isActive
-                    ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 dark:from-orange-500/20 dark:to-amber-500/10 text-sun-orange-600 dark:text-sun-orange font-bold border border-orange-500/20 shadow-2xs backdrop-blur-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
-                )
-              }
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Icon className="h-4 w-4 shrink-0 transition-colors text-slate-500 dark:text-slate-400 group-hover:text-sun-orange" />
-                <span className="truncate">{item.label}</span>
-                {item.accessibleSubtitle && (
-                  <span className="sr-only"> {item.accessibleSubtitle}</span>
-                )}
-              </div>
-            </NavLink>
-          );
-        })}
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.title} className="space-y-0.5">
+            <div className="px-3 pt-1.5 pb-1 text-[10px] font-bold text-slate-400">
+              {section.title}
+            </div>
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    'group flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium transition-all select-none',
+                    isActive
+                      ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 dark:from-orange-500/20 dark:to-amber-500/10 text-sun-orange-600 dark:text-sun-orange font-bold border border-orange-500/20 shadow-2xs backdrop-blur-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
+                  )
+                }
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon className="h-4 w-4 shrink-0 transition-colors text-slate-500 dark:text-slate-400 group-hover:text-sun-orange" />
+                  <span className="truncate">{item.label}</span>
+                  {item.accessibleSubtitle && (
+                    <span className="sr-only"> {item.accessibleSubtitle}</span>
+                  )}
+                </div>
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* ── 3. Bottom Pinned Section: User profile & image card (shrink-0 mt-auto) ── */}

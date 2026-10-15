@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { toFriendlyError } from '../../../lib/friendly-error';
 import { updateProfileIdentity } from '../../auth/api/session';
 
 /**
@@ -56,7 +57,13 @@ export async function uploadAvatar(file: File): Promise<string> {
   const { error: uploadError } = await supabase.storage
     .from(AVATAR_BUCKET)
     .upload(objectPath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
-  if (uploadError) throw new Error(`Photo upload failed: ${uploadError.message}`);
+  if (uploadError) {
+    // Never surface the storage service's raw wording: map it through the
+    // friendly-error layer (which reports server-class failures via
+    // captureException and appends their reference) under the same prefix
+    // the profile-save path uses.
+    throw toFriendlyError(uploadError, { prefix: 'Failed to save your profile', context: 'avatar-upload' });
+  }
 
   const { data: urlData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(objectPath);
 

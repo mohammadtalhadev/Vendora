@@ -293,7 +293,7 @@ export const AdminReportsPage: React.FC = () => {
           }
         >
           {data && (
-            <>
+            <div className="space-y-6">
               {/* KPI Cards — totals the RPC computed for this window */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
@@ -363,8 +363,8 @@ export const AdminReportsPage: React.FC = () => {
 
               {/* Flow Chart & Take by Category */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                <div className="lg:col-span-7">
-                  <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
+                <div className="lg:col-span-7 flex">
+                  <div className="flex w-full flex-col rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <h2 className="text-base font-bold text-slate-900">
@@ -393,7 +393,7 @@ export const AdminReportsPage: React.FC = () => {
                     ) : (
                       <div className="pt-4">
                         <div
-                          className="flex gap-3 items-end h-48 border-b border-slate-100 pb-3 overflow-x-auto"
+                          className="flex gap-3 items-end h-56 border-b border-slate-100 pb-3 overflow-x-auto overflow-y-hidden"
                           role="img"
                           aria-label={`Gross sales by ${data.bucket} for the last ${data.days} days`}
                         >
@@ -403,23 +403,25 @@ export const AdminReportsPage: React.FC = () => {
                             return (
                               <div
                                 key={point.period}
-                                className="flex flex-col items-center gap-2 h-full justify-end min-w-10 flex-1"
+                                className="flex h-full flex-col items-center gap-2 min-w-10 flex-1"
                                 title={`${periodLabel(point.period, data.bucket)}: ${formatPrice(point.gross)} gross, ${formatPrice(point.commission)} commission, ${point.orders} orders`}
                               >
-                                <div
-                                  className="w-12 flex flex-col-reverse rounded-t-sm overflow-hidden bg-slate-100"
-                                  style={{ height: `${Math.max(heightPct, 1.5)}%` }}
-                                >
+                                <div className="flex w-full flex-1 items-end justify-center overflow-y-hidden">
                                   <div
-                                    className="w-full bg-slate-900"
-                                    style={{ height: `${100 - commissionShare}%` }}
-                                  />
-                                  <div
-                                    className="w-full bg-slate-300"
-                                    style={{ height: `${commissionShare}%` }}
-                                  />
+                                    className="w-12 flex flex-col-reverse rounded-t-sm overflow-hidden bg-slate-100"
+                                    style={{ height: `${Math.max(heightPct, 1.5)}%` }}
+                                  >
+                                    <div
+                                      className="w-full bg-slate-900"
+                                      style={{ height: `${100 - commissionShare}%` }}
+                                    />
+                                    <div
+                                      className="w-full bg-slate-300"
+                                      style={{ height: `${commissionShare}%` }}
+                                    />
+                                  </div>
                                 </div>
-                                <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                                <span className="h-4 shrink-0 text-[11px] leading-4 text-slate-500 whitespace-nowrap">
                                   {periodLabel(point.period, data.bucket)}
                                 </span>
                               </div>
@@ -429,7 +431,7 @@ export const AdminReportsPage: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="mt-auto pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                       <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
                         <div className="text-[11px] font-bold text-slate-500">
                           Shipping charged
@@ -461,8 +463,8 @@ export const AdminReportsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-5">
-                  <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
+                <div className="lg:col-span-5 flex">
+                  <div className="flex w-full flex-col rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-base font-bold text-slate-900">
@@ -480,7 +482,7 @@ export const AdminReportsPage: React.FC = () => {
                         No commission recorded in this window.
                       </p>
                     ) : (
-                      <div className="space-y-3 text-xs">
+                      <div className="flex-1 space-y-3 overflow-y-auto pr-1 text-xs">
                         {data.byCategory.map((category) => (
                           <div key={category.category}>
                             <div className="flex items-center justify-between pb-1 font-medium text-slate-700">
@@ -513,7 +515,7 @@ export const AdminReportsPage: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="pt-1 flex justify-end">
+                    <div className="mt-auto pt-1 flex justify-end">
                       <button
                         type="button"
                         onClick={handleExportCategories}
@@ -587,7 +589,7 @@ export const AdminReportsPage: React.FC = () => {
                   />
                 </div>
               </div>
-            </>
+            </div>
           )}
         </QueryState>
       </div>

@@ -144,6 +144,10 @@ function byCode(code: string): FriendlyError | null {
       return { message: 'That already exists.', kind: 'conflict', retryable: false, report: false };
     case '42501':
       return { message: PERMISSION_TEXT, kind: 'permission', retryable: false, report: false };
+    case '42P17':
+      // Infinite recursion in an RLS policy — a server-side schema fault,
+      // never a user mistake. Server-class so it is reported, not shown raw.
+      return server();
     case 'PGRST202':
       // A function the client calls is missing from the schema — a migration
       // has not been run. Never shown; always reported.
@@ -180,6 +184,7 @@ function byHardInternal(message: string): FriendlyError | null {
   const text = message.toLowerCase();
   if (!text) return null;
   if (/database error/.test(text)) return server();
+  if (/infinite recursion/.test(text)) return server();
   if (/could not find the function|schema cache/.test(text)) return server();
   if (/relation .* does not exist|column .* does not exist/.test(text)) return server();
   return null;

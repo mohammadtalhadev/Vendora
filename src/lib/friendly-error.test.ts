@@ -54,6 +54,11 @@ describe('friendlyError — code table', () => {
     ],
     [{ code: '42501', message: 'permission denied for table orders' }, "You don't have permission to do that.", 'permission'],
     [
+      { code: '42P17', message: 'infinite recursion detected in policy for relation "profiles"' },
+      SERVER,
+      'server',
+    ],
+    [
       { code: 'PGRST202', message: 'Could not find the function public.admin_set_payment_status in the schema cache' },
       SERVER,
       'server',
@@ -85,6 +90,20 @@ describe('friendlyError — status and message backstops', () => {
 
   it('catches "Database error" text even when no status rides along', () => {
     expect(friendlyError({ message: 'Database error saving new user' }).kind).toBe('server');
+  });
+
+  it('maps an infinite-recursion policy fault to the server sentence and flags it for reporting', () => {
+    const byMessageOnly = friendlyError({
+      message: 'infinite recursion detected in policy for relation "profiles"',
+    });
+    expect(byMessageOnly.message).toBe(SERVER);
+    expect(byMessageOnly.kind).toBe('server');
+    expect(byMessageOnly.report).toBe(true);
+
+    const byCodeOnly = friendlyError({ code: '42P17', message: 'query failed' });
+    expect(byCodeOnly.message).toBe(SERVER);
+    expect(byCodeOnly.kind).toBe('server');
+    expect(byCodeOnly.report).toBe(true);
   });
 
   it('maps HTTP 429 to the rate-limit sentence', () => {

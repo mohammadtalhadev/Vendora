@@ -55,7 +55,7 @@ export const AdminAddProductPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [category, setCategory] = useState('');
-  const [brand, setBrand] = useState('Vendora');
+  const [brand, setBrand] = useState('');
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
 
@@ -66,30 +66,30 @@ export const AdminAddProductPage: React.FC = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Pricing & Financials
-  const [price, setPrice] = useState('199.00');
-  const [compareAtPrice, setCompareAtPrice] = useState('249.00');
-  const [costPerItem, setCostPerItem] = useState('85.00');
-  const [chargeTax, setChargeTax] = useState(true);
+  const [price, setPrice] = useState('');
+  const [compareAtPrice, setCompareAtPrice] = useState('');
+  const [costPerItem, setCostPerItem] = useState('');
+  const [chargeTax, setChargeTax] = useState(false);
 
   // Stock & Inventory
-  const [sku, setSku] = useState('VEN-1P-1001');
-  const [barcode, setBarcode] = useState('840992817201');
-  const [trackQuantity, setTrackQuantity] = useState(true);
-  const [stock, setStock] = useState('50');
-  const [lowStockThreshold, setLowStockThreshold] = useState('10');
+  const [sku, setSku] = useState('');
+  const [barcode, setBarcode] = useState('');
+  const [trackQuantity, setTrackQuantity] = useState(false);
+  const [stock, setStock] = useState('');
+  const [lowStockThreshold, setLowStockThreshold] = useState('');
 
   // Fulfillment
   const [productType, setProductType] = useState<ProductType>('physical');
-  const [weightKg, setWeightKg] = useState('0.60');
-  const [shippingFee, setShippingFee] = useState('0.00');
-  const [freeShipping, setFreeShipping] = useState(true);
-  const [licenseType, setLicenseType] = useState('Commercial Platform License');
-  const [downloadUrl, setDownloadUrl] = useState('/downloads/vendora-suite.zip');
+  const [weightKg, setWeightKg] = useState('');
+  const [shippingFee, setShippingFee] = useState('');
+  const [freeShipping, setFreeShipping] = useState(false);
+  const [licenseType, setLicenseType] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
 
   // Variants
   const [hasVariants, setHasVariants] = useState(false);
   const [optionName, setOptionName] = useState('Color');
-  const [optionValues, setOptionValues] = useState('Midnight Black, Space Silver, Alpine White');
+  const [optionValues, setOptionValues] = useState('');
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isOptionDropdownOpen, setIsOptionDropdownOpen] = useState(false);
   const optionDropdownRef = React.useRef<HTMLDivElement>(null);
@@ -105,10 +105,10 @@ export const AdminAddProductPage: React.FC = () => {
   }, []);
 
   // Organization & Visibility
-  const [tags, setTags] = useState<string[]>(['1P Official', 'Vendora Choice', 'Express Delivery', 'Warranty']);
+  const [tags, setTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
-  const [collection, setCollection] = useState('Vendora Flagship');
-  const [isFeaturedOnStore, setIsFeaturedOnStore] = useState(true);
+  const [collection, setCollection] = useState('');
+  const [isFeaturedOnStore, setIsFeaturedOnStore] = useState(false);
 
   // SEO
   const [seoTitle, setSeoTitle] = useState('');
@@ -194,7 +194,7 @@ export const AdminAddProductPage: React.FC = () => {
     if (rawValues.length === 0) return;
 
     const basePriceNum = parseFloat(price) || 0;
-    const baseStockNum = parseInt(stock, 10) || 10;
+    const baseStockNum = parseInt(stock, 10) || 0;
     const optLabel = optionName.trim() || 'Option';
 
     const generated: Variant[] = rawValues.map((val, index) => {
@@ -204,7 +204,7 @@ export const AdminAddProductPage: React.FC = () => {
         name: `${optLabel}: ${val}`,
         sku: `${sku || 'VEN-PROD'}-${slugVal}-${index + 1}`,
         price: basePriceNum,
-        stock: Math.max(1, Math.floor(baseStockNum / rawValues.length)),
+        stock: Math.floor(baseStockNum / rawValues.length),
         attributes: { [optLabel]: val },
       };
     });
@@ -217,11 +217,14 @@ export const AdminAddProductPage: React.FC = () => {
     setVariants((prev) => prev.filter((v) => v.id !== id));
   };
 
-  // Margin calculation
+  // Margin calculation — with no cost entered there is no margin to show,
+  // so the strip renders an em dash instead of inventing a 100% margin
+  // from a zero cost.
   const priceNum = parseFloat(price) || 0;
+  const hasCost = costPerItem.trim() !== '';
   const costNum = parseFloat(costPerItem) || 0;
-  const grossProfit = priceNum > 0 ? priceNum - costNum : 0;
-  const profitMargin = priceNum > 0 ? ((grossProfit / priceNum) * 100).toFixed(1) : '0';
+  const grossProfit = priceNum > 0 && hasCost ? priceNum - costNum : 0;
+  const profitMargin = priceNum > 0 && hasCost ? ((grossProfit / priceNum) * 100).toFixed(1) : '—';
 
   // Listing completeness counts only what the seller actually controls and
   // what a listing needs to sell: auto-generated fields (slug, SKU, barcode)
@@ -682,12 +685,16 @@ export const AdminAddProductPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div>
                     <span className="text-slate-500 font-medium">Estimated Gross Profit: </span>
-                    <strong className="text-emerald-700 font-bold">{formatPrice(grossProfit)}</strong>
+                    <strong className="text-emerald-700 font-bold">
+                      {priceNum > 0 && hasCost ? formatPrice(grossProfit) : '—'}
+                    </strong>
                   </div>
                   <span className="text-slate-300">|</span>
                   <div>
                     <span className="text-slate-500 font-medium">Profit Margin: </span>
-                    <strong className="text-slate-900 font-bold">{profitMargin}%</strong>
+                    <strong className="text-slate-900 font-bold">
+                      {profitMargin === '—' ? '—' : `${profitMargin}%`}
+                    </strong>
                   </div>
                 </div>
 
