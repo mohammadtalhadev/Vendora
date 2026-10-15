@@ -89,6 +89,18 @@ const LoginPage = lazyWithRetry(() =>
 const AdminLoginPage = lazyWithRetry(() =>
   import('../pages/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage })),
 );
+const ChooseWorkspacePage = lazyWithRetry(() =>
+  import('../pages/ChooseWorkspacePage').then((m) => ({ default: m.ChooseWorkspacePage })),
+);
+const NoAccessPage = lazyWithRetry(() =>
+  import('../pages/NoAccessPage').then((m) => ({ default: m.NoAccessPage })),
+);
+const SellerStatusPage = lazyWithRetry(() =>
+  import('../pages/SellerStatusPage').then((m) => ({ default: m.SellerStatusPage })),
+);
+const AccountBlockedPage = lazyWithRetry(() =>
+  import('../pages/AccountBlockedPage').then((m) => ({ default: m.AccountBlockedPage })),
+);
 const RegisterPage = lazyWithRetry(() =>
   import('../pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
 );
@@ -581,6 +593,27 @@ export const router = createBrowserRouter([
       {
         path: 'login',
         element: lazyWrap(<LoginPage />),
+      },
+      {
+        // Batch 63 hybrid sign-in surfaces: the multi-workspace chooser,
+        // the wrong-workspace dead end, the seller application status page
+        // and the suspended/banned landing. All four are unguarded by
+        // design — each reads the session itself, and the blocked page
+        // must stay reachable for the accounts every guard sends there.
+        path: 'choose-workspace',
+        element: lazyWrap(<ChooseWorkspacePage />),
+      },
+      {
+        path: 'no-access',
+        element: lazyWrap(<NoAccessPage />),
+      },
+      {
+        path: 'seller-status',
+        element: lazyWrap(<SellerStatusPage />),
+      },
+      {
+        path: 'account-blocked',
+        element: lazyWrap(<AccountBlockedPage />),
       },
       {
         path: 'register',

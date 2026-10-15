@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
 import { hasPermission } from '../../features/auth/rbac';
+import { isAccountBlocked } from '../../features/auth/api/destinations';
 import type { UserRole } from '../../types/domain';
 
 interface ProtectedRouteProps {
@@ -12,9 +13,11 @@ interface ProtectedRouteProps {
   /** Redirect path if not authorized */
   fallbackPath?: string;
   /**
-   * Sign-in page unauthenticated visitors are sent to (the current path is
-   * carried along as ?redirect=). Defaults to the customer /login; the admin
-   * workspace passes /admin/login so staff never land on the shopper page.
+   * Sign-in page unauthenticated visitors are sent to (the full current
+   * path — pathname, query and hash — is carried along as ?redirect=, so a
+   * deep link survives the sign-in round trip). Defaults to the customer
+   * /login; the admin workspace passes /admin/login so staff never land on
+   * the shopper page.
    */
   loginPath?: string;
   /**
@@ -55,9 +58,18 @@ export function ProtectedRoute({
     );
   }
 
-  // Not authenticated
+  // Not authenticated — carry the FULL path (query + hash included) so the
+  // page the visitor actually wanted is the page sign-in returns them to.
   if (!user) {
-    return <Navigate to={`${loginPath}?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+    const fullPath = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={`${loginPath}?redirect=${encodeURIComponent(fullPath)}`} replace />;
+  }
+
+  // A suspended/banned account reaches no workspace at all: every guarded
+  // route lands it on the blocked page, which is itself unguarded (and
+  // offers sign-out), so this can never loop.
+  if (isAccountBlocked(user)) {
+    return <Navigate to="/account-blocked" replace />;
   }
 
   // Check roles
@@ -68,9 +80,12 @@ export function ProtectedRoute({
     }
   }
 
-  // If vendor workspace is requested and role is vendor, verify seller is approved
+  // If vendor workspace is requested and role is vendor, verify seller is
+  // approved. A pending/rejected/suspended seller lands on the dedicated
+  // status page (Batch 63) — not the marketing/apply page, which reads as
+  // "apply again" to someone whose application is already in flight.
   if (allowedRoles.includes('vendor') && user.roles.includes('vendor') && user.vendorStatus !== 'approved') {
-    return <Navigate to="/become-a-seller" replace />;
+    return <Navigate to="/seller-status" replace />;
   }
 
   // Check permissions (if using permission-based access)

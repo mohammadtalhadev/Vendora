@@ -69,6 +69,7 @@ function renderLogin() {
         <Route path="/vendor" element={<div>VENDOR CONSOLE</div>} />
         <Route path="/rider" element={<div>RIDER BOARD</div>} />
         <Route path="/support" element={<div>SUPPORT CONSOLE</div>} />
+        <Route path="/choose-workspace" element={<div>CHOOSE WORKSPACE</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -98,13 +99,21 @@ function pickSellerThenSubmit() {
 }
 
 describe('LoginPage role toggle mapping', () => {
-  it('Buyer selected + vendor account → the storefront, not the seller console', async () => {
+  // Batch 63 supersedes the Batch 24 pin for this one case: a customer+vendor
+  // account has TWO destinations, so a Buyer sign-in no longer silently picks
+  // the storefront for them — they land on the workspace chooser (or, with a
+  // remembered workspace + the "always" preference, straight there; covered
+  // in LoginPage.access.test.tsx). The toggle's own contract is unchanged:
+  // Verified Seller still means the merchant console, and the seller path
+  // still refuses accounts with no vendor role.
+  it('Buyer selected + vendor account → the workspace chooser (Batch 63 multi-destination rule)', async () => {
     mocks.signIn.mockResolvedValue(vendorUser);
     renderLogin();
 
     fillAndSubmit();
 
-    expect(await screen.findByText('STOREFRONT HOME')).toBeInTheDocument();
+    expect(await screen.findByText('CHOOSE WORKSPACE')).toBeInTheDocument();
+    expect(screen.queryByText('STOREFRONT HOME')).not.toBeInTheDocument();
     expect(screen.queryByText('VENDOR CONSOLE')).not.toBeInTheDocument();
   });
 

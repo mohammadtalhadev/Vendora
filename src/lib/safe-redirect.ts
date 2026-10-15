@@ -1,16 +1,24 @@
 /**
- * The one place a `?redirect=` target is trusted.
+ * safe-redirect — the one place a `?redirect=` value is judged before it is
+ * navigated to (Batch 63).
  *
- * Login pages receive the post-login destination as a query parameter, and
- * navigating to it unchecked is an open-redirect pattern: only same-origin
- * absolute paths are ever honoured. `//evil.example` looks like a path but
- * is a protocol-relative URL, and `/\evil.example` is treated the same way
- * by some browsers — both fall back, as does anything that is not a string
- * starting with exactly one `/`.
+ * A redirect target is only ever an in-app path: a string that starts with
+ * exactly one '/'. Anything else — a protocol-relative '//evil.com', a
+ * backslash variant '/\\evil.com' some browsers normalise into '//', an
+ * absolute URL, an empty value — falls back instead of being honoured, so a
+ * crafted sign-in link can never bounce a freshly authenticated user off
+ * the site (open redirect) or into a route the router never defined.
  */
 export function safeRedirect(target: string | null | undefined, fallback = '/'): string {
-  if (!target) return fallback;
-  if (!target.startsWith('/')) return fallback;
-  if (target.startsWith('//') || target.startsWith('/\\')) return fallback;
-  return target;
+  if (typeof target !== 'string') return fallback;
+  const value = target.trim();
+  if (!value.startsWith('/')) return fallback;
+  if (value.startsWith('//') || value.startsWith('/\\')) return fallback;
+  if (value.includes('\\')) return fallback;
+  return value;
+}
+
+/** True when `target` survives safeRedirect unchanged (i.e. it was valid). */
+export function isSafeRedirect(target: string | null | undefined): boolean {
+  return typeof target === 'string' && safeRedirect(target, '') === target.trim() && target.trim() !== '';
 }

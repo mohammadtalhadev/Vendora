@@ -14,6 +14,14 @@ export interface User {
   avatar?: string;
   roles: UserRole[];
   vendorStatus: VendorStatus;
+  /**
+   * Platform switch on the account (`profiles.account_status`). Optional
+   * because demo/test fixtures predate it; the session layer always sets
+   * it, and anything reading it treats an absent value as 'active'.
+   */
+  accountStatus?: 'active' | 'suspended' | 'banned';
+  /** Persisted reason shown on the blocked page when the account is off. */
+  accountStatusReason?: string;
   vendorId?: string;
   /** Persisted reason shown when a seller application was rejected or suspended. */
   rejectionReason?: string;

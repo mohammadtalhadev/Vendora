@@ -9,7 +9,15 @@ type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
 type ProfileIdentity = Pick<
   ProfileRow,
-  'id' | 'email' | 'name' | 'avatar_url' | 'roles' | 'vendor_status' | 'rejection_reason'
+  | 'id'
+  | 'email'
+  | 'name'
+  | 'avatar_url'
+  | 'roles'
+  | 'vendor_status'
+  | 'rejection_reason'
+  | 'account_status'
+  | 'account_status_reason'
 >;
 
 /**
@@ -25,6 +33,8 @@ function toDomainUser(profile: ProfileIdentity, vendorId?: string): User {
     avatar: profile.avatar_url || undefined,
     roles: profile.roles as UserRole[],
     vendorStatus: profile.vendor_status as VendorStatus,
+    accountStatus: profile.account_status ?? 'active',
+    accountStatusReason: profile.account_status_reason ?? undefined,
     vendorId,
     rejectionReason: profile.rejection_reason ?? undefined,
   };
@@ -33,7 +43,9 @@ function toDomainUser(profile: ProfileIdentity, vendorId?: string): User {
 async function loadProfile(authUser: SupabaseUser): Promise<User | null> {
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, name, email, avatar_url, roles, vendor_status, rejection_reason')
+    .select(
+      'id, name, email, avatar_url, roles, vendor_status, rejection_reason, account_status, account_status_reason',
+    )
     .eq('id', authUser.id)
     .maybeSingle();
 

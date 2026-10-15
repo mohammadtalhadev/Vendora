@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth-store';
 import { useAuth } from '../../lib/auth-context';
+import { SwitchWorkspaceMenu } from './SwitchWorkspaceMenu';
 import type { UserRole } from '../../types/domain';
 import { cn } from '../../lib/utils';
 import {
@@ -814,6 +815,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
           {/* Right section: Date range + Context action + Urgency badge + Create dropdown + Help + Theme + Notifications + User Avatar */}
           <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Switch workspace (Batch 63): every shell carries it, so a
+                multi-role account moves between consoles without a new
+                sign-in. It renders nothing for single-workspace accounts. */}
+            <SwitchWorkspaceMenu />
             {headerExtra && (
               <div className="hidden lg:flex items-center">{headerExtra}</div>
             )}

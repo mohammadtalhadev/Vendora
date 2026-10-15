@@ -8,7 +8,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  * the admin workspace with /admin/login — uses those instead.
  */
 const auth = vi.hoisted(() => ({
-  user: null as null | { id: string; roles: string[] },
+  user: null as null | {
+    id: string;
+    roles: string[];
+    vendorStatus?: string;
+    accountStatus?: string;
+  },
 }));
 
 vi.mock('../../lib/auth-context', () => ({
@@ -23,18 +28,22 @@ import { ProtectedRoute } from './ProtectedRoute';
 
 function LocationProbe() {
   const location = useLocation();
-  return <div>{`LOC:${location.pathname}${location.search}`}</div>;
+  return <div>{`LOC:${location.pathname}${location.search}${location.hash}`}</div>;
 }
 
-function renderGuarded(kind: 'default' | 'staff') {
+function renderGuarded(kind: 'default' | 'staff' | 'vendor', entry = '/secret') {
   return render(
-    <MemoryRouter initialEntries={['/secret']}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route
           path="/secret"
           element={
             kind === 'staff' ? (
               <ProtectedRoute allowedRoles={['admin']} loginPath="/admin/login" deniedPath="/admin/login?denied=1">
+                <div>SECRET</div>
+              </ProtectedRoute>
+            ) : kind === 'vendor' ? (
+              <ProtectedRoute allowedRoles={['vendor']}>
                 <div>SECRET</div>
               </ProtectedRoute>
             ) : (
@@ -47,6 +56,8 @@ function renderGuarded(kind: 'default' | 'staff') {
         <Route path="/login" element={<LocationProbe />} />
         <Route path="/admin/login" element={<LocationProbe />} />
         <Route path="/403" element={<div>FORBIDDEN PAGE</div>} />
+        <Route path="/account-blocked" element={<div>BLOCKED PAGE</div>} />
+        <Route path="/seller-status" element={<div>SELLER STATUS PAGE</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -86,6 +97,37 @@ describe('ProtectedRoute', () => {
   it('an authenticated user with the role sees the page', () => {
     auth.user = { id: 'u2', roles: ['admin'] };
     renderGuarded('staff');
+
+    expect(screen.getByText('SECRET')).toBeInTheDocument();
+  });
+
+  it('Batch 63: the redirect carries the FULL path — query and hash included', () => {
+    renderGuarded('default', '/secret?tab=2#frag');
+
+    expect(
+      screen.getByText('LOC:/login?redirect=%2Fsecret%3Ftab%3D2%23frag'),
+    ).toBeInTheDocument();
+  });
+
+  it('Batch 63: a suspended account is sent to the blocked page, not the workspace', () => {
+    auth.user = { id: 'u3', roles: ['admin'], accountStatus: 'suspended' };
+    renderGuarded('staff');
+
+    expect(screen.getByText('BLOCKED PAGE')).toBeInTheDocument();
+    expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
+  });
+
+  it('Batch 63: a pending vendor lands on the seller status page, not the marketing page', () => {
+    auth.user = { id: 'u4', roles: ['customer', 'vendor'], vendorStatus: 'pending' };
+    renderGuarded('vendor');
+
+    expect(screen.getByText('SELLER STATUS PAGE')).toBeInTheDocument();
+    expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
+  });
+
+  it('Batch 63: an approved vendor passes the status check', () => {
+    auth.user = { id: 'u5', roles: ['customer', 'vendor'], vendorStatus: 'approved' };
+    renderGuarded('vendor');
 
     expect(screen.getByText('SECRET')).toBeInTheDocument();
   });

@@ -131,6 +131,33 @@ describe('AdminLoginPage', () => {
     expect(screen.getByText(/no staff access/i)).toBeInTheDocument();
   });
 
+  it('Batch 63: a hostile redirect target falls back to the admin console', async () => {
+    auth.signIn.mockResolvedValue(adminUser);
+    renderPage(`/admin/login?redirect=${encodeURIComponent('//evil.com')}`);
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
+  });
+
+  it('Batch 63: a redirect back to the login page itself falls back instead of looping', async () => {
+    auth.signIn.mockResolvedValue(adminUser);
+    renderPage(`/admin/login?redirect=${encodeURIComponent('/admin/login')}`);
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
+  });
+
+  it('Batch 63: an admin deep link with a query string is honoured whole', async () => {
+    auth.signIn.mockResolvedValue(adminUser);
+    renderPage(`/admin/login?redirect=${encodeURIComponent('/admin/orders?status=open')}`);
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('ADMIN ORDERS')).toBeInTheDocument();
+  });
+
   it('surfaces a failed sign-in as an error, not a denial', async () => {
     auth.signIn.mockRejectedValue(new Error('Invalid login credentials'));
     renderPage();

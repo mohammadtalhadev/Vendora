@@ -26,11 +26,15 @@ function staffHome(roles: string[]): '/admin' | '/support' | null {
 
 /**
  * Only ever continue to an /admin path the guard named — never back to this
- * page, and never to an arbitrary URL.
+ * page, and never to an arbitrary URL. The target first passes the shared
+ * safeRedirect (Batch 63): anything that is not a plain in-app path is
+ * discarded before the /admin prefix rule is even consulted.
  */
 function adminDestinationFor(redirectTarget: string | null): string {
-  const target = safeRedirect(redirectTarget, '');
-  return target.startsWith('/admin') && target !== '/admin/login' ? target : '/admin';
+  const safe = safeRedirect(redirectTarget, '');
+  return (safe === '/admin' || safe.startsWith('/admin/')) && safe !== '/admin/login'
+    ? safe
+    : '/admin';
 }
 
 export const AdminLoginPage: React.FC = () => {

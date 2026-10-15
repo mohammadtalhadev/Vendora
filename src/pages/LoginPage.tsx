@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Mail,
@@ -15,6 +15,11 @@ import {
 import { useAuth } from '../lib/auth-context';
 import { safeRedirect } from '../lib/safe-redirect';
 import { requestPasswordReset } from '../features/auth/api/session';
+import {
+  landingPath,
+  resolvePostLoginLanding,
+  setLastWorkspace,
+} from '../features/auth/api/destinations';
 import { friendlyErrorText } from '../lib/friendly-error';
 import type { DemoRoleKey } from '../lib/demo-accounts';
 import { useCartStore } from '../store/cart-store';
@@ -23,10 +28,17 @@ import { Button } from '../components/ui/button';
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectPath = safeRedirect(searchParams.get('redirect'));
+  // The raw redirect is never navigated to directly — it is judged by
+  // resolvePostLoginLanding, which runs it through safeRedirect and checks
+  // it against the roles the backend actually gave this account (Batch 63).
+  const rawRedirect = searchParams.get('redirect');
 
-  const { signIn, signInAsDemo, signInWithProvider, signOut } = useAuth();
+  const { user, loading, signIn, signInAsDemo, signInWithProvider, signOut } = useAuth();
   const { mergeGuestCartIntoUser } = useCartStore();
+  // A session whose landing this page has already decided (a fresh sign-in
+  // handled below, a demo persona, or the already-signed-in effect). The
+  // effect must never re-decide a landing the submit handler just made.
+  const landingHandledRef = useRef<string | null>(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,12 +57,27 @@ export const LoginPage: React.FC = () => {
   const resetHintTriggerRef = useRef<HTMLButtonElement>(null);
   const demoTriggerRef = useRef<HTMLButtonElement>(null);
 
+  // Already signed-in visitors never see this form (Batch 63): once the
+  // session's profile is resolved, the same precedence as a fresh sign-in
+  // decides where they belong — the redirect they arrived with first, then
+  // their remembered workspace or the chooser. While auth is loading (and
+  // while a landing is being applied) the page renders its spinner, so the
+  // form never flashes for someone who is about to be moved on.
+  useEffect(() => {
+    if (loading || !user) return;
+    if (landingHandledRef.current === user.id) return;
+    landingHandledRef.current = user.id;
+    const decision = resolvePostLoginLanding(user, { redirect: rawRedirect, intent: null });
+    const path = landingPath(decision);
+    if (path) navigate(path, { replace: true });
+  }, [user, loading, navigate, rawRedirect]);
+
   const workspaceForRole = (roleKey: DemoRoleKey) => {
     if (roleKey === 'admin') return '/admin';
     if (roleKey === 'vendor') return '/vendor';
     if (roleKey === 'rider') return '/rider';
     if (roleKey === 'support') return '/support';
-    return redirectPath;
+    return '/';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,17 +99,33 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const loggedInUser = await signIn(email.trim(), password);
+      // This sign-in's landing is decided here, once — the already-signed-in
+      // effect above must not re-decide it when the session lands in state.
+      landingHandledRef.current = loggedInUser.id;
 
-      // The role picked on the toggle IS the sign-in path: Buyer means the
-      // storefront, Verified Seller means the merchant console. This handler
-      // used to ignore the toggle and route by the account's stored roles, so
-      // a vendor signing in under "Buyer" still landed in the seller console
-      // and a customer under "Verified Seller" still landed in the storefront
-      // — the two paths read as swapped. The only exception is an explicit
-      // ?redirect= target, which always wins: a guard sent the visitor here
-      // to continue somewhere specific.
-      if (selectedRole === 'seller' && redirectPath === '/' && !loggedInUser.roles.includes('vendor')) {
+      // Post-login precedence (Batch 63, shared with the chooser and the
+      // guards via features/auth/api/destinations):
+      //   1. A ?redirect= the account's roles cover wins outright. One they
+      //      do NOT cover is a dead end with an explanation (/no-access) —
+      //      never a bounce back into a guard, which would loop. A seller
+      //      whose application is still in flight lands on /seller-status.
+      //   2. The toggle is the visitor's stated path: Verified Seller means
+      //      the merchant console, and an account with no vendor role at all
+      //      is still refused on that path (below) — Buyer carries no
+      //      workspace intent, so precedence falls through to the account.
+      //   3. Rider/support-only accounts keep their Batch 59 auto-landing;
+      //      a multi-workspace account goes to its remembered workspace or
+      //      the workspace chooser; everyone else to the storefront.
+      // The user object here is the profile signIn() just loaded fresh from
+      // the backend, so an approval granted minutes ago is already visible.
+      const decision = resolvePostLoginLanding(loggedInUser, {
+        redirect: rawRedirect,
+        intent: selectedRole,
+      });
+
+      if (decision.kind === 'not-a-seller') {
         await signOut();
+        landingHandledRef.current = null;
         setError(
           'This account is not a verified seller account, so it cannot sign in through the seller path. Switch to Buyer to shop with this account, or apply to sell on Vendora first.',
         );
@@ -90,20 +133,8 @@ export const LoginPage: React.FC = () => {
       }
 
       mergeGuestCartIntoUser(loggedInUser.id);
-      if (redirectPath !== '/') {
-        navigate(redirectPath);
-      } else if (selectedRole === 'seller') {
-        navigate('/vendor');
-      } else if (loggedInUser.roles.includes('rider')) {
-        // Riders and support agents have no toggle path of their own, so
-        // their stored role is the only honest landing: without this they
-        // were dropped on the storefront like shoppers (Batch 59).
-        navigate('/rider');
-      } else if (loggedInUser.roles.includes('support')) {
-        navigate('/support');
-      } else {
-        navigate('/');
-      }
+      if (decision.kind === 'path') setLastWorkspace(loggedInUser.id, decision.path);
+      navigate(landingPath(decision));
     } catch (err: unknown) {
       setError(friendlyErrorText(err, { context: 'auth' }));
     } finally {
@@ -134,6 +165,9 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const user = await signInAsDemo(roleKey);
+      // Demo personas keep their own direct workspace map; mark the session
+      // handled so the already-signed-in effect does not re-decide it.
+      landingHandledRef.current = user.id;
       mergeGuestCartIntoUser(user.id);
       navigate(workspaceForRole(roleKey));
     } catch (err: unknown) {
@@ -155,6 +189,19 @@ export const LoginPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  // While the session is resolving — or already resolved, in which case
+  // the effect above is moving the visitor on — the form stays hidden.
+  if (loading || user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-sun-orange border-t-transparent" />
+          <span className="text-xs font-bold text-slate-400">Verifying access...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden pb-16 pt-4 sm:pt-8 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
