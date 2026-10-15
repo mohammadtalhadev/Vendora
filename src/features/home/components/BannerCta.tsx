@@ -7,14 +7,16 @@ import { cn } from '../../../lib/utils';
  * on a promo banner (tech deals, beauty, appliances, ...) renders through
  * this component, so a recipe change lands on all of them at once.
  *
- * Batch 89 (owner point): the recipe is the product card's Add to Cart
- * style — a light sun-orange tint with an orange border and label at
- * rest, and on hover the button fills solid sun-orange, the label turns
- * white and the orange glow lands; the press is the same active:scale-95.
+ * Batch 95 (owner point): the recipe is the site's primary button — solid
+ * sun-orange with a white label and the orange glow at rest, deepening to
+ * sun-orange-600 with a slight lift on hover, the press the same
+ * active:scale-95. Solid orange reads on photo banners and plain cards
+ * alike. The focus ring is white: a sun-orange ring would vanish against
+ * the button's own fill, white stays visible on any banner behind it.
  * The banner hit area and label size stay banner-sized (Batch 51).
  */
 export const BANNER_CTA_CLASS =
-  'font-outfit inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-sun-orange/30 bg-sun-orange/[0.08] px-7 py-3 text-sm font-extrabold tracking-tight text-[#EA580C] backdrop-blur-md transition-all duration-200 hover:border-transparent hover:bg-sun-orange hover:text-white hover:shadow-orange-glow active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange focus-visible:ring-offset-2 sm:text-[15px]';
+  'font-outfit inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sun-orange px-7 py-3 text-sm font-extrabold tracking-tight text-white shadow-orange-glow transition-all duration-200 hover:-translate-y-0.5 hover:bg-sun-orange-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 sm:text-[15px]';
 
 export interface BannerCtaProps {
   to: string;
