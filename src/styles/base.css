@@ -1456,3 +1456,45 @@ html.dark .workspace-shell textarea:focus {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Motion: Brand Logo Marquee (Batch 94)
+   The one brand-logo strip (BrandLogoMarquee): each brand is an individual
+   PNG on a track duplicated x2, and this keyframe slides the track -50%
+   so the loop is seamless; hovering the rail pauses it. Placed after the
+   kill-switch on purpose: under prefers-reduced-motion the track must be
+   fully static (animation: none, not a collapsed 0.01ms run) and the rail
+   scrolls horizontally instead, so every logo stays reachable — the class
+   rules here outrank the universal kill-switch rules above.
+   ========================================================================== */
+@keyframes vendora-logo-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.brand-logo-marquee {
+  overflow: hidden;
+}
+
+.brand-logo-marquee-track {
+  animation: vendora-logo-marquee 32s linear infinite;
+}
+
+.brand-logo-marquee:hover .brand-logo-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-logo-marquee {
+    overflow-x: auto;
+  }
+
+  .brand-logo-marquee-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}

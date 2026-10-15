@@ -34,6 +34,11 @@ import { TrustStrip } from '../components/common/TrustStrip';
 import { Toast } from '../components/common/Toast';
 import { CountdownTimer } from '../components/common/CountdownTimer';
 import { CategoryPill } from '../components/common/CategoryPill';
+import {
+  BrandLogoMarquee,
+  ELECTRONICS_BRAND_LOGOS,
+  BEAUTY_BRAND_LOGOS,
+} from '../components/common/BrandLogoMarquee';
 import { GridSkeleton, Skeleton } from '../components/common/QueryState';
 import { useToast } from '../hooks/useToast';
 
@@ -617,10 +622,9 @@ export const HomePage: React.FC = () => {
 
           {/* Electronics Brand Strip */}
           <div className="mt-8 flex items-center justify-center border-t border-slate-100/80 pt-6 w-full">
-            <img
-              src="/images/bevesi/brands_electronics_strip_clean.png"
-              alt="Official Electronics Brands: oppo, SIEMENS, dyson, SONY, DELL, Lenovo, intel"
-              className="h-14 sm:h-18 lg:h-22 w-full max-w-6xl object-contain transition-transform duration-300 hover:scale-[1.01]"
+            <BrandLogoMarquee
+              logos={ELECTRONICS_BRAND_LOGOS}
+              label="Official electronics brands"
             />
           </div>
         </section>
@@ -709,10 +713,9 @@ export const HomePage: React.FC = () => {
 
           {/* Beauty Brands Strip */}
           <div className="mt-8 flex items-center justify-center border-t border-slate-100/80 pt-6 w-full">
-            <img
-              src="/images/bevesi/brands_beauty_strip_clean.png"
-              alt="Official Beauty Brands: allure, L'Oreal, Aesop, Kerastase, Biotherm, Unilever, Dior, Aveda"
-              className="h-14 sm:h-18 lg:h-22 w-full max-w-6xl object-contain transition-transform duration-300 hover:scale-[1.01]"
+            <BrandLogoMarquee
+              logos={BEAUTY_BRAND_LOGOS}
+              label="Official beauty brands"
             />
           </div>
         </section>
