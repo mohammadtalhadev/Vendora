@@ -345,13 +345,15 @@ pre {
    Each panel can override these to get its own visual identity
    ========================================================================== */
 :root {
-  /* The site ships its own light AND dark schemes (Batch 81), so declare
-     both: browsers with forced/auto dark mode (Android Chrome, Samsung
-     Internet) stand down when a page declares its own color-scheme, and
-     stop recoloring elements on their own — the failure mode that flipped
-     white labels dark on solid sun-orange buttons (Batch 99). The dark
-     class below narrows this to `color-scheme: dark` when active. */
-  color-scheme: light dark;
+  /* Declare ONLY the active scheme (Batch 99, tightened Batch 103):
+     forced/auto-dark browsers (Android Chrome, Samsung Internet) treat a
+     `light dark` declaration as permission to apply their own dark theme
+     while the site's light theme is active — the failure mode that flipped
+     white labels dark on solid sun-orange buttons. With light active the
+     scheme is `light` alone, leaving auto-dark nothing to stand on; the
+     html.dark rule below declares `dark` alone when the site's own dark
+     theme (Batch 81) is on. */
+  color-scheme: light;
 
   /* Panel-specific theme variables (defaults - overridden by panel CSS) */
   --panel-bg: var(--color-mist);

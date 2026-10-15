@@ -28,7 +28,7 @@
  * forced/auto dark mode recolor pages that do not declare their own
  * schemes — the failure that flipped white labels dark on orange buttons.
  * index.html must declare the color-scheme meta and base.css must
- * declare `color-scheme: light dark` on :root (html.dark narrows it).
+ * declare `color-scheme: light` alone on :root (html.dark declares dark).
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -228,7 +228,8 @@ describe('white-on-orange guard (Batch 99)', () => {
     expect(html).toContain('<meta name="color-scheme" content="light dark"');
     const baseCss = readFileSync(join(SRC_ROOT, 'styles', 'base.css'), 'utf8');
     const rootBlock = baseCss.match(/:root\s*\{[^}]*\}/s)?.[0] ?? '';
-    expect(rootBlock).toContain('color-scheme: light dark;');
+    expect(rootBlock).toContain('color-scheme: light;');
+    expect(rootBlock).not.toContain('color-scheme: light dark;');
     // The dark theme narrows the scheme when .dark is active.
     expect(baseCss).toContain('color-scheme: dark;');
   });
