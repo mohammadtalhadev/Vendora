@@ -528,7 +528,7 @@ export const VendorImportExportPage: React.FC = () => {
                 {report.failed.length > 0 && (
                   <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 space-y-2 text-rose-900">
                     <p className="font-bold">
-                      {report.failed.length} row{report.failed.length === 1 ? '' : 's'} the database refused:
+                      {report.failed.length} row{report.failed.length === 1 ? '' : 's'} could not be imported:
                     </p>
                     <ul className="space-y-1">
                       {report.failed.map((entry) => (
@@ -651,9 +651,9 @@ export const VendorImportExportPage: React.FC = () => {
                 </div>
                 <ul className="space-y-1.5 text-slate-500 list-disc pl-5">
                   <li>Each ready row becomes a real listing owned by your store, sent straight to the Pending review queue.</li>
-                  <li>Rows are inserted one at a time. A failure on line 9 does not roll back lines 1-8.</li>
-                  <li>Slugs are generated from the title; two identical titles collide and the second row is refused by the database.</li>
-                  <li>Vendora has no SKU column. Keep your SKUs in your own sheet.</li>
+                  <li>Rows are imported one at a time. If line 9 fails, lines 1-8 stay imported.</li>
+                  <li>Slugs are generated from the title; two identical titles collide and the second one is refused.</li>
+                  <li>Listings don&apos;t carry SKUs — keep your SKUs in your own sheet.</li>
                   <li>Images must already be hosted at a public https URL - a CSV cannot upload files.</li>
                   <li>Price, stock and category come from your sheet, so double-check them before importing.</li>
                 </ul>

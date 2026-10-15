@@ -1096,8 +1096,8 @@ export const AdminCategoriesPage: React.FC = () => {
                 <span>Delete this category?</span>
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Deleting <strong className="text-slate-800">{deleteTarget?.name}</strong> is permanent. The database will refuse
-                while listings or subcategories still point at it — move them first.
+                Deleting <strong className="text-slate-800">{deleteTarget?.name}</strong> is permanent. It can&apos;t be
+                deleted while listings or subcategories still belong to it — move them first.
               </DialogDescription>
             </DialogHeader>
 

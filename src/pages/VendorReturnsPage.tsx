@@ -383,7 +383,7 @@ export const VendorReturnsPage: React.FC = () => {
         },
         ...prev,
       ]);
-      showToast(`Closed ${pkg.rmaCode ?? pkg.id}: units are back on the shelf at the database's counts.`);
+      showToast(`Closed ${pkg.rmaCode ?? pkg.id}: units are back on the shelf.`);
     } catch (err) {
       setDecisionError(err instanceof Error ? err.message : String(err));
     }
@@ -742,7 +742,7 @@ export const VendorReturnsPage: React.FC = () => {
             <div>
               <h2 className="text-base font-bold text-slate-900">Decision trail</h2>
               <p className="text-xs text-slate-500">
-                Every return event the database appended to your packages
+                Every return decision on your packages, in order
               </p>
             </div>
 
@@ -1040,18 +1040,14 @@ function PolicyModal({
             <span>
               <span className="block font-bold text-slate-900">Auto-approve returns</span>
               <span className="mt-0.5 block text-[11px] text-slate-500">
-                Stored on your record. Nothing in this build acts on it: there is no scheduler reading
-                the flag, so every request still waits for your decision here.
+                Not active yet — every request still waits for your decision here.
               </span>
             </span>
           </label>
 
           <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
-            Be exact about what these do. All four are stored on your vendor record and read back by
-            this page and the Settings page. Nothing else in this build consumes them:{' '}
-            <code className="font-mono">decide_return</code> does not check the window, does not move
-            postage, and does <strong>not</strong> subtract the restocking fee - the refund you approve
-            is the refund that gets booked, so deduct a fee yourself by approving a smaller amount.
+            The refund you approve is the refund the buyer receives. The restocking fee is{' '}
+            <strong>not</strong> deducted automatically — to charge it, approve a smaller amount.
           </p>
 
           <div className="flex justify-end gap-2 pt-1">

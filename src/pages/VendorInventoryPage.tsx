@@ -168,7 +168,7 @@ export const VendorInventoryPage: React.FC = () => {
 
   const handleBulkSave = async () => {
     if (dirtyRows.length === 0) {
-      showToast('Nothing to save - every stock level matches the database.');
+      showToast('Nothing to save - every stock level is already up to date.');
       return;
     }
     setSaveErrors([]);
@@ -188,7 +188,7 @@ export const VendorInventoryPage: React.FC = () => {
     if (failures.length === 0) {
       showToast(`Saved ${savedCount} stock level${savedCount === 1 ? '' : 's'} to your catalog.`);
     } else {
-      showToast(`${savedCount} saved, ${failures.length} refused by the database.`);
+      showToast(`${savedCount} saved, ${failures.length} could not be saved.`);
     }
   };
 

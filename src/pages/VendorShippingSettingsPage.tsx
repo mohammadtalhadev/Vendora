@@ -389,7 +389,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
                 <FormField
                   label="Gate / access note"
                   htmlFor="gate-code"
-                  hint="Stored as plain text for your own records. The rider workspace has no read policy on this table, so a courier never sees it here."
+                  hint="For your own records — couriers do not see this note."
                 >
                   <Input
                     id="gate-code"
@@ -491,27 +491,6 @@ export const VendorShippingSettingsPage: React.FC = () => {
                   {settingsQuery.isLoading ? 'Loading…' : 'No settings row has been saved yet.'}
                 </p>
               )}
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 text-[11px] leading-relaxed text-slate-500 shadow-xs">
-              <div className="mb-2 font-bold uppercase tracking-wider text-slate-400">
-                What this page does not do
-              </div>
-              <ul className="space-y-1.5">
-                <li>
-                  · It does not change a buyer&apos;s cart total. Checkout pricing reads each
-                  product&apos;s shipping row, and the order books freight from that quote.
-                </li>
-                <li>
-                  · It does not create a courier label or book a pickup - there is no carrier API in
-                  this build.
-                </li>
-                <li>
-                  · It does not mark anything shipped. That happens on the Orders page, which moves
-                  the package&apos;s status.
-                </li>
-                <li>· A store that has never saved this form shows blanks, not sample rates.</li>
-              </ul>
             </div>
           </aside>
         </div>

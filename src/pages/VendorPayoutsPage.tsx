@@ -328,8 +328,8 @@ export const VendorPayoutsPage: React.FC = () => {
               Payouts &amp; Deposit Accounts
             </h1>
             <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-              Your balance is what the database has earned for you, minus what has left and the
-              reserve it holds back. Money moves only when you request it.
+              Your balance is what you have earned, minus payouts already sent and the reserve
+              held back. Money moves only when you request it.
             </p>
           </div>
 
@@ -421,7 +421,7 @@ export const VendorPayoutsPage: React.FC = () => {
                 {wallet ? money(wallet.available) : '—'}
               </div>
               <div className="mt-2 text-xs text-slate-500">
-                earned − paid out − reserve, computed in Postgres
+                earned − paid out − reserve
               </div>
             </div>
             <div className="mt-4 pt-2">
@@ -567,13 +567,14 @@ export const VendorPayoutsPage: React.FC = () => {
                   <div className="font-bold text-slate-900">2 · Fee</div>
                   <p className="text-xs text-slate-500 mt-1">
                     Instant costs {money(INSTANT_FEE_RATE * 100).replace('.00', '')}% of the
-                    amount; standard ACH costs nothing. The database sets it, not this page.
+                    amount; standard ACH costs nothing.
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
                   <div className="font-bold text-slate-900">3 · Bank leg</div>
                   <p className="text-xs text-slate-500 mt-1">
-                    No bank rail is connected in this build, so nothing marks a payout completed.
+                    Bank transfer is not connected yet, so a booked payout stays in processing
+                    until it is completed.
                   </p>
                 </div>
               </div>
@@ -956,9 +957,8 @@ export const VendorPayoutsPage: React.FC = () => {
               <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 flex items-start gap-2">
                 <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" aria-hidden="true" />
                 <span>
-                  Booking this writes a <code>payouts</code> row and an audit entry. No banking
-                  integration exists in this build, so it stays <em>processing</em> — funds do not
-                  move anywhere.
+                  This books a payout request. Bank transfer is not connected yet, so it stays{' '}
+                  <em>processing</em> and no money moves.
                 </span>
               </div>
             </div>

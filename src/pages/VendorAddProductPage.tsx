@@ -636,7 +636,7 @@ export const VendorAddProductPage: React.FC = () => {
                   <div className="flex flex-col items-center justify-center py-2">
                     <Loader2 className="h-8 w-8 animate-spin text-sun-orange" aria-hidden="true" />
                     <p className="mt-2 text-xs font-bold text-slate-800">
-                      Uploading to Supabase Storage...
+                      Uploading...
                     </p>
                     <p className="mt-1 text-[11px] text-slate-400">Please wait</p>
                   </div>

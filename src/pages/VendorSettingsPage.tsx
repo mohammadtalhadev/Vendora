@@ -443,9 +443,8 @@ export const VendorSettingsPage: React.FC = () => {
               Store Settings
             </h1>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500">
-              Every field here is a column on your own <code>vendor_profiles</code> row or your
-              notification preferences. Saving writes the columns of the tab you are looking at and
-              nothing else, then re-reads the row so the form shows what the database kept.
+              Your store&apos;s details and notification preferences. Saving applies to the tab
+              you are looking at.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -853,18 +852,16 @@ export const VendorSettingsPage: React.FC = () => {
                   <span>
                     <span className="block font-bold text-slate-900">Auto-approve returns</span>
                     <span className="text-[11px] text-slate-500">
-                      Saved and readable, but nothing acts on it. A return stays
-                      &quot;requested&quot; until you decide it on the Returns page, and the refund
-                      the database books is the goods total - it does not subtract the restocking
-                      fee you set above.
+                      Not active yet. A return stays &quot;requested&quot; until you decide it on
+                      the Returns page, and the restocking fee above is not deducted
+                      automatically.
                     </span>
                   </span>
                 </label>
 
                 <p className="text-[11px] leading-relaxed text-slate-500">
-                  Publish these terms honestly: no page in the storefront currently displays them,
-                  so a buyer&apos;s expectation comes from your listing copy and the platform
-                  policy, not from this row.
+                  These terms are not shown on your storefront — buyers see the platform returns
+                  policy and your listing copy.
                 </p>
               </section>
             )}
@@ -1026,57 +1023,22 @@ export const VendorSettingsPage: React.FC = () => {
                 )}
 
                 <p className="border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-500">
-                  These switches are stored and will gate the notification fan-out once realtime is
-                  wired. Nothing sends them today, so switching one off changes no delivery.
+                  Email alerts are not sent yet — these switches take effect once email
+                  notifications go live.
                 </p>
               </section>
             )}
           </div>
 
           <aside className="space-y-6 lg:col-span-4">
-            <div className={CARD}>
-              <h2 className="text-sm font-bold text-slate-900">Not editable by a seller</h2>
-              <ul className="space-y-2 text-[11px] leading-relaxed text-slate-600">
-                <li>
-                  · <strong>Store status</strong> (active or suspended) - the owner update policy
-                  freezes the column, so only staff can change it.
-                </li>
-                <li>
-                  · <strong>Rating and review count</strong> - written by the review triggers, never
-                  by this form.
-                </li>
-                <li>
-                  · <strong>Commission rate</strong> - a platform decision on your row; the override
-                  column is admin-only.
-                </li>
-                <li>
-                  · <strong>Account roles</strong> - frozen by the profile update policy, so a
-                  seller cannot promote themselves.
-                </li>
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 text-[11px] leading-relaxed text-slate-500 shadow-xs">
-              <div className="mb-2 font-bold uppercase tracking-wider text-slate-400">
-                Not in this build
-              </div>
-              <p>
-                There is no team-member table, so this page cannot invite staff or set per-user
-                permissions - one account owns one store. There is also no tax form, entity
-                registry or offboarding request stored anywhere; ask the Support desk for those and
-                it becomes a ticket a person can action.
-              </p>
-            </div>
-
             <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-5 text-xs shadow-xs space-y-3">
               <div className="flex items-center gap-2 font-bold text-rose-800">
                 <AlertTriangle className="h-4 w-4 text-rose-600" aria-hidden="true" />
                 Closing the store
               </div>
               <p className="text-[11px] leading-relaxed text-rose-700">
-                No seller-facing RPC deactivates a store row, so there is no button here that would
-                only look like it worked. Open a ticket on the Help &amp; Support page and staff
-                suspend the store from the admin side.
+                To close your store, open a ticket on the Help &amp; Support page and the Vendora
+                team will suspend it for you.
               </p>
             </div>
           </aside>

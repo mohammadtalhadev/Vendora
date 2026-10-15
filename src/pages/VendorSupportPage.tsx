@@ -9,7 +9,6 @@ import {
   Search,
   Send,
   Settings,
-  ShieldCheck,
   Ticket,
   Truck,
 } from 'lucide-react';
@@ -281,7 +280,7 @@ export const VendorSupportPage: React.FC = () => {
               </div>
               <p className="mx-auto max-w-md text-xs text-slate-500 leading-relaxed">
                 {rows.length === 0
-                  ? 'A dispute is opened by the buyer of an order, never by the seller: the insert policy only accepts a row whose customer id is the signed-in account. An empty queue means nothing is against you.'
+                  ? 'Buyers open disputes from their orders. An empty queue means nothing is against you.'
                   : 'Widen the filter to see the rest of the queue.'}
               </p>
             </div>
@@ -389,41 +388,6 @@ export const VendorSupportPage: React.FC = () => {
               </span>
             </Link>
           ))}
-        </div>
-
-        {/* ── Boundaries ──────────────────────────────────────────── */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-slate-700" aria-hidden="true" />
-            <h2 className="text-sm font-bold text-slate-900">What this queue can and cannot do</h2>
-          </div>
-          <ul className="grid grid-cols-1 gap-x-8 gap-y-1.5 text-[11px] text-slate-600 leading-relaxed md:grid-cols-2">
-            <li>
-              <span className="font-bold text-slate-900">You can reply.</span> The message policy
-              accepts a post from a party to the case, sent under your own account id.
-            </li>
-            <li>
-              <span className="font-bold text-slate-900">You cannot change status.</span> Updates
-              and <code className="font-mono">resolve_dispute</code> are admin and support only.
-            </li>
-            <li>
-              <span className="font-bold text-slate-900">You cannot open a case.</span> The insert
-              policy requires the buyer to be the filer, so there is no seller ticket form here.
-            </li>
-            <li>
-              <span className="font-bold text-slate-900">No ticket history, no SLA meters.</span>{' '}
-              There is no ticket table in this schema, so there is nothing to count or list.
-            </li>
-            <li>
-              <span className="font-bold text-slate-900">Staff internal notes reach you.</span> The
-              shared-thread policy does not filter them; the thread labels each one.
-            </li>
-            <li>
-              <span className="font-bold text-slate-900">Evidence is not uploadable here.</span> A
-              case row carries <code className="font-mono">evidence_photos</code>, but no policy
-              lets a seller write it.
-            </li>
-          </ul>
         </div>
 
         {/* ── Thread dialog ───────────────────────────────────────── */}

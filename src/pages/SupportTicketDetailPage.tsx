@@ -242,9 +242,7 @@ export const SupportTicketDetailPage: React.FC = () => {
                           </option>
                         ))}
                     </select>
-                    <p className="mt-1 text-[11px] text-slate-400">
-                      The directory lists staff accounts; the ticket RPC checks the role again.
-                    </p>
+
                   </div>
 
                   <div className="border-t border-slate-100 pt-3">

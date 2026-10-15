@@ -291,8 +291,8 @@ export const VendorEarningsPage: React.FC = () => {
               Earnings &amp; Settlement Ledger
             </h1>
             <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-              Every figure here is summed by Postgres from your packages, using the same columns a
-              payout is settled against. Cancelled packages are excluded.
+              Every figure here comes from your packages — the same totals your payouts are
+              settled against. Cancelled packages are excluded.
             </p>
           </div>
 
@@ -633,8 +633,7 @@ export const VendorEarningsPage: React.FC = () => {
             <div>
               <h2 className="text-base font-bold text-slate-900">Settlement Ledger</h2>
               <p className="text-xs text-slate-500">
-                One line per package you have not cancelled, with the commission the database took
-                on it.
+                One line per package you have not cancelled, with the commission charged on it.
               </p>
             </div>
 
@@ -784,8 +783,7 @@ export const VendorEarningsPage: React.FC = () => {
                 Download Your Statement
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Exports the settlement ledger for a calendar month, exactly as the database
-                computed it.
+                Exports the settlement ledger for a calendar month.
               </DialogDescription>
             </DialogHeader>
 

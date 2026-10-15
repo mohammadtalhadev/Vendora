@@ -144,8 +144,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
           </div>
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
-          These are the refund rows against this package, added up in Postgres. A package reads
-          refunded only once the whole amount is back with the buyer.
+          A package counts as refunded once the full amount is back with the buyer.
         </p>
       </div>
 
@@ -387,7 +386,7 @@ export const DisputeContextBar: React.FC<DisputeContextBarProps> = ({
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Refund {money(owed)}</h3>
                 <p className="text-xs text-slate-400">
-                  A refund row is written against the package. Refund rows are not edited or deleted.
+                  This refund is recorded against the package and cannot be undone.
                 </p>
               </div>
             </div>

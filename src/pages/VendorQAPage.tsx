@@ -361,28 +361,6 @@ export const VendorQAPage: React.FC = () => {
             ))}
           </div>
         )}
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-2">
-          <h2 className="text-sm font-bold text-slate-900">What this queue can and cannot do</h2>
-          <ul className="space-y-1.5 text-[11px] text-slate-500">
-            <li>
-              — One answer per question. Editing replaces the stored text and re-stamps
-              <em> answered on</em>; there is no answer history, so an edit is not auditable here.
-            </li>
-            <li>
-              — Hiding an answer keeps it in the database and removes it from the listing; deleting
-              buyer content is a platform action, not a seller one.
-            </li>
-            <li>
-              — A seller cannot post a question. The insert policy is customer-only, so nothing here
-              can seed an answer to a question nobody asked.
-            </li>
-            <li>
-              — The buyer's email and order history are not attached to a question; the asker is a
-              display name, which is all the listing's Q&amp;A section exposes.
-            </li>
-          </ul>
-        </section>
       </div>
     </WorkspaceLayout>
   );

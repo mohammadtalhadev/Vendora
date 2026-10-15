@@ -508,9 +508,8 @@ export const VendorPromotionsPage: React.FC = () => {
               Coupon Codes
             </h1>
             <p className="mt-1 max-w-2xl text-xs text-slate-500">
-              A code you create here is matched by <code className="font-mono">quote_checkout</code>.
-              It discounts only your own seller group, only once per order, and only when your cart
-              subtotal reaches its minimum.
+              Codes you create apply to your own store&apos;s items at checkout — one code per
+              order, once the buyer&apos;s subtotal reaches the code&apos;s minimum.
             </p>
           </div>
 
@@ -742,17 +741,16 @@ export const VendorPromotionsPage: React.FC = () => {
           )}
         </div>
 
-        {/* ── Bottom: most redeemed + how it applies ──────────────── */}
+        {/* ── Bottom: most redeemed ───────────────────────────────── */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-5">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-12">
             <div>
               <div className="flex items-center gap-2">
                 <Tag className="h-4 w-4 text-slate-700" aria-hidden="true" />
                 <h2 className="text-base font-bold text-slate-900">Most redeemed codes</h2>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Ranked on <code className="font-mono">usage_count</code>, which only checkout can
-                increment
+                Ranked by how many times each code has been used at checkout.
               </p>
             </div>
 
@@ -784,61 +782,6 @@ export const VendorPromotionsPage: React.FC = () => {
               ))}
             </div>
 
-            <p className="border-t border-slate-100 pt-3 text-xs text-slate-500">
-              There is no revenue-attribution table behind this list. The database records that a code
-              was applied and how many times, not what the discounted order earned.
-            </p>
-          </div>
-
-          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-7">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">What happens when a buyer types your code</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Straight from <code className="font-mono">quote_checkout</code> and{' '}
-                <code className="font-mono">place_order</code>
-              </p>
-            </div>
-
-            <ol className="space-y-3 text-xs">
-              {[
-                [
-                  'The code must exist, be switched on, and sit inside its window.',
-                  'Otherwise checkout raises "Invalid or expired coupon code" - a code past its end date is refused even when it is still switched on.',
-                ],
-                [
-                  'It has to have cap left.',
-                  'A claim is only possible while usage_count is below the limit you set.',
-                ],
-                [
-                  'It discounts your seller group only.',
-                  'A code created by your store is ignored for another store\'s lines in the same cart, and the minimum order is measured against your subtotal, not the whole basket. A platform code (no vendor) applies to any group.',
-                ],
-                [
-                  'One code per order, and it is taken off the goods.',
-                  'A percentage is applied to your subtotal and can be held down by the max discount; a fixed amount is subtracted once. The discount never exceeds the subtotal and freight is untouched, and the platform commission is then charged on the discounted number - so a coupon lowers your fee as well.',
-                ],
-                [
-                  'The redemption is counted when the order is booked.',
-                  'Quoting alone does not consume a claim; placing the order increments usage_count inside the same transaction.',
-                ],
-              ].map(([title, body], idx) => (
-                <li key={idx} className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                    {idx + 1}
-                  </span>
-                  <span>
-                    <span className="block font-bold text-slate-900">{title}</span>
-                    <span className="mt-0.5 block text-xs text-slate-500">{body}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-
-            <p className="rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
-              There is no flash-deal engine, product-scope filter, or nomination programme wired into
-              this build. <code className="font-mono">promotions</code> has no column for which SKUs a
-              code covers, so every code here is storewide.
-            </p>
           </div>
         </div>
 
@@ -851,9 +794,8 @@ export const VendorPromotionsPage: React.FC = () => {
                 New coupon code
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                These are the columns on <code className="font-mono">promotions</code>. Anything you
-                leave blank keeps its database default. Amounts are stored in USD and shown in your
-                selected display currency.
+                Set the code, the discount and the dates it runs. Buyers enter the code at
+                checkout to claim it.
               </DialogDescription>
             </DialogHeader>
 

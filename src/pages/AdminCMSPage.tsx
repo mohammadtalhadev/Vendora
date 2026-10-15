@@ -616,7 +616,7 @@ export const AdminCMSPage: React.FC = () => {
         {(createBannerMutation.isSuccess || createCouponMutation.isSuccess) && (
           <p className="flex items-center gap-2 text-[11px] font-bold text-emerald-700">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            Saved to the database.
+            Saved.
           </p>
         )}
       </div>

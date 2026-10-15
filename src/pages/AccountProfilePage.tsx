@@ -691,7 +691,7 @@ export const AccountProfilePage: React.FC = () => {
       setNewPassword('');
       setConfirmPassword('');
       setIsPasswordFormOpen(false);
-      setPasswordBanner('Password updated through Supabase auth. Your sessions keep working until they expire.');
+      setPasswordBanner('Password updated. Your other sessions keep working until they expire.');
     } catch (cause) {
       setPasswordError(messageOf(cause));
     } finally {
@@ -980,7 +980,7 @@ export const AccountProfilePage: React.FC = () => {
                         Personal Information
                       </h2>
                       <p className="text-xs text-slate-500">
-                        Your display name writes to the profile row; only what the database lets you change is offered.
+                        Your name and details, as they appear across Vendora.
                       </p>
                     </div>
                   </div>
@@ -1273,7 +1273,7 @@ export const AccountProfilePage: React.FC = () => {
                         Your Packages &amp; Tracking
                       </h2>
                       <p className="text-xs text-slate-500">
-                        Every row below is a sub-order the database returned for this account.
+                        Every package from your orders, with its delivery status.
                       </p>
                     </div>
                   </div>
@@ -2111,7 +2111,7 @@ export const AccountProfilePage: React.FC = () => {
                     <h2 className="font-outfit text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                       Security
                     </h2>
-                    <p className="text-xs text-slate-500">What this account can actually change, and what it cannot.</p>
+                    <p className="text-xs text-slate-500">Manage your password and sign-in details.</p>
                   </div>
 
                   <div className="space-y-3 max-w-xl">
@@ -2122,15 +2122,15 @@ export const AccountProfilePage: React.FC = () => {
                       <li className="flex items-start gap-2">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
                         <span>
-                          Password — set below through Supabase auth, and the server&rsquo;s message is shown when it
-                          refuses one.
+                          Password — change it below. If a new password is not accepted, the reason
+                          is shown here.
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
                         <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
                         <span>
-                          Email — your sign-in address is {user?.email ?? 'not available'}; this app exposes no email
-                          change path.
+                          Email — your sign-in address is {user?.email ?? 'not available'}; it
+                          can&apos;t be changed here.
                         </span>
                       </li>
                     </ul>
@@ -2180,8 +2180,8 @@ export const AccountProfilePage: React.FC = () => {
                                 className={inputClass}
                               />
                               <p className="mt-1 text-xs text-slate-500">
-                                No current-password field: this session&rsquo;s token is what proves the request, and the
-                                server enforces the minimum length. Its message appears below if it rejects the password.
+                                You don&apos;t need your current password — you&apos;re already signed
+                                in. If the new password is rejected, the reason appears below.
                               </p>
                             </div>
                             <div className="flex items-center gap-3">

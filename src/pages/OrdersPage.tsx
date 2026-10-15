@@ -1060,9 +1060,8 @@ export const OrdersPage: React.FC = () => {
                       Delivery Addresses On Your Orders
                     </h2>
                     <p className="text-xs text-slate-500">
-                      Each address below is the one an order was shipped to. The database keeps no address
-                      book, so nothing here can be saved, defaulted or deleted — you enter a destination
-                      again on the checkout page.
+                      Each address below is the one an order was shipped to. Addresses aren&apos;t
+                      saved to an address book, so you enter your destination again at checkout.
                     </p>
                   </div>
 
@@ -1188,9 +1187,8 @@ export const OrdersPage: React.FC = () => {
                   <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-4 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2.5">
                     <ShieldCheck className="h-4 w-4 text-sun-orange shrink-0 mt-0.5" aria-hidden="true" />
                     <span>
-                      Card bookings record only the brand and the last four digits, which is all this page can
-                      show; the number itself never reaches the database. A cash-on-delivery order records no
-                      card at all.
+                      For card payments we only keep the brand and the last four digits — your full
+                      card number is never stored. Cash-on-delivery orders have no card.
                     </span>
                   </div>
 
@@ -1239,12 +1237,11 @@ export const OrdersPage: React.FC = () => {
 
                   <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-6 text-center space-y-1">
                     <p className="text-xs font-bold text-slate-900 dark:text-white">
-                      No dispute list is available to this page
+                      Disputes are handled by our support desk
                     </p>
                     <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      Disputes are opened and frozen by the support desk from their console, and this build
-                      exposes no customer-side read of them, so there is nothing to show or count here. The
-                      support desk can raise a case for any package on your account.
+                      If something is wrong with a package, contact the support desk — they can
+                      raise a case for any package on your account.
                     </p>
                     <div className="pt-3 flex items-center justify-center gap-2">
                       <Link
@@ -1347,8 +1344,8 @@ export const OrdersPage: React.FC = () => {
                         </p>
                       ) : (
                         <p className="text-xs text-slate-500">
-                          Supabase verifies this request with your signed-in session, so there is no current
-                          password field; it may ask you to sign in again first.
+                          You&apos;re already signed in, so there is no current-password field. You
+                          may be asked to sign in again first.
                         </p>
                       )}
                       <button
@@ -1431,9 +1428,8 @@ export const OrdersPage: React.FC = () => {
             </div>
 
             <p className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/40 p-3 text-xs text-amber-800 dark:text-amber-300">
-              Filing a dispute from here isn&apos;t available: the platform has no customer-side
-              dispute-creation service, so submitting would not open a case or freeze any payout. Our support
-              desk opens and freezes disputes from their console — please contact support to raise a claim.
+              You can&apos;t file a dispute from this page yet. To raise a claim on any package,
+              contact our support desk — they will open the case for you.
             </p>
           </div>
 

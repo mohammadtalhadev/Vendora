@@ -170,9 +170,7 @@ export const LoginPage: React.FC = () => {
       mergeGuestCartIntoUser(user.id);
       navigate(workspaceForRole(roleKey));
     } catch (err: unknown) {
-      setError(
-        `${friendlyErrorText(err, { context: 'auth' })} — has the demo data been seeded into Supabase?`,
-      );
+      setError(friendlyErrorText(err, { context: 'auth' }));
     } finally {
       setIsSubmitting(false);
     }

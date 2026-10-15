@@ -9,7 +9,6 @@ import {
   Star,
   AlertTriangle,
   ThumbsUp,
-  ShieldCheck,
   Send,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
@@ -490,7 +489,7 @@ export const VendorReviewsPage: React.FC = () => {
             <p className="text-rose-600">
               {reviewsQuery.error instanceof Error
                 ? reviewsQuery.error.message
-                : 'Unexpected error reading from Supabase.'}
+                : 'Something went wrong while loading your reviews.'}
             </p>
             <button
               type="button"
@@ -711,25 +710,9 @@ export const VendorReviewsPage: React.FC = () => {
           })}
         </div>
 
-        {/* ── Guidelines Callout Box & Pagination ──────────────────── */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs">
-          <div className="flex items-start gap-2.5">
-            <ShieldCheck className="h-5 w-5 text-slate-700 shrink-0 mt-0.5" aria-hidden="true" />
-            <div>
-              <div className="font-bold text-slate-900 text-xs">Vendora Review Guidelines</div>
-              <p className="mt-0.5 text-slate-500 text-[11px] leading-relaxed">
-                A reply is one public text field on the review. Replying again replaces the earlier
-                text - there is no threaded conversation, no edit history and no private channel to
-                the buyer, and the rating itself is written by the customer, not by you.
-              </p>
-              <p className="mt-1 text-slate-500 text-[11px] leading-relaxed">
-                The queue reads the 200 most recent reviews across your listings, so the averages
-                here are over that window rather than the store's whole history.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 self-start sm:self-auto shrink-0">
+        {/* ── Pagination ───────────────────────────────────────────── */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex items-center justify-end gap-4 text-xs">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               disabled={currentPage === 1}

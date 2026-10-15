@@ -106,7 +106,7 @@ export const AdminCommissionPage: React.FC = () => {
               Commission &amp; Platform Fees
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Rates and earnings from the live order ledger — every figure below is computed by the database.
+              Rates and earnings from the live order ledger.
             </p>
           </div>
           <div className="flex items-center gap-2">

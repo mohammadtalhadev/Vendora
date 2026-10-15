@@ -168,7 +168,7 @@ export const AdminDashboardPage: React.FC = () => {
               disabled={dashboard.isFetching}
               aria-label="Refresh Numbers"
               className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
-              title="Re-read the platform numbers from the database"
+              title="Refresh the platform numbers"
             >
               <RotateCw className={`h-3.5 w-3.5 text-sun-orange ${dashboard.isFetching ? 'animate-spin' : ''}`} />
             </button>

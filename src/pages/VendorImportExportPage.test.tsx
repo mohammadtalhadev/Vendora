@@ -46,7 +46,7 @@ describe('VendorImportExportPage import', () => {
 
     expect(screen.getByText('Choose a catalog CSV')).toBeInTheDocument();
     expect(screen.getByText(/Each ready row becomes a real listing owned by your store/)).toBeInTheDocument();
-    expect(screen.getByText(/Vendora has no SKU column/)).toBeInTheDocument();
+    expect(screen.getByText(/Listings don.t carry SKUs/)).toBeInTheDocument();
     // Nothing is invented to fill the preview.
     expect(screen.queryByText('Apex Pro Magnetic Keyboard')).not.toBeInTheDocument();
     expect(screen.queryByText(/Auto-Matched 100%/)).not.toBeInTheDocument();

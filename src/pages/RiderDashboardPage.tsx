@@ -368,8 +368,8 @@ const BoardError: React.FC<{ message: string; retrying: boolean; onRetry: () => 
         <p className="text-sm font-black text-rose-950">Your board could not be read</p>
         <p className="mt-1 text-xs font-medium text-rose-900">{message}</p>
         <p className="mt-2 text-xs text-rose-700">
-          No parcels are listed, because a route the database never sent is not something this screen
-          can invent. Retry, or sign in again if the message mentions your rider profile.
+          No parcels could be loaded. Retry, or sign in again if the message mentions your rider
+          profile.
         </p>
       </div>
     </div>

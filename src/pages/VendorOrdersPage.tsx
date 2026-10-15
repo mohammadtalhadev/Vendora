@@ -463,9 +463,8 @@ export const VendorOrdersPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">Orders</h1>
             <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-              Every sub-order naming your store, read from the database. Confirm, pack and release
-              for pickup here; the carrier and the handover PIN are recorded by the delivery side,
-              and a store has no shipping-label or tracking feed to write.
+              Every sub-order naming your store. Confirm, pack and release for pickup here — the
+              carrier and the handover PIN are handled on the delivery side.
             </p>
           </div>
 

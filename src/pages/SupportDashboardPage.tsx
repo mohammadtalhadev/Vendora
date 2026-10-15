@@ -398,8 +398,8 @@ export const SupportDashboardPage: React.FC = () => {
                           : 'Close this claim as denied'}
                       </h3>
                       <p className="mt-1 text-xs text-slate-400">
-                        `resolve_dispute` writes the ruling on case {caseRow.id} and the note with
-                        it. Once a case is closed the desk cannot re-open it.
+                        This records the ruling and closes the case. A closed case cannot be
+                        re-opened.
                       </p>
                     </div>
                   </div>

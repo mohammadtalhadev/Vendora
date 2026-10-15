@@ -160,7 +160,7 @@ function formatRelativeTime(timestamp: string): string {
 const reason = (error: unknown): string =>
   error instanceof Error && error.message
     ? error.message
-    : 'The database did not accept this change.';
+    : 'That change could not be saved.';
 
 export const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -259,8 +259,7 @@ export const NotificationsPage: React.FC = () => {
                     Notifications Center
                   </h1>
                   <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
-                    The notices Postgres addressed to this account: order and dispute updates,
-                    payouts, and marketplace alerts.
+                    Order and dispute updates, payouts, and marketplace alerts for this account.
                   </p>
                 </div>
               </div>
@@ -449,7 +448,7 @@ export const NotificationsPage: React.FC = () => {
               <h2 className="text-xl font-extrabold text-slate-900">You&apos;re all caught up!</h2>
               <p className="mt-1.5 max-w-md text-xs sm:text-sm text-slate-500 leading-relaxed">
                 This account has no notices. As order updates, dispute replies or payout notices
-                arrive, the database writes one for it and it shows up here.
+                arrive, they will show up here.
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link
@@ -477,7 +476,7 @@ export const NotificationsPage: React.FC = () => {
               <p className="mt-1 text-xs text-slate-500 max-w-sm">
                 {activeCategory === 'unread'
                   ? 'Nothing is unread on this account right now.'
-                  : 'The database matched no notices of this kind for this account.'}
+                  : 'No notices of this kind for this account.'}
               </p>
               <button
                 type="button"
@@ -662,7 +661,7 @@ export const NotificationsPage: React.FC = () => {
                   className="text-[11px] font-semibold text-slate-500"
                 >
                   Showing {rows.length} of {total} {activeCategory === 'all' ? 'notices' : `${activeLabel.toLowerCase()} notices`}
-                  {' '}on page {page} of {pageCount} — the rest are in Postgres, one page at a time.
+                  {' '}on page {page} of {pageCount}.
                 </p>
                 <div className="flex items-center gap-2">
                   <button

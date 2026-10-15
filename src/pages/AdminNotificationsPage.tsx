@@ -222,11 +222,8 @@ export const AdminNotificationsPage = () => {
             Broadcasts &amp; Announcement Log
           </h1>
           <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-            A broadcast is one row per account in the audience, written by{' '}
-            <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] font-semibold text-slate-700">
-              broadcast_notification()
-            </code>
-            . Only staff are allowed to call it, and the database counts who it reached.
+            Send an announcement to a whole audience at once — buyers, sellers, riders or
+            staff — and see who it reached.
           </p>
         </div>
 

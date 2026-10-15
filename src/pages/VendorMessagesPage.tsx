@@ -234,9 +234,8 @@ export const VendorMessagesPage: React.FC = () => {
               Customer Messages
             </h1>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500">
-              Buyers open a thread from an order, a return or a listing. You can reply and change
-              its status. You cannot start one: the insert policy requires the buyer&apos;s own
-              account, and the transcript has no private-note column or file uploader.
+              Buyers open a thread from an order, a return or a listing. Reply here and keep each
+              conversation&apos;s status up to date.
             </p>
           </div>
           <button
@@ -602,31 +601,6 @@ export const VendorMessagesPage: React.FC = () => {
               </>
             )}
           </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5 text-[11px] leading-relaxed text-slate-500 shadow-xs">
-          <div className="font-bold uppercase tracking-wider text-slate-400">
-            What this page can and cannot do
-          </div>
-          <ul className="mt-2 space-y-1">
-            <li>
-              · Reply as the store, move a thread between pending, urgent, escalated and resolved,
-              and export the transcript.
-            </li>
-            <li>
-              · Start a conversation. <code>threads_insert_customer</code> only lets the buyer's own
-              account create a thread, so an empty inbox stays empty until they write.
-            </li>
-            <li>
-              · Add private staff notes or upload attachments. The messages table has an
-              <code>attachments</code> column but no uploader wired to it, and no column for a note
-              the buyer cannot read.
-            </li>
-            <li>
-              · Track first-response time or CSAT. Nothing in the schema stores when a reply landed
-              relative to the question, so no target or score is shown.
-            </li>
-          </ul>
         </div>
       </div>
 

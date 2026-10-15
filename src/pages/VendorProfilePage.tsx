@@ -6,10 +6,8 @@ import {
   ShieldCheck,
   LogOut,
   KeyRound,
-  Store,
   CheckCircle2,
   AlertTriangle,
-  ExternalLink,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
@@ -343,8 +341,7 @@ export const VendorProfilePage: React.FC = () => {
                 <div className="border-b border-slate-100 pb-3">
                   <h2 className="text-sm font-bold text-slate-900">Roles on this account</h2>
                   <p className="text-[11px] text-slate-500">
-                    Read from <code>profiles.roles</code> on every app start. The JWT carries no
-                    roles, so what you see here is what the database authorizes.
+                    The roles currently active on your account.
                   </p>
                 </div>
 
@@ -390,14 +387,11 @@ export const VendorProfilePage: React.FC = () => {
 
                 <div className="space-y-2 border-t border-slate-100 pt-3">
                   <span className="text-[10px] font-bold text-slate-400">
-                    Frozen against a seller write
+                    Managed by Vendora
                   </span>
                   <p className="text-[11px] text-slate-500">
-                    <code>profiles.roles</code> (which is what grants vendor, admin or rider
-                    access), <code>vendor_profiles.status</code>, <code>rating</code>,{' '}
-                    <code>review_count</code> and <code>commission_rate_override</code>. A policy
-                    compares each against the stored value, so a settings form cannot edit its way
-                    back from a suspension or a higher commission.
+                    Your roles, store status, rating and commission rate are set by the Vendora
+                    team — they can&apos;t be changed from this page.
                   </p>
                 </div>
               </section>
@@ -432,50 +426,6 @@ export const VendorProfilePage: React.FC = () => {
                   Store handle <span className="font-mono">/{store.slug}</span>
                 </p>
               )}
-            </section>
-
-            <section className={CARD}>
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                <Store className="h-4 w-4 text-sun-orange" aria-hidden="true" />
-                <h3 className="text-sm font-bold text-slate-900">Not built in this project</h3>
-              </div>
-              <ul className="space-y-2 text-[11px] text-slate-500">
-                <li className="flex gap-2">
-                  <span className="text-slate-300">—</span>
-                  <span>
-                    Two-factor or hardware-key enrolment. This project has no authenticator factors
-                    and no recovery-code table, so nothing here would be verified.
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-slate-300">—</span>
-                  <span>
-                    A list of other devices. Enumerating sessions needs the server-side admin API; a
-                    browser token can only end its own session.
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-slate-300">—</span>
-                  <span>
-                    A login or activity history you can read. The audit log is written by the
-                    database and its policy opens it to staff only.
-                  </span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-slate-300">—</span>
-                  <span>
-                    Staff members, sub-accounts or per-user permissions. There is no team table -
-                    one account owns this store.
-                  </span>
-                </li>
-              </ul>
-              <Link
-                to="/vendor/store-settings"
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 hover:underline"
-              >
-                <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                Store Settings for storefront, policies and alerts
-              </Link>
             </section>
           </div>
         </div>

@@ -492,32 +492,6 @@ export const VendorMediaPage: React.FC = () => {
           </div>
         )}
 
-        <section className={CARD}>
-          <h2 className="text-sm font-bold text-slate-900">What this library is</h2>
-          <ul className="space-y-1.5 text-[11px] text-slate-500">
-            <li>
-              — Folders are derived from the assets themselves. There is no folder table, so an empty
-              folder cannot exist and a move is a real file move plus a recorded path.
-            </li>
-            <li>
-              — A new upload is stored as <em>pending</em>. The moderation verdict is written by
-              platform staff; the policy on this table refuses a seller write of it, so no asset can
-              approve itself.
-            </li>
-            <li>
-              — Assets seeded for the demo point at an external CDN with no object in your bucket.
-              They can be renamed but not moved, and the error says so instead of faking a move.
-            </li>
-            <li>
-              — A listing references its images by URL on the product row. Deleting an asset here
-              removes the file, not the reference - a live listing keeps showing the old link until
-              you edit it on Products.
-            </li>
-            <li>
-              — Dimensions are only shown when a row recorded them. Nothing here guesses a size.
-            </li>
-          </ul>
-        </section>
       </div>
 
       {/* Confirm step: the row is removed from the library only after the server accepts the delete. */}
@@ -549,9 +523,9 @@ export const VendorMediaPage: React.FC = () => {
                 <>
                   1 asset will be removed: <strong className="text-slate-800">{deleteTarget.name}</strong>{' '}
                   (folder <code className="font-mono">{deleteTarget.folder || 'root'}</code>,{' '}
-                  {bytesOf(deleteTarget.sizeBytes)}). This deletes its <code className="font-mono">media_items</code>{' '}
-                  row and the object in your bucket — there is no trash bin, so it cannot be undone. A listing still
-                  pointing at the old URL keeps showing that link until you edit it on Products.
+                  {bytesOf(deleteTarget.sizeBytes)}). This deletes the file permanently — there is no
+                  trash bin, so it cannot be undone. A listing still pointing at the old URL keeps
+                  showing that link until you edit it on Products.
                 </>
               ) : (
                 'Nothing has been deleted yet.'
