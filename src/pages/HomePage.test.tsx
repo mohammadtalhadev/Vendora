@@ -369,8 +369,10 @@ describe('HomePage fabricated-content takedown (Batch 5, Pro-0)', { timeout: 400
  * Batch 87 — the hero is back to its two planned parts: the slides carousel
  * (`homepage_hero`) and the 9:16 portrait carousel (`homepage_hero_portrait`,
  * every published banner). The Batch 85 promo column no longer lives in the
- * hero; the `homepage_left_promo` banner is the left picture of the
+ * hero; the `homepage_left_promo` banner became the left picture of the
  * New Arrivals / Best Seller / Best Offers section (DealsStrip) instead.
+ * Batch 93 removed that promo column too, so the placement no longer
+ * renders anywhere on the homepage and DealsStrip is products only.
  */
 describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, () => {
   beforeEach(() => {
@@ -528,13 +530,11 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(mainBlock.className).toContain('lg:h-full');
     expect(mainBlock.className).not.toContain('self-start');
 
-    // The promo banner appears exactly once on the page and NOT in the hero:
-    // it lives in the deals section further down.
-    const promoImgs = await screen.findAllByAltText('Best Seller Category');
-    expect(promoImgs).toHaveLength(1);
+    // Batch 93: a published `homepage_left_promo` banner no longer renders
+    // anywhere on the page — the deals section's promo column is gone.
     const heroSection = sectionOf(slideImg);
     expect(within(heroSection).queryByAltText('Best Seller Category')).not.toBeInTheDocument();
-    expect(sectionOf(promoImgs[0])).not.toBe(heroSection);
+    expect(screen.queryByAltText('Best Seller Category')).not.toBeInTheDocument();
   });
 
   it('portrait rail rotates through all three banners on its 6.5s timer and pauses on hover', async () => {
@@ -616,36 +616,69 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     vi.useRealTimers();
   });
 
-  it('deals section shows the published promo banner as its left picture, replacing the built-in card', async () => {
+  it('deals section ignores a published promo banner: no promo column, products full width (Batch 93)', async () => {
     seedSidePromo();
     renderHome();
 
     const tab = await screen.findByRole('button', { name: 'Best Seller' });
     const dealsSection = sectionOf(tab);
-    const promoImg = await within(dealsSection).findByAltText('Best Seller Category');
-    expect(promoImg).toBeInTheDocument();
-    expect(blockOf(promoImg).className).toContain('lg:col-span-3');
 
-    // The whole card links to the banner's link.
-    const promoLink = promoImg.parentElement?.querySelector('a');
-    expect(promoLink?.getAttribute('href')).toBe('/deals');
-
-    // The built-in Tech Fest card is replaced, and products still render.
-    expect(within(dealsSection).queryByText('Tech Fest 2026')).not.toBeInTheDocument();
+    // Products still render.
     expect(
       await within(dealsSection).findByText('Sony WH-1000XM5 Wireless Headphones'),
     ).toBeInTheDocument();
+
+    // Neither the CMS banner nor the built-in Tech Fest card renders, and
+    // no promo/grid column split remains in the section.
+    expect(screen.queryByAltText('Best Seller Category')).not.toBeInTheDocument();
+    expect(within(dealsSection).queryByText('Tech Fest 2026')).not.toBeInTheDocument();
+    expect(dealsSection.querySelector('[class*="lg:col-span-3"]')).toBeNull();
+    expect(dealsSection.querySelector('[class*="lg:col-span-9"]')).toBeNull();
   });
 
-  it('deals section renders its built-in promo card unchanged when no banner is published', async () => {
+  it('deals section tabs are pills and every tab shows one row of four products (Batch 93)', async () => {
     renderHome();
 
     const tab = await screen.findByRole('button', { name: 'Best Seller' });
     const dealsSection = sectionOf(tab);
-    expect(await within(dealsSection).findByText('Tech Fest 2026')).toBeInTheDocument();
     expect(
-      within(dealsSection).getByAltText('Smartphones and audio on sale'),
+      await within(dealsSection).findByText('Sony WH-1000XM5 Wireless Headphones'),
     ).toBeInTheDocument();
+
+    // All three tabs render as shared pills; the default tab is pressed
+    // and carries the solid sun-orange selected recipe.
+    for (const name of ['New Arrivals', 'Best Seller', 'Best Offers']) {
+      const pill = within(dealsSection).getByRole('button', { name });
+      expect(pill.className).toContain('rounded-full');
+    }
+    expect(tab).toHaveAttribute('aria-pressed', 'true');
+    expect(tab.className).toContain('bg-sun-orange');
+    expect(tab.className).toContain('text-white');
+
+    // One row of four on the default tab: exactly four cards (each card
+    // renders a mobile + a desktop add-to-cart button), and the
+    // fifth-ranked best seller no longer makes the cut.
+    expect(within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ })).toHaveLength(8);
+    expect(
+      within(dealsSection).queryByText('DJI Mini 3 Lightweight Camera Drone'),
+    ).not.toBeInTheDocument();
+
+    // Switching tabs keeps the one-row-of-four cap.
+    fireEvent.click(within(dealsSection).getByRole('button', { name: 'Best Offers' }));
+    expect(
+      await within(dealsSection).findByText('Cozy Ribbed Knit Cashmere Pullover Sweater'),
+    ).toBeInTheDocument();
+    expect(within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ })).toHaveLength(8);
+
+    fireEvent.click(within(dealsSection).getByRole('button', { name: 'New Arrivals' }));
+    await waitFor(() =>
+      expect(
+        within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ }),
+      ).toHaveLength(8),
+    );
+
+    // No promo card in any state.
+    expect(within(dealsSection).queryByText('Tech Fest 2026')).not.toBeInTheDocument();
     expect(screen.queryByAltText('Best Seller Category')).not.toBeInTheDocument();
   });
 });
