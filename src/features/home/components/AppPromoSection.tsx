@@ -9,6 +9,8 @@ import React from 'react';
  * Batch 85: the copy was content, not code \u2014 the section CMS fed the
  * shape below (`PromoBannerSection`) and this component rendered it.
  *
+ * Batch 122: panel narrowed to max-w-5xl and centered \u2014 at full container width the 21:9 artwork stood ~550px tall; the owner asked for it a touch smaller (\u201cthoda chota\u201D), so it now renders ~440px tall on desktop with the same art, no crop.
+ *
  * Batch 119 (owner's call): the owner supplied a finished banner image
  * (light site palette, copy baked in) and ordered it placed in this
  * section's slot INSTEAD of the rendered copy, converted to WebP, and
@@ -44,7 +46,7 @@ export interface AppPromoSectionProps {
 export const AppPromoSection: React.FC<AppPromoSectionProps> = () => {
   return (
     <section className="reveal mb-14" aria-label="Vendora on mobile">
-      <div className="relative overflow-hidden rounded-[32px] shadow-xl ring-1 ring-black/5">
+      <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[32px] shadow-xl ring-1 ring-black/5">
         <img
           src="/banners/app-promo.webp"
           alt="Shop Faster. Track Live. All in Your Pocket. Vendora in your mobile browser \u2014 no app to install."
