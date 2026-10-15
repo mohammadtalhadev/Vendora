@@ -818,7 +818,7 @@ export const RegisterPage: React.FC = () => {
                         <div
                           className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shadow-2xs mt-0.5 peer-focus-visible:ring-2 peer-focus-visible:ring-sun-orange/40 ${
                             customerAgreed
-                              ? 'border-sun-orange bg-sun-orange'
+                              ? 'border-sun-orange bg-sun-orange text-white'
                               : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
                           }`}
                         >
@@ -1140,7 +1140,7 @@ export const RegisterPage: React.FC = () => {
                         <div
                           className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shadow-2xs mt-0.5 peer-focus-visible:ring-2 peer-focus-visible:ring-sun-orange/40 ${
                             sellerAgreed
-                              ? 'border-sun-orange bg-sun-orange'
+                              ? 'border-sun-orange bg-sun-orange text-white'
                               : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
                           }`}
                         >
