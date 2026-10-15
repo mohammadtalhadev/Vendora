@@ -10,7 +10,7 @@ import {
   Copy,
   Check,
   SlidersHorizontal,
-  DollarSign,
+  Banknote,
   Layers,
   CheckSquare,
   Square,
@@ -22,6 +22,7 @@ import { StatusBadge } from '../components/ui/status-badge';
 import { VendorNav } from '../features/vendor/components/VendorNav';
 import { useVendorPackages } from '../features/vendor/hooks/useVendorPackages';
 import { useSetProductStock, useVendorProducts } from '../features/vendor/hooks/useVendorProducts';
+import { formatPrice } from '../store/currency-store';
 import type { ModerationStatus } from '../types/domain';
 
 /**
@@ -43,9 +44,6 @@ const MODERATION_LABEL: Record<ModerationStatus, string> = {
   rejected: 'Rejected',
   archived: 'Archived',
 };
-
-const money = (value: number) =>
-  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** Static classes per KPI count: Tailwind cannot generate an interpolated class name. */
 const KPI_GRID: Record<number, string> = {
@@ -306,10 +304,10 @@ export const VendorInventoryPage: React.FC = () => {
     {
       id: 'total_valuation',
       label: 'Total Inventory Value',
-      value: `$${money(totalValuation)}`,
+      value: formatPrice(totalValuation),
       subtext: 'Units × your listed price, not a market value',
       color: 'text-emerald-600',
-      icon: DollarSign,
+      icon: Banknote,
     },
     {
       id: 'out_of_stock',
@@ -665,9 +663,9 @@ export const VendorInventoryPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="p-4">
-                        <span className="font-bold text-slate-900">${money(item.price)}</span>
+                        <span className="font-bold text-slate-900">{formatPrice(item.price)}</span>
                         <div className="text-[10px] text-slate-400 font-medium mt-0.5">
-                          Valuation: ${money(item.stock * item.price)}
+                          Valuation: {formatPrice(item.stock * item.price)}
                         </div>
                       </td>
                       <td className="p-4 text-center">

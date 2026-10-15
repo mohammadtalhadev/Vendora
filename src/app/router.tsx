@@ -255,6 +255,9 @@ const AdminVendorDetailPage = lazyWithRetry(() =>
 const AdminProductsPage = lazyWithRetry(() =>
   import('../pages/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage })),
 );
+const AdminInventoryPage = lazyWithRetry(() =>
+  import('../pages/AdminInventoryPage').then((m) => ({ default: m.AdminInventoryPage })),
+);
 const AdminAddProductPage = lazyWithRetry(() =>
   import('../pages/AdminAddProductPage').then((m) => ({ default: m.AdminAddProductPage })),
 );
@@ -932,6 +935,10 @@ export const router = createBrowserRouter([
       {
         path: 'products',
         element: lazyWrap(<AdminProductsPage />),
+      },
+      {
+        path: 'inventory',
+        element: lazyWrap(<AdminInventoryPage />),
       },
       {
         path: 'orders',

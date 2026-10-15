@@ -25,6 +25,8 @@ export const adminKeys = {
   order: (orderGroupId: string) => ['admin', 'order', orderGroupId] as const,
   categories: (userId: string | null | undefined) =>
     ['admin', userId ?? 'anon', 'categories'] as const,
+  inventory: (userId: string | null | undefined) =>
+    ['admin', userId ?? 'anon', 'inventory'] as const,
   brands: (userId: string | null | undefined) =>
     ['admin', userId ?? 'anon', 'brands', 'directory'] as const,
   /** `days` left out gives the family every window belongs to, which is what a rate change invalidates. */

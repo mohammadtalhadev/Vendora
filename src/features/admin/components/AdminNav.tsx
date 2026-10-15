@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Boxes,
   Store,
   ShieldCheck,
   PlusCircle,
@@ -70,6 +71,12 @@ const NAV_SECTIONS: NavSection[] = [
         label: 'Product Moderation',
         icon: ShieldCheck,
         end: true,
+      },
+      {
+        to: '/admin/inventory',
+        label: 'Inventory & Stock',
+        accessibleSubtitle: 'Stocks Console',
+        icon: Boxes,
       },
       {
         to: '/admin/add-product',

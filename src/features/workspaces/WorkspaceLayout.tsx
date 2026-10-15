@@ -117,6 +117,7 @@ type WorkspaceScreen = {
 const ADMIN_SCREENS: WorkspaceScreen[] = [
   { title: 'Dashboard', path: '/admin', group: 'Navigation', desc: 'Marketplace KPIs and real-time overview' },
   { title: 'Product Moderation', path: '/admin/products', group: 'Catalog', desc: 'Submissions queue and approvals' },
+  { title: 'Inventory & Stock', path: '/admin/inventory', group: 'Catalog', desc: 'Platform-wide stock levels & low-stock watch' },
   { title: 'Add Product', path: '/admin/add-product', group: 'Catalog', desc: 'Create and publish product catalog listing' },
   { title: 'Categories & Taxonomy', path: '/admin/categories', group: 'Catalog', desc: 'Taxonomy tree & commission structure' },
   { title: 'Orders & Shipments', path: '/admin/orders', group: 'Operations', desc: 'Multi-vendor split orders & tracking' },

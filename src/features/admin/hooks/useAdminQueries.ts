@@ -12,6 +12,7 @@ import { fetchReportSummary } from '../api/reports';
 import { fetchCodSettlements, fetchLogisticsBoard } from '../api/logistics';
 import { fetchPlatformSettings } from '../api/settings';
 import { fetchAdminMediaLibrary } from '../api/media';
+import { fetchAdminInventory } from '../api/inventory';
 import { adminKeys, useAdminScope } from './admin-keys';
 
 /**
@@ -39,6 +40,17 @@ export function useAdminDashboard(days = 30) {
   return useQuery({
     queryKey: adminKeys.dashboard(userId, days),
     queryFn: ({ signal }) => fetchAdminDashboard(days, signal),
+    enabled: Boolean(userId),
+    ...liveBoard,
+  });
+}
+
+/** Cross-seller stock of record (Batch 79): the whole physical catalog, live-polled like the other boards. */
+export function useAdminInventory() {
+  const userId = useAdminScope();
+  return useQuery({
+    queryKey: adminKeys.inventory(userId),
+    queryFn: ({ signal }) => fetchAdminInventory(signal),
     enabled: Boolean(userId),
     ...liveBoard,
   });
