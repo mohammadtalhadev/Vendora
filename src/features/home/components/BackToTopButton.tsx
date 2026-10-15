@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowUp } from 'lucide-react';
 import { useSmoothScroll } from '../../../components/SmoothScrollProvider';
 
@@ -87,7 +88,17 @@ export const BackToTopButton: React.FC = () => {
 
   if (!isVisible) return null;
 
-  return (
+  // Batch 114: rendered through a portal to <body> on purpose. The button
+  // is mounted deep inside the routed page subtree (under the keyed
+  // .page-enter entrance-animation wrapper in RootLayout); a transform
+  // animation on an ancestor makes that ancestor the containing block for
+  // position:fixed descendants, so `fixed bottom-7 right-7` was resolving
+  // against the full-height page wrapper instead of the viewport — the
+  // button ended up planted at the bottom of the page content, visible
+  // only once the footer scrolled into view. As a direct child of <body>
+  // no page-level wrapper can capture it, and it stays pinned to the
+  // viewport corner at any scroll depth.
+  return createPortal(
     <div className="fixed bottom-7 right-7 z-40 animate-in fade-in zoom-in-75 duration-300">
       <button
         type="button"
@@ -133,6 +144,7 @@ export const BackToTopButton: React.FC = () => {
           Top ({progressRef.current}%)
         </span>
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 };
