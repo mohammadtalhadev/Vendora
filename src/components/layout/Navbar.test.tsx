@@ -48,7 +48,7 @@ const seedCategories = (names: string[]) => {
   });
 };
 
-describe('Navbar (Batch 98 header redesign)', () => {
+describe('Navbar (Batch 98 header redesign, Batch 107 pill shape)', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     localStorage.clear();
@@ -142,6 +142,29 @@ describe('Navbar (Batch 98 header redesign)', () => {
     for (const link of screen.getAllByRole('link', { name: 'Help' })) {
       expect(link).toHaveAttribute('href', '/faq');
     }
+  });
+
+  it('renders the header itself as true pills, not full-width rectangular bars (Batch 107)', () => {
+    renderNavbar();
+
+    // Main header: the original capsule shell (border-radius var(--radius-pill)
+    // = 9999px in tokens.css) plus an explicit rounded-full, floating inside
+    // the page container — Batch 98's w-full border-b rectangle is gone.
+    const mainPill = screen.getByTestId('header-main-pill');
+    expect(mainPill.className).toContain('header-pill-shell');
+    expect(mainPill.className).toContain('rounded-full');
+    expect(mainPill.className).not.toContain('border-b');
+    expect(mainPill.parentElement!.className).toContain('max-w-[1600px]');
+
+    // Category strip: its own pill (header-pill-nav), same capsule radius.
+    const stripPill = screen.getByTestId('header-strip-pill');
+    expect(stripPill.className).toContain('header-pill-nav');
+    expect(stripPill.className).toContain('rounded-full');
+    expect(stripPill.className).not.toContain('border-b');
+    // Nothing was removed to make the pills: the strip still carries the
+    // All Categories trigger and the quick-link nav inside the pill.
+    expect(within(stripPill).getByRole('button', { name: /All Categories/ })).toBeInTheDocument();
+    expect(within(stripPill).getByRole('navigation', { name: 'Top categories' })).toBeInTheDocument();
   });
 
   it('keeps the search pill recipe: tinted surface, visible border, orange focus state', () => {

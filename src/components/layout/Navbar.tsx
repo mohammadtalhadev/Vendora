@@ -358,20 +358,23 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          1. Main Bar (Batch 98) — solid full-width marketplace bar: brand,
-          the floating search pill, and the quick actions. The bar surface is
-          solid in both schemes (white / the Batch 81 raised zinc #121214)
-          with a hairline bottom border; it only gains its shadow once the
-          page scrolls, like the pill it replaces did.
+          1. Main Pill (Batch 98 + Batch 107) — the header itself is a true
+          floating pill again: Batch 98 turned it into a full-width
+          rectangular bar and the capsule shape was lost (owner: "header ha
+          tu sahi pill shape mei nhi ha"). Batch 107 restores the original
+          header-pill-shell (border-radius: var(--radius-pill) = 9999px,
+          frosted surface, scroll elevation) inside the page container, so
+          the ends are fully rounded capsules — nothing inside changes:
+          brand, the floating search pill, and the quick actions keep their
+          Batch 98 recipes, and no element is removed.
           ========================================================================= */}
-      <div
-        className={`w-full border-b border-slate-200/80 bg-white transition-shadow duration-300 dark:border-white/10 dark:bg-[#121214] ${
-          isScrolled
-            ? 'shadow-[0_12px_32px_-12px_rgba(15,23,42,0.25)] dark:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]'
-            : ''
-        }`}
-      >
-        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
+        <div
+          data-testid="header-main-pill"
+          className={`header-pill-shell flex w-full items-center justify-between gap-2 rounded-full px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5 ${
+            isScrolled ? 'is-scrolled' : ''
+          }`}
+        >
             {/* Left: Brand Logo */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Mobile Hamburger Drawer Button */}
@@ -847,18 +850,26 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          2. Category Strip (Batch 98) — the marketplace second row on the
-          same solid surface, split from the main bar by a hairline: the All
-          Categories trigger (unchanged — same classes, same MegaMenu),
-          quick links for the first root categories the catalogue returns,
-          and the utility links right-aligned. The strip stays pinned with
-          the sticky header; only the utility strip above collapses on
-          scroll. On small screens the quick links scroll horizontally and
-          the All Categories trigger keeps its md+ visibility (the mobile
-          drawer covers categories there, as before).
+          2. Category Strip Pill (Batch 98 + Batch 107) — the marketplace
+          second row as its own floating pill (header-pill-nav, same
+          9999px capsule radius as the main pill), sitting under the main
+          pill inside the same container: the All Categories trigger
+          (unchanged — same classes, same MegaMenu), quick links for the
+          first root categories the catalogue returns, and the utility
+          links right-aligned. Nothing is removed from the strip. The
+          strip stays pinned with the sticky header; only the utility
+          strip above collapses on scroll. On small screens the quick
+          links scroll horizontally and the All Categories trigger keeps
+          its md+ visibility (the mobile drawer covers categories there,
+          as before).
           ========================================================================= */}
-      <div className="w-full border-b border-slate-200/80 bg-white dark:border-white/10 dark:bg-[#121214]">
-        <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 px-3 py-1.5 sm:gap-3 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
+        <div
+          data-testid="header-strip-pill"
+          className={`header-pill-nav mt-2 flex w-full items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 ${
+            isScrolled ? 'is-scrolled' : ''
+          }`}
+        >
           {/* "All Categories" Button with Full Mega Menu — FROZEN (owner
               decision, Batch 98): classes and behaviour exactly as the pill
               header had them; only its home moved, into this strip. */}
