@@ -6,6 +6,7 @@ import {
   ExternalLink,
   Folder,
   FolderOpen,
+  FolderPlus,
   HardDrive,
   Layers,
   LayoutGrid,
@@ -45,6 +46,15 @@ import {
 import { buildPageWindow } from '../../hooks/usePagination';
 import { useAdminMediaLibrary } from '../admin/hooks/useAdminQueries';
 import { useAdminActions } from '../admin/hooks/useAdminActions';
+import {
+  useAdminMediaFolders,
+  useCreateAdminMediaFolder,
+  useDeleteAdminMedia,
+  useDeleteAdminMediaFolder,
+  useMoveAdminMedia,
+  useRenameAdminMedia,
+  useRenameAdminMediaFolder,
+} from '../admin/hooks/useAdminMedia';
 import type { AdminMediaItem } from '../admin/api/media';
 import {
   cleanFolderName,
@@ -75,6 +85,15 @@ export interface MediaManagementViewProps {
   vendorName?: string;
 }
 
+/** One sidebar folder: a `media_folders` row (admin) or a derived label (vendor). */
+interface FolderEntry {
+  key: string;
+  name: string;
+  vendorId: string | null;
+  storeLabel: string | null;
+  count: number;
+}
+
 const CARD =
   'rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between';
 const TILE_HEAD =
@@ -93,10 +112,12 @@ const FIELD =
  * The asset library, in two scopes over the same `media_items` rows. Vendor mode is
  * the store the signed-in account owns: reads, uploads, renames, moves and deletes all
  * go through `src/features/vendor/api/media.ts`. Admin mode reads every store's rows
- * through `src/features/admin/api/media.ts` - the select policy admits staff - and the
- * only write it offers is the moderation verdict, because row deletion stays
- * owner-only in the table policy. Either way, a write the server refuses is reported
- * with the server's own words instead of a toast.
+ * through `src/features/admin/api/media.ts` - the select policy admits staff - and
+ * (Batch 61) holds the full management set over them too: rename, move (dialog or
+ * drag-and-drop onto a folder), delete through the audited `admin_delete_media` RPC,
+ * and folder create/rename/delete over the `media_folders` rows - plus the moderation
+ * verdict vendor mode never offers. Either way, a write the server refuses is
+ * reported with the server's own words instead of a toast.
  */
 export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }) => {
   const isAdmin = mode === 'admin';
@@ -105,9 +126,38 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const { setMediaStatus } = useAdminActions();
   const library = isAdmin ? adminLibrary : vendorLibrary;
   const upload = useUploadMedia();
-  const rename = useRenameMedia();
-  const move = useMoveMedia();
-  const remove = useDeleteMedia();
+  const vendorRename = useRenameMedia();
+  const vendorMove = useMoveMedia();
+  const vendorRemove = useDeleteMedia();
+  const adminRename = useRenameAdminMedia();
+  const adminMove = useMoveAdminMedia();
+  const adminRemove = useDeleteAdminMedia();
+  const adminFoldersQuery = useAdminMediaFolders(isAdmin);
+  const createFolderMutation = useCreateAdminMediaFolder();
+  const renameFolderMutation = useRenameAdminMediaFolder();
+  const deleteFolderMutation = useDeleteAdminMediaFolder();
+
+  // One write surface over both modes: each helper dispatches to the vendor API
+  // in vendor mode and to the Batch 61 admin API in admin mode, so the dialogs
+  // and drag-and-drop below never branch on mode again.
+  const renamePending = isAdmin ? adminRename.isPending : vendorRename.isPending;
+  const movePending = isAdmin ? adminMove.isPending : vendorMove.isPending;
+  const removePending = isAdmin ? adminRemove.isPending : vendorRemove.isPending;
+
+  const renameItem = async (itemId: string, name: string): Promise<void> => {
+    if (isAdmin) await adminRename.mutateAsync({ itemId, name });
+    else await vendorRename.mutateAsync({ itemId, name });
+  };
+
+  const moveItem = async (item: VendorMediaItem, folder: string): Promise<void> => {
+    if (isAdmin) await adminMove.mutateAsync({ item: item as AdminMediaItem, folder });
+    else await vendorMove.mutateAsync({ itemId: item.id, folder });
+  };
+
+  const deleteItem = async (itemId: string): Promise<void> => {
+    if (isAdmin) await adminRemove.mutateAsync(itemId);
+    else await vendorRemove.mutateAsync(itemId);
+  };
 
   const items = useMemo(() => library.data ?? [], [library.data]);
   const folders = useMemo(() => foldersOf(items), [items]);
@@ -140,6 +190,24 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
+
+  // Batch 61 folder management + drag-and-drop (admin). A folder entry is keyed
+  // `${vendorId}::${name}` in admin mode because the same folder name can exist
+  // under several stores; vendor entries keep the plain folder name as key.
+  const [folderCreateOpen, setFolderCreateOpen] = useState(false);
+  const [folderCreateStore, setFolderCreateStore] = useState('');
+  const [folderCreateName, setFolderCreateName] = useState('');
+  const [folderCreateError, setFolderCreateError] = useState<string | null>(null);
+
+  const [folderRenameTarget, setFolderRenameTarget] = useState<FolderEntry | null>(null);
+  const [folderRenameDraft, setFolderRenameDraft] = useState('');
+  const [folderRenameError, setFolderRenameError] = useState<string | null>(null);
+
+  const [folderDeleteTarget, setFolderDeleteTarget] = useState<FolderEntry | null>(null);
+  const [folderDeleteError, setFolderDeleteError] = useState<string | null>(null);
+
+  const [draggedIds, setDraggedIds] = useState<string[]>([]);
+  const [dropKey, setDropKey] = useState<string | null>(null);
 
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
@@ -182,10 +250,78 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     return counts;
   }, [items]);
 
+  /**
+   * The sidebar's folders. Admin entries unite the `media_folders` rows with the
+   * folders the loaded files still carry (a file's label predating its folder row
+   * must stay reachable), scoped per owning store; vendor entries are the derived
+   * labels the workspace has always listed.
+   */
+  const folderEntries = useMemo<FolderEntry[]>(() => {
+    if (!isAdmin) {
+      return folders.map((name) => ({
+        key: name,
+        name,
+        vendorId: null,
+        storeLabel: null,
+        count: folderCounts.get(name) ?? 0,
+      }));
+    }
+    const adminItems = items as AdminMediaItem[];
+    const storeLabelOf = (vendorId: string): string => {
+      const owner = adminItems.find((item) => item.vendorId === vendorId);
+      return owner ? owner.storeName || owner.storeSlug || 'Unnamed store' : 'Unnamed store';
+    };
+    const byKey = new Map<string, FolderEntry>();
+    const add = (vendorId: string, name: string) => {
+      const key = `${vendorId}::${name}`;
+      if (!byKey.has(key)) {
+        byKey.set(key, {
+          key,
+          name,
+          vendorId,
+          storeLabel: storeLabelOf(vendorId),
+          count: adminItems.filter((item) => item.vendorId === vendorId && item.folder === name).length,
+        });
+      }
+    };
+    for (const row of adminFoldersQuery.data ?? []) add(row.vendorId, row.name);
+    for (const item of adminItems) add(item.vendorId, item.folder);
+    return [...byKey.values()].sort(
+      (a, b) =>
+        (a.storeLabel ?? '').localeCompare(b.storeLabel ?? '') || a.name.localeCompare(b.name),
+    );
+  }, [isAdmin, folders, folderCounts, items, adminFoldersQuery.data]);
+
+  /** Stores present in the loaded library - the New Folder dialog's picker. */
+  const storesInLibrary = useMemo(() => {
+    const byId = new Map<string, string>();
+    if (isAdmin) {
+      for (const item of items as AdminMediaItem[]) {
+        if (item.vendorId && !byId.has(item.vendorId)) {
+          byId.set(item.vendorId, item.storeName || item.storeSlug || 'Unnamed store');
+        }
+      }
+    }
+    return [...byId.entries()].map(([id, label]) => ({ id, label }));
+  }, [items, isAdmin]);
+
+
+
   const filtered = useMemo(() => {
     const window = dateWindowOf(dateFilter);
     return items.filter((item) => {
-      if (folderFilter !== 'all' && item.folder !== folderFilter) return false;
+      if (folderFilter !== 'all') {
+        if (isAdmin) {
+          // Admin folder keys are `${vendorId}::${name}`: the same folder name
+          // under another store is a different folder.
+          const separator = folderFilter.indexOf('::');
+          const ownerId = separator >= 0 ? folderFilter.slice(0, separator) : '';
+          const folderName = separator >= 0 ? folderFilter.slice(separator + 2) : folderFilter;
+          if ((item as AdminMediaItem).vendorId !== ownerId || item.folder !== folderName) {
+            return false;
+          }
+        } else if (item.folder !== folderFilter) return false;
+      }
       if (kindFilter !== 'all' && mediaKindOf(item.mimeType) !== kindFilter) return false;
       if (window !== null && !withinDays(item.createdAt, window)) return false;
       if (!matchesQuery(item, searchQuery)) {
@@ -228,6 +364,26 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     () => items.filter((item) => selectedIds.includes(item.id)),
     [items, selectedIds],
   );
+
+  /** Folder names valid as Move destinations for the current targets' owner. */
+  const moveFolderOptions = useMemo(() => {
+    if (!isAdmin) return folders;
+    const ownerId = selected[0] ? (selected[0] as AdminMediaItem).vendorId : null;
+    if (!ownerId) return folders;
+    return [
+      ...new Set(
+        folderEntries.filter((entry) => entry.vendorId === ownerId).map((entry) => entry.name),
+      ),
+    ];
+  }, [isAdmin, folders, folderEntries, selected]);
+
+  /** Bulk move is one-owner only in admin mode: a folder belongs to one store. */
+  const selectionMixedOwners =
+    isAdmin &&
+    new Set(selected.map((item) => (item as AdminMediaItem).vendorId)).size > 1;
+
+  /** The folder name the header shows for the active admin folder key. */
+  const activeFolderEntry = folderEntries.find((entry) => entry.key === folderFilter) ?? null;
 
   /** What the Move dialog will act on: the current selection, named before any write. */
   const moveTargets = selected;
@@ -309,16 +465,12 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
       setEditingId(null);
       return;
     }
-    rename.mutate(
-      { itemId: item.id, name: next },
-      {
-        onSuccess: () => {
-          note(`Renamed to “${next}”. The stored object keeps its path, so live links stay valid.`);
-          setEditingId(null);
-        },
-        onError: fail,
-      },
-    );
+    renameItem(item.id, next)
+      .then(() => {
+        note(`Renamed to “${next}”. The stored object keeps its path, so live links stay valid.`);
+        setEditingId(null);
+      })
+      .catch(fail);
   };
 
   const confirmMove = async () => {
@@ -332,12 +484,17 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
       return;
     }
 
+    if (selectionMixedOwners) {
+      setMoveError('These files belong to different stores. Select files from one store to move them together - a folder belongs to a single store.');
+      return;
+    }
+
     setMoveError(null);
     const failed: VendorMediaItem[] = [];
     let reason = '';
     for (const item of moveTargets) {
       try {
-        await move.mutateAsync({ itemId: item.id, folder });
+        await moveItem(item, folder);
       } catch (cause) {
         reason = cause instanceof Error ? cause.message : String(cause);
         failed.push(item);
@@ -368,7 +525,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
   const closeDelete = () => {
     // Escape, outside-click and the Cancel button cannot close the dialog mid-write.
-    if (remove.isPending) return;
+    if (removePending) return;
     setDeleteTargets([]);
     setDeleteError(null);
   };
@@ -378,7 +535,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     let reason = '';
     for (const item of deleteTargets) {
       try {
-        await remove.mutateAsync(item.id);
+        await deleteItem(item.id);
       } catch (cause) {
         reason = cause instanceof Error ? cause.message : String(cause);
         remaining.push(item);
@@ -400,6 +557,117 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     setDeleteError(null);
     setSelectedIds([]);
     note(`Deleted ${deleted} file${deleted === 1 ? '' : 's'}. The row and the stored object are both gone.`);
+  };
+
+  // ── Folder management (admin) ──────────────────────────────────────
+  const submitCreateFolder = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!folderCreateStore) {
+      setFolderCreateError('Choose the store this folder belongs to.');
+      return;
+    }
+    if (!cleanFolderName(folderCreateName)) {
+      setFolderCreateError('Give the folder a name of letters, numbers, dashes or underscores.');
+      return;
+    }
+    setFolderCreateError(null);
+    try {
+      const created = await createFolderMutation.mutateAsync({
+        vendorId: folderCreateStore,
+        name: folderCreateName,
+      });
+      setFolderCreateOpen(false);
+      setFolderCreateName('');
+      note(`Created the folder “${created.name}” for that store. It exists now, even before any file is moved into it.`);
+    } catch (cause) {
+      setFolderCreateError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
+  const submitFolderRename = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!folderRenameTarget?.vendorId) return;
+    setFolderRenameError(null);
+    try {
+      const renamed = await renameFolderMutation.mutateAsync({
+        vendorId: folderRenameTarget.vendorId,
+        oldName: folderRenameTarget.name,
+        newName: folderRenameDraft,
+      });
+      if (folderFilter === folderRenameTarget.key) {
+        setFolderFilter(`${folderRenameTarget.vendorId}::${renamed.name}`);
+      }
+      setFolderRenameTarget(null);
+      note(`Renamed the folder to “${renamed.name}” and relabelled its files.`);
+    } catch (cause) {
+      setFolderRenameError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
+  const confirmFolderDelete = async () => {
+    if (!folderDeleteTarget?.vendorId) return;
+    setFolderDeleteError(null);
+    try {
+      await deleteFolderMutation.mutateAsync({
+        vendorId: folderDeleteTarget.vendorId,
+        name: folderDeleteTarget.name,
+      });
+      if (folderFilter === folderDeleteTarget.key) setFolderFilter('all');
+      const name = folderDeleteTarget.name;
+      setFolderDeleteTarget(null);
+      note(`Deleted the empty folder “${name}”.`);
+    } catch (cause) {
+      setFolderDeleteError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
+  // ── Drag-and-drop (native HTML5, no dependency) ────────────────────
+  const startDrag = (event: React.DragEvent, item: VendorMediaItem) => {
+    // Dragging a ticked card drags the whole selection; an unticked card drags itself.
+    const ids = selectedIds.includes(item.id) ? selectedIds : [item.id];
+    setDraggedIds(ids);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', ids.join(','));
+  };
+
+  const dropOnFolder = async (entry: FolderEntry) => {
+    const ids = draggedIds;
+    setDraggedIds([]);
+    setDropKey(null);
+    if (ids.length === 0) return;
+
+    // A drop only moves files that belong to the folder's store; the rest stay
+    // put and are named in the result instead of being silently skipped.
+    const targets = items.filter(
+      (item) =>
+        ids.includes(item.id) &&
+        (!isAdmin || (item as AdminMediaItem).vendorId === entry.vendorId),
+    );
+    const skipped = ids.length - targets.length;
+    const failed: VendorMediaItem[] = [];
+    let reason = '';
+    for (const item of targets) {
+      if (item.folder === entry.name) continue;
+      try {
+        await moveItem(item, entry.name);
+      } catch (cause) {
+        reason = cause instanceof Error ? cause.message : String(cause);
+        failed.push(item);
+      }
+    }
+    const moved = targets.length - failed.length;
+    if (failed.length > 0) {
+      setSelectedIds(failed.map((item) => item.id));
+      fail(new Error(`Moved ${moved} of ${targets.length} into “${entry.name}”: ${reason}`));
+      return;
+    }
+    if (moved > 0) {
+      note(
+        `Moved ${moved} file${moved === 1 ? '' : 's'} into “${entry.name}”${skipped > 0 ? `; ${skipped} selected file${skipped === 1 ? '' : 's'} belong${skipped === 1 ? 's' : ''} to another store and stayed put` : ''}.`,
+      );
+    } else if (skipped > 0) {
+      setError('Those files belong to another store, so nothing was moved into this folder.');
+    }
   };
 
   // The standard ellipsis page window (Batch 49) — the same helper the
@@ -557,7 +825,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             </div>
           </div>
           <div className="mt-4 pt-2 text-xs text-slate-500 border-t border-slate-100">
-            {folders.length} folder label{folders.length === 1 ? '' : 's'} appear in these rows.
+            {isAdmin
+              ? `${folderEntries.length} folder${folderEntries.length === 1 ? '' : 's'} across the stores in this library.`
+              : `${folders.length} folder label${folders.length === 1 ? '' : 's'} appear in these rows.`}
           </div>
         </div>
       </div>
@@ -683,16 +953,33 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
       {/* ── Main two-column layout ──────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-        {/* Folder directory: labels taken from the rows themselves */}
+        {/* Folder directory: `media_folders` rows (admin) / labels on the rows (vendor) */}
         <div className="lg:col-span-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <h3 className="font-extrabold text-slate-900 text-xs">
-              Folder labels
+              Folders
             </h3>
             <span className="text-xs font-bold text-slate-500">
-              {folders.length} in use
+              {folderEntries.length} in use
             </span>
           </div>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                setFolderCreateError(null);
+                setFolderCreateStore(storesInLibrary[0]?.id ?? '');
+                setFolderCreateName('');
+                setFolderCreateOpen(true);
+              }}
+              disabled={storesInLibrary.length === 0}
+              className={`${GHOST_BUTTON} w-full justify-center`}
+            >
+              <FolderPlus className="h-3.5 w-3.5 text-slate-500" />
+              <span>New Folder</span>
+            </button>
+          )}
 
           <div className="space-y-1 text-xs">
             <button
@@ -714,40 +1001,96 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               </span>
             </button>
 
-            {folders.map((name) => {
-              const isActive = folderFilter === name;
+            {folderEntries.map((entry) => {
+              const isActive = folderFilter === entry.key;
+              const isDropTarget = dropKey === entry.key;
               return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => changeFilter(() => setFolderFilter(name))}
-                  aria-current={isActive ? 'true' : undefined}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-slate-900 text-white font-bold'
-                      : 'text-slate-700 hover:bg-slate-100'
+                <div
+                  key={entry.key}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    setDropKey(entry.key);
+                  }}
+                  onDragLeave={() => setDropKey((current) => (current === entry.key ? null : current))}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void dropOnFolder(entry);
+                  }}
+                  className={`flex items-center gap-1 rounded-lg transition-colors ${
+                    isDropTarget ? 'bg-sky-100 ring-2 ring-sky-400' : ''
                   }`}
                 >
-                  <span className="flex items-center gap-2 truncate">
-                    <Folder className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate font-mono text-xs">{name}</span>
-                  </span>
-                  <span className={isActive ? 'text-slate-300' : 'text-slate-400'}>
-                    {folderCounts.get(name) ?? 0}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => changeFilter(() => setFolderFilter(entry.key))}
+                    aria-current={isActive ? 'true' : undefined}
+                    className={`flex-1 min-w-0 flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-slate-900 text-white font-bold'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      <Folder className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        <span className="block truncate font-mono text-xs">{entry.name}</span>
+                        {isAdmin && entry.storeLabel && (
+                          <span className={`block truncate text-[10px] font-medium ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
+                            {entry.storeLabel}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <span className={isActive ? 'text-slate-300' : 'text-slate-400'}>
+                      {entry.count}
+                    </span>
+                  </button>
+
+                  {isAdmin && (
+                    <span className="flex shrink-0 items-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFolderRenameError(null);
+                          setFolderRenameDraft(entry.name);
+                          setFolderRenameTarget(entry);
+                        }}
+                        aria-label={`Rename folder ${entry.name} for ${entry.storeLabel ?? 'its store'}`}
+                        title={`Rename folder ${entry.name}`}
+                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFolderDeleteError(null);
+                          setFolderDeleteTarget(entry);
+                        }}
+                        aria-label={`Delete folder ${entry.name} for ${entry.storeLabel ?? 'its store'}`}
+                        title={`Delete folder ${entry.name}`}
+                        className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
+                </div>
               );
             })}
 
-            {folders.length === 0 && (
+            {folderEntries.length === 0 && (
               <p className="px-1 text-xs text-slate-500">
                 {library.isPending
                   ? isAdmin
                     ? 'Reading the platform library…'
                     : 'Reading your library…'
                   : library.isError
-                    ? 'The library read failed, so there are no folder labels to list.'
-                    : 'No folder labels yet. A folder only exists once a file carries its name, because the table stores a text label, not a folder row.'}
+                    ? 'The library read failed, so there are no folders to list.'
+                    : isAdmin
+                      ? 'No folders yet. Use New Folder to create one for a store - it exists as its own row, even before any file is moved into it.'
+                      : 'No folder labels yet. A folder appears here once a file carries its name.'}
               </p>
             )}
           </div>
@@ -759,14 +1102,17 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 min-w-0">
               <FolderOpen className="h-4 w-4 text-slate-500 shrink-0" />
               <div className="truncate font-mono text-xs text-slate-600">
-                {folderFilter === 'all' ? 'all folders' : folderFilter}
+                {folderFilter === 'all'
+                  ? 'all folders'
+                  : isAdmin
+                    ? `${activeFolderEntry?.name ?? 'folder'}${activeFolderEntry?.storeLabel ? ` (${activeFolderEntry.storeLabel})` : ''}`
+                    : folderFilter}
                 <span className="ml-2 text-slate-400">
                   {filtered.length} of {items.length} rows
                 </span>
               </div>
             </div>
 
-            {!isAdmin && (
             <div
               role="group"
               aria-label="Bulk actions for selected files"
@@ -796,7 +1142,8 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                   setMoveFolder('');
                   setMoveOpen(true);
                 }}
-                disabled={selected.length === 0 || move.isPending}
+                disabled={selected.length === 0 || movePending || selectionMixedOwners}
+                title={selectionMixedOwners ? 'Select files from one store to move them together' : undefined}
                 className={GHOST_BUTTON}
               >
                 <Move className="h-3.5 w-3.5 text-slate-500" />
@@ -812,8 +1159,13 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 <Trash2 className="h-3.5 w-3.5 text-rose-500" />
                 <span>{selected.length > 0 ? `Delete (${selected.length})` : 'Delete'}</span>
               </button>
+
+              {selectionMixedOwners && (
+                <span className="text-[11px] font-semibold text-amber-700">
+                  Move needs one store at a time - this selection spans stores.
+                </span>
+              )}
             </div>
-            )}
           </div>
 
           {awaitingSession ? (
@@ -891,22 +1243,24 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 return (
                   <div
                     key={item.id}
+                    draggable
+                    onDragStart={(event) => startDrag(event, item)}
+                    onDragEnd={() => setDraggedIds([])}
+                    title="Drag onto a folder to move"
                     className={`relative rounded-xl border bg-white p-2.5 transition-all shadow-xs flex flex-col justify-between ${
                       isSelected || isInspected
                         ? 'border-slate-900 ring-2 ring-slate-900/10'
                         : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
                     }`}
                   >
-                    {!isAdmin && (
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        aria-checked={isSelected}
-                        aria-label={`Select ${item.name}`}
-                        onChange={(event) => toggleSelect(item.id, event.target.checked)}
-                        className="absolute top-3 left-3 z-10 h-4 w-4 cursor-pointer rounded accent-slate-900"
-                      />
-                    )}
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      aria-checked={isSelected}
+                      aria-label={`Select ${item.name}`}
+                      onChange={(event) => toggleSelect(item.id, event.target.checked)}
+                      className="absolute top-3 left-3 z-10 h-4 w-4 cursor-pointer rounded accent-slate-900"
+                    />
 
                     <button
                       type="button"
@@ -957,6 +1311,44 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                         </span>
                       </span>
                     </button>
+
+                    <div className="mt-2 flex items-center gap-1 border-t border-slate-100 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInspectedId(item.id);
+                          startRename(item);
+                        }}
+                        aria-label={`Rename ${item.name}`}
+                        title={`Rename ${item.name}`}
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                      >
+                        <Pencil className="h-3 w-3" /> Rename
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedIds([item.id]);
+                          setMoveError(null);
+                          setMoveFolder(item.folder);
+                          setMoveOpen(true);
+                        }}
+                        aria-label={`Move ${item.name}`}
+                        title={`Move ${item.name}`}
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                      >
+                        <Move className="h-3 w-3" /> Move
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => askDelete([item])}
+                        aria-label={`Delete ${item.name}`}
+                        title={`Delete ${item.name}`}
+                        className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
+                      >
+                        <Trash2 className="h-3 w-3" /> Delete
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -965,36 +1357,32 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
               <table className="w-full text-left text-xs">
                 <caption className="sr-only">
-                  Media assets in {folderFilter === 'all' ? 'all folders' : folderFilter}, page{' '}
+                  Media assets in {folderFilter === 'all' ? 'all folders' : activeFolderEntry?.name ?? folderFilter}, page{' '}
                   {currentPage} of {pageCount}
                 </caption>
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-500">
                   <tr>
-                    {!isAdmin && (
-                      <th className="px-4 py-3 w-8" scope="col">
-                        <label htmlFor="media-select-all-head" className="sr-only">
-                          Select all {filtered.length} listed files
-                        </label>
-                        <input
-                          id="media-select-all-head"
-                          type="checkbox"
-                          checked={allFilteredSelected}
-                          aria-checked={allFilteredSelected}
-                          onChange={(event) =>
-                            setSelectedIds(event.target.checked ? filtered.map((item) => item.id) : [])
-                          }
-                          className="rounded accent-slate-900"
-                        />
-                      </th>
-                    )}
+                    <th className="px-4 py-3 w-8" scope="col">
+                      <label htmlFor="media-select-all-head" className="sr-only">
+                        Select all {filtered.length} listed files
+                      </label>
+                      <input
+                        id="media-select-all-head"
+                        type="checkbox"
+                        checked={allFilteredSelected}
+                        aria-checked={allFilteredSelected}
+                        onChange={(event) =>
+                          setSelectedIds(event.target.checked ? filtered.map((item) => item.id) : [])
+                        }
+                        className="rounded accent-slate-900"
+                      />
+                    </th>
                     <th className="px-4 py-3" scope="col">Asset name</th>
                     <th className="px-4 py-3" scope="col">Dimensions / format</th>
                     <th className="px-4 py-3" scope="col">File size</th>
                     <th className="px-4 py-3" scope="col">Folder</th>
                     <th className="px-4 py-3" scope="col">Status</th>
-                    {!isAdmin && (
-                      <th className="px-4 py-3 text-right" scope="col">Actions</th>
-                    )}
+                    <th className="px-4 py-3 text-right" scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -1003,22 +1391,28 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                     const kind = mediaKindOf(item.mimeType);
                     const KindIcon = FILE_KIND_ICONS[kind];
                     return (
-                      <tr key={item.id} aria-selected={isSelected} className={isSelected ? 'bg-slate-50/90' : 'hover:bg-slate-50/80'}>
-                        {!isAdmin && (
-                          <td className="px-4 py-3">
-                            <input
-                              type="checkbox"
-                              id={`media-row-${item.id}`}
-                              checked={isSelected}
-                              aria-checked={isSelected}
-                              onChange={(event) => toggleSelect(item.id, event.target.checked)}
-                              className="rounded accent-slate-900"
-                            />
-                            <label htmlFor={`media-row-${item.id}`} className="sr-only">
-                              Select {item.name}
-                            </label>
-                          </td>
-                        )}
+                      <tr
+                        key={item.id}
+                        aria-selected={isSelected}
+                        draggable
+                        onDragStart={(event) => startDrag(event, item)}
+                        onDragEnd={() => setDraggedIds([])}
+                        title="Drag onto a folder to move"
+                        className={isSelected ? 'bg-slate-50/90' : 'hover:bg-slate-50/80'}
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            id={`media-row-${item.id}`}
+                            checked={isSelected}
+                            aria-checked={isSelected}
+                            onChange={(event) => toggleSelect(item.id, event.target.checked)}
+                            className="rounded accent-slate-900"
+                          />
+                          <label htmlFor={`media-row-${item.id}`} className="sr-only">
+                            Select {item.name}
+                          </label>
+                        </td>
                         <td className="px-4 py-3">
                           <button
                             type="button"
@@ -1057,19 +1451,45 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                             {STATUS_LABEL[item.status]}
                           </span>
                         </td>
-                        {!isAdmin && (
-                          <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right">
+                          <span className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInspectedId(item.id);
+                                startRename(item);
+                              }}
+                              aria-label={`Rename ${item.name}`}
+                              title={`Rename ${item.name}`}
+                              className="inline-flex items-center rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedIds([item.id]);
+                                setMoveError(null);
+                                setMoveFolder(item.folder);
+                                setMoveOpen(true);
+                              }}
+                              aria-label={`Move ${item.name}`}
+                              title={`Move ${item.name}`}
+                              className="inline-flex items-center rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            >
+                              <Move className="h-3 w-3" />
+                            </button>
                             <button
                               type="button"
                               onClick={() => askDelete([item])}
                               aria-label={`Delete ${item.name}`}
                               title={`Delete ${item.name}`}
-                              className="ml-auto inline-flex items-center rounded-lg border border-rose-200 px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-50 cursor-pointer"
+                              className="inline-flex items-center rounded-lg border border-rose-200 px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-50 cursor-pointer"
                             >
                               <Trash2 className="h-3 w-3" />
                             </button>
-                          </td>
-                        )}
+                          </span>
+                        </td>
                       </tr>
                     );
                   })}
@@ -1106,10 +1526,10 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                         <button
                           type="button"
                           onClick={() => saveRename(inspected)}
-                          disabled={rename.isPending}
+                          disabled={renamePending}
                           className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-bold text-white disabled:opacity-50 cursor-pointer"
                         >
-                          {rename.isPending ? 'Saving…' : 'Save'}
+                          {renamePending ? 'Saving…' : 'Save'}
                         </button>
                         <button
                           type="button"
@@ -1147,33 +1567,29 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 </div>
 
                 <div role="group" aria-label="Actions for the inspected file" className="flex flex-wrap items-center gap-2 text-xs">
-                  {!isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => startRename(inspected)}
-                      className={GHOST_BUTTON}
-                    >
-                      <Pencil className="h-3.5 w-3.5 text-slate-500" />
-                      <span>Rename</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => startRename(inspected)}
+                    className={GHOST_BUTTON}
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Rename</span>
+                  </button>
 
-                  {!isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedIds([inspected.id]);
-                        setMoveError(null);
-                        setMoveFolder(inspected.folder);
-                        setMoveOpen(true);
-                      }}
-                      disabled={move.isPending}
-                      className={GHOST_BUTTON}
-                    >
-                      <Move className="h-3.5 w-3.5 text-slate-500" />
-                      <span>Move</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedIds([inspected.id]);
+                      setMoveError(null);
+                      setMoveFolder(inspected.folder);
+                      setMoveOpen(true);
+                    }}
+                    disabled={movePending}
+                    className={GHOST_BUTTON}
+                  >
+                    <Move className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Move</span>
+                  </button>
 
                   <a
                     href={inspected.cdnUrl}
@@ -1195,7 +1611,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                     <span>Copy URL</span>
                   </button>
 
-                  {isAdmin ? (
+                  {isAdmin && (
                     <span role="group" aria-label="Moderation for the inspected file" className="flex items-center gap-2">
                       {(['approved', 'pending', 'flagged'] as const).map((status) => (
                         <button
@@ -1222,16 +1638,17 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                         </button>
                       ))}
                     </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => askDelete([inspected])}
-                      className={DANGER_BUTTON}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                      <span>Delete asset</span>
-                    </button>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => askDelete([inspected])}
+                    className={DANGER_BUTTON}
+                  >
+
+                    <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                    <span>Delete asset</span>
+                  </button>
                 </div>
               </div>
 
@@ -1476,20 +1893,20 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
       <Dialog
         open={moveOpen}
         onOpenChange={(open) => {
-          if (!open && move.isPending) return;
+          if (!open && movePending) return;
           setMoveOpen(open);
         }}
       >
         <DialogContent
           className="sm:max-w-md"
           onEscapeKeyDown={(event) => {
-            if (move.isPending) event.preventDefault();
+            if (movePending) event.preventDefault();
           }}
           onPointerDownOutside={(event) => {
-            if (move.isPending) event.preventDefault();
+            if (movePending) event.preventDefault();
           }}
           onInteractOutside={(event) => {
-            if (move.isPending) event.preventDefault();
+            if (movePending) event.preventDefault();
           }}
         >
           <DialogHeader>
@@ -1514,17 +1931,25 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 list="media-folder-options-move"
                 value={moveFolder}
                 onChange={(event) => setMoveFolder(event.target.value)}
-                disabled={move.isPending}
+                disabled={movePending}
                 placeholder="banners"
                 className={`${FIELD} font-mono`}
               />
             </div>
 
             <datalist id="media-folder-options-move">
-              {folders.map((name) => (
+              {moveFolderOptions.map((name) => (
                 <option key={name} value={name} />
               ))}
             </datalist>
+
+            {isAdmin && (
+              <p className="text-xs text-slate-500">
+                Folders belong to the file&apos;s owning store, so the suggestions list that
+                store&apos;s folders. You can also type a new folder name for that store -
+                or drag files onto a folder in the sidebar instead.
+              </p>
+            )}
 
             {moveError && (
               <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 font-bold text-rose-800">
@@ -1536,7 +1961,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <button
                 type="button"
                 onClick={() => setMoveOpen(false)}
-                disabled={move.isPending}
+                disabled={movePending}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
               >
                 Cancel
@@ -1544,10 +1969,10 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <button
                 type="button"
                 onClick={() => void confirmMove()}
-                disabled={move.isPending}
+                disabled={movePending}
                 className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {move.isPending ? 'Moving…' : 'Confirm move'}
+                {movePending ? 'Moving…' : 'Confirm move'}
               </button>
             </div>
           </div>
@@ -1564,13 +1989,13 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
         <DialogContent
           className="sm:max-w-md"
           onEscapeKeyDown={(event) => {
-            if (remove.isPending) event.preventDefault();
+            if (removePending) event.preventDefault();
           }}
           onPointerDownOutside={(event) => {
-            if (remove.isPending) event.preventDefault();
+            if (removePending) event.preventDefault();
           }}
           onInteractOutside={(event) => {
-            if (remove.isPending) event.preventDefault();
+            if (removePending) event.preventDefault();
           }}
         >
           <DialogHeader>
@@ -1591,8 +2016,8 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 ))}
               </span>
               <span className="mt-2 block">
-                This deletes each <code className="font-mono">media_items</code> row and the object in your
-                bucket. There is no trash bin, so it cannot be undone, and a listing still pointing at the old
+                This deletes each <code className="font-mono">media_items</code> row and its object in the
+                vendor-assets bucket. There is no trash bin, so it cannot be undone, and a listing still pointing at the old
                 URL keeps showing that link until you edit it on Products.
               </span>
             </DialogDescription>
@@ -1608,7 +2033,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             <button
               type="button"
               onClick={closeDelete}
-              disabled={remove.isPending}
+              disabled={removePending}
               className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
             >
               Cancel
@@ -1616,10 +2041,191 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             <button
               type="button"
               onClick={() => void confirmDelete()}
-              disabled={remove.isPending || deleteTargets.length === 0}
+              disabled={removePending || deleteTargets.length === 0}
               className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
             >
-              {remove.isPending ? 'Deleting…' : `Delete ${deleteCountLabel}`}
+              {removePending ? 'Deleting…' : `Delete ${deleteCountLabel}`}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── New Folder dialog (admin): a folder row for one chosen store ── */}
+      <Dialog open={folderCreateOpen} onOpenChange={(open) => {
+        if (!open && createFolderMutation.isPending) return;
+        setFolderCreateOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <FolderPlus className="h-5 w-5 text-slate-700" />
+              New folder
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Folders belong to a single store. The folder is created as its own row, so it
+              exists even before any file is moved into it.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={(event) => void submitCreateFolder(event)} className="space-y-3.5 py-2 text-xs">
+            <div>
+              <label htmlFor="folder-create-store" className="block font-bold text-slate-700 mb-1">
+                Store
+              </label>
+              <Select value={folderCreateStore} onValueChange={setFolderCreateStore}>
+                <SelectTrigger id="folder-create-store" aria-label="Store for the new folder" className="h-auto rounded-lg px-3 py-2 text-xs font-semibold text-slate-700">
+                  <SelectValue placeholder="Choose a store" />
+                </SelectTrigger>
+                <SelectContent>
+                  {storesInLibrary.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {store.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label htmlFor="folder-create-name" className="block font-bold text-slate-700 mb-1">
+                Folder name
+              </label>
+              <input
+                id="folder-create-name"
+                value={folderCreateName}
+                onChange={(event) => setFolderCreateName(event.target.value)}
+                disabled={createFolderMutation.isPending}
+                placeholder="campaign-shots"
+                className={`${FIELD} font-mono`}
+              />
+            </div>
+
+            {folderCreateError && (
+              <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 font-bold text-rose-800">
+                {folderCreateError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setFolderCreateOpen(false)}
+                disabled={createFolderMutation.isPending}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={createFolderMutation.isPending || !folderCreateStore}
+                className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createFolderMutation.isPending ? 'Creating…' : 'Create folder'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Rename Folder dialog (admin): row rename + file relabel ───── */}
+      <Dialog open={folderRenameTarget !== null} onOpenChange={(open) => {
+        if (!open && renameFolderMutation.isPending) return;
+        if (!open) setFolderRenameTarget(null);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-slate-700" />
+              Rename folder
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Renaming “{folderRenameTarget?.name}” for {folderRenameTarget?.storeLabel ?? 'its store'} also
+              relabels every file in it. Stored object paths do not change.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={(event) => void submitFolderRename(event)} className="space-y-3.5 py-2 text-xs">
+            <div>
+              <label htmlFor="folder-rename-name" className="block font-bold text-slate-700 mb-1">
+                New folder name
+              </label>
+              <input
+                id="folder-rename-name"
+                value={folderRenameDraft}
+                onChange={(event) => setFolderRenameDraft(event.target.value)}
+                disabled={renameFolderMutation.isPending}
+                className={`${FIELD} font-mono`}
+                autoFocus
+              />
+            </div>
+
+            {folderRenameError && (
+              <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 font-bold text-rose-800">
+                {folderRenameError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setFolderRenameTarget(null)}
+                disabled={renameFolderMutation.isPending}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={renameFolderMutation.isPending}
+                className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {renameFolderMutation.isPending ? 'Renaming…' : 'Rename folder'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Folder confirm (admin): refused while files remain ── */}
+      <Dialog open={folderDeleteTarget !== null} onOpenChange={(open) => {
+        if (!open && deleteFolderMutation.isPending) return;
+        if (!open) setFolderDeleteTarget(null);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-rose-700 flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-rose-600" />
+              Delete folder “{folderDeleteTarget?.name}”?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              This deletes the folder row for {folderDeleteTarget?.storeLabel ?? 'its store'}. A folder that
+              still holds files cannot be deleted - move or delete its files first, and the delete will
+              tell you if any remain.
+            </DialogDescription>
+          </DialogHeader>
+
+          {folderDeleteError && (
+            <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800">
+              {folderDeleteError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setFolderDeleteTarget(null)}
+              disabled={deleteFolderMutation.isPending}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmFolderDelete()}
+              disabled={deleteFolderMutation.isPending}
+              className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+            >
+              {deleteFolderMutation.isPending ? 'Deleting…' : 'Delete folder'}
             </button>
           </div>
         </DialogContent>

@@ -1,0 +1,96 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  createAdminMediaFolder,
+  deleteAdminMedia,
+  deleteAdminMediaFolder,
+  listAdminMediaFolders,
+  moveAdminMedia,
+  renameAdminMedia,
+  renameAdminMediaFolder,
+  type AdminMediaItem,
+} from '../api/media';
+import { adminKeys, useAdminScope } from './admin-keys';
+
+/**
+ * Batch 61: the admin side of the shared media view gets the same mutation
+ * shape the vendor workspace uses - every success invalidates
+ * `adminKeys.media(userId)`, which is the query both the library list and the
+ * folder rows hang off, so the screen repaints from the rows now stored.
+ */
+
+function useRefreshAdminMedia() {
+  const userId = useAdminScope();
+  const queryClient = useQueryClient();
+  return () =>
+    queryClient.invalidateQueries({ queryKey: adminKeys.media(userId) });
+}
+
+/** Every store's `media_folders` rows; `enabled` keeps it out of the vendor workspace. */
+export function useAdminMediaFolders(enabled = true) {
+  const userId = useAdminScope();
+  return useQuery({
+    queryKey: [...adminKeys.media(userId), 'folders'],
+    queryFn: ({ signal }) => listAdminMediaFolders(signal),
+    enabled: enabled && Boolean(userId),
+  });
+}
+
+export function useRenameAdminMedia() {
+  const refresh = useRefreshAdminMedia();
+  return useMutation({
+    mutationFn: ({ itemId, name }: { itemId: string; name: string }) =>
+      renameAdminMedia(itemId, name),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useMoveAdminMedia() {
+  const refresh = useRefreshAdminMedia();
+  return useMutation({
+    mutationFn: ({ item, folder }: { item: AdminMediaItem; folder: string }) =>
+      moveAdminMedia(item, folder),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useDeleteAdminMedia() {
+  const refresh = useRefreshAdminMedia();
+  return useMutation({
+    mutationFn: (itemId: string) => deleteAdminMedia(itemId),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useCreateAdminMediaFolder() {
+  const refresh = useRefreshAdminMedia();
+  return useMutation({
+    mutationFn: ({ vendorId, name }: { vendorId: string; name: string }) =>
+      createAdminMediaFolder(vendorId, name),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useRenameAdminMediaFolder() {
+  const refresh = useRefreshAdminMedia();
+  return useMutation({
+    mutationFn: ({
+      vendorId,
+      oldName,
+      newName,
+    }: {
+      vendorId: string;
+      oldName: string;
+      newName: string;
+    }) => renameAdminMediaFolder(vendorId, oldName, newName),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useDeleteAdminMediaFolder() {
+  const refresh = useRefreshAdminMedia();
+  return useMutation({
+    mutationFn: ({ vendorId, name }: { vendorId: string; name: string }) =>
+      deleteAdminMediaFolder(vendorId, name),
+    onSuccess: () => refresh(),
+  });
+}

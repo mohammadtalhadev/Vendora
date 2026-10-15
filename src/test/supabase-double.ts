@@ -55,6 +55,8 @@ const UNIQUE_KEYS: Record<string, string[]> = {
   // The public form inboxes (migration 20261015000000): one row per email.
   newsletter_subscribers: ['email'],
   commission_config: ['id'],
+  // Batch 61: one folder row per (store, name), as `media_folders` declares.
+  media_folders: ['vendor_id', 'name'],
 };
 
 /** `alias:referenced_table(cols)` in a PostgREST select list. */
@@ -268,6 +270,7 @@ export function createSupabaseDouble() {
     // admin console (all rows) and the storefront (published rows only).
     content_blocks: [],
     media_items: [],
+    media_folders: [],
     vendor_shipping_settings: [],
     vendor_notification_prefs: [],
     message_threads: [],
@@ -309,6 +312,9 @@ export function createSupabaseDouble() {
   const verifyOtpCalls: Array<Record<string, unknown>> = [];
   /** Every storage upload the client attempted, with the bucket and object path it chose. */
   const storageUploads: Array<{ bucket: string; path: string; file: unknown }> = [];
+  /** Every storage move / removal the client attempted (Batch 61 admin media). */
+  const storageMoves: Array<{ bucket: string; from: string; to: string }> = [];
+  const storageRemovals: Array<{ bucket: string; paths: string[] }> = [];
   let storageUploadError: DoubleError | null = null;
   const listeners = new Set<Listener>();
 
@@ -2479,6 +2485,20 @@ export function createSupabaseDouble() {
       });
       return { data: { id: category.id }, error: null };
     }
+    if (fn === 'admin_delete_media') {
+      const denied = refuse('delete a media asset');
+      if (denied) return denied;
+      const id = args.p_id;
+      const row = tables.media_items.find((candidate) => candidate.id === id);
+      if (!row) return { data: null, error: { message: 'Media asset not found' } };
+      tables.media_items = tables.media_items.filter((candidate) => candidate.id !== id);
+      audit('media.delete', 'media_item', String(id),
+        { name: row.name, vendorId: row.vendor_id, objectPath: row.object_path, cdnUrl: row.cdn_url }, null);
+      return {
+        data: { id, deleted: true, objectPath: row.object_path, cdnUrl: row.cdn_url },
+        error: null,
+      };
+    }
     if (fn === 'admin_delete_category') {
       const denied = refuse('delete a category');
       if (denied) return denied;
@@ -2632,6 +2652,8 @@ export function createSupabaseDouble() {
     resendCalls,
     verifyOtpCalls,
     storageUploads,
+    storageMoves,
+    storageRemovals,
     emit,
     realtimeChannels,
     emitRealtime,
@@ -2898,7 +2920,14 @@ export function createSupabaseDouble() {
         getPublicUrl: (path: string) => ({
           data: { publicUrl: `https://double.supabase.co/storage/v1/object/public/${bucket}/${path}` },
         }),
-        remove: vi.fn(async (paths: string[]) => ({ data: paths.map((name) => ({ name })), error: null })),
+        move: vi.fn(async (from: string, to: string) => {
+          storageMoves.push({ bucket, from, to });
+          return { data: { path: to }, error: null };
+        }),
+        remove: vi.fn(async (paths: string[]) => {
+          storageRemovals.push({ bucket, paths: [...paths] });
+          return { data: paths.map((name) => ({ name })), error: null };
+        }),
       }),
     },
     /** Makes storage uploads fail with this message (or succeed again with null). */
@@ -2969,6 +2998,10 @@ export function createSupabaseDouble() {
     seedMediaItem(item: Row) {
       tables.media_items.push(item);
       return item;
+    },
+    seedMediaFolder(folder: Row) {
+      tables.media_folders.push(folder);
+      return folder;
     },
     seedContentBlock(block: Row) {
       tables.content_blocks.push(block);
@@ -3138,6 +3171,8 @@ export function createSupabaseDouble() {
       resendCalls.length = 0;
       verifyOtpCalls.length = 0;
       storageUploads.length = 0;
+      storageMoves.length = 0;
+      storageRemovals.length = 0;
       storageUploadError = null;
       rpcError = null;
       rpcCalls.length = 0;
@@ -3503,6 +3538,17 @@ export function questionRow(overrides: Partial<Row> = {}): Row {
     published: false,
     created_at: '2026-10-07T00:00:00.000Z',
     answered_at: null,
+    ...overrides,
+  };
+}
+
+/** A `media_folders` row (Batch 61): one folder per (store, name). */
+export function mediaFolderRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000802',
+    vendor_id: 'store-1',
+    name: 'products',
+    created_at: '2026-10-07T00:00:00.000Z',
     ...overrides,
   };
 }

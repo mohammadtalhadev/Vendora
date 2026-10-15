@@ -1529,6 +1529,71 @@ ok('digital: a gift card applied at checkout both pays and releases the key',
   Number(codDig3.giftCardApplied) === 20 && /^VEND-[0-9A-F]{12}$/.test(codDig3.subOrders[0].licenseKey),
   `(applied ${codDig3.giftCardApplied}, key ${codDig3.subOrders[0].licenseKey})`);
 
+console.log('\n[batch 61] admin media management: media_folders + admin_delete_media');
+await as('postgres');
+const b61Item = (
+  await q(
+    `insert into media_items (vendor_id, name, folder, object_path, cdn_url, status)
+     values ($1,'b61-hero.png','b61-shots','tech-store/b61-shots/b61-hero.png',
+             'https://x.test/storage/v1/object/public/vendor-assets/tech-store/b61-shots/b61-hero.png','pending')
+     returning id`,
+    [STORE],
+  )
+)[0].id;
+// The migration's backfill ran before this fixture existed (migrations apply
+// to an empty database here), so replay its INSERT verbatim to prove the shape.
+await q(
+  `insert into public.media_folders (vendor_id, name)
+   select distinct vendor_id, folder from public.media_items
+    where folder is not null and folder <> ''
+   on conflict (vendor_id, name) do nothing`,
+);
+ok('backfill: folder labels became media_folders rows',
+  (await q(`select count(*)::int c from media_folders where vendor_id=$1 and name='b61-shots'`, [STORE]))[0].c === 1);
+
+await as('authenticated', VENDOR);
+ok('the owner reads their own folders',
+  (await q(`select count(*)::int c from media_folders where vendor_id=$1`, [STORE]))[0].c >= 2);
+await q(`insert into media_folders (vendor_id, name) values ($1,'vendor-made')`, [STORE]);
+ok('the owner creates a folder for their own store',
+  (await q(`select count(*)::int c from media_folders where vendor_id=$1 and name='vendor-made'`, [STORE]))[0].c === 1);
+await expectThrow('the owner cannot create a folder for another store',
+  () => q(`insert into media_folders (vendor_id, name) values ($1,'not-yours')`, [PLATFORM]),
+  'row-level security');
+await expectThrow('a duplicate folder for the same store is refused',
+  () => q(`insert into media_folders (vendor_id, name) values ($1,'vendor-made')`, [STORE]),
+  'duplicate key');
+
+await as('authenticated', CU);
+ok('a customer sees no folders', (await q('select count(*)::int c from media_folders'))[0].c === 0);
+await expectThrow('a customer cannot create folders',
+  () => q(`insert into media_folders (vendor_id, name) values ($1,'cust-folder')`, [STORE]),
+  'row-level security');
+await expectThrow('a non-admin cannot admin_delete_media',
+  () => q(`select admin_delete_media($1)`, [b61Item]), 'only the platform team');
+await as('postgres');
+ok('the refused delete left the row in place',
+  (await q(`select count(*)::int c from media_items where id=$1`, [b61Item]))[0].c === 1);
+
+await as('authenticated', ADMIN);
+await q(`insert into media_folders (vendor_id, name) values ($1,'admin-made')`, [STORE]);
+await q(`update media_folders set name='admin-renamed' where vendor_id=$1 and name='admin-made'`, [STORE]);
+ok('an admin creates and renames a folder for any store',
+  (await q(`select count(*)::int c from media_folders where vendor_id=$1 and name='admin-renamed'`, [STORE]))[0].c === 1);
+const b61Deleted = (await q(`select admin_delete_media($1) as r`, [b61Item]))[0].r;
+ok('admin_delete_media returns the captured storage paths',
+  b61Deleted.deleted === true && b61Deleted.objectPath === 'tech-store/b61-shots/b61-hero.png',
+  `(got ${JSON.stringify(b61Deleted)})`);
+ok('admin_delete_media removed the row',
+  (await q(`select count(*)::int c from media_items where id=$1`, [b61Item]))[0].c === 0);
+ok('the media delete is audited',
+  (await q(`select count(*)::int c from audit_logs where action='media.delete' and entity_id=$1`, [String(b61Item)]))[0].c === 1);
+await expectThrow('deleting a missing asset raises instead of reporting success',
+  () => q(`select admin_delete_media($1)`, [b61Item]), 'not found');
+await q(`delete from media_folders where vendor_id=$1 and name='admin-renamed'`, [STORE]);
+ok('an admin deletes an empty folder row',
+  (await q(`select count(*)::int c from media_folders where vendor_id=$1 and name='admin-renamed'`, [STORE]))[0].c === 0);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

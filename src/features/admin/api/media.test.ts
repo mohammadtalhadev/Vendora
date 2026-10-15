@@ -5,8 +5,24 @@ vi.mock('../../../lib/supabase', async () => {
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
 });
 
-import { fetchAdminMediaLibrary, setMediaStatus } from './media';
-import { mediaItemRow, profileRow, storeRow, supabaseDouble } from '../../../test/supabase-double';
+import {
+  createAdminMediaFolder,
+  deleteAdminMedia,
+  deleteAdminMediaFolder,
+  fetchAdminMediaLibrary,
+  listAdminMediaFolders,
+  moveAdminMedia,
+  renameAdminMedia,
+  renameAdminMediaFolder,
+  setMediaStatus,
+} from './media';
+import {
+  mediaFolderRow,
+  mediaItemRow,
+  profileRow,
+  storeRow,
+  supabaseDouble,
+} from '../../../test/supabase-double';
 
 const SELLER = 'seller-media';
 const STORE_A = 'store-alpha';
@@ -106,5 +122,97 @@ describe('setMediaStatus', () => {
     await expect(setMediaStatus('m-mod', 'approved')).rejects.toThrow(
       /only the platform team can moderate a media asset/i,
     );
+  });
+});
+
+describe('Batch 61: admin media management', () => {
+  const storedItem = {
+    id: 'm-file',
+    vendor_id: STORE_A,
+    object_path: 'alpha-audio/products/hero.png',
+    cdn_url: 'https://double.supabase.co/storage/v1/object/public/vendor-assets/alpha-audio/products/hero.png',
+  };
+
+  it('renames another store’s asset and returns it with its store resolved', async () => {
+    signInAsAdmin();
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({ ...storedItem }));
+
+    const renamed = await renameAdminMedia('m-file', 'hero-final.png');
+
+    expect(renamed).toMatchObject({ id: 'm-file', name: 'hero-final.png', storeName: 'Alpha Audio' });
+  });
+
+  it('moves the object under the OWNER’s slug and records the new path', async () => {
+    signInAsAdmin();
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({ ...storedItem }));
+    const [item] = await fetchAdminMediaLibrary();
+
+    const moved = await moveAdminMedia(item!, 'Banners');
+
+    expect(supabaseDouble.storageMoves).toEqual([
+      { bucket: 'vendor-assets', from: 'alpha-audio/products/hero.png', to: 'alpha-audio/banners/hero.png' },
+    ]);
+    expect(moved).toMatchObject({ folder: 'banners', objectPath: 'alpha-audio/banners/hero.png' });
+  });
+
+  it('refuses to move a demo asset that has no object in the bucket', async () => {
+    signInAsAdmin();
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({ id: 'm-demo', vendor_id: STORE_A }));
+    const [item] = await fetchAdminMediaLibrary();
+
+    await expect(moveAdminMedia(item!, 'banners')).rejects.toThrow(/no file stored/i);
+    expect(supabaseDouble.storageMoves).toEqual([]);
+  });
+
+  it('deletes through the RPC and removes the bucket object it captured', async () => {
+    signInAsAdmin();
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({ ...storedItem }));
+
+    const removed = await deleteAdminMedia('m-file');
+
+    expect(removed.objectPath).toBe('alpha-audio/products/hero.png');
+    expect(supabaseDouble.storageRemovals).toEqual([
+      { bucket: 'vendor-assets', paths: ['alpha-audio/products/hero.png'] },
+    ]);
+    expect(await fetchAdminMediaLibrary()).toEqual([]);
+  });
+
+  it('refuses a non-admin delete before the RPC runs', async () => {
+    supabaseDouble.authState.session = {
+      access_token: 't',
+      user: { id: SELLER, email: 'seller@vendora.test' },
+    };
+    supabaseDouble.seedProfile(
+      profileRow({ id: SELLER, name: 'Sana Seller', email: 'seller@vendora.test', roles: ['seller'] }),
+    );
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({ ...storedItem }));
+
+    await expect(deleteAdminMedia('m-file')).rejects.toThrow(/only the platform team can/i);
+    expect(supabaseDouble.storageRemovals).toEqual([]);
+  });
+
+  it('creates, lists, renames (relabeling files) and deletes folder rows', async () => {
+    signInAsAdmin();
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({ ...storedItem }));
+
+    const created = await createAdminMediaFolder(STORE_A, 'Campaign Shots');
+    expect(created).toMatchObject({ vendorId: STORE_A, name: 'campaign-shots' });
+    expect((await listAdminMediaFolders()).map((folder) => folder.name)).toEqual(['campaign-shots']);
+
+    supabaseDouble.seedMediaFolder(mediaFolderRow({ id: 'f-products', vendor_id: STORE_A, name: 'products' }));
+    const renamed = await renameAdminMediaFolder(STORE_A, 'products', 'Catalogue');
+    expect(renamed.name).toBe('catalogue');
+    const [item] = await fetchAdminMediaLibrary();
+    expect(item?.folder).toBe('catalogue');
+
+    await expect(deleteAdminMediaFolder(STORE_A, 'catalogue')).rejects.toThrow(/still holds 1 file/i);
+    await deleteAdminMediaFolder(STORE_A, 'campaign-shots');
+    expect((await listAdminMediaFolders()).map((folder) => folder.name)).toEqual(['catalogue']);
   });
 });

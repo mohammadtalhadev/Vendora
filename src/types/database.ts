@@ -802,6 +802,35 @@ export type Database = {
         }
       ]
     },
+    "media_folders": {
+      Row: {
+        "id": string,
+        "vendor_id": string,
+        "name": string,
+        "created_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "vendor_id": string,
+        "name": string,
+        "created_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "vendor_id"?: string,
+        "name"?: string,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "media_folders_vendor_id_fkey"
+          columns: ["vendor_id"]
+          isOneToOne: false
+          referencedRelation: "vendor_profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
     "media_items": {
       Row: {
         "id": string,
@@ -2634,6 +2663,12 @@ export type Database = {
     "admin_delete_category": {
       Args: {
         "p_category_id": string
+      }
+      Returns: Json
+    },
+    "admin_delete_media": {
+      Args: {
+        "p_id": string
       }
       Returns: Json
     },
