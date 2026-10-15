@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 /**
  * Mobile-web promo. There is no native Vendora app, so this section sells
@@ -10,6 +11,16 @@ import React from 'react';
  * shape below (`PromoBannerSection`) and this component rendered it.
  *
  * Batch 122: panel narrowed to max-w-5xl and centered \u2014 at full container width the 21:9 artwork stood ~550px tall; the owner asked for it a touch smaller (\u201cthoda chota\u201D), so it now renders ~440px tall on desktop with the same art, no crop.
+ *
+ * Batch 123 (owner's call): the owner regenerated the artwork at 2:1
+ * (1774x887) — the 21:9 strip read too wide — and the panel now renders
+ * it at max-w-[960px] (~480px tall). He also reversed the Batch 119
+ * no-click call for the button only: a real "Start Shopping" link sits
+ * exactly over the artwork's baked button (same pill, same orange
+ * gradient, position measured off the artwork: left 4.96%, top 59.75%,
+ * width 19.62%, height 9.36% of the panel; font scales with the panel
+ * via container-query units) and leads to /app-coming-soon. The rest of
+ * the image stays a plain, non-clickable <img>.
  *
  * Batch 119 (owner's call): the owner supplied a finished banner image
  * (light site palette, copy baked in) and ordered it placed in this
@@ -46,17 +57,33 @@ export interface AppPromoSectionProps {
 export const AppPromoSection: React.FC<AppPromoSectionProps> = () => {
   return (
     <section className="reveal mb-14" aria-label="Vendora on mobile">
-      <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[32px] shadow-xl ring-1 ring-black/5">
+      <div className="relative mx-auto max-w-[960px] overflow-hidden rounded-[32px] shadow-xl ring-1 ring-black/5 [container-type:inline-size]">
         <img
           src="/banners/app-promo.webp"
           alt="Shop Faster. Track Live. All in Your Pocket. Vendora in your mobile browser \u2014 no app to install."
-          width={1916}
-          height={821}
+          width={1774}
+          height={887}
           loading="lazy"
           decoding="async"
           className="block h-auto w-full"
           draggable={false}
         />
+        <Link
+          to="/app-coming-soon"
+          aria-label="Start Shopping — the Vendora app is coming soon"
+          className="font-outfit absolute flex items-center justify-center whitespace-nowrap rounded-full font-bold text-white transition duration-300 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F1601E] active:scale-[0.98]"
+          style={{
+            left: '4.96%',
+            top: '59.75%',
+            width: '19.62%',
+            height: '9.36%',
+            background: 'linear-gradient(180deg, #FF8A2A 0%, #F1601E 100%)',
+            fontSize: 'clamp(9px, 2.05cqw, 20px)',
+            letterSpacing: '0.01em',
+          }}
+        >
+          Start Shopping
+        </Link>
       </div>
     </section>
   );
