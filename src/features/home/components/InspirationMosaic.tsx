@@ -162,6 +162,8 @@ export const InspirationMosaic: React.FC<InspirationMosaicProps> = ({
             <img
               src={item.image}
               alt={item.title}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
 
@@ -195,6 +197,8 @@ export const InspirationMosaic: React.FC<InspirationMosaicProps> = ({
                         <img
                           src={hs.image}
                           alt={hs.title}
+                          loading="lazy"
+                          decoding="async"
                           className="h-10 w-10 rounded-lg object-cover bg-slate-100"
                         />
                         <div className="min-w-0 flex-1">

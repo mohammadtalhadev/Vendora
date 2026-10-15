@@ -96,7 +96,7 @@ describe('item writes', () => {
     const item = await createSectionItem(
       's-1',
       {
-        imageUrl: '/images/categories/cat_fashion_2k.png',
+        imageUrl: '/images/categories/cat_fashion_2k.webp',
         heading: 'Fashion',
         subtext: '',
         ctaLabel: '',

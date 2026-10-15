@@ -431,7 +431,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
         sort_order: 20,
         body: {
           headline: 'Home & Kitchen Made Beautiful',
-          imageUrl: '/images/home/hero-home-kitchen.png',
+          imageUrl: '/images/home/hero-home-kitchen.webp',
           ctaLink: '/products?category=home-kitchen',
         },
       }),
@@ -447,7 +447,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
         sort_order: 30,
         body: {
           headline: 'Your Beauty & Self-Care, All in One Place',
-          imageUrl: '/images/home/hero-beauty.png',
+          imageUrl: '/images/home/hero-beauty.webp',
           ctaLink: '/products?category=beauty-personal-care',
         },
       }),
@@ -463,7 +463,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
         sort_order: 10,
         body: {
           headline: 'Best Seller Category',
-          imageUrl: '/images/home/hero-left-best-seller.png',
+          imageUrl: '/images/home/hero-left-best-seller.webp',
           ctaLink: '/deals',
         },
       }),

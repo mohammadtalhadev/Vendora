@@ -28,7 +28,7 @@ describe('heroPortraitsFromRows (Batch 85: the rail is a list)', () => {
         slug: 'p-1',
         body: {
           headline: 'Home & Kitchen Made Beautiful',
-          imageUrl: '/images/home/hero-home-kitchen.png',
+          imageUrl: '/images/home/hero-home-kitchen.webp',
           ctaLink: '/products?category=home-kitchen',
         },
       }),
@@ -36,14 +36,14 @@ describe('heroPortraitsFromRows (Batch 85: the rail is a list)', () => {
         slug: 'p-2',
         body: {
           headline: 'Your Beauty & Self-Care, All in One Place',
-          imageUrl: '/images/home/hero-beauty.png',
+          imageUrl: '/images/home/hero-beauty.webp',
           ctaLink: '/products?category=beauty-personal-care',
         },
       }),
     ]);
     expect(portraits.map((p) => p.image)).toEqual([
-      '/images/home/hero-home-kitchen.png',
-      '/images/home/hero-beauty.png',
+      '/images/home/hero-home-kitchen.webp',
+      '/images/home/hero-beauty.webp',
     ]);
     expect(portraits[0].link).toBe('/products?category=home-kitchen');
     expect(portraits[1].alt).toBe('Your Beauty & Self-Care, All in One Place');
@@ -106,13 +106,13 @@ describe('heroLeftPromoFromRows / fetchPublishedHeroLeftPromo (Batch 85)', () =>
         title: 'Best Seller Category',
         body: {
           headline: 'Best Seller Category',
-          imageUrl: '/images/home/hero-left-best-seller.png',
+          imageUrl: '/images/home/hero-left-best-seller.webp',
           ctaLink: '/deals',
         },
       }),
     ]);
     expect(promo).toEqual({
-      image: '/images/home/hero-left-best-seller.png',
+      image: '/images/home/hero-left-best-seller.webp',
       link: '/deals',
       alt: 'Best Seller Category',
       title: 'Best Seller Category',
@@ -131,13 +131,13 @@ describe('heroLeftPromoFromRows / fetchPublishedHeroLeftPromo (Batch 85)', () =>
         placement: 'homepage_left_promo',
         body: {
           headline: 'Best Seller Category',
-          imageUrl: '/images/home/hero-left-best-seller.png',
+          imageUrl: '/images/home/hero-left-best-seller.webp',
           ctaLink: '/deals',
         },
       }),
     );
     const promo = await fetchPublishedHeroLeftPromo();
-    expect(promo?.image).toBe('/images/home/hero-left-best-seller.png');
+    expect(promo?.image).toBe('/images/home/hero-left-best-seller.webp');
     expect(promo?.link).toBe('/deals');
   });
 });

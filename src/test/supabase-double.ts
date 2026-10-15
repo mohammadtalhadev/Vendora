@@ -4096,7 +4096,7 @@ export function siteSectionItemRow(overrides: Partial<Row> = {}): Row {
   return {
     id: '00000000-0000-4000-8000-000000001201',
     section_id: '00000000-0000-4000-8000-000000001101',
-    image_url: '/images/categories/cat_electronics_2k.png',
+    image_url: '/images/categories/cat_electronics_2k.webp',
     heading: 'Electronics',
     subtext: '',
     cta_label: '',

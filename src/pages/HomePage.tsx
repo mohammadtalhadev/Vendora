@@ -356,6 +356,9 @@ export const HomePage: React.FC = () => {
                   <img
                     src={slide.image}
                     alt={slide.alt}
+                    {...(idx === 0
+                      ? { fetchPriority: 'high' as const }
+                      : { loading: 'lazy' as const, decoding: 'async' as const })}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <Link to={slide.link} className="absolute inset-0 z-20" title={slide.title} aria-label={slide.title} />
@@ -407,6 +410,9 @@ export const HomePage: React.FC = () => {
                   <img
                     src={portrait.image}
                     alt={portrait.alt}
+                    {...(idx > 0
+                      ? { loading: 'lazy' as const, decoding: 'async' as const }
+                      : {})}
                     className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   />
                   <Link
@@ -539,6 +545,7 @@ export const HomePage: React.FC = () => {
               <img
                 src="/images/bevesi/art_elec_man.png"
                 alt="Man wearing wireless headphones"
+                loading="lazy" decoding="async"
                 className="absolute bottom-0 right-0 h-full w-auto max-w-[62%] object-cover object-left [mask-image:linear-gradient(to_right,transparent,black_18%)] transition-transform duration-700 group-hover:scale-105"
               />
               <div className="relative z-10 flex h-full max-w-[62%] flex-col justify-between p-6 sm:p-9">
@@ -581,6 +588,7 @@ export const HomePage: React.FC = () => {
                   <img
                     src="/images/bevesi/art_elec_phones.png"
                     alt="Foldable smartphones"
+                    loading="lazy" decoding="async"
                     className="mt-auto w-[88%] object-contain transition-transform duration-500 group-hover:scale-105"
                   />
                 </Link>
@@ -600,6 +608,7 @@ export const HomePage: React.FC = () => {
                   <img
                     src="/images/bevesi/art_elec_radio.png"
                     alt="Retro bluetooth radio"
+                    loading="lazy" decoding="async"
                     className="mt-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
                   />
                 </Link>
@@ -622,6 +631,7 @@ export const HomePage: React.FC = () => {
                 <img
                   src="/images/bevesi/art_elec_coffee.png"
                   alt="Coffee maker"
+                  loading="lazy" decoding="async"
                   className="absolute bottom-0 right-[6%] h-[92%] w-auto object-contain object-bottom transition-transform duration-500 group-hover:scale-105"
                 />
               </Link>
@@ -665,6 +675,7 @@ export const HomePage: React.FC = () => {
               <img
                 src="/images/bevesi/beauty_face_full.jpg"
                 alt="Skincare model applying cleanser"
+                loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105"
               />
               <div className="relative z-10 flex h-full max-w-[56%] sm:max-w-[50%] flex-col justify-between p-6 sm:p-9">
@@ -694,6 +705,7 @@ export const HomePage: React.FC = () => {
               <img
                 src="/images/bevesi/beauty_primer_full.jpg"
                 alt="Coastal Glow Hydrating Tint SPF 30"
+                loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105"
               />
               <div className="relative z-10 flex h-full max-w-[62%] flex-col justify-between p-6 sm:p-9">
@@ -793,6 +805,7 @@ export const HomePage: React.FC = () => {
               <img
                 src="/images/bevesi/banner-16.jpg"
                 alt="Pastel green stand mixer"
+                loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
               />
               <div className="relative z-10 px-4 pt-7 text-center">
@@ -811,6 +824,7 @@ export const HomePage: React.FC = () => {
               <img
                 src="/images/bevesi/banner-13.jpg"
                 alt="Front-load washing machine"
+                loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-right-bottom transition-transform duration-700 group-hover:scale-105"
               />
               <div className="relative z-10 flex h-full max-w-[62%] flex-col justify-between p-6 sm:p-9">
@@ -844,6 +858,7 @@ export const HomePage: React.FC = () => {
                 <img
                   src="/images/bevesi/banner-14.jpg"
                   alt="Air purifier"
+                  loading="lazy" decoding="async"
                   className="absolute inset-0 h-full w-full object-cover object-bottom transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="relative z-10 px-3 pt-4 text-center">
@@ -863,6 +878,7 @@ export const HomePage: React.FC = () => {
                 <img
                   src="/images/bevesi/banner-15.jpg"
                   alt="Pastel green toaster"
+                  loading="lazy" decoding="async"
                   className="absolute inset-0 h-full w-full object-cover object-bottom transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="relative z-10 px-3 pt-4 text-center">
