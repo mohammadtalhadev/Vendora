@@ -91,7 +91,10 @@ export function domainProductToCardItem(p: Product): ProductItem {
   const categoryKey = (p.category || '').replace(/^cat-/, '').toLowerCase();
   const compareAt = p.compareAtPrice && p.compareAtPrice > p.price ? p.compareAtPrice : undefined;
   const discountPercent = compareAt ? Math.round(((compareAt - p.price) / compareAt) * 100) : undefined;
-  const stock = p.stock ?? 20;
+  // products.stock is nullable in the database; an untracked product
+  // reads as 0 — the same fallback the admin/vendor product APIs use.
+  // The old `?? 20` invented twenty units that do not exist (Batch 102).
+  const stock = p.stock ?? 0;
   const fallbackImage =
     DEFAULT_IMAGE_BY_CATEGORY.find(([key]) => categoryKey.includes(key))?.[1] ??
     '/images/products/prod_titanium_phone.jpg';
@@ -107,7 +110,12 @@ export function domainProductToCardItem(p: Product): ProductItem {
     rating: p.rating ?? 0,
     reviewCount: p.reviewCount ?? 0,
     stock,
-    maxStock: Math.max(stock, 50),
+    // The cart cap is the real stock on hand — the same value the cart,
+    // compare and wishlist producers already use. The old
+    // Math.max(stock, 50) let a card sell up to 50 units of a product
+    // that might hold 3, and it was the fabricated denominator behind
+    // the card's old stock progress bar (Batch 102).
+    maxStock: stock,
     sellerId: p.sellerId || 'platform',
     sellerName: p.sellerName || 'Vendora Verified',
     sellerLogo: p.sellerLogo ?? null,

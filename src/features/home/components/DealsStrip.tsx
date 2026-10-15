@@ -21,6 +21,11 @@ export interface DealsStripProps {
  * Batch 93 (owner points): the tabs are the shared CategoryPill, the
  * left promo column (CMS banner / built-in Tech Fest card) is gone so the
  * products own the full width, and each tab shows a single row of six.
+ *
+ * Batch 102 (owner point): the stock-urgency line ("Only X left" /
+ * "Selling fast") renders on the Best Seller tab only — New Arrivals and
+ * Best Offers cards stay plain, like every other surface except the
+ * homepage Limited Campaign.
  */
 export const DealsStrip: React.FC<DealsStripProps> = ({
   onAddToCart,
@@ -118,6 +123,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
                 onAddToCart={onAddToCart || (() => {})}
                 onToggleWishlist={onToggleWishlist || (() => {})}
                 isWishlisted={isInWishlist ? isInWishlist(p.id) : false}
+                showStockUrgency={activeTab === 'best-sellers'}
               />
             </div>
           ))}

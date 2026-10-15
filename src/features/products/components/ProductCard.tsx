@@ -39,9 +39,25 @@ export interface ProductCardProps {
   isWishlisted: boolean;
   solidAddToCart?: boolean;
   expressBadge?: string;
+  /**
+   * Stock-urgency line ("Only X left" / "Selling fast") — Batch 102, owner
+   * rule: this inventory display belongs ONLY on the selling-pressure
+   * surfaces (the DealsStrip Best Seller tab and the homepage Limited
+   * Campaign). Every other surface renders the plain card, with no stock
+   * line at all.
+   */
+  showStockUrgency?: boolean;
 }
 
 const PRODUCT_IMAGE_FALLBACK = '/images/products/prod_silver_headphones.jpg';
+
+/**
+ * "Selling fast" fires at the platform's one low-stock rule — stock at or
+ * below 5, the same threshold the vendor dashboard (lowStockAt = 5) and
+ * the admin inventory console (LOW_STOCK_AT) flag by. The card's old
+ * <=20 was its own invention.
+ */
+const SELLING_FAST_AT = 5;
 
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   product,
@@ -50,11 +66,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   isWishlisted,
   solidAddToCart,
   expressBadge,
+  showStockUrgency,
 }) => {
   const filledStars = Math.round(product.rating);
   const hasReviews = product.reviewCount > 0;
-  const stockPercent = Math.min(100, Math.round((product.stock / product.maxStock) * 100));
-  const lowStock = product.stock <= 20;
+  const lowStock = product.stock > 0 && product.stock <= SELLING_FAST_AT;
   const { formatPrice } = useCurrency();
 
   // Compare is wired straight to the compare store: the toggle used to exist
@@ -216,33 +232,37 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         </div>
       </div>
 
-      {/* Stock Availability & Progress Bar */}
+      {/* Stock line — Batch 102: the urgency line ("Only X left" /
+          "Selling fast") renders ONLY where the surface passes
+          showStockUrgency (Best Sellers, Limited Campaign); everywhere
+          else the card is plain. An out-of-stock product still says so on
+          every surface, because its Add to Cart is disabled and a refused
+          action must not go unexplained. The old progress bar is gone:
+          it divided the real stock by an invented maxStock
+          (Math.max(stock, 50) in the mapper), so its percentage was never
+          a genuine value — the database holds no total/initial stock a
+          percentage could honestly be taken of. */}
       <div className="mt-2.5 sm:mt-3 border-t border-slate-100 pt-2 sm:pt-2.5">
-        <div className="flex items-center justify-between text-[10px] text-slate-600">
-          {/* No truncate here: the clipped span is what used to render this
-              line as a bare "left" or an "Only 60" with the word cut off. */}
-          <span className="pr-1">
-            {product.stock > 0 ? (
-              <>
-                Only <strong className="text-slate-900">{product.stock}</strong> left
-              </>
-            ) : (
-              <>
-                <strong className="text-slate-900">Out of stock</strong>
-              </>
+        {(showStockUrgency || product.stock === 0) && (
+          <div className="flex items-center justify-between text-[10px] text-slate-600">
+            {/* No truncate here: the clipped span is what used to render this
+                line as a bare "left" or an "Only 60" with the word cut off. */}
+            <span className="pr-1">
+              {product.stock > 0 ? (
+                <>
+                  Only <strong className="text-slate-900">{product.stock}</strong> left
+                </>
+              ) : (
+                <>
+                  <strong className="text-slate-900">Out of stock</strong>
+                </>
+              )}
+            </span>
+            {showStockUrgency && lowStock && (
+              <span className="font-bold text-[#F59E0B] shrink-0">Selling fast</span>
             )}
-          </span>
-          {lowStock && product.stock > 0 && (
-            <span className="font-bold text-[#F59E0B] shrink-0">Selling fast</span>
-          )}
-        </div>
-
-        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-100">
-          <div
-            className={`h-full rounded-full ${lowStock ? 'bg-[#F59E0B]' : 'bg-[#16A34A]'}`}
-            style={{ width: `${stockPercent}%` }}
-          />
-        </div>
+          </div>
+        )}
 
         {/* Express Delivery Badge or stock highlight */}
         {expressBadge && (

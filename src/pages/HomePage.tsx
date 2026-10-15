@@ -521,6 +521,7 @@ export const HomePage: React.FC = () => {
                   onAddToCart={handleAddToCart}
                   onToggleWishlist={handleToggleWishlist}
                   isWishlisted={isInWishlist(product.id)}
+                  showStockUrgency
                 />
               </div>
             ))}
