@@ -39,6 +39,7 @@ import {
   ELECTRONICS_BRAND_LOGOS,
   BEAUTY_BRAND_LOGOS,
 } from '../components/common/BrandLogoMarquee';
+import { ViewAllLink } from '../components/common/ViewAllLink';
 import { GridSkeleton, Skeleton } from '../components/common/QueryState';
 import { useToast } from '../hooks/useToast';
 
@@ -166,12 +167,14 @@ export const HomePage: React.FC = () => {
   // to genuine discounts (compare-at price above price). Only parent
   // categories that actually have products on sale become pills — the ~115
   // hard-coded products this page used to render are gone (QA
-  // frontend-Critical-2).
+  // frontend-Critical-2). Batch 92 (owner point): the pills are the
+  // TRENDING parents only — the five categories with the most products on
+  // sale, busiest first; ties keep the SALE_CATEGORY_DEFS order.
   const { data: campaignPoolData } = useProducts({ sort: 'featured', page: 1, limit: 100 });
 
   const parentCategoriesWithSales = useMemo<SaleCategoryWithProducts[]>(() => {
     const pool = campaignPoolData?.items ?? [];
-    return SALE_CATEGORY_DEFS.map((def) => ({
+    const withSales = SALE_CATEGORY_DEFS.map((def) => ({
       ...def,
       products: pool
         .filter(
@@ -182,6 +185,11 @@ export const HomePage: React.FC = () => {
         )
         .map(domainProductToCardItem),
     })).filter((cat) => cat.products.length > 0);
+    return withSales
+      .map((cat, defOrder) => ({ cat, defOrder }))
+      .sort((a, b) => b.cat.products.length - a.cat.products.length || a.defOrder - b.defOrder)
+      .slice(0, 5)
+      .map(({ cat }) => cat);
   }, [campaignPoolData]);
 
   const [selectedSaleCategory, setSelectedSaleCategory] = useState<string>('cat-electronics');
@@ -484,7 +492,7 @@ export const HomePage: React.FC = () => {
           <SectionHeading
             title="Limited Campaign"
             inline={
-              /* Parent category pills: only show categories that have products on sale */
+              /* Parent category pills: the top 5 trending categories by products on sale */
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                 {parentCategoriesWithSales.map((cat) => (
                   <CategoryPill
@@ -498,13 +506,10 @@ export const HomePage: React.FC = () => {
               </div>
             }
             action={
-              <Link
+              <ViewAllLink
                 to={`/products?category=${currentSaleCategory?.slug || 'electronics'}`}
-                className="group hidden items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 hover-lift hover:bg-orange-100 sm:inline-flex shrink-0"
-              >
-                <span>View All</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+                className="hidden shrink-0 sm:inline-flex"
+              />
             }
           />
 
@@ -747,13 +752,7 @@ export const HomePage: React.FC = () => {
             <SectionHeading
               title="Recently Viewed"
               action={
-                <Link
-                  to="/recently-viewed"
-                  className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 hover-lift hover:bg-orange-100"
-                >
-                  <span>View All</span>
-                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                </Link>
+                <ViewAllLink to="/recently-viewed" />
               }
             />
             <div className="flex gap-4 overflow-x-auto scroll-smooth no-scrollbar py-1">

@@ -136,7 +136,36 @@ describe('HomePage Component - Limited Campaign & Electronics Carousel', { timeo
     expect(screen.getByRole('button', { name: 'Fashion' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Beauty & Personal Care' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Home & Kitchen' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Shoes' })).toBeInTheDocument();
+
+    // Batch 92: only the TOP 5 trending parents (most products on sale)
+    // become pills, busiest first. The fixtures put 2 on sale in Electronics
+    // and Fashion, 1 each in Audio, Beauty, Home & Kitchen and Shoes — so
+    // Shoes (1 sale, latest in def order) is the one cut, and the pill
+    // order is Electronics, Fashion, Audio, Beauty, Home & Kitchen.
+    const campaignSection = (await screen.findByText('Limited Campaign')).closest('section');
+    expect(campaignSection).not.toBeNull();
+    const candidateNames = [
+      'Electronics',
+      'Fashion',
+      'Audio & Wearables',
+      'Beauty & Personal Care',
+      'Home & Kitchen',
+      'Shoes',
+    ];
+    const pillNames = within(campaignSection as HTMLElement)
+      .getAllByRole('button')
+      .map((button) => button.textContent?.trim())
+      .filter((name) => name !== undefined && candidateNames.includes(name));
+    expect(pillNames).toEqual([
+      'Electronics',
+      'Fashion',
+      'Audio & Wearables',
+      'Beauty & Personal Care',
+      'Home & Kitchen',
+    ]);
+    expect(
+      within(campaignSection as HTMLElement).queryByRole('button', { name: 'Shoes' }),
+    ).not.toBeInTheDocument();
 
     // Categories with NO sale products are omitted
     expect(screen.queryByRole('button', { name: 'Kids & Baby' })).not.toBeInTheDocument();

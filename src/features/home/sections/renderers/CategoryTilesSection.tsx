@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { SiteSection } from '../../api/sections';
 import { SectionHeading } from '../../components/SectionHeading';
+import { ViewAllLink } from '../../../../components/common/ViewAllLink';
 
 /**
  * The "Explore Popular Categories" tiles row as a section renderer
@@ -35,13 +36,7 @@ export const CategoryTilesSection: React.FC<{ section: SiteSection }> = ({ secti
       <SectionHeading
         title={section.title || 'Explore Popular Categories'}
         action={
-          <Link
-            to="/products"
-            className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 hover-lift hover:bg-orange-100"
-          >
-            <span>View All</span>
-            <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          <ViewAllLink to="/products" />
         }
       />
 

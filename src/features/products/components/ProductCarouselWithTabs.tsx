@@ -1,9 +1,9 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { ProductCard, type ProductItem } from './ProductCard';
 import { RailEmptyState } from './RailEmptyState';
 import { CategoryPill } from '../../../components/common/CategoryPill';
+import { ViewAllLink } from '../../../components/common/ViewAllLink';
 
 export interface CarouselChildCategory {
   id: string;
@@ -159,13 +159,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            to={computedViewAllHref}
-            className="group mr-2 hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-sun-orange hover:text-white bg-orange-50/80 hover:bg-sun-orange border border-orange-200/70 hover:border-sun-orange shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-95"
-          >
-            <span>View All</span>
-            <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-          </Link>
+          <ViewAllLink to={computedViewAllHref} className="mr-2 hidden sm:inline-flex" />
           <button
             type="button"
             onClick={() => scrollContainer(-320)}

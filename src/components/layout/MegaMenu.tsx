@@ -18,6 +18,7 @@ import {
   Tag,
   type LucideIcon,
 } from 'lucide-react';
+import { ViewAllLink } from '../common/ViewAllLink';
 import { useCategories, useProducts } from '../../features/catalog/hooks/useProducts';
 import { formatPrice } from '../../store/currency-store';
 
@@ -146,14 +147,11 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                 Live products from the Vendora catalog
               </p>
             </div>
-            <Link
+            <ViewAllLink
               to={`/products?category=${encodeURIComponent(paneCategory.slug)}`}
               onClick={onClose}
-              className="group shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-sun-orange hover:text-white bg-orange-50/80 hover:bg-sun-orange border border-orange-200/70 hover:border-sun-orange shadow-2xs hover:shadow-xs transition-all duration-200 cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
-            >
-              <span>View All</span>
-              <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
+              className="shrink-0"
+            />
           </div>
 
           {isLoadingPane ? (
