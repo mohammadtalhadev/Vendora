@@ -636,7 +636,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(dealsSection.querySelector('[class*="lg:col-span-9"]')).toBeNull();
   });
 
-  it('deals section tabs are pills and every tab shows one row of four products (Batch 93)', async () => {
+  it('deals section tabs are pills and every tab shows one row of six products (Batch 93, widened Batch 100)', async () => {
     renderHome();
 
     const tab = await screen.findByRole('button', { name: 'Best Seller' });
@@ -655,26 +655,26 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(tab.className).toContain('bg-sun-orange');
     expect(tab.className).toContain('text-white');
 
-    // One row of four on the default tab: exactly four cards (each card
+    // One row of six on the default tab: exactly six cards (each card
     // renders a mobile + a desktop add-to-cart button), and the
-    // fifth-ranked best seller no longer makes the cut.
-    expect(within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ })).toHaveLength(8);
+    // seventh-ranked best seller no longer makes the cut.
+    expect(within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ })).toHaveLength(12);
     expect(
-      within(dealsSection).queryByText('DJI Mini 3 Lightweight Camera Drone'),
+      within(dealsSection).queryByText('Outside Beauty & Skincare SPF 50+ Mineral Sunscreen'),
     ).not.toBeInTheDocument();
 
-    // Switching tabs keeps the one-row-of-four cap.
+    // Switching tabs keeps the one-row-of-six cap.
     fireEvent.click(within(dealsSection).getByRole('button', { name: 'Best Offers' }));
     expect(
       await within(dealsSection).findByText('Cozy Ribbed Knit Cashmere Pullover Sweater'),
     ).toBeInTheDocument();
-    expect(within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ })).toHaveLength(8);
+    expect(within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ })).toHaveLength(12);
 
     fireEvent.click(within(dealsSection).getByRole('button', { name: 'New Arrivals' }));
     await waitFor(() =>
       expect(
         within(dealsSection).getAllByRole('button', { name: /^Add .* to cart$/ }),
-      ).toHaveLength(8),
+      ).toHaveLength(12),
     );
 
     // No promo card in any state.

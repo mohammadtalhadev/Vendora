@@ -513,8 +513,8 @@ export const HomePage: React.FC = () => {
             }
           />
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {currentSaleCategory?.products.map((product) => (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {currentSaleCategory?.products.slice(0, 6).map((product) => (
               <div key={product.id} className="reveal h-full">
                 <ProductCard
                   product={product}

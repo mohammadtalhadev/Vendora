@@ -20,7 +20,7 @@ export interface DealsStripProps {
  *
  * Batch 93 (owner points): the tabs are the shared CategoryPill, the
  * left promo column (CMS banner / built-in Tech Fest card) is gone so the
- * products own the full width, and each tab shows a single row of four.
+ * products own the full width, and each tab shows a single row of six.
  */
 export const DealsStrip: React.FC<DealsStripProps> = ({
   onAddToCart,
@@ -47,11 +47,11 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
   });
 
   const bestSellers = useMemo(
-    () => (bestSellerData?.items ?? []).map(domainProductToCardItem).slice(0, 4),
+    () => (bestSellerData?.items ?? []).map(domainProductToCardItem).slice(0, 6),
     [bestSellerData],
   );
   const newArrivals = useMemo(
-    () => (newArrivalData?.items ?? []).map(domainProductToCardItem).slice(0, 4),
+    () => (newArrivalData?.items ?? []).map(domainProductToCardItem).slice(0, 6),
     [newArrivalData],
   );
   const bestOffers = useMemo(
@@ -60,7 +60,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
         .map(domainProductToCardItem)
         .filter((item) => item.compareAtPrice !== undefined && item.compareAtPrice > item.price)
         .sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0))
-        .slice(0, 4),
+        .slice(0, 6),
     [offersPoolData],
   );
 
@@ -106,11 +106,11 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
         </CategoryPill>
       </div>
 
-      {/* Products: one row of four, full width (Batch 93) */}
+      {/* Products: one row of six, full width (Batch 93, widened Batch 100) */}
       {activeLoading ? (
-        <GridSkeleton count={4} />
+        <GridSkeleton count={6} />
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           {products.map((p) => (
             <div key={p.id} className="reveal h-full">
               <ProductCard
