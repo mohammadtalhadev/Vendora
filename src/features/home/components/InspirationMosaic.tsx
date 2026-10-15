@@ -4,7 +4,7 @@ import { Lightbulb, Eye, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
 import { SectionHeading } from './SectionHeading';
 
-interface Hotspot {
+export interface Hotspot {
   id: string;
   top: string;
   left: string;
@@ -14,7 +14,7 @@ interface Hotspot {
   image: string;
 }
 
-interface LookbookCard {
+export interface LookbookCard {
   id: string;
   title: string;
   subtitle: string;
@@ -112,7 +112,19 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
   },
 ];
 
-export const InspirationMosaic: React.FC = () => {
+export interface InspirationMosaicProps {
+  /** The lookbook cards; defaults to the built-in set below. Batch 85's
+   * section renderer feeds CMS items through this prop. */
+  cards?: LookbookCard[];
+  title?: string;
+  subtitle?: string;
+}
+
+export const InspirationMosaic: React.FC<InspirationMosaicProps> = ({
+  cards = LOOKBOOK_ITEMS,
+  title = 'Inspiration Mosaic & Shop The Look',
+  subtitle = 'Explore real lifestyle setups — tap any interactive pin to shop the items in the scene',
+}) => {
   const { formatPrice } = useCurrency();
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
 
@@ -126,8 +138,8 @@ export const InspirationMosaic: React.FC = () => {
             Lifestyle Inspiration
           </span>
         }
-        title="Inspiration Mosaic & Shop The Look"
-        subtitle="Explore real lifestyle setups — tap any interactive pin to shop the items in the scene"
+        title={title}
+        subtitle={subtitle}
         action={
           <Link
           to="/products"
@@ -141,7 +153,7 @@ export const InspirationMosaic: React.FC = () => {
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-12">
-        {LOOKBOOK_ITEMS.map((item) => (
+        {cards.map((item) => (
           <div
             key={item.id}
             className={`group relative overflow-hidden rounded-[26px] bg-slate-900 shadow-sm transition-all duration-300 hover:shadow-xl ${item.spanClass}`}

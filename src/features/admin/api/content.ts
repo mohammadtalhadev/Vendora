@@ -12,6 +12,35 @@ import { asRecord, json, rpcFailed, text, bool, num } from './admin-client';
 
 const PLACEMENT = 'homepage_hero';
 
+/**
+ * The homepage banner placements the console manages (Batch 85 added the
+ * portrait rail and the left promo to the original hero carousel). The
+ * storefront reads each placement separately; the console lists and
+ * writes all three from this one screen.
+ */
+export const BANNER_PLACEMENTS = [
+  { value: 'homepage_hero', label: 'Homepage hero — main carousel' },
+  { value: 'homepage_hero_portrait', label: 'Homepage hero — right carousel' },
+  { value: 'homepage_left_promo', label: 'Homepage left promo' },
+] as const;
+
+export type BannerPlacement = (typeof BANNER_PLACEMENTS)[number]['value'];
+
+const PLACEMENT_VALUES: string[] = BANNER_PLACEMENTS.map((entry) => entry.value);
+
+export function bannerPlacementLabel(placement: string): string {
+  return (
+    BANNER_PLACEMENTS.find((entry) => entry.value === placement)?.label ??
+    placement
+  );
+}
+
+function asPlacement(value: string | undefined): BannerPlacement {
+  return value && PLACEMENT_VALUES.includes(value)
+    ? (value as BannerPlacement)
+    : PLACEMENT;
+}
+
 const BANNER_SELECT =
   'id, slug, title, body, placement, published, sort_order, created_at, updated_at';
 
@@ -31,6 +60,7 @@ export interface AdminBanner {
   id: string;
   slug: string;
   title: string;
+  placement: string;
   headline: string;
   subtitle: string;
   imageUrl: string;
@@ -48,6 +78,8 @@ export interface BannerDraft {
   ctaText: string;
   ctaLink: string;
   published: boolean;
+  /** Defaults to the main hero carousel placement. */
+  placement?: string;
 }
 
 /**
@@ -76,6 +108,7 @@ function mapBanner(row: Record<string, unknown>): AdminBanner {
     id: text(row.id),
     slug: text(row.slug),
     title: text(row.title),
+    placement: text(row.placement) || PLACEMENT,
     headline: body.headline || text(row.title),
     subtitle: body.subtitle,
     imageUrl: body.imageUrl,
@@ -101,7 +134,7 @@ export async function fetchBanners(signal?: AbortSignal): Promise<AdminBanner[]>
   let query = supabase
     .from('content_blocks')
     .select(BANNER_SELECT)
-    .eq('placement', PLACEMENT)
+    .in('placement', PLACEMENT_VALUES)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
   if (signal) query = query.abortSignal(signal);
@@ -114,11 +147,12 @@ export async function fetchBanners(signal?: AbortSignal): Promise<AdminBanner[]>
 export async function createBanner(draft: BannerDraft): Promise<AdminBanner> {
   await requireAdmin('create a hero banner');
 
+  const placement = asPlacement(draft.placement);
   const row: BannerInsert = {
-    slug: `hero-banner-${Date.now()}`,
+    slug: `${placement.replace(/_/g, '-')}-${Date.now()}`,
     title: draft.headline,
     body: json(toBody(draft)),
-    placement: PLACEMENT,
+    placement,
     published: draft.published,
   };
 
@@ -139,6 +173,7 @@ export async function updateBanner(id: string, draft: BannerDraft): Promise<Admi
     title: draft.headline,
     body: json(toBody(draft)),
     published: draft.published,
+    ...(draft.placement ? { placement: asPlacement(draft.placement) } : {}),
   };
 
   const { data, error } = await supabase

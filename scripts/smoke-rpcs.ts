@@ -2053,6 +2053,86 @@ if (anySub77) {
   ok('assign: an approved rider still takes parcels', assigned77.riderId === RPID);
 }
 
+console.log('\n[batch 85] section CMS: site_sections RLS, seeds, hero banner placements');
+await as('postgres');
+ok('the seed created the three converted sections',
+  (await q(`select count(*)::int c from site_sections where key in ('popular-categories','inspiration-mosaic','app-promo')`))[0].c === 3);
+ok('the category tiles seed carries all twelve tiles',
+  (await q(`select count(*)::int c from site_section_items i join site_sections s on s.id = i.section_id where s.key='popular-categories'`))[0].c === 12);
+ok('the mosaic seed is disabled (it is not rendered today) with its four cards',
+  (await q(`select count(*)::int c from site_section_items i join site_sections s on s.id = i.section_id where s.key='inspiration-mosaic' and s.is_enabled = false`))[0].c === 4);
+ok('the promo seed carries its copy in settings',
+  (await q(`select jsonb_array_length(settings->'bullets')::int n from site_sections where key='app-promo'`))[0].n === 3);
+ok('the hero portrait rail seed published the two new creatives',
+  (await q(`select count(*)::int c from content_blocks where placement='homepage_hero_portrait' and published and slug in ('hero-portrait-home-kitchen','hero-portrait-beauty')`))[0].c === 2);
+ok('the left promo seed points at the verified deals route',
+  (await q(`select body->>'ctaLink' link from content_blocks where placement='homepage_left_promo' and slug='hero-left-promo-best-seller'`))[0].link === '/deals');
+
+await as('anon');
+ok('the public sees only enabled sections',
+  (await q(`select count(*)::int c from site_sections`))[0].c === 2);
+ok('the public sees the category tiles',
+  (await q(`select count(*)::int c from site_section_items`))[0].c === 12);
+await as('authenticated', ADMIN);
+await q(`update site_section_items set is_active = false where heading = 'Digital Products'`);
+await as('anon');
+ok('an inactive item is hidden from the public',
+  (await q(`select count(*)::int c from site_section_items`))[0].c === 11);
+await expectThrow('the public cannot create a section',
+  () => q(`insert into site_sections (key, type) values ('anon-made','category-tiles')`),
+  'permission denied');
+
+const SUPPORT85 = '13131313-1313-4313-8313-131313131313';
+await as('postgres');
+await q(`update site_section_items set is_active = true where heading = 'Digital Products'`);
+await q(
+  `insert into auth.users (id, email, raw_user_meta_data) values ($1,'support85@demo.test','{}')`,
+  [SUPPORT85],
+);
+await q(`update profiles set roles = array['support','customer']::user_role[] where id = $1`, [SUPPORT85]);
+await as('authenticated', SUPPORT85);
+ok('support reads every section, disabled ones included',
+  (await q(`select count(*)::int c from site_sections`))[0].c === 3);
+await expectThrow('support cannot write a section - writes are admin-only',
+  () => q(`insert into site_sections (key, type) values ('support-made','category-tiles')`),
+  'row-level security');
+
+await as('authenticated', CU);
+await expectThrow('a customer cannot create a section',
+  () => q(`insert into site_sections (key, type) values ('customer-made','category-tiles')`),
+  'row-level security');
+await as('authenticated', VENDOR);
+await expectThrow('a vendor cannot add a section item',
+  () => q(`insert into site_section_items (section_id, heading) values ('b8500000-0000-4000-8000-000000000001','sneaky')`),
+  'row-level security');
+
+await as('authenticated', ADMIN);
+const b85Section = (
+  await q(
+    `insert into site_sections (key, type, title, sort_order, is_enabled)
+     values ('smoke-85','category-tiles','Smoke Section', 40, true) returning id`,
+  )
+)[0].id;
+await q(
+  `insert into site_section_items (section_id, image_url, heading, cta_link)
+   values ($1, '/images/home/hero-beauty.png', 'Smoke Tile', '/deals')`,
+  [b85Section],
+);
+ok('an admin creates a section and an item',
+  (await q(`select count(*)::int c from site_section_items where section_id=$1`, [b85Section]))[0].c === 1);
+await as('anon');
+ok('the new section is live for the public straight away',
+  (await q(`select count(*)::int c from site_sections where key='smoke-85'`))[0].c === 1);
+await as('authenticated', ADMIN);
+await q(`update site_sections set is_enabled = false where id=$1`, [b85Section]);
+await as('anon');
+ok('disabling a section hides it and its items from the public',
+  (await q(`select count(*)::int c from site_section_items where section_id=$1`, [b85Section]))[0].c === 0);
+await as('authenticated', ADMIN);
+await q(`delete from site_sections where id=$1`, [b85Section]);
+ok('deleting a section cascades its items',
+  (await q(`select count(*)::int c from site_section_items where section_id=$1`, [b85Section]))[0].c === 0);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

@@ -275,6 +275,10 @@ export function createSupabaseDouble() {
     // CMS blocks: hero banners are the `homepage_hero` placement, read by both the
     // admin console (all rows) and the storefront (published rows only).
     content_blocks: [],
+    // Homepage sections (Batch 85): the console manages every row, the
+    // storefront reads enabled sections + active items only.
+    site_sections: [],
+    site_section_items: [],
     media_items: [],
     media_folders: [],
     vendor_shipping_settings: [],
@@ -3411,6 +3415,14 @@ export function createSupabaseDouble() {
       tables.content_blocks.push(block);
       return block;
     },
+    seedSiteSection(section: Row) {
+      tables.site_sections.push(section);
+      return section;
+    },
+    seedSiteSectionItem(item: Row) {
+      tables.site_section_items.push(item);
+      return item;
+    },
     seedShippingSettings(settings: Row) {
       tables.vendor_shipping_settings.push(settings);
       return settings;
@@ -4021,6 +4033,40 @@ export function contentBlockRow(overrides: Partial<Row> = {}): Row {
     placement: 'homepage_hero',
     published: true,
     sort_order: 10,
+    created_at: '2026-10-07T00:00:00.000Z',
+    updated_at: '2026-10-07T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A `site_sections` row (Batch 85): one homepage section instance. */
+export function siteSectionRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000001101',
+    key: 'popular-categories',
+    type: 'category-tiles',
+    title: 'Explore Popular Categories',
+    settings: {},
+    sort_order: 10,
+    is_enabled: true,
+    created_at: '2026-10-07T00:00:00.000Z',
+    updated_at: '2026-10-07T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A `site_section_items` row (Batch 85): one tile/card inside a section. */
+export function siteSectionItemRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000001201',
+    section_id: '00000000-0000-4000-8000-000000001101',
+    image_url: '/images/categories/cat_electronics_2k.png',
+    heading: 'Electronics',
+    subtext: '',
+    cta_label: '',
+    cta_link: '/products?category=electronics',
+    sort_order: 1,
+    is_active: true,
     created_at: '2026-10-07T00:00:00.000Z',
     updated_at: '2026-10-07T00:00:00.000Z',
     ...overrides,

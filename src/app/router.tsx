@@ -309,6 +309,11 @@ const AdminAuditLogsPage = lazyWithRetry(() =>
 const AdminCMSPage = lazyWithRetry(() =>
   import('../pages/AdminCMSPage').then((m) => ({ default: m.AdminCMSPage })),
 );
+const AdminHomepageSectionsPage = lazyWithRetry(() =>
+  import('../pages/AdminHomepageSectionsPage').then((m) => ({
+    default: m.AdminHomepageSectionsPage,
+  })),
+);
 const AdminLogisticsPage = lazyWithRetry(() =>
   import('../pages/AdminLogisticsPage').then((m) => ({ default: m.AdminLogisticsPage })),
 );
@@ -1019,6 +1024,10 @@ export const router = createBrowserRouter([
       {
         path: 'cms',
         element: lazyWrap(<AdminCMSPage />),
+      },
+      {
+        path: 'homepage-sections',
+        element: lazyWrap(<AdminHomepageSectionsPage />),
       },
       {
         path: 'logistics',

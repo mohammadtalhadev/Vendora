@@ -197,3 +197,123 @@ export function useHeroPortrait(): HeroPortrait {
   });
   return data ?? FALLBACK_HERO_PORTRAIT;
 }
+
+/* --------------------------------------------------------------------------
+ * Batch 85: the portrait rail is a carousel, not a single banner. Every
+ * published `homepage_hero_portrait` row contributes its usable bodies in
+ * the console's order, and the rail rotates through them. The single-
+ * portrait helpers above stay for compatibility; the homepage uses the
+ * list. Zero published rows (or a failed read) keeps the built-in watch
+ * banner as a one-item rail - the pre-batch behaviour, unchanged.
+ * ------------------------------------------------------------------------ */
+
+/** All usable portrait banners in a row set, in order (a row can hold several bodies). */
+export function heroPortraitsFromRows(rows: Array<Record<string, unknown>>): HeroPortrait[] {
+  const portraits: HeroPortrait[] = [];
+  for (const row of rows) {
+    const bodies = Array.isArray(row.body) ? row.body.map(asRecord) : [asRecord(row.body)];
+    for (const body of bodies) {
+      const image = text(body.imageUrl);
+      if (!image) continue;
+      portraits.push({
+        image,
+        link: text(body.ctaLink) || '/products',
+        alt: text(body.headline) || text(row.title) || 'Featured banner',
+      });
+    }
+  }
+  return portraits;
+}
+
+/** Every published portrait banner, in the console's order. */
+export async function fetchPublishedHeroPortraits(
+  signal?: AbortSignal,
+): Promise<HeroPortrait[]> {
+  let query = supabase
+    .from('content_blocks')
+    .select(BANNER_SELECT)
+    .eq('placement', PORTRAIT_PLACEMENT)
+    .eq('published', true)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
+  if (signal) query = query.abortSignal(signal);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to load the hero portrait banners: ${error.message}`);
+  return heroPortraitsFromRows((data ?? []) as unknown as Array<Record<string, unknown>>);
+}
+
+/** The rail's rotation list: the published portraits, or the built-in one alone. */
+export function useHeroPortraits(): HeroPortrait[] {
+  const { data } = useQuery({
+    queryKey: ['home', 'hero-portraits'] as const,
+    queryFn: ({ signal }) => fetchPublishedHeroPortraits(signal),
+    staleTime: 1000 * 60 * 5,
+  });
+  return data && data.length > 0 ? data : [FALLBACK_HERO_PORTRAIT];
+}
+
+/* --------------------------------------------------------------------------
+ * Batch 85: the hero's LEFT promo column, its own placement
+ * (`homepage_left_promo`). Unlike the other hero slots there is no built-in
+ * creative for it: no published banner means no column, and the hero row
+ * keeps exactly its pre-batch layout.
+ * ------------------------------------------------------------------------ */
+
+const LEFT_PROMO_PLACEMENT = 'homepage_left_promo';
+
+export interface HeroLeftPromo {
+  image: string;
+  link: string;
+  alt: string;
+  title: string;
+}
+
+/** The first usable left-promo banner in a row set, if any. */
+export function heroLeftPromoFromRows(
+  rows: Array<Record<string, unknown>>,
+): HeroLeftPromo | null {
+  for (const row of rows) {
+    const bodies = Array.isArray(row.body) ? row.body.map(asRecord) : [asRecord(row.body)];
+    for (const body of bodies) {
+      const image = text(body.imageUrl);
+      if (!image) continue;
+      const headline = text(body.headline) || text(row.title);
+      return {
+        image,
+        link: text(body.ctaLink) || '/products',
+        alt: headline || 'Featured promotion',
+        title: headline,
+      };
+    }
+  }
+  return null;
+}
+
+/** The published left-promo banner, when the CMS has one. */
+export async function fetchPublishedHeroLeftPromo(
+  signal?: AbortSignal,
+): Promise<HeroLeftPromo | null> {
+  let query = supabase
+    .from('content_blocks')
+    .select(BANNER_SELECT)
+    .eq('placement', LEFT_PROMO_PLACEMENT)
+    .eq('published', true)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
+  if (signal) query = query.abortSignal(signal);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to load the hero left promo banner: ${error.message}`);
+  return heroLeftPromoFromRows((data ?? []) as unknown as Array<Record<string, unknown>>);
+}
+
+/** The left promo the hero renders, or null when the column stays absent. */
+export function useHeroLeftPromo(): HeroLeftPromo | null {
+  const { data } = useQuery({
+    queryKey: ['home', 'hero-left-promo'] as const,
+    queryFn: ({ signal }) => fetchPublishedHeroLeftPromo(signal),
+    staleTime: 1000 * 60 * 5,
+  });
+  return data ?? null;
+}

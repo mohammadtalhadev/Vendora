@@ -1940,6 +1940,92 @@ export type Database = {
         }
       ]
     },
+    "site_section_items": {
+      Row: {
+        "id": string,
+        "section_id": string,
+        "image_url": string,
+        "heading": string,
+        "subtext": string,
+        "cta_label": string,
+        "cta_link": string,
+        "sort_order": number,
+        "is_active": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "section_id": string,
+        "image_url"?: string,
+        "heading"?: string,
+        "subtext"?: string,
+        "cta_label"?: string,
+        "cta_link"?: string,
+        "sort_order"?: number,
+        "is_active"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "section_id"?: string,
+        "image_url"?: string,
+        "heading"?: string,
+        "subtext"?: string,
+        "cta_label"?: string,
+        "cta_link"?: string,
+        "sort_order"?: number,
+        "is_active"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "site_section_items_section_id_fkey"
+          columns: ["section_id"]
+          isOneToOne: false
+          referencedRelation: "site_sections"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
+    "site_sections": {
+      Row: {
+        "id": string,
+        "key": string,
+        "type": string,
+        "title": string,
+        "settings": Json,
+        "sort_order": number,
+        "is_enabled": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "key": string,
+        "type": string,
+        "title"?: string,
+        "settings"?: Json,
+        "sort_order"?: number,
+        "is_enabled"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "key"?: string,
+        "type"?: string,
+        "title"?: string,
+        "settings"?: Json,
+        "sort_order"?: number,
+        "is_enabled"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Relationships: []
+    },
     "sub_orders": {
       Row: {
         "id": string,

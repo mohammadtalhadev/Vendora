@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useReveal } from '../hooks/useReveal';
@@ -24,7 +24,14 @@ import {
   BackToTopButton,
   BannerCta,
 } from '../features/home';
-import { useHeroPortrait, useHeroSlides } from '../features/home/api/hero-banners';
+import {
+  useHeroLeftPromo,
+  useHeroPortraits,
+  useHeroSlides,
+} from '../features/home/api/hero-banners';
+import type { SiteSection } from '../features/home/api/sections';
+import { HomeSectionAnchor } from '../features/home/sections/HomeSections';
+import { CategoryTilesSection } from '../features/home/sections/renderers/CategoryTilesSection';
 import { TrustStrip } from '../components/common/TrustStrip';
 import { Toast } from '../components/common/Toast';
 import { CountdownTimer } from '../components/common/CountdownTimer';
@@ -52,6 +59,33 @@ const POPULAR_CATEGORIES = [
   { id: 'cat-sports', name: 'Sports & Outdoors', image: '/images/categories/cat_sports_outdoors_2k.png', slug: 'sports-outdoors' },
   { id: 'cat-digital', name: 'Digital Products', image: '/images/categories/cat_digital_products_2k.png', slug: 'digital-products' },
 ];
+
+/**
+ * The built-in category tiles as a section (Batch 85): the tiles row is a
+ * console-managed `category-tiles` section, and this synthetic section -
+ * the original hard-coded list, unchanged - is what renders until the
+ * sections read lands (and whenever it is unavailable).
+ */
+const FALLBACK_CATEGORY_SECTION: SiteSection = {
+  id: 'builtin-popular-categories',
+  key: 'popular-categories',
+  type: 'category-tiles',
+  title: 'Explore Popular Categories',
+  settings: {},
+  sortOrder: 0,
+  isEnabled: true,
+  items: POPULAR_CATEGORIES.map((cat, index) => ({
+    id: cat.id,
+    sectionId: 'builtin-popular-categories',
+    imageUrl: cat.image,
+    heading: cat.name,
+    subtext: '',
+    ctaLabel: '',
+    ctaLink: `/products?category=${cat.slug}`,
+    sortOrder: index + 1,
+    isActive: true,
+  })),
+};
 
 // Sub-categories under parent category Electronics
 const ELECTRONICS_SUBCATEGORIES = [
@@ -117,9 +151,13 @@ export const HomePage: React.FC = () => {
   // Hero Section Carousel state. The slide list can change length when the CMS
   // read lands, so the rendered index is always taken modulo the list.
   const heroSlides = useHeroSlides();
-  const heroPortrait = useHeroPortrait();
+  const heroPortraits = useHeroPortraits();
+  const heroLeftPromo = useHeroLeftPromo();
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const activeHeroIndex = heroSlides.length > 0 ? heroSlideIndex % heroSlides.length : 0;
+  const [heroPortraitIndex, setHeroPortraitIndex] = useState(0);
+  const activePortraitIndex =
+    heroPortraits.length > 0 ? heroPortraitIndex % heroPortraits.length : 0;
 
   // Section 3: Limited Campaign (Sale Offers by Parent Category)
   // Real catalogue data: one broad fetch, grouped by category and filtered
@@ -204,9 +242,6 @@ export const HomePage: React.FC = () => {
     [homeData],
   );
 
-  // Ref for Popular Categories interactive smooth scrolling
-  const categoriesRef = useRef<HTMLDivElement>(null);
-
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
 
   useEffect(() => {
@@ -217,14 +252,15 @@ export const HomePage: React.FC = () => {
     return () => clearInterval(timer);
   }, [isCarouselPaused, heroSlides.length]);
 
-  const scrollContainer = useCallback((ref: React.RefObject<HTMLDivElement | null>, offset: number) => {
-    const el = ref.current;
-    if (!el) return;
-    // Viewport-aware paging: move ~85% of the visible width per press,
-    // in the direction requested (sign of offset).
-    const step = Math.max(Math.round(el.clientWidth * 0.85), 160) * Math.sign(offset);
-    el.scrollBy({ left: step, behavior: 'smooth' });
-  }, []);
+  // The portrait rail rotates on the same clock and pause as the main
+  // carousel (Batch 85); a single published portrait stays static.
+  useEffect(() => {
+    if (isCarouselPaused || heroPortraits.length <= 1) return;
+    const timer = setInterval(() => {
+      setHeroPortraitIndex((prev) => (prev + 1) % heroPortraits.length);
+    }, 6500);
+    return () => clearInterval(timer);
+  }, [isCarouselPaused, heroPortraits.length]);
 
   const nextHeroSlide = () => {
     setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
@@ -290,8 +326,30 @@ export const HomePage: React.FC = () => {
             ========================================================================= */}
         <section className="mb-10">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            {/* Left promo column (Batch 85): its own CMS placement
+                (homepage_left_promo). Published banner = the hero row gains
+                this column (stacked above the hero on mobile); none
+                published = the column is absent and the row is exactly the
+                pre-batch two-column hero. */}
+            {heroLeftPromo && (
+              <div className="group relative aspect-[4/5] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-2 lg:aspect-auto">
+                <img
+                  src={heroLeftPromo.image}
+                  alt={heroLeftPromo.alt}
+                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105 lg:object-center"
+                />
+                <Link
+                  to={heroLeftPromo.link}
+                  className="absolute inset-0 z-20"
+                  title={heroLeftPromo.title}
+                  aria-label={heroLeftPromo.alt}
+                />
+              </div>
+            )}
             <div
-              className="relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl lg:col-span-9 group aspect-[16/9] min-h-[260px] sm:min-h-[320px] flex items-center justify-center"
+              className={`relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl group aspect-[16/9] min-h-[260px] sm:min-h-[320px] flex items-center justify-center ${
+                heroLeftPromo ? 'lg:col-span-7' : 'lg:col-span-9'
+              }`}
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >
@@ -330,17 +388,58 @@ export const HomePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Right rail: the portrait (9:16) banner — its own CMS placement
-                (homepage_hero_portrait) with a built-in campaign fallback.
-                Stacked under the carousel on mobile at its natural ratio;
-                beside it on desktop, filling the row's height. */}
-            <div className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3 lg:aspect-auto">
-              <img
-                src={heroPortrait.image}
-                alt={heroPortrait.alt}
-                className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-              />
-              <Link to={heroPortrait.link} className="absolute inset-0 z-20" title={heroPortrait.alt} aria-label={heroPortrait.alt} />
+            {/* Right rail: the portrait (9:16) banners — their own CMS
+                placement (homepage_hero_portrait) with a built-in campaign
+                fallback. Batch 85: every published banner joins the rail
+                and it rotates like the main carousel; a single banner is
+                static, exactly the pre-batch rail. Stacked under the
+                carousel on mobile at its natural ratio; beside it on
+                desktop, filling the row's height. */}
+            <div
+              className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3 lg:aspect-auto"
+              onMouseEnter={() => setIsCarouselPaused(true)}
+              onMouseLeave={() => setIsCarouselPaused(false)}
+            >
+              {heroPortraits.map((portrait, idx) => (
+                <div
+                  key={`${portrait.image}-${idx}`}
+                  className={`absolute inset-0 transition-opacity duration-700 ${
+                    activePortraitIndex === idx
+                      ? 'opacity-100 z-10'
+                      : 'opacity-0 pointer-events-none z-0'
+                  }`}
+                >
+                  <img
+                    src={portrait.image}
+                    alt={portrait.alt}
+                    className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <Link
+                    to={portrait.link}
+                    className="absolute inset-0 z-20"
+                    title={portrait.alt}
+                    aria-label={portrait.alt}
+                  />
+                </div>
+              ))}
+
+              {heroPortraits.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5">
+                  {heroPortraits.map((_, idx) => (
+                    <button
+                      key={`portrait-dot-${idx}`}
+                      type="button"
+                      onClick={() => setHeroPortraitIndex(idx)}
+                      aria-label={`Go to portrait banner ${idx + 1}`}
+                      className={`transition-all duration-300 rounded-full cursor-pointer ${
+                        activePortraitIndex === idx
+                          ? 'h-1.5 w-5 bg-white'
+                          : 'h-1.5 w-1.5 bg-white/50 hover:bg-white/80'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -371,70 +470,15 @@ export const HomePage: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            2. Explore Popular Categories
+            2. Explore Popular Categories - a console-managed section
+            (Batch 85): the tiles render from the `category-tiles` section
+            the admin owns; the built-in list above is the fallback while
+            the sections read is unavailable.
             ========================================================================= */}
-        <section className="reveal mb-14">
-          <SectionHeading
-            title="Explore Popular Categories"
-            action={
-              <Link
-                to="/products"
-                className="group inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold text-sun-orange-700 hover-lift hover:bg-orange-100"
-              >
-                <span>View All</span>
-                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            }
-          />
-
-          <div className="relative flex items-center justify-between">
-            {/* Left arrow scroll button */}
-            <button
-              type="button"
-              onClick={() => scrollContainer(categoriesRef, -240)}
-              className="flex mr-2 h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-sun-orange hover:border-sun-orange hover:scale-105 transition-all cursor-pointer"
-              title="Previous categories"
-              aria-label="Previous categories"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-
-            <div
-              ref={categoriesRef}
-              className="flex items-center gap-4 sm:gap-6 md:gap-7 overflow-x-auto scroll-smooth no-scrollbar py-3 px-2 justify-start w-full"
-            >
-              {POPULAR_CATEGORIES.map((cat) => (
-                <Link
-                  key={cat.id}
-                  to={`/products?category=${cat.slug}`}
-                  className="group flex flex-col items-center shrink-0 transition-transform hover:-translate-y-1"
-                >
-                  <div className="flex h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 items-center justify-center rounded-full bg-[#F4F6F8] p-3 overflow-hidden shadow-2xs border border-slate-100 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:bg-[#FFF4EC] group-hover:border-sun-orange/60 group-hover:ring-4 group-hover:ring-orange-500/15">
-                    <img
-                      src={cat.image}
-                      alt={cat.name}
-                      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-xs"
-                    />
-                  </div>
-                  <span className="mt-3 text-xs font-bold text-slate-800 text-center tracking-tight group-hover:text-sun-orange transition-colors max-w-[100px] leading-tight">
-                    {cat.name}
-                  </span>
-                </Link>
-              ))}
-            </div>
-
-            {/* Right arrow scroll button */}
-            <button
-              type="button"
-              onClick={() => scrollContainer(categoriesRef, 240)}
-              className="flex ml-2 h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-md border border-slate-200 text-slate-700 hover:text-sun-orange hover:border-sun-orange hover:scale-105 transition-all cursor-pointer"
-              title="Next categories"
-              aria-label="Next categories"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        </section>
+        <HomeSectionAnchor
+          anchor="categories"
+          fallback={<CategoryTilesSection section={FALLBACK_CATEGORY_SECTION} />}
+        />
 
         {/* =========================================================================
             2B. Flash Deals Strip (Urgency ticker with countdown & claimed stats)
@@ -878,6 +922,14 @@ export const HomePage: React.FC = () => {
 
 
         {/* =========================================================================
+            3G. Inspiration Mosaic - a console-managed section (Batch 85).
+            It renders only when an enabled mosaic section exists; the
+            seeded one starts disabled, so the page is unchanged until an
+            admin turns it on.
+            ========================================================================= */}
+        <HomeSectionAnchor anchor="mosaic" />
+
+        {/* =========================================================================
             4. Brand Spotlight & Official Stores
             ========================================================================= */}
         <BrandSpotlight />
@@ -894,9 +946,12 @@ export const HomePage: React.FC = () => {
 
 
         {/* =========================================================================
-            7. Mobile App Promo Banner
+            7. Mobile App Promo Banner - a console-managed section
+            (Batch 85): the promo panel's copy lives in the `promo-banner`
+            section's settings; the built-in panel is the fallback while
+            the sections read is unavailable.
             ========================================================================= */}
-        <AppPromoSection />
+        <HomeSectionAnchor anchor="promo" fallback={<AppPromoSection />} />
       </div>
 
       {/* Floating Back-To-Top Button */}

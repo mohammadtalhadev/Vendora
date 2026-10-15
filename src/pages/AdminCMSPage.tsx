@@ -12,6 +12,8 @@ import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { useAdminScope } from '../features/admin/hooks/admin-keys';
 import {
+  BANNER_PLACEMENTS,
+  bannerPlacementLabel,
   createBanner,
   deleteBanner,
   fetchBanners,
@@ -32,7 +34,8 @@ import { formatPrice } from '../store/currency-store';
 
 /**
  * The console edits the two tables that are genuinely behind it: hero banners live in
- * `content_blocks` (placement `homepage_hero`) and sitewide coupons live in `promotions`
+ * `content_blocks` (the homepage placements: `homepage_hero`, `homepage_hero_portrait`,
+ * `homepage_left_promo`) and sitewide coupons live in `promotions`
  * with no `vendor_id`. The old "Limited Campaign Controller" wrote a `campaign-flash` block
  * that nothing on the storefront reads, so it is gone rather than persisted into a void.
  */
@@ -69,6 +72,7 @@ export const AdminCMSPage: React.FC = () => {
 
   // Banner composer
   const [isAddBannerOpen, setIsAddBannerOpen] = useState(false);
+  const [newPlacement, setNewPlacement] = useState<string>('homepage_hero');
   const [newHeadline, setNewHeadline] = useState('');
   const [newSubtitle, setNewSubtitle] = useState('');
   const [newImage, setNewImage] = useState('');
@@ -138,6 +142,7 @@ export const AdminCMSPage: React.FC = () => {
       ctaText: newCta.trim() || 'Shop Now',
       ctaLink: newLink.trim() || '/products',
       published: true,
+      placement: newPlacement,
     });
   };
 
@@ -389,6 +394,9 @@ export const AdminCMSPage: React.FC = () => {
                         <span className="text-[10px] uppercase font-bold tracking-wider text-amber-300">
                           {b.published ? 'Live Banner' : 'Draft'}
                         </span>
+                        <span className="text-[10px] font-bold tracking-wide text-white/80">
+                          {bannerPlacementLabel(b.placement)}
+                        </span>
                         <h3 className="font-bold text-sm leading-snug">{b.headline}</h3>
                       </div>
                     </div>
@@ -525,6 +533,22 @@ export const AdminCMSPage: React.FC = () => {
             <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95 text-xs">
               <h3 className="text-base font-bold text-slate-900 mb-3">Add Homepage Hero Banner</h3>
               <form onSubmit={submitBanner} className="space-y-3">
+                <div>
+                  <label htmlFor="banner-placement" className="block font-bold text-slate-700 mb-1">Placement</label>
+                  <select
+                    id="banner-placement"
+                    value={newPlacement}
+                    onChange={(e) => setNewPlacement(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-2.5 bg-white"
+                  >
+                    {BANNER_PLACEMENTS.map((entry) => (
+                      <option key={entry.value} value={entry.value}>
+                        {entry.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <label htmlFor="banner-headline" className="block font-bold text-slate-700 mb-1">Headline Text</label>
                   <input
