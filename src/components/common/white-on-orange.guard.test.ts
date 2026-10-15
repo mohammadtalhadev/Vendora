@@ -57,6 +57,7 @@ const LOGO_DOT =
 
 const ALLOWLIST: AllowEntry[] = [
   // Logo dots — the "." after the Vendora wordmark; a 8px span, no text.
+  { file: 'src/components/layout/Navbar.tsx', literal: 'inline-block h-2 w-2 rounded-full bg-sun-orange group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-colors', occurrence: 1, reason: 'logo dot, no text' },
   { file: 'src/features/admin/components/AdminNav.tsx', literal: LOGO_DOT, occurrence: 1, reason: 'logo dot, no text' },
   { file: 'src/features/rider/components/RiderNav.tsx', literal: LOGO_DOT, occurrence: 1, reason: 'logo dot, no text' },
   { file: 'src/features/support/components/SupportNav.tsx', literal: LOGO_DOT, occurrence: 1, reason: 'logo dot, no text' },
