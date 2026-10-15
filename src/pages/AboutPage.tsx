@@ -2,6 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useReveal } from '../hooks/useReveal';
 import { PolicyShell } from '../components/common/PolicyShell';
+import {
+  STANDARD_DELIVERY_BUSINESS_DAYS,
+  formatDeliveryRange,
+} from '../lib/delivery-estimate';
 
 import {
   ShieldCheck,
@@ -150,12 +154,12 @@ export const AboutPage: React.FC = () => {
                     Nationwide Standard Delivery
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Sellers dispatch from their own stores and workshops across Pakistan. Standard delivery takes 2–4 business days nationwide, and every package carries its own tracking from dispatch to your door.
+                    Sellers dispatch from their own stores and workshops across Pakistan. Standard delivery takes {formatDeliveryRange(STANDARD_DELIVERY_BUSINESS_DAYS)} nationwide, and every package carries its own tracking from dispatch to your door.
                   </p>
                 </div>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-500">
-                <span className="text-emerald-600 font-extrabold">Standard window: 2–4 business days</span>
+                <span className="text-emerald-600 font-extrabold">Standard window: {formatDeliveryRange(STANDARD_DELIVERY_BUSINESS_DAYS)}</span>
                 <span>Per-package tracking</span>
               </div>
             </div>

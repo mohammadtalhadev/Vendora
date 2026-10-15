@@ -32,7 +32,8 @@ import { useToast } from '../hooks/useToast';
 import { useOverlayA11y } from '../hooks/useOverlayA11y';
 import { Toast } from '../components/common/Toast';
 import { openCartDrawer } from '../features/cart/open-cart';
-import { formatDeliveryWindow } from '../lib/delivery-estimate';
+import { formatDeliveryWindow, resolveDeliveryRange } from '../lib/delivery-estimate';
+import { useSellerDeliveryTimes } from '../features/delivery/hooks/useDeliveryTimes';
 import type { Variant } from '../types/domain';
 import { useCurrency } from '../store/currency-store';
 import { QueryState } from '../components/common/QueryState';
@@ -247,6 +248,14 @@ export const ProductDetailPage: React.FC = () => {
   // are only a rollup cache. One source means the header can never advertise
   // reviews the section does not have.
   const reviewsQuery = useProductReviews(product?.id);
+
+  // The delivery estimate is the SELLER's, from the times they published
+  // (Batch 91). The buyer's region is not known on this page, so the quote
+  // is the span across the seller's tiers; a seller who set nothing — or a
+  // database without the times view yet — resolves to the standard quote.
+  const sellerTimesQuery = useSellerDeliveryTimes(product?.sellerId ? [product.sellerId] : []);
+  const sellerProfile = product?.sellerId ? sellerTimesQuery.data?.get(product.sellerId) : undefined;
+  const deliveryRange = resolveDeliveryRange(sellerProfile?.times);
   const displayRating = reviewsQuery.data?.breakdown.average ?? 0;
   const displayReviews = reviewsQuery.data?.breakdown.total ?? 0;
   const hasReviews = displayReviews > 0;
@@ -784,14 +793,19 @@ export const ProductDetailPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Estimated delivery — the shared standard window, labelled
-                      an estimate; digital products deliver instantly instead. */}
+                  {/* Estimated delivery — the seller's published times via
+                      the shared resolver (their span here, since the buyer's
+                      region is unknown on this page), falling back to the
+                      standard window; labelled an estimate. Digital products
+                      deliver instantly instead. */}
                   {product.type === 'physical' && shippingOption === 'delivery' && (
                     <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
                       <Truck className="h-3.5 w-3.5 shrink-0 text-sun-orange" />
                       <span>
                         Estimated delivery{' '}
-                        <span className="font-bold text-slate-900">{formatDeliveryWindow()}</span>{' '}
+                        <span className="font-bold text-slate-900">
+                          {formatDeliveryWindow(new Date(), deliveryRange)}
+                        </span>{' '}
                         (estimate)
                       </span>
                     </p>

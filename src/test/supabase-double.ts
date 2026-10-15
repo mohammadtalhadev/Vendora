@@ -254,6 +254,10 @@ export function createSupabaseDouble() {
     // The store_order_stats aggregate view (migration 20261017020000): one
     // { vendor_id, orders_delivered } row per vendor with >= 1 delivery.
     store_order_stats: [],
+    // The store_delivery_times public view (migration 20261017080000): one
+    // { vendor_id, delivery_times, origin_city, origin_state } row per store
+    // that has a shipping-settings row.
+    store_delivery_times: [],
     cart_items: [],
     wishlist_items: [],
     // The customer's own address book and saved payment methods (Phase 8 tables):
@@ -3383,6 +3387,10 @@ export function createSupabaseDouble() {
       tables.store_order_stats.push(stat);
       return stat;
     },
+    seedStoreDeliveryTime(row: Row) {
+      tables.store_delivery_times.push(row);
+      return row;
+    },
     seedProduct(product: Row) {
       tables.products.push(product);
       return product;
@@ -4118,6 +4126,7 @@ export function shippingRow(overrides: Partial<Row> = {}): Row {
     operating_hours: 'Mon-Fri 08:00-18:00',
     gate_code: '4432',
     sla_window: '48h',
+    delivery_times: {},
     ...overrides,
   };
 }

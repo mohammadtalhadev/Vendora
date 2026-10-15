@@ -111,4 +111,85 @@ describe('VendorShippingSettingsPage', () => {
       expect(screen.getByText(/Failed to load your shipping settings: connection terminated/)).toBeInTheDocument(),
     );
   });
+
+  it('starts the delivery-time fields from the tiers this store saved', async () => {
+    supabaseDouble.seedShippingSettings(
+      shippingRow({
+        vendor_id: 'store-1',
+        delivery_times: { sameCity: { min: 1, max: 2 }, nationwide: { min: 3, max: 6 } },
+      }),
+    );
+
+    renderWorkspace(<VendorShippingSettingsPage />);
+
+    const fastest = await screen.findAllByLabelText('Fastest');
+    const slowest = screen.getAllByLabelText('Slowest');
+    // Tier order on the form: same city, same province, rest of Pakistan.
+    await waitFor(() => expect(fastest[0]).toHaveValue(1));
+    expect(slowest[0]).toHaveValue(2);
+    expect(fastest[1]).toHaveValue(null);
+    expect(fastest[2]).toHaveValue(3);
+    expect(slowest[2]).toHaveValue(6);
+    // The summary restates the stored tiers, and the unset one as unset.
+    await waitFor(() => expect(screen.getByText('1–2 business days')).toBeInTheDocument());
+    expect(screen.getByText('3–6 business days')).toBeInTheDocument();
+    expect(screen.getByText('Not set')).toBeInTheDocument();
+  });
+
+  it('saves delivery times the seller typed and restates what came back', async () => {
+    supabaseDouble.seedShippingSettings(shippingRow({ vendor_id: 'store-1' }));
+
+    renderWorkspace(<VendorShippingSettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(8.5));
+
+    const fastest = screen.getAllByLabelText('Fastest');
+    const slowest = screen.getAllByLabelText('Slowest');
+    fireEvent.change(fastest[0], { target: { value: '1' } });
+    fireEvent.change(slowest[0], { target: { value: '2' } });
+    fireEvent.change(fastest[2], { target: { value: '3' } });
+    fireEvent.change(slowest[2], { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save settings/i }));
+
+    await waitFor(() => expect(screen.getByText(/Saved:/)).toBeInTheDocument());
+    expect(supabaseDouble.tables.vendor_shipping_settings[0].delivery_times).toEqual({
+      sameCity: { min: 1, max: 2 },
+      nationwide: { min: 3, max: 5 },
+    });
+    await waitFor(() => expect(screen.getByText('1–2 business days')).toBeInTheDocument());
+  });
+
+  it('refuses a tier whose fastest day is after its slowest, and saves nothing', async () => {
+    supabaseDouble.seedShippingSettings(shippingRow({ vendor_id: 'store-1' }));
+
+    renderWorkspace(<VendorShippingSettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(8.5));
+
+    const fastest = screen.getAllByLabelText('Fastest');
+    const slowest = screen.getAllByLabelText('Slowest');
+    fireEvent.change(fastest[0], { target: { value: '5' } });
+    fireEvent.change(slowest[0], { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save settings/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/Same city: use whole days from 1 to 15, fastest first/)).toBeInTheDocument(),
+    );
+    expect(supabaseDouble.tables.vendor_shipping_settings[0].delivery_times).toEqual({});
+  });
+
+  it('refuses a half-filled tier instead of guessing the missing day', async () => {
+    supabaseDouble.seedShippingSettings(shippingRow({ vendor_id: 'store-1' }));
+
+    renderWorkspace(<VendorShippingSettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText('Standard flat rate')).toHaveValue(8.5));
+
+    fireEvent.change(screen.getAllByLabelText('Fastest')[1], { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save settings/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Same province: enter both the fastest and slowest delivery days/),
+      ).toBeInTheDocument(),
+    );
+    expect(supabaseDouble.tables.vendor_shipping_settings[0].delivery_times).toEqual({});
+  });
 });

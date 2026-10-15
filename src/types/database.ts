@@ -2607,7 +2607,8 @@ export type Database = {
         "gate_code": string,
         "sla_window": string,
         "created_at": string,
-        "updated_at": string
+        "updated_at": string,
+        "delivery_times": Json
       }
       Insert: {
         "vendor_id": string,
@@ -2625,7 +2626,8 @@ export type Database = {
         "gate_code"?: string,
         "sla_window"?: string,
         "created_at"?: string,
-        "updated_at"?: string
+        "updated_at"?: string,
+        "delivery_times"?: Json
       }
       Update: {
         "vendor_id"?: string,
@@ -2643,7 +2645,8 @@ export type Database = {
         "gate_code"?: string,
         "sla_window"?: string,
         "created_at"?: string,
-        "updated_at"?: string
+        "updated_at"?: string,
+        "delivery_times"?: Json
       }
       Relationships: [
         {
@@ -2735,6 +2738,27 @@ export type Database = {
     }
     };
     Views: {
+    "store_delivery_times": {
+      Row: {
+        "vendor_id": string | null,
+        "delivery_times": Json | null,
+        "origin_city": string | null,
+        "origin_state": string | null
+      }
+      Insert: {
+        "vendor_id"?: string | null,
+        "delivery_times"?: Json | null,
+        "origin_city"?: string | null,
+        "origin_state"?: string | null
+      }
+      Update: {
+        "vendor_id"?: string | null,
+        "delivery_times"?: Json | null,
+        "origin_city"?: string | null,
+        "origin_state"?: string | null
+      }
+      Relationships: []
+    },
     "store_order_stats": {
       Row: {
         "vendor_id": string | null,

@@ -3,6 +3,7 @@ import {
   Truck,
   Building,
   Clock,
+  MapPin,
   CheckCircle2,
   Save,
   RotateCcw,
@@ -20,6 +21,14 @@ import {
   useShippingSettings,
 } from '../features/vendor/hooks/useVendorStore';
 import { useCurrency } from '../store/currency-store';
+import {
+  SELLER_DELIVERY_DAY_LIMITS,
+  STANDARD_DELIVERY_BUSINESS_DAYS,
+  formatDeliveryRange,
+  type DeliveryDayRange,
+  type DeliveryRegionTier,
+  type SellerDeliveryTimes,
+} from '../lib/delivery-estimate';
 import type { VendorShippingSettings } from '../features/vendor/api/shipping';
 
 const SLA_LABEL: Record<string, string> = {
@@ -42,6 +51,12 @@ type FormState = {
   operatingHours: string;
   gateCode: string;
   slaWindow: string;
+  dtSameCityMin: string;
+  dtSameCityMax: string;
+  dtSameProvinceMin: string;
+  dtSameProvinceMax: string;
+  dtNationwideMin: string;
+  dtNationwideMax: string;
 };
 
 const BLANK_FORM: FormState = {
@@ -58,7 +73,89 @@ const BLANK_FORM: FormState = {
   operatingHours: '',
   gateCode: '',
   slaWindow: '48h',
+  dtSameCityMin: '',
+  dtSameCityMax: '',
+  dtSameProvinceMin: '',
+  dtSameProvinceMax: '',
+  dtNationwideMin: '',
+  dtNationwideMax: '',
 };
+
+type DayField =
+  | 'dtSameCityMin'
+  | 'dtSameCityMax'
+  | 'dtSameProvinceMin'
+  | 'dtSameProvinceMax'
+  | 'dtNationwideMin'
+  | 'dtNationwideMax';
+
+/** The region tiers a seller quotes delivery times for, fastest region first. */
+const DELIVERY_TIERS: {
+  key: DeliveryRegionTier;
+  label: string;
+  hint: string;
+  minField: DayField;
+  maxField: DayField;
+}[] = [
+  {
+    key: 'sameCity',
+    label: 'Same city',
+    hint: 'Buyers in the city your store ships from.',
+    minField: 'dtSameCityMin',
+    maxField: 'dtSameCityMax',
+  },
+  {
+    key: 'sameProvince',
+    label: 'Same province',
+    hint: 'Buyers elsewhere in your province.',
+    minField: 'dtSameProvinceMin',
+    maxField: 'dtSameProvinceMax',
+  },
+  {
+    key: 'nationwide',
+    label: 'Rest of Pakistan',
+    hint: 'Buyers in every other province.',
+    minField: 'dtNationwideMin',
+    maxField: 'dtNationwideMax',
+  },
+];
+
+const dayText = (range: DeliveryDayRange | undefined, part: 'min' | 'max'): string =>
+  range ? String(range[part]) : '';
+
+/**
+ * The form's day fields as typed tier ranges. A tier with both fields blank
+ * is unset; a half-filled or impossible tier (fastest after slowest, outside
+ * the 1–15 day bounds) throws the message the page shows the seller.
+ */
+function deliveryTimesFromForm(form: FormState): SellerDeliveryTimes {
+  const times: SellerDeliveryTimes = {};
+  for (const tier of DELIVERY_TIERS) {
+    const minRaw = form[tier.minField].trim();
+    const maxRaw = form[tier.maxField].trim();
+    if (!minRaw && !maxRaw) continue;
+    if (!minRaw || !maxRaw) {
+      throw new Error(
+        `${tier.label}: enter both the fastest and slowest delivery days, or leave both blank.`,
+      );
+    }
+    const min = Number(minRaw);
+    const max = Number(maxRaw);
+    if (
+      !Number.isInteger(min) ||
+      !Number.isInteger(max) ||
+      min < SELLER_DELIVERY_DAY_LIMITS.min ||
+      max > SELLER_DELIVERY_DAY_LIMITS.max ||
+      min > max
+    ) {
+      throw new Error(
+        `${tier.label}: use whole days from ${SELLER_DELIVERY_DAY_LIMITS.min} to ${SELLER_DELIVERY_DAY_LIMITS.max}, fastest first.`,
+      );
+    }
+    times[tier.key] = { min, max };
+  }
+  return times;
+}
 
 const amount = (value: string) => {
   const parsed = Number.parseFloat(value);
@@ -80,6 +177,12 @@ function formOf(settings: VendorShippingSettings): FormState {
     operatingHours: settings.operatingHours,
     gateCode: settings.gateCode,
     slaWindow: settings.slaWindow || '48h',
+    dtSameCityMin: dayText(settings.deliveryTimes.sameCity, 'min'),
+    dtSameCityMax: dayText(settings.deliveryTimes.sameCity, 'max'),
+    dtSameProvinceMin: dayText(settings.deliveryTimes.sameProvince, 'min'),
+    dtSameProvinceMax: dayText(settings.deliveryTimes.sameProvince, 'max'),
+    dtNationwideMin: dayText(settings.deliveryTimes.nationwide, 'min'),
+    dtNationwideMax: dayText(settings.deliveryTimes.nationwide, 'max'),
   };
 }
 
@@ -107,6 +210,13 @@ export const VendorShippingSettingsPage: React.FC = () => {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    let deliveryTimes: SellerDeliveryTimes;
+    try {
+      deliveryTimes = deliveryTimesFromForm(form);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Check the delivery times.');
+      return;
+    }
     saveSettings.mutate(
       {
         freeShippingEnabled: form.freeShippingEnabled,
@@ -122,6 +232,7 @@ export const VendorShippingSettingsPage: React.FC = () => {
         operatingHours: form.operatingHours.trim(),
         gateCode: form.gateCode.trim(),
         slaWindow: form.slaWindow,
+        deliveryTimes,
       },
       {
         onSuccess: (saved) => {
@@ -149,8 +260,9 @@ export const VendorShippingSettingsPage: React.FC = () => {
             </h1>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500">
               Your store&apos;s own logistics facts: where riders collect, what freight costs you,
-              and the handling window you aim for. Buyer-facing freight is priced from each
-              product&apos;s shipping settings, so saving here does not reprice a live cart.
+              the handling window you aim for, and the delivery times quoted to buyers.
+              Buyer-facing freight is priced from each product&apos;s shipping settings, so
+              saving here does not reprice a live cart.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -446,6 +558,54 @@ export const VendorShippingSettingsPage: React.FC = () => {
                 window, so no SLA score is computed from it.
               </p>
             </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 text-xs shadow-2xs space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <MapPin className="h-4 w-4 text-sun-orange" aria-hidden="true" />
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">Delivery times</h2>
+                  <span className="text-[11px] text-slate-400">
+                    The estimate buyers see for their region, in business days. A row left blank
+                    quotes the standard {STANDARD_DELIVERY_BUSINESS_DAYS.min}–
+                    {STANDARD_DELIVERY_BUSINESS_DAYS.max} business days.
+                  </span>
+                </div>
+              </div>
+
+              {DELIVERY_TIERS.map((tier) => (
+                <div key={tier.key} className="flex flex-wrap items-end gap-3">
+                  <div className="min-w-44 flex-1 pb-1">
+                    <span className="block font-bold text-slate-800">{tier.label}</span>
+                    <span className="text-[11px] text-slate-500">{tier.hint}</span>
+                  </div>
+                  <FormField label="Fastest" htmlFor={`dt-${tier.key}-min`}>
+                    <Input
+                      id={`dt-${tier.key}-min`}
+                      type="number"
+                      min={SELLER_DELIVERY_DAY_LIMITS.min}
+                      max={SELLER_DELIVERY_DAY_LIMITS.max}
+                      step="1"
+                      value={form[tier.minField]}
+                      onChange={(event) => set(tier.minField, event.target.value)}
+                      className={`${PANEL_INPUT} w-20 font-bold`}
+                    />
+                  </FormField>
+                  <FormField label="Slowest" htmlFor={`dt-${tier.key}-max`}>
+                    <Input
+                      id={`dt-${tier.key}-max`}
+                      type="number"
+                      min={SELLER_DELIVERY_DAY_LIMITS.min}
+                      max={SELLER_DELIVERY_DAY_LIMITS.max}
+                      step="1"
+                      value={form[tier.maxField]}
+                      onChange={(event) => set(tier.maxField, event.target.value)}
+                      className={`${PANEL_INPUT} w-20 font-bold`}
+                    />
+                  </FormField>
+                  <span className="pb-2.5 text-[11px] text-slate-500">business days</span>
+                </div>
+              ))}
+            </section>
           </form>
 
           <aside className="space-y-6 lg:col-span-4">
@@ -479,6 +639,16 @@ export const VendorShippingSettingsPage: React.FC = () => {
                       {SLA_LABEL[settingsQuery.data.slaWindow] ?? settingsQuery.data.slaWindow}
                     </dd>
                   </div>
+                  {DELIVERY_TIERS.map((tier) => (
+                    <div key={tier.key} className="flex justify-between gap-2">
+                      <dt className="text-slate-500">{tier.label} delivery</dt>
+                      <dd className="font-bold text-slate-900">
+                        {settingsQuery.data.deliveryTimes[tier.key]
+                          ? formatDeliveryRange(settingsQuery.data.deliveryTimes[tier.key]!)
+                          : 'Not set'}
+                      </dd>
+                    </div>
+                  ))}
                   <div className="flex justify-between gap-2 border-t border-slate-100 pt-2">
                     <dt className="text-slate-500">Origin</dt>
                     <dd className="max-w-[60%] text-right font-bold text-slate-900">

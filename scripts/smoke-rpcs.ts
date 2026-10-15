@@ -2163,6 +2163,50 @@ await as('authenticated', ADMIN);
 ok('deleting the row restores full MFA (is_mfa_exempt false again)',
   (await q('select is_mfa_exempt() as e'))[0].e === false);
 
+console.log('\n[batch 91] seller delivery times: buyers read times + origin from the view, never the settings row');
+await as('postgres');
+// The STORE settings row exists from the settings fixture above (city
+// Karachi); give it a province and published delivery times.
+await q(
+  `update vendor_shipping_settings
+      set state = 'Sindh',
+          delivery_times = '{"sameCity":{"min":1,"max":2},"nationwide":{"min":3,"max":5}}'::jsonb
+    where vendor_id = $1`,
+  [STORE],
+);
+await as('anon');
+const b91View = await q(
+  `select vendor_id, delivery_times, origin_city, origin_state from store_delivery_times where vendor_id = $1`,
+  [STORE],
+);
+ok('anon reads the store delivery times and origin from the public view',
+  b91View.length === 1 &&
+    b91View[0].origin_city === 'Karachi' &&
+    b91View[0].origin_state === 'Sindh' &&
+    b91View[0].delivery_times?.sameCity?.min === 1 &&
+    b91View[0].delivery_times?.nationwide?.max === 5);
+ok('anon still cannot read the shipping settings row itself',
+  (await q(`select count(*)::int c from vendor_shipping_settings where vendor_id = $1`, [STORE]))[0].c === 0);
+await expectThrow('the view carries no rate, street or contact columns',
+  () => q(`select standard_rate from store_delivery_times`),
+  'does not exist');
+await as('authenticated', CU);
+ok('a customer cannot read the shipping settings row either',
+  (await q(`select count(*)::int c from vendor_shipping_settings where vendor_id = $1`, [STORE]))[0].c === 0);
+ok('a customer can read the public delivery times',
+  (await q(`select count(*)::int c from store_delivery_times where vendor_id = $1`, [STORE]))[0].c === 1);
+await as('authenticated', VENDOR);
+await q(
+  `update vendor_shipping_settings set delivery_times = '{"sameProvince":{"min":2,"max":3}}'::jsonb where vendor_id = $1`,
+  [STORE],
+);
+ok('the vendor updates their own delivery times',
+  (await q(`select delivery_times from vendor_shipping_settings where vendor_id = $1`, [STORE]))[0]
+    .delivery_times?.sameProvince?.max === 3);
+await expectThrow('a non-object delivery times bag is refused by the shape check',
+  () => q(`update vendor_shipping_settings set delivery_times = '[1,2]'::jsonb where vendor_id = $1`, [STORE]),
+  'delivery_times_shape');
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

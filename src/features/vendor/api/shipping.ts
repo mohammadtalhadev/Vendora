@@ -1,5 +1,10 @@
 import { supabase } from '../../../lib/supabase';
-import type { Database } from '../../../types/database';
+import type { Database, Json } from '../../../types/database';
+import {
+  parseSellerDeliveryTimes,
+  serializeSellerDeliveryTimes,
+  type SellerDeliveryTimes,
+} from '../../../lib/delivery-estimate';
 import { asRecord, bool, json, num, requireVendorId, text } from './vendor-client';
 
 type ShippingRow = Database['public']['Tables']['vendor_shipping_settings']['Row'];
@@ -9,7 +14,9 @@ type PrefsRow = Database['public']['Tables']['vendor_notification_prefs']['Row']
 /**
  * Where a store ships from and what it charges for freight. These are the store's own
  * logistics facts; checkout prices freight from each product's `shipping_settings`, so
- * changing a rate here does not silently change a live cart total.
+ * changing a rate here does not silently change a live cart total. The delivery times
+ * are the exception: they are the store's published estimate, quoted to buyers through
+ * the public `store_delivery_times` view (Batch 91).
  */
 export interface VendorShippingSettings {
   freeShippingEnabled: boolean;
@@ -25,6 +32,8 @@ export interface VendorShippingSettings {
   operatingHours: string;
   gateCode: string;
   slaWindow: string;
+  /** Per-tier delivery-day ranges the seller publishes; absent tier = not set. */
+  deliveryTimes: SellerDeliveryTimes;
 }
 
 export type ShippingSettingsUpdate = Partial<VendorShippingSettings>;
@@ -44,6 +53,7 @@ const BLANK_SHIPPING: VendorShippingSettings = {
   operatingHours: '',
   gateCode: '',
   slaWindow: '',
+  deliveryTimes: {},
 };
 
 /** The switches the Support page offers; keys match the seeded prefs jsonb. */
@@ -84,7 +94,7 @@ function toShippingRow(vendorId: string, updates: ShippingSettingsUpdate): Shipp
   return row;
 }
 
-function mapShipping(row: ShippingRow): VendorShippingSettings {
+function mapShipping(row: ShippingRow): Omit<VendorShippingSettings, 'deliveryTimes'> {
   return {
     freeShippingEnabled: row.free_shipping_enabled,
     freeShippingThreshold: num(row.free_shipping_threshold),
@@ -102,6 +112,35 @@ function mapShipping(row: ShippingRow): VendorShippingSettings {
   };
 }
 
+/**
+ * The store's delivery-times bag, read on its own so a database that has not
+ * run the Batch 91 migration yet (no `delivery_times` column) still loads
+ * every other setting: the read simply reports "nothing set" and buyers keep
+ * the standard quote. Any failure takes the same path — delivery times are
+ * an enhancement to this row, never a reason to fail the whole form.
+ */
+async function fetchDeliveryTimes(vendorId: string): Promise<SellerDeliveryTimes> {
+  try {
+    const { data, error } = await supabase
+      .from('vendor_shipping_settings')
+      .select('delivery_times')
+      .eq('vendor_id', vendorId)
+      .maybeSingle();
+    if (error) return {};
+    return parseSellerDeliveryTimes(
+      (data as unknown as { delivery_times?: Json } | null)?.delivery_times,
+    );
+  } catch {
+    return {};
+  }
+}
+
+/** True when a write failed only because the Batch 91 column is not there yet. */
+function isMissingDeliveryTimesColumn(error: { code?: string; message?: string }): boolean {
+  if (error.code === '42703' || error.code === 'PGRST204') return true;
+  return (error.message ?? '').includes('delivery_times');
+}
+
 export async function fetchShippingSettings(signal?: AbortSignal): Promise<VendorShippingSettings> {
   const vendorId = await requireVendorId();
   let query = supabase.from('vendor_shipping_settings').select(SHIPPING_SELECT).eq('vendor_id', vendorId);
@@ -109,7 +148,8 @@ export async function fetchShippingSettings(signal?: AbortSignal): Promise<Vendo
 
   const { data, error } = await query.maybeSingle();
   if (error) throw new Error(`Failed to load your shipping settings: ${error.message}`);
-  return data ? mapShipping(data as unknown as ShippingRow) : BLANK_SHIPPING;
+  const base = data ? mapShipping(data as unknown as ShippingRow) : BLANK_SHIPPING;
+  return { ...base, deliveryTimes: await fetchDeliveryTimes(vendorId) };
 }
 
 /** Upserts the single row per store, then re-reads it so the page shows the stored numbers. */
@@ -122,6 +162,19 @@ export async function saveShippingSettings(
     .from('vendor_shipping_settings')
     .upsert(toShippingRow(vendorId, updates), { onConflict: 'vendor_id' });
   if (error) throw new Error(`Failed to save your shipping settings: ${error.message}`);
+
+  if (updates.deliveryTimes !== undefined) {
+    // Written separately from the upsert so a database without the Batch 91
+    // column still saves every other setting; only the missing-column
+    // failure is swallowed — a refused write (RLS, outage) still surfaces.
+    const { error: timesError } = await supabase
+      .from('vendor_shipping_settings')
+      .update({ delivery_times: serializeSellerDeliveryTimes(updates.deliveryTimes) as unknown as Json })
+      .eq('vendor_id', vendorId);
+    if (timesError && !isMissingDeliveryTimesColumn(timesError)) {
+      throw new Error(`Failed to save your shipping settings: ${timesError.message}`);
+    }
+  }
   return fetchShippingSettings();
 }
 

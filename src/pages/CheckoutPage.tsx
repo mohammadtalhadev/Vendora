@@ -30,7 +30,12 @@ import { useSavedAddresses, useSavedAddressActions } from '../features/account/h
 import type { AddressType } from '../features/account/types';
 import { shippingAddressSchema, type CartItem, type ShippingAddress } from '../types/domain';
 import { validateCardLuhn, detectCardBrand } from '../features/checkout/utils/luhn';
-import { formatDeliveryWindow } from '../lib/delivery-estimate';
+import {
+  deliveryTierFor,
+  formatDeliveryWindow,
+  resolveDeliveryRange,
+} from '../lib/delivery-estimate';
+import { useSellerDeliveryTimes } from '../features/delivery/hooks/useDeliveryTimes';
 import { friendlyErrorText } from '../lib/friendly-error';
 import type { PaymentMethod } from '../features/checkout/types';
 import { Button } from '../components/ui/button';
@@ -85,6 +90,11 @@ export const CheckoutPage: React.FC = () => {
   const couponCode = appliedCoupon?.code ?? null;
   const totals = useCheckoutQuote(signature, deliveryOptions, couponCode, Boolean(user?.id));
   const quote = totals.data;
+
+  // Each package's delivery estimate comes from its seller's published
+  // times for the buyer's region (Batch 91); a seller who set none — or a
+  // database without the times view yet — quotes the standard window.
+  const sellerTimesQuery = useSellerDeliveryTimes(quote?.groups.map((g) => g.sellerId) ?? []);
 
   const placeOrder = usePlaceOrder();
 
@@ -948,19 +958,45 @@ export const CheckoutPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Estimated delivery — the shared standard window (an
-                        estimate, never a promise). Express is a fee upgrade
-                        with no day range anywhere in the system, so when every
-                        physical package rides express the row names the
-                        option instead of inventing days. */}
+                    {/* Estimated delivery — per package, from each seller's
+                        published times for the region of the address above
+                        (an estimate, never a promise). Express is a fee
+                        upgrade with no day range anywhere in the system, so
+                        an express package names the option instead of
+                        inventing days. */}
                     {quote.groups.some((g) => g.hasPhysical) && (
-                      <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-                        <span>Estimated delivery</span>
-                        <span className="font-outfit font-bold text-slate-900 dark:text-white">
-                          {quote.groups.some((g) => g.hasPhysical && g.deliveryOption !== 'express')
-                            ? formatDeliveryWindow()
-                            : 'Express Priority'}
-                        </span>
+                      <div className="space-y-1.5 pt-1">
+                        <div className="text-xs font-bold text-slate-500">
+                          Estimated Delivery
+                        </div>
+                        {quote.groups
+                          .filter((g) => g.hasPhysical)
+                          .map((g) => {
+                            const profile = sellerTimesQuery.data?.get(g.sellerId);
+                            const tier =
+                              profile && selectedAddress
+                                ? deliveryTierFor(
+                                    { city: profile.originCity, state: profile.originState },
+                                    selectedAddress,
+                                  )
+                                : undefined;
+                            return (
+                              <div
+                                key={g.sellerId}
+                                className="flex items-center justify-between text-slate-500 pl-2 text-xs"
+                              >
+                                <span>• {g.sellerName}</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">
+                                  {g.deliveryOption === 'express'
+                                    ? 'Express Priority'
+                                    : formatDeliveryWindow(
+                                        new Date(),
+                                        resolveDeliveryRange(profile?.times, tier),
+                                      )}
+                                </span>
+                              </div>
+                            );
+                          })}
                       </div>
                     )}
 

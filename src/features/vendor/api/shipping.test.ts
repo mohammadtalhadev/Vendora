@@ -40,6 +40,27 @@ describe('fetchShippingSettings', () => {
       operatingHours: '',
       gateCode: '',
       slaWindow: '',
+      deliveryTimes: {},
+    });
+  });
+
+  it('reads the store’s published delivery times, dropping a malformed tier', async () => {
+    supabaseDouble.seedShippingSettings(
+      shippingRow({
+        vendor_id: STORE,
+        delivery_times: {
+          sameCity: { min: 1, max: 2 },
+          sameProvince: { min: 5, max: 3 },
+          nationwide: { min: 3, max: 6 },
+        },
+      }),
+    );
+
+    const settings = await shipping.fetchShippingSettings();
+
+    expect(settings.deliveryTimes).toEqual({
+      sameCity: { min: 1, max: 2 },
+      nationwide: { min: 3, max: 6 },
     });
   });
 
@@ -78,6 +99,35 @@ describe('saveShippingSettings', () => {
       free_shipping_enabled: true,
       free_shipping_threshold: 200,
     });
+  });
+
+  it('stores delivery times on the same row and reads them back', async () => {
+    supabaseDouble.seedShippingSettings(shippingRow({ vendor_id: STORE }));
+
+    const saved = await shipping.saveShippingSettings({
+      deliveryTimes: { sameCity: { min: 1, max: 2 }, nationwide: { min: 3, max: 5 } },
+    });
+
+    expect(saved.deliveryTimes).toEqual({
+      sameCity: { min: 1, max: 2 },
+      nationwide: { min: 3, max: 5 },
+    });
+    expect(supabaseDouble.tables.vendor_shipping_settings).toHaveLength(1);
+    expect(supabaseDouble.tables.vendor_shipping_settings[0].delivery_times).toEqual({
+      sameCity: { min: 1, max: 2 },
+      nationwide: { min: 3, max: 5 },
+    });
+  });
+
+  it('clears every tier when the seller saves an empty set', async () => {
+    supabaseDouble.seedShippingSettings(
+      shippingRow({ vendor_id: STORE, delivery_times: { sameCity: { min: 1, max: 2 } } }),
+    );
+
+    const saved = await shipping.saveShippingSettings({ deliveryTimes: {} });
+
+    expect(saved.deliveryTimes).toEqual({});
+    expect(supabaseDouble.tables.vendor_shipping_settings[0].delivery_times).toEqual({});
   });
 });
 
