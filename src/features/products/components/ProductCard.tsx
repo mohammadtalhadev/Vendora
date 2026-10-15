@@ -144,22 +144,30 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           </h4>
         </Link>
 
-        {/* Star Rating Row — only when the product actually has reviews;
-            an unreviewed product shows no rating row at all. */}
-        {hasReviews && (
-          <div className="mt-1.5 flex items-center gap-1 sm:gap-1.5 text-[11px]">
-            <div className="flex items-center">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Star
-                  key={n}
-                  className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${n <= filledStars ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'}`}
-                />
-              ))}
-            </div>
-            <span className="font-bold text-slate-700">{product.rating.toFixed(1)}</span>
-            <span className="text-[10px] text-slate-400 truncate">({product.reviewCount})</span>
-          </div>
-        )}
+        {/* Star Rating Row — this slot ALWAYS renders at a fixed height.
+            Rendering it only for reviewed products collapsed the row on
+            unreviewed cards and shifted their price / seller / stock lines
+            up, so cards in the same grid row no longer lined up. An
+            unreviewed product shows an honest placeholder in the same
+            slot instead of no row at all. */}
+        <div className="mt-1.5 flex h-[18px] items-center gap-1 sm:gap-1.5 text-[11px]">
+          {hasReviews ? (
+            <>
+              <div className="flex items-center">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${n <= filledStars ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'}`}
+                  />
+                ))}
+              </div>
+              <span className="font-bold text-slate-700">{product.rating.toFixed(1)}</span>
+              <span className="text-[10px] text-slate-400 truncate">({product.reviewCount})</span>
+            </>
+          ) : (
+            <span className="text-[10px] font-medium text-slate-400">No reviews yet</span>
+          )}
+        </div>
 
         {/* Price Row */}
         <div className="mt-2 flex flex-wrap items-baseline gap-1 sm:gap-1.5">
