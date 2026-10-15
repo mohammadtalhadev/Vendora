@@ -1547,35 +1547,3 @@ html.dark .workspace-shell textarea:focus {
   }
 }
 
-/* ==========================================================================
-   Motion: App Promo Floating Cards (Batch 111)
-   The two glass notification cards around the AppPromoSection phone
-   mockup drift up gently and settle back, offset from each other so the
-   scene feels alive without moving the phone itself. Placed after the
-   marquee block: under prefers-reduced-motion both cards are fully
-   static (animation: none), keeping the universal kill-switch contract.
-   ========================================================================== */
-@keyframes vendora-app-promo-float {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-8px);
-  }
-}
-
-.app-promo-float {
-  animation: vendora-app-promo-float 5s ease-in-out infinite alternate;
-}
-
-.app-promo-float-delayed {
-  animation-delay: 1.4s;
-  animation-duration: 6.5s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .app-promo-float {
-    animation: none !important;
-    transform: none !important;
-  }
-}
