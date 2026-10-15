@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight,
   Baby,
   BookOpen,
   Camera,
@@ -162,7 +161,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
           id="mega-menu-pane"
           role="region"
           aria-label={`${paneCategory.name} subcategories and products`}
-          className="flex-1 min-w-0 p-6 bg-white flex flex-col justify-between max-h-[560px] overflow-y-auto"
+          className="flex-1 min-w-0 p-6 bg-white flex flex-col max-h-[560px] overflow-y-auto"
         >
           <div>
             <div className="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between gap-3">
@@ -247,20 +246,6 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
                 ))}
               </ul>
             )}
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-600">
-              Shopping the full shelf?
-            </span>
-            <Link
-              to={`/products?category=${encodeURIComponent(paneCategory.slug)}`}
-              onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-sun-orange px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-sun-orange-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
-            >
-              <span>Explore All {paneCategory.name}</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
           </div>
         </div>
       ) : (

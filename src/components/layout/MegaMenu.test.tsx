@@ -158,14 +158,13 @@ describe('MegaMenu', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('links “Explore All” to the active root slug and closes the menu', async () => {
+  it('has no “Explore All” button — the header’s View All already covers that link', async () => {
     seedCatalog();
-    const { onClose } = renderMenu();
+    renderMenu();
 
-    const exploreAll = await screen.findByRole('link', { name: /Explore All Electronics/ });
-    expect(exploreAll).toHaveAttribute('href', '/products?category=electronics');
-    fireEvent.click(exploreAll);
-    expect(onClose).toHaveBeenCalled();
+    await screen.findByRole('link', { name: /View All/ });
+    expect(screen.queryByRole('link', { name: /Explore All/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Shopping the full shelf/)).not.toBeInTheDocument();
   });
 
   it('closes the menu when a subcategory link is clicked', async () => {
