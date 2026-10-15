@@ -240,6 +240,35 @@ function mapAdminMediaFolder(row: Record<string, unknown>): AdminMediaFolder {
   };
 }
 
+export interface AdminMediaStore {
+  id: string;
+  label: string;
+}
+
+/**
+ * EVERY store on the platform, whether or not it owns a file yet. The New
+ * Folder dialog picks from this list: Batch 61 made folders real rows exactly
+ * so one can be created before any file exists, so the picker must not be
+ * derived from the files currently in the library (an empty library used to
+ * leave it with nothing to offer and the button disabled).
+ */
+export async function listAdminMediaStores(signal?: AbortSignal): Promise<AdminMediaStore[]> {
+  await requireAdmin('list media stores');
+
+  let query = supabase
+    .from('vendor_profiles')
+    .select('id, store_name, slug')
+    .order('store_name', { ascending: true });
+  if (signal) query = query.abortSignal(signal);
+
+  const { data, error } = await query;
+  if (error) throw rpcFailed('Failed to load the store list', error.message);
+  return ((data ?? []) as unknown as Array<Record<string, unknown>>).map((row) => ({
+    id: text(row.id),
+    label: text(row.store_name) || text(row.slug) || 'Unnamed store',
+  }));
+}
+
 /** Every store's folder rows, ordered so a store's folders stay together. */
 export async function listAdminMediaFolders(signal?: AbortSignal): Promise<AdminMediaFolder[]> {
   await requireAdmin('read media folders');

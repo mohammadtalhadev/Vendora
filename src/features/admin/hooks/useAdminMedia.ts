@@ -4,6 +4,7 @@ import {
   deleteAdminMedia,
   deleteAdminMediaFolder,
   listAdminMediaFolders,
+  listAdminMediaStores,
   moveAdminMedia,
   renameAdminMedia,
   renameAdminMediaFolder,
@@ -23,6 +24,21 @@ function useRefreshAdminMedia() {
   const queryClient = useQueryClient();
   return () =>
     queryClient.invalidateQueries({ queryKey: adminKeys.media(userId) });
+}
+
+/**
+ * Every store on the platform (the New Folder picker's list) - NOT just the
+ * stores that own files, so a folder can be created for a store whose library
+ * is still empty. Creating a folder does not change this list, so it does not
+ * ride the media invalidation; it refetches on its own schedule.
+ */
+export function useAdminMediaStores(enabled = true) {
+  const userId = useAdminScope();
+  return useQuery({
+    queryKey: [...adminKeys.media(userId), 'stores'],
+    queryFn: ({ signal }) => listAdminMediaStores(signal),
+    enabled: enabled && Boolean(userId),
+  });
 }
 
 /** Every store's `media_folders` rows; `enabled` keeps it out of the vendor workspace. */

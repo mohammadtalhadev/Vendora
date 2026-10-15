@@ -11,6 +11,7 @@ import {
   deleteAdminMediaFolder,
   fetchAdminMediaLibrary,
   listAdminMediaFolders,
+  listAdminMediaStores,
   moveAdminMedia,
   renameAdminMedia,
   renameAdminMediaFolder,
@@ -214,5 +215,63 @@ describe('Batch 61: admin media management', () => {
     await expect(deleteAdminMediaFolder(STORE_A, 'catalogue')).rejects.toThrow(/still holds 1 file/i);
     await deleteAdminMediaFolder(STORE_A, 'campaign-shots');
     expect((await listAdminMediaFolders()).map((folder) => folder.name)).toEqual(['catalogue']);
+  });
+});
+
+describe('Batch 66: listAdminMediaStores (New Folder picker)', () => {
+  it('returns every store even when the library is completely empty', async () => {
+    signInAsAdmin();
+    seedStores();
+    // No media items seeded at all: the old items-derived picker offered
+    // nothing here and disabled New Folder - the exact bug this fixes.
+    expect(await fetchAdminMediaLibrary()).toEqual([]);
+
+    const stores = await listAdminMediaStores();
+
+    expect(stores).toEqual([
+      { id: STORE_A, label: 'Alpha Audio' },
+      { id: STORE_B, label: 'Beta Bazaar' },
+    ]);
+  });
+
+  it('also returns stores that own files, ordered by store name', async () => {
+    signInAsAdmin();
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({ id: 'm-a', vendor_id: STORE_A }));
+
+    const stores = await listAdminMediaStores();
+
+    expect(stores.map((store) => store.id)).toEqual([STORE_A, STORE_B]);
+  });
+
+  it('falls back to the slug, then a placeholder, when a store has no name', async () => {
+    signInAsAdmin();
+    supabaseDouble.seedVendorProfile(
+      storeRow({ id: 'store-gamma', user_id: 'owner-g', store_name: '', slug: 'gamma-goods' }),
+    );
+    supabaseDouble.seedVendorProfile(
+      storeRow({ id: 'store-delta', user_id: 'owner-d', store_name: '', slug: '' }),
+    );
+
+    const stores = await listAdminMediaStores();
+    const byId = new Map(stores.map((store) => [store.id, store.label]));
+
+    expect(byId.get('store-gamma')).toBe('gamma-goods');
+    expect(byId.get('store-delta')).toBe('Unnamed store');
+  });
+
+  it('refuses a non-admin before the store list is read', async () => {
+    supabaseDouble.authState.session = {
+      access_token: 't',
+      user: { id: SELLER, email: 'seller@vendora.test' },
+    };
+    supabaseDouble.seedProfile(
+      profileRow({ id: SELLER, name: 'Sana Seller', email: 'seller@vendora.test', roles: ['seller'] }),
+    );
+    seedStores();
+
+    await expect(listAdminMediaStores()).rejects.toThrow(
+      /only the platform team can list media stores/i,
+    );
   });
 });

@@ -48,6 +48,7 @@ import { useAdminMediaLibrary } from '../admin/hooks/useAdminQueries';
 import { useAdminActions } from '../admin/hooks/useAdminActions';
 import {
   useAdminMediaFolders,
+  useAdminMediaStores,
   useCreateAdminMediaFolder,
   useDeleteAdminMedia,
   useDeleteAdminMediaFolder,
@@ -133,6 +134,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const adminMove = useMoveAdminMedia();
   const adminRemove = useDeleteAdminMedia();
   const adminFoldersQuery = useAdminMediaFolders(isAdmin);
+  const adminStoresQuery = useAdminMediaStores(isAdmin);
   const createFolderMutation = useCreateAdminMediaFolder();
   const renameFolderMutation = useRenameAdminMediaFolder();
   const deleteFolderMutation = useDeleteAdminMediaFolder();
@@ -292,8 +294,17 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     );
   }, [isAdmin, folders, folderCounts, items, adminFoldersQuery.data]);
 
-  /** Stores present in the loaded library - the New Folder dialog's picker. */
-  const storesInLibrary = useMemo(() => {
+  /**
+   * The New Folder dialog's store picker. Batch 66: this reads the platform's
+   * full store list (`useAdminMediaStores`), NOT the stores that happen to own
+   * files in the loaded library - deriving it from library items left the
+   * picker empty and the New Folder button disabled exactly when the library
+   * was empty, which is when a first folder is needed. The items-derived list
+   * remains only as the fallback while that query is in flight or has failed,
+   * so the dialog never regresses below the old behaviour.
+   */
+  const folderStoreOptions = useMemo(() => {
+    if (isAdmin && adminStoresQuery.data) return adminStoresQuery.data;
     const byId = new Map<string, string>();
     if (isAdmin) {
       for (const item of items as AdminMediaItem[]) {
@@ -303,7 +314,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
       }
     }
     return [...byId.entries()].map(([id, label]) => ({ id, label }));
-  }, [items, isAdmin]);
+  }, [items, isAdmin, adminStoresQuery.data]);
 
 
 
@@ -969,11 +980,10 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               type="button"
               onClick={() => {
                 setFolderCreateError(null);
-                setFolderCreateStore(storesInLibrary[0]?.id ?? '');
+                setFolderCreateStore(folderStoreOptions[0]?.id ?? '');
                 setFolderCreateName('');
                 setFolderCreateOpen(true);
               }}
-              disabled={storesInLibrary.length === 0}
               className={`${GHOST_BUTTON} w-full justify-center`}
             >
               <FolderPlus className="h-3.5 w-3.5 text-slate-500" />
@@ -2072,18 +2082,30 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <label htmlFor="folder-create-store" className="block font-bold text-slate-700 mb-1">
                 Store
               </label>
-              <Select value={folderCreateStore} onValueChange={setFolderCreateStore}>
-                <SelectTrigger id="folder-create-store" aria-label="Store for the new folder" className="h-auto rounded-lg px-3 py-2 text-xs font-semibold text-slate-700">
-                  <SelectValue placeholder="Choose a store" />
-                </SelectTrigger>
-                <SelectContent>
-                  {storesInLibrary.map((store) => (
-                    <SelectItem key={store.id} value={store.id}>
-                      {store.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {adminStoresQuery.isPending ? (
+                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-500">
+                  Loading the store list…
+                </p>
+              ) : folderStoreOptions.length === 0 ? (
+                <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 font-semibold text-amber-800">
+                  {adminStoresQuery.isError
+                    ? 'The store list could not be loaded, so there is no store to create the folder for yet. Close this dialog and try again.'
+                    : 'No stores exist yet. A folder belongs to a store, so a store has to be created before the first folder can.'}
+                </p>
+              ) : (
+                <Select value={folderCreateStore} onValueChange={setFolderCreateStore}>
+                  <SelectTrigger id="folder-create-store" aria-label="Store for the new folder" className="h-auto rounded-lg px-3 py-2 text-xs font-semibold text-slate-700">
+                    <SelectValue placeholder="Choose a store" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {folderStoreOptions.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div>
