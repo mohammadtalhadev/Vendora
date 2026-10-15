@@ -18,8 +18,6 @@ import {
   Plus,
   MapPin,
   Shield,
-  Sparkles,
-  Play,
   ArrowLeftRight,
 } from 'lucide-react';
 import { useProductDetail } from '../features/catalog/hooks/useProducts';
@@ -277,12 +275,14 @@ export const ProductDetailPage: React.FC = () => {
     }
   };
 
-  // Product image gallery source list
+  // Product image gallery source list — exactly the images the seller
+  // uploaded. The list used to be padded to four by repeating the last
+  // image, which filled the thumbnail strip with duplicates of the same
+  // photo (and a fake "video" tile); a product with one image now shows
+  // one image and no strip.
   const displayImages = useMemo(() => {
     const fallback = '/images/products/prod_silver_headphones.webp';
-    const list: string[] = product?.images?.length ? [...product.images] : [fallback];
-    while (list.length < 4) list.push(list[list.length - 1]);
-    return list;
+    return product?.images?.length ? [...product.images] : [fallback];
   }, [product]);
 
   const displayTitle = product?.title ?? 'Product';
@@ -497,43 +497,33 @@ export const ProductDetailPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* 4-Thumbnail Strip */}
-                <div className="order-2 lg:order-none grid grid-cols-4 gap-2.5">
-                  {displayImages.slice(0, 3).map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-all cursor-pointer p-1.5 bg-white ${
-                        selectedImageIndex === idx
-                          ? 'border-sun-orange ring-2 ring-orange-500/20'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <img
-                        src={img}
-                        alt=""
-                        className="h-full w-full object-contain"
-                      />
-                    </button>
-                  ))}
-
-                  {/* 4th Thumbnail: Video Demo / Preview Play Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsZoomOpen(true)}
-                    className="relative aspect-square flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-colors cursor-pointer overflow-hidden group p-1"
-                  >
-                    <img
-                      src={displayImages[3] || displayImages[0]}
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover opacity-60 group-hover:scale-105 transition-transform"
-                    />
-                    <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 shadow-xs text-sun-orange">
-                      <Play className="h-3 w-3 fill-sun-orange ml-0.5" />
-                    </div>
-                  </button>
-                </div>
+                {/* Thumbnail Strip — one tile per real image, only when the
+                    product actually has more than one. There is no video
+                    tile: no product video exists, so a Play overlay would
+                    promise a demo the click cannot deliver (it opened the
+                    still-image zoom). */}
+                {displayImages.length > 1 && (
+                  <div className="order-2 lg:order-none grid grid-cols-4 gap-2.5">
+                    {displayImages.slice(0, 4).map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedImageIndex(idx)}
+                        className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-all cursor-pointer p-1.5 bg-white ${
+                          selectedImageIndex === idx
+                            ? 'border-sun-orange ring-2 ring-orange-500/20'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt=""
+                          className="h-full w-full object-contain"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Seller Store Card */}
                 <div className="order-4 lg:order-none glass-panel rounded-3xl border border-white/80 dark:border-white/10 p-5 shadow-xl space-y-3">
@@ -657,9 +647,8 @@ export const ProductDetailPage: React.FC = () => {
 
                 {/* ── Marketing Summary / Highlight Section ── */}
                 <div className="rounded-2xl border border-orange-200/70 bg-gradient-to-r from-orange-50/70 via-amber-50/30 to-white p-4 shadow-2xs space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-outfit text-sm font-black tracking-tight text-slate-900">
-                    <Sparkles className="h-4 w-4 text-sun-orange shrink-0" />
-                    <span>{marketingHeadline}</span>
+                  <div className="font-outfit text-sm font-black tracking-tight text-slate-900">
+                    {marketingHeadline}
                   </div>
                   <p className="text-xs sm:text-[13px] leading-relaxed text-slate-700 font-medium">
                     {marketingDescription}
@@ -818,8 +807,10 @@ export const ProductDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShippingOption('pickup')}
+                      disabled={product.stock <= 0}
                       aria-pressed={shippingOption === 'pickup'}
-                      className={`w-full cursor-pointer rounded-xl p-3 transition-all relative text-left ${
+                      className={`w-full rounded-xl p-3 transition-all relative text-left disabled:cursor-not-allowed disabled:opacity-60 ${
+                        product.stock > 0 ? 'cursor-pointer' : ''} ${
                         shippingOption === 'pickup'
                           ? 'border-2 border-sun-orange bg-orange-50/20'
                           : 'border border-slate-200 bg-white hover:border-slate-300'
@@ -887,9 +878,12 @@ export const ProductDetailPage: React.FC = () => {
                       variant="default"
                       size="lg"
                       onClick={() => handleAddToCart()}
+                      disabled={effectiveStock <= 0}
                       className={addedAnimation ? 'w-full bg-emerald-600 hover:bg-emerald-700' : 'w-full'}
                     >
-                      {addedAnimation ? (
+                      {effectiveStock <= 0 ? (
+                        <span>Out of Stock</span>
+                      ) : addedAnimation ? (
                         <>
                           <Check className="h-4 w-4 stroke-[3]" />
                           <span>Added to Cart!</span>
@@ -906,7 +900,8 @@ export const ProductDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleBuyNow}
-                      className="w-full rounded-full bg-slate-100 hover:bg-slate-200 py-2.5 text-xs font-bold text-slate-800 transition-colors cursor-pointer"
+                      disabled={effectiveStock <= 0}
+                      className="w-full rounded-full bg-slate-100 hover:bg-slate-200 py-2.5 text-xs font-bold text-slate-800 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Buy Now with 1-Click
                     </button>
@@ -1076,6 +1071,8 @@ export const ProductDetailPage: React.FC = () => {
               productTitle={displayTitle}
               currentPrice={unitPrice}
               sellerName={currentSellerName}
+              sellerId={product.sellerId}
+              productId={product.id}
             />
 
             {/* 3. Live Chat Modal */}

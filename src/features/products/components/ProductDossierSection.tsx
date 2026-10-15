@@ -1,5 +1,4 @@
 import React from 'react';
-import { Sparkles, Shield, ListFilter } from 'lucide-react';
 
 export interface KeyFactItem {
   label: string;
@@ -26,11 +25,10 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
     { label: 'Authenticity', value: '100% Genuine & Verified by Vendora' },
     { label: 'Condition', value: 'Brand New (Original Factory Packaging)' },
     { label: 'Return Policy', value: '30-Day Hassle-Free Returns' },
-    { label: 'Warranty', value: '1 Year Manufacturer / Vendor Coverage' },
     { label: 'Shipping', value: 'Tracked & Insured Delivery' },
     { label: 'Fulfillment', value: 'Vendora Verified Merchant' },
     { label: 'Support', value: '24/7 Dedicated Customer Assistance' },
-    { label: 'Payment Protection', value: 'Secured Escrow Checkout' },
+    { label: 'Payment', value: 'Card or Cash on Delivery' },
   ];
 
   const factsToRender = keyFacts && keyFacts.length > 0 ? keyFacts : defaultKeyFacts;
@@ -46,9 +44,8 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
 
       {/* ── Sub-Section 1: Formula Mechanism & Biological Action ──── */}
       <div className="space-y-3">
-        <h4 className="font-outfit flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 tracking-tight">
-          <Sparkles className="h-4 w-4 text-sun-orange" />
-          <span>{mechanismHeadline}</span>
+        <h4 className="font-outfit text-base sm:text-lg font-black text-slate-900 tracking-tight">
+          {mechanismHeadline}
         </h4>
         <p className="text-xs sm:text-sm leading-relaxed text-slate-600 font-normal">
           {mechanismText}
@@ -57,9 +54,8 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
 
       {/* ── Sub-Section 2: Vendora 3-Step Buyer Assurance ──────────── */}
       <div className="space-y-4">
-        <h4 className="font-outfit flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 tracking-tight">
-          <Shield className="h-4 w-4 text-sun-orange" />
-          <span>Vendora 3–Step Buyer Assurance</span>
+        <h4 className="font-outfit text-base sm:text-lg font-black text-slate-900 tracking-tight">
+          Vendora 3–Step Buyer Assurance
         </h4>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -69,10 +65,11 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
               STEP 01
             </span>
             <h5 className="font-bold text-slate-900 text-sm">
-              Order &amp; Escrow Deposit
+              Order &amp; Payment
             </h5>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Funds are securely locked in buyer escrow until delivery is confirmed.
+              Pay by card or cash on delivery. The seller confirms your order
+              before it is dispatched.
             </p>
           </div>
 
@@ -106,9 +103,8 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
 
       {/* ── Sub-Section 3: Technical Specifications & Key Facts ───── */}
       <div className="space-y-4 pt-2">
-        <h4 className="font-outfit flex items-center gap-2 text-base sm:text-lg font-black text-slate-900 tracking-tight">
-          <ListFilter className="h-4 w-4 text-sun-orange" />
-          <span>Technical Specifications &amp; Key Facts</span>
+        <h4 className="font-outfit text-base sm:text-lg font-black text-slate-900 tracking-tight">
+          Technical Specifications &amp; Key Facts
         </h4>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">

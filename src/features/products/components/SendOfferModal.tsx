@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { X, CheckCircle, Tag } from 'lucide-react';
 import { useCurrency } from '../../../store/currency-store';
 import { useOverlayA11y } from '../../../hooks/useOverlayA11y';
+import { useAuthStore } from '../../../store/auth-store';
+import { findOrCreateProductThread, sendChatMessage } from '../api/chat';
 
 interface SendOfferModalProps {
   isOpen: boolean;
@@ -9,32 +12,76 @@ interface SendOfferModalProps {
   productTitle: string;
   currentPrice: number;
   sellerName: string;
+  /** vendor_profiles id of the seller; the offer is delivered to them as a chat message. */
+  sellerId?: string;
+  productId?: string;
 }
 
+/**
+ * Price offers ride the real product-chat plumbing: submitting finds (or
+ * starts) the signed-in customer's conversation with this seller for this
+ * product and posts the offer as a message the seller can answer in their
+ * workspace. The previous version persisted nothing — it showed a success
+ * screen promising an emailed reply, priced in a hard-coded dollar sign,
+ * for an offer no one ever received.
+ */
 export const SendOfferModal: React.FC<SendOfferModalProps> = ({
   isOpen,
   onClose,
   productTitle,
   currentPrice,
   sellerName,
+  sellerId,
+  productId,
 }) => {
-  const [offerPrice, setOfferPrice] = useState(
-    (currentPrice * 0.9).toFixed(2),
-  );
+  const user = useAuthStore((s) => s.user);
+  const [offerPrice, setOfferPrice] = useState((currentPrice * 0.9).toFixed(2));
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { formatPrice, config: currencyConfig } = useCurrency();
   const panelRef = useOverlayA11y<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const canOffer = Boolean(user) && Boolean(sellerId) && Boolean(productId);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-    }, 1800);
+    if (!canOffer || !user || !sellerId || !productId || isSubmitting) return;
+    const amount = Number(offerPrice);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError('Enter an offer amount above zero.');
+      return;
+    }
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const thread = await findOrCreateProductThread({
+        vendorId: sellerId,
+        customerName: user.name,
+        productRef: productId,
+      });
+      const note = message.trim();
+      await sendChatMessage({
+        threadId: thread.id,
+        senderName: user.name,
+        body:
+          `Price offer: ${formatPrice(amount)} for "${productTitle}" ` +
+          `(listed at ${formatPrice(currentPrice)}).` +
+          (note ? ` ${note}` : ''),
+      });
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        onClose();
+      }, 2200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Your offer could not be sent.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -59,10 +106,30 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
         {submitted ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <CheckCircle className="h-14 w-14 text-emerald-500 animate-bounce" />
-            <h3 className="mt-4 text-xl font-bold text-slate-900">Offer Submitted!</h3>
+            <h3 className="mt-4 text-xl font-bold text-slate-900">Offer Sent!</h3>
             <p className="mt-2 text-xs text-slate-600 max-w-xs">
-              Your offer of <span className="font-bold text-slate-900">${offerPrice}</span> was sent to{' '}
-              <span className="font-bold text-sun-orange">{sellerName}</span>. You will receive an email response shortly.
+              Your offer of{' '}
+              <span className="font-bold text-slate-900">{formatPrice(Number(offerPrice))}</span>{' '}
+              was sent to <span className="font-bold text-sun-orange">{sellerName}</span> as a
+              message in your conversation for this product. The seller can reply there.
+            </p>
+          </div>
+        ) : !user ? (
+          <div className="py-8 text-center">
+            <h3 className="text-xl font-extrabold text-slate-900">Send Price Offer</h3>
+            <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-slate-600">
+              Please{' '}
+              <Link to="/login" className="font-bold text-sun-orange hover:underline">
+                sign in
+              </Link>{' '}
+              to send {sellerName} an offer for this product.
+            </p>
+          </div>
+        ) : !canOffer ? (
+          <div className="py-8 text-center">
+            <h3 className="text-xl font-extrabold text-slate-900">Send Price Offer</h3>
+            <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-slate-600">
+              Offers are not available for this listing.
             </p>
           </div>
         ) : (
@@ -92,7 +159,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
-                    $
+                    {currencyConfig.symbol}
                   </span>
                   <input
                     id="offer-amount-input"
@@ -107,7 +174,7 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Recommended: reasonable offers within 10-20% of listing price have the highest acceptance rate.
+                  Your offer is sent to the seller as a message in your product conversation.
                 </p>
               </div>
 
@@ -125,6 +192,12 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                 />
               </div>
 
+              {error && (
+                <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {error}
+                </p>
+              )}
+
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
@@ -135,9 +208,10 @@ export const SendOfferModal: React.FC<SendOfferModalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF8C38] hover:from-sun-orange-600 hover:to-sun-orange py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                  disabled={isSubmitting}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF8C38] hover:from-sun-orange-600 hover:to-sun-orange py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Submit Offer
+                  {isSubmitting ? 'Sending…' : 'Submit Offer'}
                 </button>
               </div>
             </form>
