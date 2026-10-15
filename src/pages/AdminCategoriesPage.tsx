@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { friendlyError } from '../lib/friendly-error';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Toast } from '../components/common/Toast';
 import { useToast } from '../hooks/useToast';
 import { Link } from 'react-router-dom';
@@ -177,6 +178,7 @@ export const AdminCategoriesPage: React.FC = () => {
   const [rateInput, setRateInput] = useState('');
 
   const [deleteTarget, setDeleteTarget] = useState<CategoryView | null>(null);
+  const [confirmRemoveBanner, setConfirmRemoveBanner] = useState(false);
 
   const { toast, showToast, hideToast } = useToast(3200);
 
@@ -309,6 +311,29 @@ export const AdminCategoriesPage: React.FC = () => {
         },
       );
     }
+  };
+
+  // Removing a banner is its own save, not a form state: the RPC only clears
+  // the image when the explicit clear flag is sent (Batch 75), so confirming
+  // here fires that update on its own and empties the field + preview once
+  // the database has actually dropped it.
+  const removeBanner = () => {
+    if (modal?.mode !== 'edit') return;
+    const target = modal.node;
+    actions.updateCategory.mutate(
+      { categoryId: target.id, clearImage: true },
+      {
+        onSuccess: () => {
+          setConfirmRemoveBanner(false);
+          setFormImage('');
+          showToast(`Removed the banner for "${target.name}".`);
+        },
+        onError: (err) => {
+          setConfirmRemoveBanner(false);
+          showToast(err.message);
+        },
+      },
+    );
   };
 
   const categoryModalError =
@@ -946,6 +971,16 @@ export const AdminCategoriesPage: React.FC = () => {
                       className="mt-2 h-20 w-full rounded-lg border border-slate-200 object-cover"
                     />
                   )}
+                  {modal?.mode === 'edit' && formImage.trim() !== '' && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRemoveBanner(true)}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove banner
+                    </button>
+                  )}
                 </div>
               ) : null}
 
@@ -975,6 +1010,26 @@ export const AdminCategoriesPage: React.FC = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Confirm: Remove Banner (clears the stored image via the RPC's clear flag) */}
+        <ConfirmDialog
+          open={confirmRemoveBanner}
+          onOpenChange={setConfirmRemoveBanner}
+          title="Remove this banner?"
+          description={
+            modal?.mode === 'edit' ? (
+              <>
+                The banner on <strong>{modal.node.name}</strong> will be cleared, and its
+                storefront page will open on its heading instead. Pasting a new URL later
+                sets a banner again.
+              </>
+            ) : undefined
+          }
+          confirmLabel="Remove banner"
+          pendingLabel="Removing…"
+          isPending={actions.updateCategory.isPending}
+          onConfirm={removeBanner}
+        />
 
         {/* Modal: Set Commission Rate */}
         <Dialog open={rateTarget !== null} onOpenChange={(open) => !open && setRateTarget(null)}>

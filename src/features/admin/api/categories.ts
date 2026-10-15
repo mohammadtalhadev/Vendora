@@ -127,6 +127,9 @@ export async function createCategory(input: {
 /**
  * Only the keys the RPC is given are touched: it coalesces an absent or blank value
  * back to the column it already held, so a partial form cannot wipe a category.
+ * The one deliberate exception is the banner: `clearImage: true` sends the RPC's
+ * explicit `p_clear_image` flag, which nulls the image instead of keeping it —
+ * the only way to REMOVE a banner rather than replace it (Batch 75).
  */
 export async function updateCategory(input: {
   categoryId: string;
@@ -136,6 +139,7 @@ export async function updateCategory(input: {
   isActive?: boolean | null;
   icon?: string | null;
   image?: string | null;
+  clearImage?: boolean;
 }): Promise<{ id: string }> {
   const { data, error } = await supabase.rpc('admin_update_category', {
     p_category_id: input.categoryId,
@@ -145,6 +149,7 @@ export async function updateCategory(input: {
     p_is_active: input.isActive ?? null,
     p_icon: input.icon ?? null,
     p_image: input.image ?? null,
+    p_clear_image: input.clearImage ?? false,
   });
   if (error) throw rpcFailed('Could not update the category', error.message);
   return { id: text(asRecord(data).id) };

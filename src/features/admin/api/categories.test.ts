@@ -150,13 +150,33 @@ describe('updateCategory', () => {
     expect(supabaseDouble.rpcCalls.at(-1)?.fn).toBe('admin_update_category');
     expect(supabaseDouble.rpcCalls.at(-1)?.args).toEqual({
       p_category_id: AUDIO, p_name: null, p_slug: null, p_parent_id: null,
-      p_is_active: false, p_icon: null, p_image: null,
+      p_is_active: false, p_icon: null, p_image: null, p_clear_image: false,
     });
     expect(result).toEqual({ id: AUDIO });
 
     const row = supabaseDouble.tables.categories.find((category) => category.id === AUDIO);
     expect(row).toMatchObject({ name: 'Audio', slug: 'audio', icon: 'volume-2', is_active: false });
     expect((await categories.fetchCategoryTree()).roots.find((root) => root.id === AUDIO)?.isActive).toBe(false);
+  });
+
+  it('removes a banner only when the explicit clear flag is sent (Batch 75)', async () => {
+    const row = () => supabaseDouble.tables.categories.find((category) => category.id === AUDIO);
+
+    await categories.updateCategory({ categoryId: AUDIO, image: 'https://example.test/banner.png' });
+    expect(row()?.image).toBe('https://example.test/banner.png');
+    expect((await categories.fetchCategoryTree()).roots.find((root) => root.id === AUDIO)?.image)
+      .toBe('https://example.test/banner.png');
+
+    // An ordinary partial save sends no clear flag, so the banner survives it.
+    await categories.updateCategory({ categoryId: AUDIO, name: 'Audio' });
+    expect(supabaseDouble.rpcCalls.at(-1)?.args).toMatchObject({ p_clear_image: false });
+    expect(row()?.image).toBe('https://example.test/banner.png');
+
+    await categories.updateCategory({ categoryId: AUDIO, clearImage: true });
+    expect(supabaseDouble.rpcCalls.at(-1)?.args).toMatchObject({ p_clear_image: true });
+    expect(row()?.image).toBeNull();
+    expect((await categories.fetchCategoryTree()).roots.find((root) => root.id === AUDIO)?.image)
+      .toBeNull();
   });
 
   it('refuses a category as its own parent, and leaves the row where it was', async () => {

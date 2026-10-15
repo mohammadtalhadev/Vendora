@@ -2508,7 +2508,10 @@ export function createSupabaseDouble() {
       if (args.p_parent_id !== null && args.p_parent_id !== undefined) category.parent_id = args.p_parent_id;
       if (args.p_is_active !== null && args.p_is_active !== undefined) category.is_active = args.p_is_active;
       if (args.p_icon !== null && args.p_icon !== undefined) category.icon = args.p_icon;
-      if (args.p_image !== null && args.p_image !== undefined) category.image = args.p_image;
+      // Batch 75: the explicit clear flag nulls the banner; a null argument
+      // without it keeps the stored image, exactly as the RPC's CASE reads.
+      if (args.p_clear_image) category.image = null;
+      else if (args.p_image !== null && args.p_image !== undefined) category.image = args.p_image;
       audit('category.update', 'category', String(category.id), before, {
         name: args.p_name ?? null,
         slug: args.p_slug ?? null,

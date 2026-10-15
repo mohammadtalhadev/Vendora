@@ -1858,6 +1858,35 @@ await as('authenticated', CU);
 ok('a signed-in customer reads the same public count',
   (await q(`select orders_delivered::int d from store_order_stats where vendor_id = $1`, [STAT_STORE74]))[0]?.d === 2);
 await as('postgres');
+console.log('\n[batch 75] category banner clear: explicit p_clear_image on admin_update_category');
+// Batch 75 (20261017050000): the update RPC gained a trailing p_clear_image
+// flag (default false) and the seven-argument original was dropped. Setting a
+// banner, keeping it through unrelated saves and blank values, and clearing
+// it are exercised as the admin the console runs as; the guard inside
+// refuses a signed-in non-admin before any of it.
+await as('authenticated', ADMIN);
+const bannerCat = (await q(`select admin_create_category('Banner Smoke', 'banner-smoke-75') r`))[0].r;
+await q(
+  `select admin_update_category($1::uuid, null, null, null, null, null, 'https://example.test/banner.png')`,
+  [bannerCat.id],
+);
+ok('banner: an image is stored through the update RPC',
+  (await q(`select image from categories where id = $1`, [bannerCat.id]))[0].image === 'https://example.test/banner.png');
+await q(`select admin_update_category($1::uuid, 'Banner Smoke Renamed')`, [bannerCat.id]);
+const bannerKept = (await q(`select name, image from categories where id = $1`, [bannerCat.id]))[0];
+ok('banner: a name-only update (no clear flag) renames and keeps the stored image',
+  bannerKept.name === 'Banner Smoke Renamed' && bannerKept.image === 'https://example.test/banner.png');
+await q(`select admin_update_category($1::uuid, null, null, null, null, null, '')`, [bannerCat.id]);
+ok('banner: a blank image string without the flag still keeps the stored image',
+  (await q(`select image from categories where id = $1`, [bannerCat.id]))[0].image === 'https://example.test/banner.png');
+await as('authenticated', CU);
+await expectThrow('banner: a non-admin cannot clear a category banner',
+  () => q(`select admin_update_category($1::uuid, null, null, null, null, null, null, true)`, [bannerCat.id]),
+  'only the platform team');
+await as('authenticated', ADMIN);
+await q(`select admin_update_category($1::uuid, null, null, null, null, null, null, true)`, [bannerCat.id]);
+ok('banner: p_clear_image nulls the stored image',
+  (await q(`select image from categories where id = $1`, [bannerCat.id]))[0].image === null);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();

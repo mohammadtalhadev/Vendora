@@ -2925,7 +2925,8 @@ export type Database = {
         "p_parent_id"?: string | null,
         "p_is_active"?: boolean | null,
         "p_icon"?: string | null,
-        "p_image"?: string | null
+        "p_image"?: string | null,
+        "p_clear_image"?: boolean
       }
       Returns: Json
     },

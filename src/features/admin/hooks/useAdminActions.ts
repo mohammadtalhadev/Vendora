@@ -174,6 +174,7 @@ export function useAdminActions() {
         isActive,
         icon,
         image,
+        clearImage,
       }: {
         categoryId: string;
         name?: string;
@@ -182,7 +183,8 @@ export function useAdminActions() {
         isActive?: boolean | null;
         icon?: string | null;
         image?: string | null;
-      }) => updateCategory({ categoryId, name, slug, parentId, isActive, icon, image }),
+        clearImage?: boolean;
+      }) => updateCategory({ categoryId, name, slug, parentId, isActive, icon, image, clearImage }),
       onSuccess: refreshCategories,
     }),
     /** The RPC refuses while listings or subcategories still point at the category. */
