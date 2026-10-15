@@ -17,6 +17,7 @@ import { MemoryRouter } from 'react-router-dom';
  */
 const catalog = vi.hoisted(() => ({
   calls: [] as Array<Record<string, unknown>>,
+  categories: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock('../features/catalog/hooks/useProducts', () => ({
@@ -31,7 +32,7 @@ vi.mock('../features/catalog/hooks/useProducts', () => ({
       refetch: vi.fn(),
     };
   },
-  useCategories: () => ({ data: { categories: [] } }),
+  useCategories: () => ({ data: { categories: catalog.categories } }),
   useProductBrands: () => ({ data: { brands: [] } }),
 }));
 
@@ -55,6 +56,7 @@ const lastParams = () => catalog.calls[catalog.calls.length - 1];
 
 beforeEach(() => {
   catalog.calls.length = 0;
+  catalog.categories = [];
   localStorage.clear();
   useCurrencyStore.setState({ currency: 'PKR', rates: FALLBACK_RATES, isLoading: false, lastUpdated: null });
 });
@@ -166,7 +168,64 @@ describe('ProductsPage facets (Batch 46)', () => {
       onSale: true,
     });
   });
+});
 
+describe('ProductsPage category facet (Batch 132)', () => {
+  const TAXONOMY = [
+    { id: 'cat-audio', name: 'Audio & Wearables', slug: 'audio-wearables', parentId: null },
+    { id: 'cat-elec', name: 'Electronics', slug: 'electronics', parentId: null },
+    { id: 'cat-headphones', name: 'Headphones', slug: 'headphones', parentId: 'cat-audio' },
+    { id: 'cat-earbuds', name: 'Earbuds', slug: 'earbuds', parentId: 'cat-audio' },
+    { id: 'cat-tv', name: 'Televisions & Video', slug: 'televisions-video', parentId: 'cat-elec' },
+  ];
+
+  it('with no category selected, the rail lists root categories only — no subcategories', async () => {
+    catalog.categories = TAXONOMY;
+    renderPage('/products');
+
+    expect(await screen.findByRole('button', { name: 'Audio & Wearables' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Electronics' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Headphones' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Earbuds' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Televisions & Video' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'All Audio & Wearables' })).not.toBeInTheDocument();
+  });
+
+  it('on a category page, the rail lists only that category’s subcategories', async () => {
+    catalog.categories = TAXONOMY;
+    renderPage('/products?category=audio-wearables');
+
+    expect(await screen.findByRole('button', { name: 'All Audio & Wearables' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Headphones' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Earbuds' })).toBeInTheDocument();
+    // Unrelated roots and other families' subcategories leave the rail.
+    expect(screen.queryByRole('button', { name: 'Electronics' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Televisions & Video' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Earbuds' }));
+    await waitFor(() => {
+      expect(lastParams()).toMatchObject({ category: 'earbuds' });
+    });
+  });
+
+  it('on a subcategory page, the rail keeps the family: parent “All” row plus siblings', async () => {
+    catalog.categories = TAXONOMY;
+    renderPage('/products?category=headphones');
+
+    expect(await screen.findByRole('button', { name: 'All Audio & Wearables' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Headphones' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Earbuds' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Electronics' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Televisions & Video' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'All Audio & Wearables' }));
+    await waitFor(() => {
+      expect(lastParams()).toMatchObject({ category: 'audio-wearables' });
+    });
+  });
+});
+
+describe('ProductsPage facets (Batch 46)', () => {
   it('reset clears every facet, including a category that arrived via the URL', async () => {
     renderPage('/products?category=audio&brand=Sony&min=100&max=900');
 

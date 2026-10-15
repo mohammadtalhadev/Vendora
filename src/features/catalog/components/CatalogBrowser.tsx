@@ -45,6 +45,15 @@ const RATING_OPTIONS: Array<{ label: string; value: string }> = [
 
 interface FacetSectionsProps {
   categories: Category[];
+  /**
+   * Batch 132 (owner's call): the category facet is contextual. With no
+   * category selected `categories` carries the ROOT categories only and this
+   * is null; once a category is selected the caller passes only that root's
+   * subcategories and the root itself here, so the rail shows an
+   * "All <Root>" row above its subcategories instead of every category in
+   * the store.
+   */
+  categoryRoot: Category | null;
   brands: string[];
   categoryParam: string;
   brandParam: string;
@@ -71,6 +80,7 @@ const TYPE_OPTIONS: Array<{ label: string; value: string }> = [
  */
 const FacetSections: React.FC<FacetSectionsProps> = ({
   categories,
+  categoryRoot,
   brands,
   categoryParam,
   brandParam,
@@ -104,6 +114,19 @@ const FacetSections: React.FC<FacetSectionsProps> = ({
           <span>All Categories</span>
           {categoryParam === '' && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
         </button>
+        {categoryRoot && (
+          <button
+            type="button"
+            onClick={() => onSelect({ category: categoryRoot.slug })}
+            aria-pressed={categoryParam === categoryRoot.slug || categoryParam === categoryRoot.id}
+            className={optionClass(categoryParam === categoryRoot.slug || categoryParam === categoryRoot.id)}
+          >
+            <span>All {categoryRoot.name}</span>
+            {(categoryParam === categoryRoot.slug || categoryParam === categoryRoot.id) && (
+              <Check className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+          </button>
+        )}
         {categories.map((category) => {
           const active = categoryParam === category.slug || categoryParam === category.id;
           return (
@@ -431,6 +454,21 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
     : categoriesData?.categories.find((c) => c.slug === categoryParam || c.id === categoryParam) ?? null;
   const heading = activeCategory?.name ?? (q ? `Results for “${q}”` : fallbackHeading);
 
+  // Batch 132 (owner's call): the sidebar category facet drills down instead
+  // of listing the whole taxonomy flat. No selection → root categories only.
+  // A selection → the family root (the active category itself, or its parent
+  // when a subcategory is active) plus that root's subcategories ONLY;
+  // unrelated categories leave the rail until the shopper goes back to
+  // "All Categories".
+  const allCategories = categoriesData?.categories ?? [];
+  const activeCategoryParent = activeCategory?.parentId
+    ? allCategories.find((c) => c.id === activeCategory.parentId) ?? null
+    : null;
+  const categoryRoot = activeCategory ? activeCategoryParent ?? activeCategory : null;
+  const categoryFacetOptions = categoryRoot
+    ? allCategories.filter((c) => c.parentId === categoryRoot.id)
+    : allCategories.filter((c) => !c.parentId);
+
   const priceRangeText =
     minPrice !== undefined && maxPrice !== undefined
       ? `between ${formatPrice(minPrice)} and ${formatPrice(maxPrice)}`
@@ -586,7 +624,8 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
             </div>
 
             <FacetSections
-              categories={categoriesData?.categories ?? []}
+              categories={categoryFacetOptions}
+              categoryRoot={categoryRoot}
               brands={brandOptions}
               categoryParam={categoryParam}
               brandParam={brandParam}
@@ -1003,7 +1042,8 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
                 </button>
 
                 <FacetSections
-                  categories={categoriesData?.categories ?? []}
+                  categories={categoryFacetOptions}
+                  categoryRoot={categoryRoot}
                   brands={brandOptions}
                   categoryParam={categoryParam}
                   brandParam={brandParam}
