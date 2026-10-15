@@ -20,6 +20,9 @@ const auth = vi.hoisted(() => ({
   aal: 'aal2' as 'aal1' | 'aal2',
   hasVerifiedTotp: true,
   mfaLoaded: true,
+  // TEMPORARY testing exemption (Batch 86): default not exempt, so the gate
+  // pins below keep exercising the plain aal rule.
+  mfaExempt: false,
 }));
 
 vi.mock('../../lib/auth-context', () => ({
@@ -30,6 +33,7 @@ vi.mock('../../lib/auth-context', () => ({
     aal: auth.aal,
     hasVerifiedTotp: auth.hasVerifiedTotp,
     mfaLoaded: auth.mfaLoaded,
+    mfaExempt: auth.mfaExempt,
   }),
 }));
 
@@ -157,6 +161,7 @@ describe('ProtectedRoute staff MFA gate (Batch 64)', () => {
     auth.aal = 'aal2';
     auth.hasVerifiedTotp = true;
     auth.mfaLoaded = true;
+    auth.mfaExempt = false;
   });
 
   function renderStaff(kind: 'admin' | 'support', entry = '/secret') {
@@ -233,6 +238,24 @@ describe('ProtectedRoute staff MFA gate (Batch 64)', () => {
 
     expect(screen.getByText('Verifying access...')).toBeInTheDocument();
     expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
+  });
+
+  it('Batch 86: exempt staff at aal1 renders under the admin gate — the exemption stands in for aal2', () => {
+    auth.user = { id: 'u-admin', roles: ['admin'] };
+    auth.aal = 'aal1';
+    auth.mfaExempt = true;
+    renderStaff('admin');
+
+    expect(screen.getByText('SECRET')).toBeInTheDocument();
+  });
+
+  it('Batch 86: exempt staff at aal1 renders under the support gate too', () => {
+    auth.user = { id: 'u-support', roles: ['support'] };
+    auth.aal = 'aal1';
+    auth.mfaExempt = true;
+    renderStaff('support');
+
+    expect(screen.getByText('SECRET')).toBeInTheDocument();
   });
 
   it('customer routes are untouched by the gate — a customer at aal1 with no factor passes their own guard', () => {

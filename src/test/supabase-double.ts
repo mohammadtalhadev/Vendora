@@ -281,6 +281,10 @@ export function createSupabaseDouble() {
     site_section_items: [],
     media_items: [],
     media_folders: [],
+    // TEMPORARY testing exemptions (Batch 86, migration 20261017040000):
+    // rows only SQL/service role can write in production; the is_mfa_exempt
+    // RPC below is the only reader, and it answers only about the caller.
+    mfa_exemptions: [],
     vendor_shipping_settings: [],
     vendor_notification_prefs: [],
     message_threads: [],
@@ -2970,6 +2974,16 @@ export function createSupabaseDouble() {
     rpc: chainableRpc(vi.fn(async (fn: string, args: Row = {}) => {
       rpcCalls.push({ fn, args });
       if (rpcError) return { data: null, error: rpcError };
+      if (fn === 'is_mfa_exempt') {
+        // Batch 86: mirrors migration 20261017040000 — the definer RPC
+        // answers only about the caller (auth.uid()), never about a named
+        // account, so the double checks the session user against the table.
+        const uid = sessionUserId();
+        return {
+          data: uid !== null && tables.mfa_exemptions.some((row) => row.user_id === uid),
+          error: null,
+        };
+      }
       if (fn === 'reply_to_review') {
         const review = tables.reviews.find((row) => row.id === args.p_review_id);
         if (!review) return { data: null, error: { message: `No rows found for ${fn}` } };
@@ -3333,6 +3347,20 @@ export function createSupabaseDouble() {
       };
       authState.mfaFactors.push(factor);
       return factor;
+    },
+    /**
+     * TEMPORARY testing exemption (Batch 86): records the exemption row the
+     * SQL editor would insert in production, so is_mfa_exempt answers true
+     * for exactly this account.
+     */
+    seedMfaExemption(userId: string) {
+      const row: Row = {
+        user_id: userId,
+        note: 'Batch 86 test exemption',
+        created_at: new Date().toISOString(),
+      };
+      tables.mfa_exemptions.push(row);
+      return row;
     },
     /** Seeds the rows a signed-in user will be authorized against. */
     seedProfile(profile: Row) {

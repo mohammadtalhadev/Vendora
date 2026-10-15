@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '../../../components/ui/dialog';
 import { markStepUpVerified, needsStepUp } from '../api/mfa';
+import { useMfaExempt } from '../../../lib/auth-context';
 import { TotpChallengeForm } from './TotpChallengeForm';
 
 /**
@@ -59,10 +60,17 @@ export const StepUpDialog: React.FC<StepUpDialogProps> = ({
 
 export function useStepUp() {
   const [pending, setPending] = useState<(() => void) | null>(null);
+  // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+  // table. The hook reads the context directly (never assuming a provider),
+  // so outside one — the unit-tested-bare case — the answer is the
+  // fail-closed false and the dialog behaves exactly as before.
+  const mfaExempt = useMfaExempt();
 
   /** Runs `action` now when the proof is fresh; otherwise parks it behind the dialog. */
   const requireStepUp = (action: () => void) => {
-    if (!needsStepUp()) {
+    // TEMPORARY testing exemption (Batch 86): an exempt account is treated
+    // as freshly verified, so the action runs without the dialog.
+    if (mfaExempt || !needsStepUp()) {
       action();
       return;
     }

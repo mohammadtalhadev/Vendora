@@ -163,6 +163,31 @@ export async function verifyTotp(factorId: string, code: string): Promise<void> 
   }
 }
 
+// ---------------------------------------------------------------------------
+// TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+// table. While the owner tests the staff consoles, named accounts may be
+// exempted from the second factor by inserting a row into
+// `public.mfa_exemptions` (SQL editor / service role only — no client can
+// write that table). The RPC below answers only about the CALLER, and every
+// consumer treats a "yes" as satisfying the MFA requirements the way aal2 +
+// a fresh step-up proof would. The check fails CLOSED on purpose: an RPC
+// error, a missing migration, or a client without the rpc surface all read
+// as NOT exempt, so this code deployed before (or after the removal of)
+// the migration changes nothing.
+// ---------------------------------------------------------------------------
+
+/** True only when the signed-in account holds a testing exemption row. */
+export async function isMfaExempt(): Promise<boolean> {
+  try {
+    if (typeof supabase.rpc !== 'function') return false;
+    const { data, error } = await supabase.rpc('is_mfa_exempt');
+    if (error) return false;
+    return data === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Removes a factor. The caller decides when this is allowed (see the settings card). */
 export async function unenrollTotp(factorId: string): Promise<void> {
   const { error } = await supabase.auth.mfa.unenroll({ factorId });

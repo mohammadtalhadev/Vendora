@@ -23,6 +23,9 @@ const auth = vi.hoisted(() => ({
   aal: 'aal2' as 'aal1' | 'aal2',
   mfaLoaded: true,
   refreshAal: vi.fn(async () => {}),
+  // TEMPORARY testing exemption (Batch 86): defaults to not exempt, so every
+  // pre-existing pin exercises the normal second-factor path unchanged.
+  mfaExempt: false,
 }));
 
 const mfaApi = vi.hoisted(() => ({
@@ -30,6 +33,7 @@ const mfaApi = vi.hoisted(() => ({
   enrollTotp: vi.fn(),
   verifyTotp: vi.fn(),
   markStepUpVerified: vi.fn(),
+  isMfaExempt: vi.fn(async () => false),
 }));
 
 vi.mock('../lib/auth-context', () => ({
@@ -41,6 +45,7 @@ vi.mock('../lib/auth-context', () => ({
     aal: auth.aal,
     mfaLoaded: auth.mfaLoaded,
     refreshAal: auth.refreshAal,
+    mfaExempt: auth.mfaExempt,
   }),
 }));
 
@@ -49,6 +54,7 @@ vi.mock('../features/auth/api/mfa', () => ({
   enrollTotp: mfaApi.enrollTotp,
   verifyTotp: mfaApi.verifyTotp,
   markStepUpVerified: mfaApi.markStepUpVerified,
+  isMfaExempt: mfaApi.isMfaExempt,
   unenrollTotp: vi.fn(async () => {}),
   getAalLevel: vi.fn(async () => 'aal1'),
   clearStepUp: vi.fn(),
@@ -97,9 +103,16 @@ describe('AdminLoginPage', () => {
     auth.loading = false;
     auth.aal = 'aal2';
     auth.mfaLoaded = true;
+    auth.mfaExempt = false;
     auth.signIn.mockReset();
     auth.signOut.mockClear();
     auth.refreshAal.mockClear();
+    mfaApi.isMfaExempt.mockReset();
+    mfaApi.isMfaExempt.mockResolvedValue(false);
+    // The page resolves the stored theme preference and applies it to
+    // <html>; clear both so cases never leak a scheme into each other.
+    window.localStorage.clear();
+    document.documentElement.classList.remove('dark');
     mfaApi.listTotpFactors.mockReset();
     mfaApi.enrollTotp.mockReset();
     mfaApi.verifyTotp.mockReset();
@@ -273,6 +286,56 @@ describe('AdminLoginPage', () => {
     await completeChallenge();
 
     expect(await screen.findByText('ADMIN ORDERS')).toBeInTheDocument();
+  });
+
+  it('Batch 86: an exempt staff sign-in skips the second factor entirely and lands on the console', async () => {
+    auth.signIn.mockResolvedValue(adminUser);
+    mfaApi.isMfaExempt.mockResolvedValue(true);
+    renderPage();
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
+    expect(mfaApi.listTotpFactors).not.toHaveBeenCalled();
+    expect(mfaApi.markStepUpVerified).toHaveBeenCalled();
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it('Batch 86: an already-signed-in exempt admin at aal1 is continued without a challenge', async () => {
+    auth.user = adminUser;
+    auth.aal = 'aal1';
+    auth.mfaExempt = true;
+    renderPage();
+
+    expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
+    expect(mfaApi.listTotpFactors).not.toHaveBeenCalled();
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it('Batch 86: a light stored preference renders the portal on light surfaces', () => {
+    window.localStorage.setItem('vd_theme', 'light');
+    const { container } = renderPage();
+
+    const root = container.firstElementChild as HTMLElement;
+    const tokens = root.className.split(/\s+/);
+    expect(tokens).toContain('bg-slate-50');
+    expect(tokens).toContain('dark:bg-slate-950');
+    expect(tokens).not.toContain('bg-slate-950');
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
+
+  it('Batch 86: a dark stored preference applies the dark class so dark: variants render', async () => {
+    window.localStorage.setItem('vd_theme', 'dark');
+    const { container } = renderPage();
+
+    await waitFor(() =>
+      expect(document.documentElement.classList.contains('dark')).toBe(true),
+    );
+    const root = container.firstElementChild as HTMLElement;
+    const tokens = root.className.split(/\s+/);
+    expect(tokens).toContain('bg-slate-50');
+    expect(tokens).toContain('dark:bg-slate-950');
+    expect(tokens).not.toContain('bg-slate-950');
   });
 
   it('surfaces a failed sign-in as an error, not a denial', async () => {

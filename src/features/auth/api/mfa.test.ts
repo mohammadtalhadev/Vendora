@@ -113,3 +113,41 @@ describe('step-up freshness (Batch 64)', () => {
     expect(mfa.needsStepUp()).toBe(true);
   });
 });
+
+/**
+ * Batch 86 (TEMPORARY — remove with the mfa_exemptions table): the exemption
+ * check the staff flows consult. It must answer only about the signed-in
+ * caller and fail closed: false is the default, the seeded row is the only
+ * way to true, and an RPC failure reads as not exempt.
+ */
+describe('mfa testing exemption (Batch 86)', () => {
+  beforeEach(() => {
+    supabaseDouble.reset();
+    supabaseDouble.seedAdmin();
+    window.sessionStorage.clear();
+  });
+
+  it('is false by default — an empty exemption list exempts nobody', async () => {
+    expect(await mfa.isMfaExempt()).toBe(false);
+  });
+
+  it('is true once the caller holds an exemption row', async () => {
+    supabaseDouble.seedMfaExemption('admin-1');
+    expect(await mfa.isMfaExempt()).toBe(true);
+  });
+
+  it("another account's exemption row does not exempt this caller", async () => {
+    supabaseDouble.seedMfaExemption('someone-else');
+    expect(await mfa.isMfaExempt()).toBe(false);
+  });
+
+  it('fails closed: an RPC failure reads as not exempt', async () => {
+    supabaseDouble.seedMfaExemption('admin-1');
+    supabaseDouble.failRpc('boom');
+    try {
+      expect(await mfa.isMfaExempt()).toBe(false);
+    } finally {
+      supabaseDouble.failRpc(null);
+    }
+  });
+});

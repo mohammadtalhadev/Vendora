@@ -37,6 +37,15 @@ describe('MfaSettingsCard (Batch 64)', () => {
     );
   });
 
+  it('Batch 86: an exempt account sees the testing-bypass notice on the card', async () => {
+    supabaseDouble.seedMfaExemption('admin-1');
+    render(<MfaSettingsCard />);
+
+    expect(
+      await screen.findByText(/Testing bypass active for this account/i),
+    ).toBeInTheDocument();
+  });
+
   it('removal asks for a fresh code first, then unenrolls the factor', async () => {
     supabaseDouble.seedMfaFactor('verified');
     render(<MfaSettingsCard />);

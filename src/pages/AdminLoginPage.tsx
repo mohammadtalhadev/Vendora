@@ -4,7 +4,8 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldAlert, ShieldChec
 import { useAuth } from '../lib/auth-context';
 import { friendlyErrorText } from '../lib/friendly-error';
 import { safeRedirect } from '../lib/safe-redirect';
-import { listTotpFactors, markStepUpVerified } from '../features/auth/api/mfa';
+import { useThemePreference } from '../lib/theme';
+import { isMfaExempt, listTotpFactors, markStepUpVerified } from '../features/auth/api/mfa';
 import { TotpChallengeForm } from '../features/auth/components/TotpChallengeForm';
 import { TotpEnrollForm } from '../features/auth/components/TotpEnrollForm';
 import type { User } from '../types/domain';
@@ -62,7 +63,12 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTarget = searchParams.get('redirect');
-  const { user, loading, signIn, signOut, aal, mfaLoaded, refreshAal } = useAuth();
+  const { user, loading, signIn, signOut, aal, mfaLoaded, refreshAal, mfaExempt } = useAuth();
+  // This page lives outside the workspace shell, so nothing else applies
+  // the user's stored colour-scheme preference for it: resolve (and apply)
+  // it here, and hand the same answer to the two-factor steps, whose
+  // `variant` styling keys off the surface they sit on (Batch 86).
+  const theme = useThemePreference();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -121,14 +127,17 @@ export const AdminLoginPage: React.FC = () => {
     // could enrol a duplicate.
     if (!mfaLoaded) return;
     handledUserRef.current = user.id;
-    if (aal === 'aal2') {
+    // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+    // table: an exempt account skips the second-factor step entirely and
+    // lands the way an aal2 session does.
+    if (aal === 'aal2' || mfaExempt) {
       navigate(staffDestinationFor(user, redirectTarget), { replace: true });
     } else {
       beginMfa(user);
     }
     // handledUserRef makes this idempotent, so the extra effect runs caused
     // by context identity changes are no-ops.
-  }, [user, loading, phase, mfaLoaded, aal, navigate, signOut, redirectTarget, beginMfa]);
+  }, [user, loading, phase, mfaLoaded, aal, mfaExempt, navigate, signOut, redirectTarget, beginMfa]);
 
   // The "use a different account" escape under the MFA step: signing out
   // resets the page to the form for the next visitor. (An effect keyed on
@@ -168,6 +177,16 @@ export const AdminLoginPage: React.FC = () => {
       }
       // Staff, password proven — the second factor comes before any console.
       handledUserRef.current = signedInUser.id;
+      // TEMPORARY testing exemption (Batch 86) — remove with the
+      // mfa_exemptions table. Read fresh from the RPC here: the context's
+      // copy is loaded with the sign-in's session application and may not
+      // have landed in state yet. An exempt account lands directly, with
+      // the step-up proof marked the way a verified code would mark it.
+      if (await isMfaExempt()) {
+        markStepUpVerified();
+        navigate(staffDestinationFor(signedInUser, redirectTarget), { replace: true });
+        return;
+      }
       beginMfa(signedInUser);
     } catch (err: unknown) {
       setError(friendlyErrorText(err, { context: 'auth', staff: true }));
@@ -182,10 +201,10 @@ export const AdminLoginPage: React.FC = () => {
 
   if (loading || sessionSettling) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-sun-orange border-t-transparent" />
-          <span className="text-xs font-bold text-slate-400">Verifying access...</span>
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Verifying access...</span>
         </div>
       </div>
     );
@@ -194,20 +213,20 @@ export const AdminLoginPage: React.FC = () => {
   const inMfa = phase !== 'form';
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 font-sans selection:bg-sun-orange/20 selection:text-sun-orange dark:bg-slate-950">
       <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-sun-orange/15 blur-[120px]" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-80 w-80 rounded-full bg-aqua/10 blur-[110px]" />
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
-        <div className="mb-6 flex items-center justify-between text-xs text-slate-400">
-          <Link to="/" className="inline-flex items-center gap-1.5 font-semibold transition-colors hover:text-white">
+        <div className="mb-6 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <Link to="/" className="inline-flex items-center gap-1.5 font-semibold transition-colors hover:text-slate-900 dark:hover:text-white">
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to storefront
           </Link>
-          <span className="font-outfit font-bold uppercase tracking-widest text-slate-500">Staff only</span>
+          <span className="font-outfit font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Staff only</span>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-10">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_25px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-10 dark:border-white/10 dark:bg-white/[0.04] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)]">
           <div className="mb-8 flex flex-col items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sun-orange text-white shadow-[0_8px_24px_color-mix(in_srgb,var(--color-sun-orange)_40%,transparent)]">
               <ShieldCheck className="h-6 w-6" />
@@ -216,14 +235,14 @@ export const AdminLoginPage: React.FC = () => {
               <p className="font-outfit text-[11px] font-bold uppercase tracking-[0.2em] text-sun-orange">
                 Vendora Staff Console
               </p>
-              <h1 className="mt-1 font-outfit text-3xl font-extrabold tracking-tight text-white">
+              <h1 className="mt-1 font-outfit text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                 {phase === 'enroll'
                   ? 'Set Up Two-Factor Authentication'
                   : inMfa
                     ? 'Two-Factor Check'
                     : 'Admin Sign In'}
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                 {phase === 'enroll'
                   ? 'Your staff account does not have an authenticator yet. Set one up now — the console opens as soon as the first code checks out.'
                   : inMfa
@@ -238,20 +257,20 @@ export const AdminLoginPage: React.FC = () => {
               {phase === 'checking' && (
                 <div className="flex items-center gap-3 py-2" role="status">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-sun-orange border-t-transparent" />
-                  <span className="text-sm text-slate-300">Checking your two-factor status…</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">Checking your two-factor status…</span>
                 </div>
               )}
               {phase === 'challenge' && (
                 <TotpChallengeForm
-                  variant="dark"
+                  variant={theme}
                   onVerified={() => void completeMfa()}
                   onNeedEnroll={() => setPhase('enroll')}
                 />
               )}
               {phase === 'enroll' && (
-                <TotpEnrollForm variant="dark" onEnrolled={() => void completeMfa()} />
+                <TotpEnrollForm variant={theme} onEnrolled={() => void completeMfa()} />
               )}
-              <p className="border-t border-white/10 pt-4 text-center text-xs text-slate-500">
+              <p className="border-t border-slate-200 pt-4 text-center text-xs text-slate-500 dark:border-white/10">
                 Not your account?{' '}
                 <button
                   type="button"
@@ -267,11 +286,11 @@ export const AdminLoginPage: React.FC = () => {
               {denied && (
                 <div
                   role="alert"
-                  className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-200"
+                  className="mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200"
                 >
-                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-500 dark:text-rose-300" />
                   <span>
-                    <span className="font-bold text-white">This account has no staff access.</span> It was signed
+                    <span className="font-bold text-slate-900 dark:text-white">This account has no staff access.</span> It was signed
                     out of the staff console. If you are a customer or seller, please use the regular{' '}
                     <Link to="/login" className="font-bold text-sun-orange underline">
                       sign in page
@@ -284,7 +303,7 @@ export const AdminLoginPage: React.FC = () => {
               {error && (
                 <div
                   role="alert"
-                  className="mb-5 flex items-center gap-2 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3.5 text-xs font-medium text-rose-200"
+                  className="mb-5 flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200"
                 >
                   <span className="h-1.5 w-1.5 shrink-0 animate-ping rounded-full bg-rose-400" />
                   <span>{error}</span>
@@ -293,7 +312,7 @@ export const AdminLoginPage: React.FC = () => {
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="admin-login-email" className="font-outfit text-xs font-bold text-slate-300">
+                  <label htmlFor="admin-login-email" className="font-outfit text-xs font-bold text-slate-600 dark:text-slate-300">
                     Staff Email Address
                   </label>
                   <div className="relative flex items-center">
@@ -305,14 +324,14 @@ export const AdminLoginPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@vendora.market"
                       autoComplete="username"
-                      className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 pl-12 pr-4 text-sm text-white shadow-2xs transition-all placeholder:text-slate-500 focus:border-sun-orange focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-sm text-slate-900 shadow-2xs transition-all placeholder:text-slate-400 focus:border-sun-orange focus:outline-none focus:ring-2 focus:ring-sun-orange/30 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="admin-login-password" className="font-outfit text-xs font-bold text-slate-300">
+                  <label htmlFor="admin-login-password" className="font-outfit text-xs font-bold text-slate-600 dark:text-slate-300">
                     Password
                   </label>
                   <div className="relative flex items-center">
@@ -324,13 +343,13 @@ export const AdminLoginPage: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••••••"
                       autoComplete="current-password"
-                      className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 pl-12 pr-12 text-sm text-white shadow-2xs transition-all placeholder:text-slate-500 focus:border-sun-orange focus:outline-none focus:ring-2 focus:ring-sun-orange/30"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-12 text-sm text-slate-900 shadow-2xs transition-all placeholder:text-slate-400 focus:border-sun-orange focus:outline-none focus:ring-2 focus:ring-sun-orange/30 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 text-slate-500 transition-colors hover:text-slate-200"
+                      className="absolute right-4 text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-slate-200"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -344,7 +363,7 @@ export const AdminLoginPage: React.FC = () => {
                 </Button>
               </form>
 
-              <p className="mt-6 border-t border-white/10 pt-4 text-center text-xs text-slate-500">
+              <p className="mt-6 border-t border-slate-200 pt-4 text-center text-xs text-slate-500 dark:border-white/10">
                 Shopping or selling on Vendora?{' '}
                 <Link to="/login" className="font-bold text-sun-orange hover:text-sun-orange-600">
                   Use the customer sign in

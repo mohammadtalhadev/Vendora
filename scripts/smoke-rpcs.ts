@@ -2133,6 +2133,36 @@ await q(`delete from site_sections where id=$1`, [b85Section]);
 ok('deleting a section cascades its items',
   (await q(`select count(*)::int c from site_section_items where section_id=$1`, [b85Section]))[0].c === 0);
 
+console.log('\n[batch 86] TEMPORARY MFA testing exemption: policy-less table + caller-only is_mfa_exempt');
+await as('postgres');
+ok('mfa_exemptions starts empty - nobody is exempt by default',
+  (await q('select count(*)::int c from mfa_exemptions'))[0].c === 0);
+await as('authenticated', ADMIN);
+ok('is_mfa_exempt is false while no exemption row exists',
+  (await q('select is_mfa_exempt() as e'))[0].e === false);
+await expectThrow('a client cannot insert an exemption for itself',
+  () => q(`insert into mfa_exemptions (user_id) values ($1)`, [ADMIN]),
+  'row-level security');
+await as('anon');
+await expectThrow('anon cannot execute is_mfa_exempt',
+  () => q('select is_mfa_exempt()'),
+  'permission denied');
+await as('postgres');
+await q(`insert into mfa_exemptions (user_id, note) values ($1, 'batch 86 smoke')`, [ADMIN]);
+await as('authenticated', ADMIN);
+ok('a direct select still sees no exemption rows - only the definer RPC reads them',
+  (await q('select count(*)::int c from mfa_exemptions'))[0].c === 0);
+ok('is_mfa_exempt is true for the exempted caller',
+  (await q('select is_mfa_exempt() as e'))[0].e === true);
+await as('authenticated', CU);
+ok('is_mfa_exempt stays false for an account with no row',
+  (await q('select is_mfa_exempt() as e'))[0].e === false);
+await as('postgres');
+await q(`delete from mfa_exemptions where user_id = $1`, [ADMIN]);
+await as('authenticated', ADMIN);
+ok('deleting the row restores full MFA (is_mfa_exempt false again)',
+  (await q('select is_mfa_exempt() as e'))[0].e === false);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

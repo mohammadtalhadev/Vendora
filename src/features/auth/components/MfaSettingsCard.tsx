@@ -3,12 +3,14 @@ import { ShieldCheck, ShieldOff } from 'lucide-react';
 import {
   clearStepUp,
   getAalLevel,
+  isMfaExempt,
   listTotpFactors,
   markStepUpVerified,
   needsStepUp,
   unenrollTotp,
   type TotpFactor,
 } from '../api/mfa';
+import { useThemePreference } from '../../../lib/theme';
 import { StepUpDialog } from './StepUpDialog';
 import { TotpEnrollForm } from './TotpEnrollForm';
 
@@ -40,11 +42,19 @@ export const MfaSettingsCard: React.FC<MfaSettingsCardProps> = ({ className }) =
   const [error, setError] = useState<string | null>(null);
   const [removeArmed, setRemoveArmed] = useState(false);
   const [removing, setRemoving] = useState(false);
+  // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+  // table. Read directly from the MFA API in load() (this card deliberately
+  // never touches the auth context) and surfaced as a plain notice below.
+  const [exempt, setExempt] = useState(false);
   const mountedRef = useRef(true);
+  // The enrol form's styling keys off the surface theme the way the staff
+  // portal's does (Batch 86).
+  const theme = useThemePreference();
 
   const load = useCallback(async () => {
-    const lists = await listTotpFactors();
+    const [lists, isExempt] = await Promise.all([listTotpFactors(), isMfaExempt()]);
     if (!mountedRef.current) return;
+    setExempt(isExempt);
     if (!lists) {
       setState({ kind: 'unavailable' });
       return;
@@ -119,6 +129,12 @@ export const MfaSettingsCard: React.FC<MfaSettingsCardProps> = ({ className }) =
         </p>
       )}
 
+      {exempt && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] font-bold text-amber-800">
+          Testing bypass active for this account — MFA is not required while your exemption row exists.
+        </p>
+      )}
+
       {state.kind === 'ready' && verified && !settingUp && (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-slate-300">
@@ -169,7 +185,7 @@ export const MfaSettingsCard: React.FC<MfaSettingsCardProps> = ({ className }) =
       {settingUp && (
         <div className="max-w-md">
           <TotpEnrollForm
-            variant="light"
+            variant={theme}
             onEnrolled={() => {
               // The setup just verified a code, so the step-up proof is fresh.
               markStepUpVerified();

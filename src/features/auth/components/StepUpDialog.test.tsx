@@ -22,6 +22,14 @@ vi.mock('../api/mfa', async () => {
   };
 });
 
+// TEMPORARY testing exemption (Batch 86): the hook reads the flag through
+// useMfaExempt; the hoisted flag lets a case flip it per test.
+const authFlags = vi.hoisted(() => ({ mfaExempt: false }));
+
+vi.mock('../../../lib/auth-context', () => ({
+  useMfaExempt: () => authFlags.mfaExempt,
+}));
+
 import { markStepUpVerified, needsStepUp } from '../api/mfa';
 import { useStepUp } from './StepUpDialog';
 
@@ -48,6 +56,7 @@ function typeCode(code: string) {
 describe('useStepUp (Batch 64)', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
+    authFlags.mfaExempt = false;
     mfaApi.verifyTotp.mockReset();
     mfaApi.listTotpFactors.mockReset();
     mfaApi.listTotpFactors.mockResolvedValue({
@@ -83,6 +92,18 @@ describe('useStepUp (Batch 64)', () => {
 
     await waitFor(() => expect(onAction).toHaveBeenCalledTimes(1));
     expect(needsStepUp()).toBe(false);
+  });
+
+  it('Batch 86: an exempt account runs the action immediately even with a stale proof — no dialog', async () => {
+    authFlags.mfaExempt = true;
+    markStepUpVerified(Date.now() - 11 * 60 * 1000);
+    const onAction = vi.fn();
+    render(<Harness onAction={onAction} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Do the sensitive thing' }));
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('Code digit 1')).not.toBeInTheDocument();
   });
 
   it('a wrong code fires nothing and the dialog stays open for another try', async () => {

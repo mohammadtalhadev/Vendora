@@ -53,7 +53,7 @@ export function ProtectedRoute({
   showLoading = true,
   requireMfa = false
 }: ProtectedRouteProps) {
-  const { user, loading, hasRole, aal, mfaLoaded } = useAuth();
+  const { user, loading, hasRole, aal, mfaLoaded, mfaExempt } = useAuth();
   const location = useLocation();
 
   // Still loading auth state
@@ -116,7 +116,11 @@ export function ProtectedRoute({
         </div>
       ) : null;
     }
-    if (aal !== 'aal2') {
+    // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+    // table: an exempt staff account passes this gate at aal1, the way an
+    // aal2 session does. The flag fails closed (see api/mfa), so without an
+    // exemption row nothing changes.
+    if (aal !== 'aal2' && !mfaExempt) {
       const fullPath = `${location.pathname}${location.search}${location.hash}`;
       return (
         <Navigate

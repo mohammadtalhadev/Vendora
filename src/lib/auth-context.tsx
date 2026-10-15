@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Session } from '@supabase/supabase-js';
 import * as sessionApi from '../features/auth/api/session';
 import type { SignUpResult } from '../features/auth/api/session';
-import { clearStepUp, getAalLevel, listTotpFactors, type AalLevel } from '../features/auth/api/mfa';
+import { clearStepUp, getAalLevel, isMfaExempt, listTotpFactors, type AalLevel } from '../features/auth/api/mfa';
 import { hasAnyRole, hasPermission } from '../features/auth/rbac';
 import type { DemoRoleKey } from '../lib/demo-accounts';
 import type { User, UserRole } from '../types/domain';
@@ -35,6 +35,15 @@ interface AuthContextType {
   hasVerifiedTotp: boolean;
   mfaLoaded: boolean;
   refreshAal: () => Promise<void>;
+  /**
+   * TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+   * table. True while the signed-in account holds an exemption row; the
+   * staff portal, the AAL2 console gate and the step-up dialog all treat it
+   * as satisfying the second factor. Loaded with the rest of the two-factor
+   * picture in refreshAal, so `mfaLoaded` implies this is known too. The
+   * check fails closed (see api/mfa): false is the default everywhere.
+   */
+  mfaExempt: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [aal, setAal] = useState<AalLevel>('aal1');
   const [hasVerifiedTotp, setHasVerifiedTotp] = useState(false);
   const [mfaLoaded, setMfaLoaded] = useState(false);
+  // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions table.
+  const [mfaExempt, setMfaExempt] = useState(false);
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
@@ -60,12 +71,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!useAuthStore.getState().user) {
       setAal('aal1');
       setHasVerifiedTotp(false);
+      setMfaExempt(false);
       setMfaLoaded(true);
       return;
     }
-    const [level, lists] = await Promise.all([getAalLevel(), listTotpFactors()]);
+    const [level, lists, exempt] = await Promise.all([
+      getAalLevel(),
+      listTotpFactors(),
+      // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions table.
+      isMfaExempt(),
+    ]);
     setAal(level);
     setHasVerifiedTotp(Boolean(lists?.verified.length));
+    setMfaExempt(exempt);
     setMfaLoaded(true);
   }, []);
 
@@ -102,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       useWishlistStore.getState().initializeForGuest();
       setAal('aal1');
       setHasVerifiedTotp(false);
+      setMfaExempt(false);
       setMfaLoaded(false);
     }
     setLoading(false);
@@ -198,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasVerifiedTotp,
         mfaLoaded,
         refreshAal,
+        mfaExempt,
       }}
     >
       {children}
@@ -211,6 +231,17 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+}
+
+/**
+ * TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+ * table. The exemption flag for consumers that cannot assume an AuthProvider
+ * (the step-up hook is unit-tested bare): outside a provider the answer is
+ * false, which is the fail-closed default the whole exemption design wants.
+ */
+export function useMfaExempt(): boolean {
+  const context = useContext(AuthContext);
+  return context?.mfaExempt ?? false;
 }
 
 export function useRoleAccess(requiredRoles: UserRole[]) {

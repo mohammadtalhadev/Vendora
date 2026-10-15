@@ -917,6 +917,32 @@ export type Database = {
         }
       ]
     },
+    "mfa_exemptions": {
+      Row: {
+        "user_id": string,
+        "note": string | null,
+        "created_at": string
+      }
+      Insert: {
+        "user_id": string,
+        "note"?: string | null,
+        "created_at"?: string
+      }
+      Update: {
+        "user_id"?: string,
+        "note"?: string | null,
+        "created_at"?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "mfa_exemptions_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: true
+          referencedRelation: "profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    },
     "message_threads": {
       Row: {
         "id": string,
@@ -3351,6 +3377,10 @@ export type Database = {
       Args: {
         "d": string
       }
+      Returns: boolean
+    },
+    "is_mfa_exempt": {
+      Args: {}
       Returns: boolean
     },
     "is_thread_participant": {
