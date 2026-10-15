@@ -25,6 +25,7 @@ import {
   setCouponActive,
   type AdminCoupon,
 } from '../features/admin/api/promotions';
+import { ImageUploadField } from '../features/admin/components/ImageUploadField';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { Button } from '../components/ui/button';
 import { formatPrice } from '../store/currency-store';
@@ -551,13 +552,11 @@ export const AdminCMSPage: React.FC = () => {
 
                 <div>
                   <label htmlFor="banner-image" className="block font-bold text-slate-700 mb-1">Image URL</label>
-                  <input
+                  <ImageUploadField
                     id="banner-image"
-                    type="url"
                     value={newImage}
-                    onChange={(e) => setNewImage(e.target.value)}
+                    onChange={setNewImage}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full rounded-xl border border-slate-200 p-2.5"
                   />
                 </div>
 
