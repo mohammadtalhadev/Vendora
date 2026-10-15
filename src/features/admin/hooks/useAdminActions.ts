@@ -10,6 +10,7 @@ import {
   setCategoryCommission,
   updateCategory,
 } from '../api/categories';
+import { createBrand, deleteBrand, renameBrand, updateBrand } from '../api/brands';
 import { setGlobalCommission } from '../api/commission';
 import { savePlatformSettings, type PlatformSettingsPatch } from '../api/settings';
 import { setMediaStatus, type MediaStatus } from '../api/media';
@@ -35,6 +36,12 @@ export function useAdminActions() {
   const refreshCategories = () => {
     refresh();
     queryClient.invalidateQueries({ queryKey: adminKeys.categories(userId) });
+  };
+
+  /** A brand write moves the merged registry + catalog directory the page reads. */
+  const refreshBrands = () => {
+    refresh();
+    queryClient.invalidateQueries({ queryKey: adminKeys.brands(userId) });
   };
 
   /** A rate change moves the ledger for every window it is read over. */
@@ -183,6 +190,45 @@ export function useAdminActions() {
         refreshCategories();
         queryClient.invalidateQueries({ queryKey: adminKeys.moderation(userId, {}) });
       },
+    }),
+    createBrand: useMutation({
+      mutationFn: ({
+        name,
+        logoUrl,
+        description,
+      }: {
+        name: string;
+        logoUrl?: string | null;
+        description?: string | null;
+      }) => createBrand({ name, logoUrl, description }),
+      onSuccess: refreshBrands,
+    }),
+    updateBrand: useMutation({
+      mutationFn: ({
+        id,
+        name,
+        logoUrl,
+        description,
+        isActive,
+      }: {
+        id: string;
+        name?: string;
+        logoUrl?: string | null;
+        description?: string | null;
+        isActive?: boolean | null;
+      }) => updateBrand({ id, name, logoUrl, description, isActive }),
+      onSuccess: refreshBrands,
+    }),
+    /** Re-letters every product carrying the old name, in any status. */
+    renameBrand: useMutation({
+      mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
+        renameBrand(oldName, newName),
+      onSuccess: refreshBrands,
+    }),
+    /** The RPC refuses while any product still carries the brand name. */
+    deleteBrand: useMutation({
+      mutationFn: (id: string) => deleteBrand(id),
+      onSuccess: refreshBrands,
     }),
     setGlobalCommission: useMutation({
       mutationFn: (rate: number) => setGlobalCommission(rate),

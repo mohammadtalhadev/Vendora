@@ -90,6 +90,39 @@ export type Database = {
         }
       ]
     },
+    "brands": {
+      Row: {
+        "id": string,
+        "name": string,
+        "slug": string,
+        "logo_url": string | null,
+        "description": string | null,
+        "is_active": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
+      Insert: {
+        "id"?: string,
+        "name": string,
+        "slug": string,
+        "logo_url"?: string | null,
+        "description"?: string | null,
+        "is_active"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Update: {
+        "id"?: string,
+        "name"?: string,
+        "slug"?: string,
+        "logo_url"?: string | null,
+        "description"?: string | null,
+        "is_active"?: boolean,
+        "created_at"?: string,
+        "updated_at"?: string
+      }
+      Relationships: []
+    },
     "canned_responses": {
       Row: {
         "id": string,
@@ -2638,6 +2671,23 @@ export type Database = {
       }
       Returns: Json
     },
+    "admin_create_brand": {
+      Args: {
+        "p_name": string,
+        "p_logo_url"?: string | null,
+        "p_description"?: string | null
+      }
+      Returns: {
+        "id": string,
+        "name": string,
+        "slug": string,
+        "logo_url": string | null,
+        "description": string | null,
+        "is_active": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
+    },
     "admin_create_category": {
       Args: {
         "p_name": string,
@@ -2659,6 +2709,21 @@ export type Database = {
         "p_days"?: number
       }
       Returns: Json
+    },
+    "admin_delete_brand": {
+      Args: {
+        "p_id": string
+      }
+      Returns: {
+        "id": string,
+        "name": string,
+        "slug": string,
+        "logo_url": string | null,
+        "description": string | null,
+        "is_active": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
     },
     "admin_delete_category": {
       Args: {
@@ -2743,6 +2808,13 @@ export type Database = {
         "p_reason": string
       }
       Returns: Json
+    },
+    "admin_rename_brand": {
+      Args: {
+        "p_old_name": string,
+        "p_new_name": string
+      }
+      Returns: number
     },
     "admin_report_summary": {
       Args: {
@@ -2842,6 +2914,25 @@ export type Database = {
         "p_image"?: string | null
       }
       Returns: Json
+    },
+    "admin_update_brand": {
+      Args: {
+        "p_id": string,
+        "p_name"?: string | null,
+        "p_logo_url"?: string | null,
+        "p_description"?: string | null,
+        "p_is_active"?: boolean | null
+      }
+      Returns: {
+        "id": string,
+        "name": string,
+        "slug": string,
+        "logo_url": string | null,
+        "description": string | null,
+        "is_active": boolean,
+        "created_at": string,
+        "updated_at": string
+      }
     },
     "admin_update_order_address": {
       Args: {

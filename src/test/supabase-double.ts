@@ -248,6 +248,9 @@ export function createSupabaseDouble() {
     vendor_profiles: [],
     products: [],
     categories: [],
+    // The brands registry (migration 20261017010000): rows an admin manages
+    // through the admin_*_brand RPCs; products.brand stays free text.
+    brands: [],
     cart_items: [],
     wishlist_items: [],
     // The customer's own address book and saved payment methods (Phase 8 tables):
@@ -2516,6 +2519,116 @@ export function createSupabaseDouble() {
       audit('category.delete', 'category', String(id), null, null);
       return { data: { id, deleted: true }, error: null };
     }
+    if (fn === 'admin_create_brand') {
+      const denied = refuse('create a brand');
+      if (denied) return denied;
+      const name = args.p_name === null || args.p_name === undefined ? '' : String(args.p_name).trim();
+      if (name === '') return { data: null, error: { message: 'A brand needs a name' } };
+      const slug = slugify(name).replace(/^-+|-+$/g, '');
+      if (slug === '') return { data: null, error: { message: 'A brand name needs at least one letter or digit' } };
+      if (tables.brands.some((row) => String(row.name).toLowerCase() === name.toLowerCase())) {
+        return { data: null, error: { message: `A brand named "${name}" already exists` } };
+      }
+      if (tables.brands.some((row) => row.slug === slug)) {
+        return { data: null, error: { message: 'A brand with a similar name already exists' } };
+      }
+      const blankToNull = (value: unknown): unknown => {
+        if (value === null || value === undefined) return null;
+        const trimmed = String(value).trim();
+        return trimmed === '' ? null : trimmed;
+      };
+      const at = new Date().toISOString();
+      const brand: Row = {
+        id: `brand-${++syntheticId}`,
+        name,
+        slug,
+        logo_url: blankToNull(args.p_logo_url),
+        description: blankToNull(args.p_description),
+        is_active: true,
+        created_at: at,
+        updated_at: at,
+      };
+      tables.brands.push(brand);
+      audit('brand.create', 'brand', String(brand.id), null, { name, slug });
+      return { data: { ...brand }, error: null };
+    }
+    if (fn === 'admin_update_brand') {
+      const denied = refuse('edit a brand');
+      if (denied) return denied;
+      const brand = tables.brands.find((row) => row.id === args.p_id);
+      if (!brand) return { data: null, error: { message: 'Brand not found' } };
+      const name = String(keepText(args.p_name, brand.name));
+      const slug = slugify(name).replace(/^-+|-+$/g, '');
+      if (slug === '') return { data: null, error: { message: 'A brand name needs at least one letter or digit' } };
+      if (tables.brands.some((row) => row.id !== brand.id && String(row.name).toLowerCase() === name.toLowerCase())) {
+        return { data: null, error: { message: `A brand named "${name}" already exists` } };
+      }
+      if (tables.brands.some((row) => row.id !== brand.id && row.slug === slug)) {
+        return { data: null, error: { message: 'A brand with a similar name already exists' } };
+      }
+      const before = { name: brand.name, slug: brand.slug, isActive: brand.is_active ?? true };
+      brand.name = name;
+      brand.slug = slug;
+      brand.logo_url = keepText(args.p_logo_url, brand.logo_url);
+      brand.description = keepText(args.p_description, brand.description);
+      if (args.p_is_active !== null && args.p_is_active !== undefined) brand.is_active = args.p_is_active;
+      brand.updated_at = new Date().toISOString();
+      audit('brand.update', 'brand', String(brand.id), before, {
+        name, slug, isActive: brand.is_active ?? true,
+      });
+      return { data: { ...brand }, error: null };
+    }
+    if (fn === 'admin_rename_brand') {
+      const denied = refuse('rename a brand');
+      if (denied) return denied;
+      const oldName = args.p_old_name === null || args.p_old_name === undefined ? '' : String(args.p_old_name).trim();
+      const newName = args.p_new_name === null || args.p_new_name === undefined ? '' : String(args.p_new_name).trim();
+      if (oldName === '') return { data: null, error: { message: 'The current brand name is missing' } };
+      if (newName === '') return { data: null, error: { message: 'A brand needs a name' } };
+      const slug = slugify(newName).replace(/^-+|-+$/g, '');
+      if (slug === '') return { data: null, error: { message: 'A brand name needs at least one letter or digit' } };
+      if (tables.brands.some((row) => String(row.name).toLowerCase() === newName.toLowerCase()
+        && String(row.name).toLowerCase() !== oldName.toLowerCase())) {
+        return { data: null, error: { message: `A brand named "${newName}" already exists. Renaming onto an existing brand is not supported` } };
+      }
+      if (tables.brands.some((row) => row.slug === slug && String(row.name).toLowerCase() !== oldName.toLowerCase())) {
+        return { data: null, error: { message: 'A brand with a similar name already exists' } };
+      }
+      let count = 0;
+      for (const product of tables.products) {
+        if (String(product.brand ?? '').trim().toLowerCase() === oldName.toLowerCase()) {
+          product.brand = newName;
+          count += 1;
+        }
+      }
+      const registry = tables.brands.find((row) => String(row.name).toLowerCase() === oldName.toLowerCase());
+      if (registry) {
+        registry.name = newName;
+        registry.slug = slug;
+        registry.updated_at = new Date().toISOString();
+      }
+      audit('brand.rename', 'brand', registry ? String(registry.id) : oldName,
+        { name: oldName }, { name: newName, productsUpdated: count });
+      return { data: count, error: null };
+    }
+    if (fn === 'admin_delete_brand') {
+      const denied = refuse('delete a brand');
+      if (denied) return denied;
+      const brand = tables.brands.find((row) => row.id === args.p_id);
+      if (!brand) return { data: null, error: { message: 'Brand not found' } };
+      const products = countWhere(tables.products, (row) =>
+        String(row.brand ?? '').trim().toLowerCase() === String(brand.name).trim().toLowerCase());
+      // The registry row going away must never strand the catalog text it described.
+      if (products > 0) {
+        return {
+          data: null,
+          error: { message: `This brand still has ${products} product(s) carrying the name "${brand.name}". Rename or reassign them first` },
+        };
+      }
+      tables.brands = tables.brands.filter((row) => row.id !== brand.id);
+      audit('brand.delete', 'brand', String(brand.id), { name: brand.name, slug: brand.slug }, null);
+      return { data: { ...brand }, error: null };
+    }
 
     // ---------------------------------------------- commission and settings
     if (fn === 'admin_set_global_commission') {
@@ -2947,6 +3060,10 @@ export function createSupabaseDouble() {
       tables.categories.push(category);
       return category;
     },
+    seedBrand(brand: Row) {
+      tables.brands.push(brand);
+      return brand;
+    },
     seedProduct(product: Row) {
       tables.products.push(product);
       return product;
@@ -3260,6 +3377,21 @@ export function categoryRow(overrides: Partial<Row> = {}): Row {
     image: null,
     commission_rate_override: null,
     parent_id: null,
+    is_active: true,
+    created_at: '2026-10-01T00:00:00.000Z',
+    updated_at: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** A brands registry row (migration 20261017010000). */
+export function brandRow(overrides: Partial<Row> = {}): Row {
+  return {
+    id: '00000000-0000-4000-8000-000000000301',
+    name: 'AudioBrand',
+    slug: 'audiobrand',
+    logo_url: null,
+    description: null,
     is_active: true,
     created_at: '2026-10-01T00:00:00.000Z',
     updated_at: '2026-10-01T00:00:00.000Z',

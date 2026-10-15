@@ -1593,6 +1593,117 @@ await expectThrow('deleting a missing asset raises instead of reporting success'
 await q(`delete from media_folders where vendor_id=$1 and name='admin-renamed'`, [STORE]);
 ok('an admin deletes an empty folder row',
   (await q(`select count(*)::int c from media_folders where vendor_id=$1 and name='admin-renamed'`, [STORE]))[0].c === 0);
+console.log('\n[batch 62] brands registry: backfill, create, duplicate, rename bulk, delete guard, non-admin reject');
+// Batch 62 (20261017010000): the registry table + the four governance RPCs.
+// The backfill ran while this harness's catalog was still empty (migrations
+// apply before the seeds), so its exact INSERT is re-run here against the
+// seeded catalog to prove the distinct/slug logic, then the RPCs are
+// exercised as the roles the console holds.
+await as('postgres');
+await q(
+  `insert into brands (name, slug)
+   select candidate.name, candidate.slug
+   from (
+     select distinct on (lower(btrim(p.brand)))
+       btrim(p.brand) as name,
+       btrim(regexp_replace(lower(btrim(p.brand)), '[^a-z0-9]+', '-', 'g'), '-') as slug
+     from products p
+     where btrim(p.brand) <> ''
+     order by lower(btrim(p.brand)), btrim(p.brand)
+   ) candidate
+   where candidate.slug <> ''
+   on conflict do nothing`,
+);
+const acmeRow = (await q(`select id, slug from brands where lower(name) = 'acme'`))[0];
+ok('backfill: the seeded catalog brand is registered exactly once, slug derived',
+  (await q(`select count(*)::int c from brands where lower(name) = 'acme'`))[0].c === 1 && acmeRow.slug === 'acme');
+
+// -- reads: the public sees active brands, direct writes are not granted ------
+await as('anon');
+ok('anon can read active registry rows',
+  (await q(`select count(*)::int c from brands where id = $1`, [acmeRow.id]))[0].c === 1);
+await expectThrow('anon cannot call the create RPC',
+  () => q(`select * from admin_create_brand('Anon Brand')`),
+  'permission denied');
+await as('authenticated', CU);
+await expectThrow('a signed-in customer cannot insert a registry row directly',
+  () => q(`insert into brands (name, slug) values ('Direct', 'direct')`),
+  'permission denied');
+await expectThrow('nor create one through the RPC (admin guard inside)',
+  () => q(`select * from admin_create_brand('Customer Brand')`),
+  'only the platform team');
+await expectThrow('nor rename through the RPC',
+  () => q(`select admin_rename_brand('Acme', 'Customer Brand')`),
+  'only the platform team');
+await expectThrow('nor delete through the RPC',
+  () => q(`select * from admin_delete_brand($1)`, [acmeRow.id]),
+  'only the platform team');
+
+// -- create: slug is server-derived, duplicates refuse case-insensitively -----
+await as('authenticated', ADMIN);
+const created62 = (await q(`select * from admin_create_brand('Smoke Brand Co', ' https://example.test/logo.png ', 'Registry smoke brand')`))[0];
+ok('create: the row lands with a derived slug and trimmed fields',
+  created62.name === 'Smoke Brand Co' && created62.slug === 'smoke-brand-co' &&
+  created62.logo_url === 'https://example.test/logo.png' && created62.is_active === true);
+await expectThrow('create: a duplicate name refuses, whatever the casing',
+  () => q(`select * from admin_create_brand('smoke brand co')`),
+  'already exists');
+await expectThrow('create: a blank name refuses',
+  () => q(`select * from admin_create_brand('   ')`),
+  'needs a name');
+ok('create: the refusals left the registry where it was',
+  (await q(`select count(*)::int c from brands where lower(name) like 'smoke%'`))[0].c === 1);
+
+// -- update: coalesce keeps what the form did not send, status flips ----------
+const updated62 = (await q(`select * from admin_update_brand($1, null, null, null, false)`, [created62.id]))[0];
+ok('update: a status-only call keeps name, slug, logo and description',
+  updated62.name === 'Smoke Brand Co' && updated62.slug === 'smoke-brand-co' &&
+  updated62.logo_url === 'https://example.test/logo.png' && updated62.is_active === false);
+await as('anon');
+ok('reads: an inactive brand leaves the public registry view',
+  (await q(`select count(*)::int c from brands where id = $1`, [created62.id]))[0].c === 0);
+await as('authenticated', ADMIN);
+ok('reads: the admin still sees the inactive row',
+  (await q(`select count(*)::int c from brands where id = $1`, [created62.id]))[0].c === 1);
+await expectThrow('update: a missing brand refuses',
+  () => q(`select * from admin_update_brand('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'Ghost')`),
+  'not found');
+
+// -- rename: every product carrying the old name moves, any status ------------
+await as('postgres');
+await q(
+  `insert into products (id, title, slug, category_id, brand, price, seller_id, status) values
+     ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'Loose Widget', 'loose-brand-widget', $1, 'Loose Brand', 10, $2, 'draft')`,
+  [CAT, STORE],
+);
+const acmeCount = (await q(`select count(*)::int c from products where lower(btrim(brand)) = 'acme'`))[0].c;
+await as('authenticated', ADMIN);
+const renamedCount = (await q(`select admin_rename_brand('Acme', 'Acme Corp') as n`))[0].n;
+ok('rename: the return is the number of products re-lettered',
+  renamedCount === acmeCount && acmeCount > 0, `(moved ${renamedCount}, expected ${acmeCount})`);
+ok('rename: no product still carries the old name, and the registry row followed',
+  (await q(`select count(*)::int c from products where lower(btrim(brand)) = 'acme'`))[0].c === 0 &&
+  (await q(`select slug from brands where id = $1`, [acmeRow.id]))[0].slug === 'acme-corp');
+const looseMoved = (await q(`select admin_rename_brand('Loose Brand', 'Loose Brand Co') as n`))[0].n;
+ok('rename: an unregistered catalog name moves too, without inventing a registry row',
+  looseMoved === 1 &&
+  (await q(`select count(*)::int c from brands where lower(name) = 'loose brand co'`))[0].c === 0);
+await expectThrow('rename: merging onto a different existing brand refuses',
+  () => q(`select admin_rename_brand('Acme Corp', 'Smoke Brand Co')`),
+  'already exists');
+ok('rename: the refused merge changed nothing',
+  (await q(`select count(*)::int c from products where brand = 'Acme Corp'`))[0].c === acmeCount);
+
+// -- delete: refused while products carry the name, free once none do ---------
+await expectThrow('delete: a brand with products carrying its name refuses',
+  () => q(`select * from admin_delete_brand($1)`, [acmeRow.id]),
+  'still has');
+ok('delete: the refused delete kept the registry row',
+  (await q(`select count(*)::int c from brands where id = $1`, [acmeRow.id]))[0].c === 1);
+const deleted62 = (await q(`select * from admin_delete_brand($1)`, [created62.id]))[0];
+ok('delete: a zero-product registered brand deletes and returns its row',
+  deleted62.id === created62.id &&
+  (await q(`select count(*)::int c from brands where id = $1`, [created62.id]))[0].c === 0);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
