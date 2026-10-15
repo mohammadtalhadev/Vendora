@@ -9,6 +9,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { deleteAccount, signOut, signOutEverywhere, updatePassword } from '../features/auth/api/session';
+import { MfaSettingsCard } from '../features/auth/components/MfaSettingsCard';
 import { friendlyErrorText } from '../lib/friendly-error';
 import { useAuthStore } from '../store/auth-store';
 
@@ -201,6 +202,11 @@ export const AccountSettingsPage: React.FC = () => {
           </button>
         </form>
       </section>
+
+      {/* Two-factor authentication (Batch 64). The support console has no
+          profile page of its own, so this shared settings surface is where
+          support staff manage their authenticator too. */}
+      <MfaSettingsCard className="space-y-4 rounded-3xl border border-white/80 bg-white/80 p-6 text-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80" />
 
       {/* Sessions */}
       <section className="rounded-3xl border border-white/80 bg-white/80 p-6 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">

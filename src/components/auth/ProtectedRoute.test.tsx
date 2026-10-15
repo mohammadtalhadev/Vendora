@@ -14,6 +14,12 @@ const auth = vi.hoisted(() => ({
     vendorStatus?: string;
     accountStatus?: string;
   },
+  // Batch 64 two-factor picture. Defaults describe a fully proven staff
+  // session so the Batch 24/63 pins below keep testing what they pinned;
+  // the MFA describe overrides them per case.
+  aal: 'aal2' as 'aal1' | 'aal2',
+  hasVerifiedTotp: true,
+  mfaLoaded: true,
 }));
 
 vi.mock('../../lib/auth-context', () => ({
@@ -21,10 +27,13 @@ vi.mock('../../lib/auth-context', () => ({
     user: auth.user,
     loading: false,
     hasRole: (role: string) => auth.user?.roles.includes(role) ?? false,
+    aal: auth.aal,
+    hasVerifiedTotp: auth.hasVerifiedTotp,
+    mfaLoaded: auth.mfaLoaded,
   }),
 }));
 
-import { ProtectedRoute } from './ProtectedRoute';
+import { AdminOnlyRoute, ProtectedRoute, SupportOnlyRoute } from './ProtectedRoute';
 
 function LocationProbe() {
   const location = useLocation();
@@ -66,6 +75,9 @@ function renderGuarded(kind: 'default' | 'staff' | 'vendor', entry = '/secret') 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
     auth.user = null;
+    auth.aal = 'aal2';
+    auth.hasVerifiedTotp = true;
+    auth.mfaLoaded = true;
   });
 
   it('default: unauthenticated visitors go to the customer /login with a redirect back', () => {
@@ -128,6 +140,119 @@ describe('ProtectedRoute', () => {
   it('Batch 63: an approved vendor passes the status check', () => {
     auth.user = { id: 'u5', roles: ['customer', 'vendor'], vendorStatus: 'approved' };
     renderGuarded('vendor');
+
+    expect(screen.getByText('SECRET')).toBeInTheDocument();
+  });
+});
+
+/**
+ * Batch 64: the staff wrappers carry the AAL2 gate. A staff role alone no
+ * longer opens a console — a password-only (aal1) session is sent to the
+ * staff portal's step-up with the full path it wanted, and only a proven
+ * (aal2) session renders. Non-staff routes never consult the gate.
+ */
+describe('ProtectedRoute staff MFA gate (Batch 64)', () => {
+  beforeEach(() => {
+    auth.user = null;
+    auth.aal = 'aal2';
+    auth.hasVerifiedTotp = true;
+    auth.mfaLoaded = true;
+  });
+
+  function renderStaff(kind: 'admin' | 'support', entry = '/secret') {
+    return render(
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route
+            path="/secret"
+            element={
+              kind === 'admin' ? (
+                <AdminOnlyRoute loginPath="/admin/login" deniedPath="/admin/login?denied=1">
+                  <div>SECRET</div>
+                </AdminOnlyRoute>
+              ) : (
+                <SupportOnlyRoute>
+                  <div>SECRET</div>
+                </SupportOnlyRoute>
+              )
+            }
+          />
+          <Route path="/admin/login" element={<LocationProbe />} />
+          <Route path="/login" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  it('staff at aal1 with a verified factor is sent to the portal step-up, full path carried', () => {
+    auth.user = { id: 'u-admin', roles: ['admin'] };
+    auth.aal = 'aal1';
+    renderStaff('admin', '/secret?tab=2#frag');
+
+    expect(
+      screen.getByText('LOC:/admin/login?redirect=%2Fsecret%3Ftab%3D2%23frag&stepup=1'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
+  });
+
+  it('staff at aal1 with NO factor is also sent to the portal (forced enrollment lives there)', () => {
+    auth.user = { id: 'u-admin', roles: ['admin'] };
+    auth.aal = 'aal1';
+    auth.hasVerifiedTotp = false;
+    renderStaff('admin');
+
+    expect(screen.getByText('LOC:/admin/login?redirect=%2Fsecret&stepup=1')).toBeInTheDocument();
+    expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
+  });
+
+  it('staff at aal2 renders the console', () => {
+    auth.user = { id: 'u-admin', roles: ['admin'] };
+    auth.aal = 'aal2';
+    renderStaff('admin');
+
+    expect(screen.getByText('SECRET')).toBeInTheDocument();
+  });
+
+  it('support at aal1 is gated the same way; support at aal2 renders', () => {
+    auth.user = { id: 'u-support', roles: ['support'] };
+    auth.aal = 'aal1';
+    const first = renderStaff('support');
+    expect(screen.getByText('LOC:/admin/login?redirect=%2Fsecret&stepup=1')).toBeInTheDocument();
+    first.unmount();
+
+    auth.aal = 'aal2';
+    renderStaff('support');
+    expect(screen.getByText('SECRET')).toBeInTheDocument();
+  });
+
+  it('while the factor picture is still loading, the gate waits instead of bouncing', () => {
+    auth.user = { id: 'u-admin', roles: ['admin'] };
+    auth.aal = 'aal1';
+    auth.mfaLoaded = false;
+    renderStaff('admin');
+
+    expect(screen.getByText('Verifying access...')).toBeInTheDocument();
+    expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
+  });
+
+  it('customer routes are untouched by the gate — a customer at aal1 with no factor passes their own guard', () => {
+    auth.user = { id: 'u-customer', roles: ['customer'] };
+    auth.aal = 'aal1';
+    auth.hasVerifiedTotp = false;
+    render(
+      <MemoryRouter initialEntries={['/secret']}>
+        <Routes>
+          <Route
+            path="/secret"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <div>SECRET</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
 
     expect(screen.getByText('SECRET')).toBeInTheDocument();
   });

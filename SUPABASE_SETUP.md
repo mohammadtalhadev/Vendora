@@ -75,6 +75,35 @@ all with the password `demo1234`:
 > admin backdoor. The production project does not contain these accounts;
 > evaluation accounts there use a separate domain and unpublished passwords.
 
+## Staff two-factor authentication (TOTP MFA)
+
+Staff accounts (admin + support) sign in through the staff portal
+(`/admin/login`) with a password **and** an authenticator code — Batch 64.
+How it works, and what the project owner must know:
+
+- **Dashboard setting**: Supabase Dashboard → **Authentication →
+  Multi-Factor** — TOTP is enabled by default on hosted projects; confirm it
+  is on. No code or SQL is involved, and nothing else needs configuring.
+- **Enrollment is forced, never a lockout**: the first time a staff account
+  signs in to the staff portal, it is walked through authenticator setup
+  (scan the QR code with Google Authenticator / Microsoft Authenticator /
+  Authy, enter the first code) before the console opens. Later sign-ins
+  ask for a fresh code. Consoles refuse a password-only (aal1) session, so
+  staff signing in through the customer door are bounced to the portal's
+  step-up automatically.
+- **In-console step-up**: suspending an account, changing a commission
+  rate, or issuing a refund asks for a fresh code when the last proof is
+  older than 10 minutes.
+- **Managing a factor**: Admin Profile → *Password & Sessions* (and Account
+  Settings & Security for support staff) shows the factor's status and can
+  remove it — removal itself demands a fresh code first.
+- **Lost authenticator (recovery)**: there is no code-side backdoor, on
+  purpose. The owner resets the factor in the dashboard: **Authentication →
+  Users → the staff user → reset/remove the MFA factor**. The account then
+  enrols a fresh authenticator at its next staff-portal sign-in, exactly
+  like a first sign-in. Keep at least one other admin able to sign in
+  before resetting anyone's factor.
+
 ## The client
 
 ```ts

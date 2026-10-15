@@ -20,6 +20,7 @@ import {
   updateProfileIdentity,
 } from '../features/auth/api/session';
 import { uploadAvatar } from '../features/account/api/avatar';
+import { MfaSettingsCard } from '../features/auth/components/MfaSettingsCard';
 
 /**
  * Admin profile (/admin/profile). Everything on this page is the signed-in
@@ -382,6 +383,10 @@ export const AdminProfilePage: React.FC = () => {
                 </div>
               )}
             </section>
+
+            {/* Two-factor management (Batch 64): staff hold the keys to the
+                platform, so their authenticator lives beside the password. */}
+            <MfaSettingsCard className={CARD} />
           </>
         )}
 

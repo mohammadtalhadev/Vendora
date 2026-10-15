@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import * as sessionApi from '../features/auth/api/session';
 import type { SignUpResult } from '../features/auth/api/session';
+import { clearStepUp, getAalLevel, listTotpFactors, type AalLevel } from '../features/auth/api/mfa';
 import { hasAnyRole, hasPermission } from '../features/auth/rbac';
 import type { DemoRoleKey } from '../lib/demo-accounts';
 import type { User, UserRole } from '../types/domain';
@@ -24,6 +25,16 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
   refreshUser: () => Promise<void>;
+  /**
+   * Two-factor state (Batch 64): the session's current assurance level, whether
+   * the account holds a verified TOTP factor, and whether that picture has been
+   * read yet. Only staff surfaces consult it — a customer with no factor is
+   * simply aal1 with `hasVerifiedTotp: false` and is never MFA-blocked.
+   */
+  aal: AalLevel;
+  hasVerifiedTotp: boolean;
+  mfaLoaded: boolean;
+  refreshAal: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,9 +42,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aal, setAal] = useState<AalLevel>('aal1');
+  const [hasVerifiedTotp, setHasVerifiedTotp] = useState(false);
+  const [mfaLoaded, setMfaLoaded] = useState(false);
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
+
+  /**
+   * Re-reads the two-factor picture for whoever is signed in. The MFA API
+   * layer is fully defensive (a client without the surface reads as aal1 /
+   * no factor), so this can run on every session application — including the
+   * MFA_CHALLENGE_VERIFIED event, which is how a completed portal challenge
+   * lifts the context to aal2 without a page reload.
+   */
+  const refreshAal = useCallback(async () => {
+    if (!useAuthStore.getState().user) {
+      setAal('aal1');
+      setHasVerifiedTotp(false);
+      setMfaLoaded(true);
+      return;
+    }
+    const [level, lists] = await Promise.all([getAalLevel(), listTotpFactors()]);
+    setAal(level);
+    setHasVerifiedTotp(Boolean(lists?.verified.length));
+    setMfaLoaded(true);
+  }, []);
 
   /**
    * The single place a session becomes app state. Per-user carts and wishlists are
@@ -61,10 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         useCartStore.getState().initializeForUser(user.id);
         useWishlistStore.getState().loadWishlistForUser(user.id);
       }
+      void refreshAal();
     } else {
       logout();
       useCartStore.getState().initializeForUser(null);
       useWishlistStore.getState().initializeForGuest();
+      setAal('aal1');
+      setHasVerifiedTotp(false);
+      setMfaLoaded(false);
     }
     setLoading(false);
   };
@@ -111,6 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const departingUserId = useAuthStore.getState().user?.id ?? null;
     await sessionApi.signOut();
+    // The step-up freshness proof belongs to the departing session; the next
+    // sign-in must earn its own (Batch 64).
+    clearStepUp();
     applySession(null, null);
     // Logout hygiene (FE-SEC F3): the query cache holds the departing
     // account's orders, addresses and staff lists in memory, and the cart /
@@ -142,7 +183,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, loading, signIn, signUp, signInAsDemo, signInWithProvider, signOut, hasRole, refreshUser }}
+      value={{
+        user,
+        session,
+        loading,
+        signIn,
+        signUp,
+        signInAsDemo,
+        signInWithProvider,
+        signOut,
+        hasRole,
+        refreshUser,
+        aal,
+        hasVerifiedTotp,
+        mfaLoaded,
+        refreshAal,
+      }}
     >
       {children}
     </AuthContext.Provider>

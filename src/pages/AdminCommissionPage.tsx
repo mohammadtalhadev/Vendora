@@ -18,6 +18,7 @@ import { formatPrice } from '../store/currency-store';
 import { useCommissionOverview } from '../features/admin/hooks/useAdminQueries';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import { setCategoryCommission } from '../features/admin/api/categories';
+import { useStepUp } from '../features/auth/components/StepUpDialog';
 
 const pct = (fraction: number) => `${(fraction * 100).toFixed(2)}%`;
 
@@ -42,6 +43,11 @@ export const AdminCommissionPage: React.FC = () => {
   const [rateError, setRateError] = useState<string | null>(null);
   const [rateSaved, setRateSaved] = useState<string | null>(null);
   const [categoryInputs, setCategoryInputs] = useState<Record<string, string>>({});
+  // Moving the platform's rates is a sensitive staff action (Batch 64): both
+  // save paths hand their mutation to requireStepUp, which runs it at once
+  // while the two-factor proof is fresh and parks it behind a fresh code
+  // when it is not.
+  const { requireStepUp, stepUpDialog } = useStepUp();
 
   const data = overview.data;
 
@@ -64,13 +70,15 @@ export const AdminCommissionPage: React.FC = () => {
       return;
     }
     setRateError(null);
-    actions.setGlobalCommission.mutate(parsed / 100, {
-      onSuccess: () => {
-        setRateSaved(`Global default rate set to ${parsed.toFixed(2)}%.`);
-        setGlobalRateInput('');
-        void overview.refetch();
-      },
-      onError: (err) => setRateError(err instanceof Error ? err.message : 'Could not set the platform rate.'),
+    requireStepUp(() => {
+      actions.setGlobalCommission.mutate(parsed / 100, {
+        onSuccess: () => {
+          setRateSaved(`Global default rate set to ${parsed.toFixed(2)}%.`);
+          setGlobalRateInput('');
+          void overview.refetch();
+        },
+        onError: (err) => setRateError(err instanceof Error ? err.message : 'Could not set the platform rate.'),
+      });
     });
   };
 
@@ -283,7 +291,9 @@ export const AdminCommissionPage: React.FC = () => {
                               onClick={() => {
                                 const raw = categoryInputs[cat.id];
                                 if (raw === undefined || raw === '') {
-                                  categoryRateMutation.mutate({ categoryId: cat.id, rate: null });
+                                  requireStepUp(() =>
+                                    categoryRateMutation.mutate({ categoryId: cat.id, rate: null }),
+                                  );
                                   return;
                                 }
                                 const parsed = parseFloat(raw);
@@ -291,7 +301,9 @@ export const AdminCommissionPage: React.FC = () => {
                                   setRateError(`"${cat.name}": enter a rate between 0 and 100, or clear the field to use the default.`);
                                   return;
                                 }
-                                categoryRateMutation.mutate({ categoryId: cat.id, rate: parsed / 100 });
+                                requireStepUp(() =>
+                                  categoryRateMutation.mutate({ categoryId: cat.id, rate: parsed / 100 }),
+                                );
                               }}
                               className="h-auto px-2.5 py-1.5 text-[11px]"
                             >
@@ -372,6 +384,7 @@ export const AdminCommissionPage: React.FC = () => {
           </>
         )}
       </div>
+      {stepUpDialog}
     </WorkspaceLayout>
   );
 };

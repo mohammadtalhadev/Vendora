@@ -31,6 +31,7 @@ import { useDisputeQueue } from '../features/admin/hooks/useAdminQueries';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import type { AdminDisputeRow } from '../features/admin/api/disputes';
+import { useStepUp } from '../features/auth/components/StepUpDialog';
 
 const PAGE_SIZE = 12;
 
@@ -80,6 +81,11 @@ export const AdminDisputesPage: React.FC = () => {
   const [selectedForDetails, setSelectedForDetails] = useState<AdminDisputeRow | null>(null);
 
   const actions = useAdminActions();
+  // Issuing a refund moves money, so its confirm hands the mutation to
+  // requireStepUp (Batch 64): fresh two-factor proof runs it at once, a
+  // stale one parks it behind a fresh code. A denial moves no money and is
+  // not gated.
+  const { requireStepUp, stepUpDialog } = useStepUp();
   // Server-side queue read: debounce the search term so typing does not fire a
   // request per keystroke.
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
@@ -118,15 +124,17 @@ export const AdminDisputesPage: React.FC = () => {
         showToast('Enter a refund amount greater than zero.');
         return;
       }
-      resolveAction.mutate(
-        { disputeId, outcome: 'resolved_refund', note, amount },
-        {
-          onSuccess: () => {
-            setSelectedForRuling(null);
-            showToast(`Case ${disputeId} closed with a refund.`);
+      requireStepUp(() => {
+        resolveAction.mutate(
+          { disputeId, outcome: 'resolved_refund', note, amount },
+          {
+            onSuccess: () => {
+              setSelectedForRuling(null);
+              showToast(`Case ${disputeId} closed with a refund.`);
+            },
           },
-        },
-      );
+        );
+      });
     } else {
       resolveAction.mutate(
         { disputeId, outcome: 'resolved_denied', note, amount: null },
@@ -823,6 +831,7 @@ export const AdminDisputesPage: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
+      {stepUpDialog}
     </WorkspaceLayout>
   );
 };

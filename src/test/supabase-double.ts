@@ -306,6 +306,22 @@ export function createSupabaseDouble() {
     signInUser: null as DoubleAuthUser | null,
     /** When true, signUp returns a user but no session, like an email-confirmation project. */
     confirmEmail: false,
+    /**
+     * MFA state (Batch 64), mirroring GoTrue's TOTP surface: factors belong
+     * to the account, a verified challenge raises THIS session to aal2, and
+     * the one code the double accepts is '123456' — any other code is the
+     * wrong-code refusal a real authenticator mismatch produces.
+     */
+    mfaFactors: [] as Array<{
+      id: string;
+      factor_type: 'totp';
+      status: 'verified' | 'unverified';
+      created_at: string;
+      friendly_name?: string;
+    }>,
+    mfaChallenges: new Map<string, string>(),
+    mfaVerifiedThisSession: false,
+    mfaError: null as DoubleError | null,
   };
   /** Every `auth.updateUser` payload, in call order. */
   const updateUserCalls: Array<Record<string, unknown>> = [];
@@ -3039,9 +3055,111 @@ export function createSupabaseDouble() {
       signOut: vi.fn(async () => {
         if (authState.signOutError) return { error: authState.signOutError };
         authState.session = null;
+        // The session is gone, so its assurance level goes with it — the
+        // account's factors themselves persist, exactly as GoTrue keeps them.
+        authState.mfaVerifiedThisSession = false;
         emit('SIGNED_OUT', null);
         return { error: null };
       }),
+      /**
+       * The TOTP MFA surface (Batch 64). Shapes follow supabase-js v2:
+       * enroll returns the QR/secret payload, verify answers with a fresh
+       * session on success, and getAuthenticatorAssuranceLevel reports the
+       * level THIS session has reached plus the level it could reach.
+       */
+      mfa: {
+        enroll: vi.fn(
+          async (_input: { factorType: 'totp'; friendlyName?: string; issuer?: string }) => {
+            if (authState.mfaError) return { data: null, error: authState.mfaError };
+            if (!authState.session?.user) {
+              return { data: null, error: { message: 'Auth session missing!' } };
+            }
+            syntheticId += 1;
+            const factor = {
+              id: `factor-${syntheticId}`,
+              factor_type: 'totp' as const,
+              status: 'unverified' as const,
+              created_at: new Date().toISOString(),
+              friendly_name: _input.friendlyName,
+            };
+            authState.mfaFactors.push(factor);
+            return {
+              data: {
+                id: factor.id,
+                type: 'totp',
+                friendly_name: factor.friendly_name,
+                totp: {
+                  qr_code: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+                  secret: 'DOUBLETOTPSECRET',
+                  uri: 'otpauth://totp/Vendora:double%40vendora.market?secret=DOUBLETOTPSECRET&issuer=Vendora',
+                },
+              },
+              error: null,
+            };
+          },
+        ),
+        challenge: vi.fn(async ({ factorId }: { factorId: string }) => {
+          if (authState.mfaError) return { data: null, error: authState.mfaError };
+          const factor = authState.mfaFactors.find((f) => f.id === factorId);
+          if (!factor) return { data: null, error: { message: 'Factor not found', code: 'factor_not_found' } };
+          syntheticId += 1;
+          const challengeId = `challenge-${syntheticId}`;
+          authState.mfaChallenges.set(challengeId, factorId);
+          return { data: { id: challengeId, expires_at: Math.floor(Date.now() / 1000) + 300 }, error: null };
+        }),
+        verify: vi.fn(
+          async ({ factorId, challengeId, code }: { factorId: string; challengeId: string; code: string }) => {
+            if (authState.mfaError) return { data: null, error: authState.mfaError };
+            const factor = authState.mfaFactors.find((f) => f.id === factorId);
+            if (!factor || authState.mfaChallenges.get(challengeId) !== factorId) {
+              return { data: null, error: { message: 'Challenge not found', code: 'challenge_not_found' } };
+            }
+            if (code !== '123456') {
+              return {
+                data: null,
+                error: { message: 'Invalid TOTP code entered', code: 'mfa_verification_failed', status: 422 },
+              };
+            }
+            factor.status = 'verified';
+            authState.mfaChallenges.delete(challengeId);
+            authState.mfaVerifiedThisSession = true;
+            if (authState.session) emit('MFA_CHALLENGE_VERIFIED', authState.session);
+            return {
+              data: {
+                access_token: 'test-access-token',
+                refresh_token: 'test-refresh-token',
+                token_type: 'bearer',
+                expires_in: 3600,
+                user: authState.session?.user ?? null,
+              },
+              error: null,
+            };
+          },
+        ),
+        listFactors: vi.fn(async () => {
+          if (authState.mfaError) return { data: null, error: authState.mfaError };
+          const totp = authState.mfaFactors.filter((f) => f.factor_type === 'totp');
+          return { data: { all: [...authState.mfaFactors], totp, phone: [] }, error: null };
+        }),
+        unenroll: vi.fn(async ({ factorId }: { factorId: string }) => {
+          if (authState.mfaError) return { data: null, error: authState.mfaError };
+          const index = authState.mfaFactors.findIndex((f) => f.id === factorId);
+          if (index === -1) return { data: null, error: { message: 'Factor not found', code: 'factor_not_found' } };
+          authState.mfaFactors.splice(index, 1);
+          if (!authState.mfaFactors.some((f) => f.status === 'verified')) {
+            authState.mfaVerifiedThisSession = false;
+          }
+          return { data: { id: factorId }, error: null };
+        }),
+        getAuthenticatorAssuranceLevel: vi.fn(async () => {
+          if (authState.mfaError) return { data: null, error: authState.mfaError };
+          const currentLevel = authState.mfaVerifiedThisSession ? 'aal2' : 'aal1';
+          const nextLevel = authState.mfaFactors.some((f) => f.status === 'verified')
+            ? 'aal2'
+            : currentLevel;
+          return { data: { currentLevel, nextLevel, currentAuthenticationMethods: [] }, error: null };
+        }),
+      },
       signInWithOAuth: vi.fn(async (_input: { provider: string; options?: { redirectTo?: string } }) => ({
         data: { url: 'https://provider.example/authorize' },
         error: authState.oAuthError,
@@ -3080,6 +3198,22 @@ export function createSupabaseDouble() {
     /** Makes storage uploads fail with this message (or succeed again with null). */
     failStorageUpload(message: string | null) {
       storageUploadError = message ? { message } : null;
+    },
+    /**
+     * Gives the double's account a TOTP factor in the given state (Batch 64),
+     * the way a completed (or abandoned) authenticator enrollment would.
+     */
+    seedMfaFactor(status: 'verified' | 'unverified' = 'verified') {
+      syntheticId += 1;
+      const factor = {
+        id: `factor-${syntheticId}`,
+        factor_type: 'totp' as const,
+        status,
+        created_at: new Date().toISOString(),
+        friendly_name: 'Vendora authenticator',
+      };
+      authState.mfaFactors.push(factor);
+      return factor;
     },
     /** Seeds the rows a signed-in user will be authorized against. */
     seedProfile(profile: Row) {
@@ -3318,6 +3452,13 @@ export function createSupabaseDouble() {
       authState.resendError = null;
       authState.verifyOtpError = null;
       authState.confirmEmail = false;
+      authState.mfaFactors = [];
+      authState.mfaChallenges.clear();
+      authState.mfaVerifiedThisSession = false;
+      authState.mfaError = null;
+      Object.values(double.auth.mfa).forEach(
+        (fn) => typeof fn.mockClear === 'function' && fn.mockClear(),
+      );
       updateUserCalls.length = 0;
       resendCalls.length = 0;
       verifyOtpCalls.length = 0;

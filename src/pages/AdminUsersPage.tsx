@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { StatusBadge } from '../components/ui/status-badge';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { useAuthStore } from '../store/auth-store';
+import { useStepUp } from '../features/auth/components/StepUpDialog';
 
 /**
  * `admin_user_queue` pages accounts and aggregates the role counts in SQL, so the tiles
@@ -91,6 +92,10 @@ export const AdminUsersPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
 
   const actions = useAdminActions();
+  // Suspending or reactivating an account is a sensitive staff action
+  // (Batch 64): the confirm dialogs hand their fire decision to requireStepUp,
+  // so a stale two-factor proof parks the change behind a fresh code first.
+  const { requireStepUp, stepUpDialog } = useStepUp();
   // Server-side queue read: debounce the search term so typing does not fire a
   // request per keystroke.
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -626,8 +631,9 @@ export const AdminUsersPage: React.FC = () => {
               disabled={actions.setUserStatus.isPending}
               onClick={() => {
                 if (!pendingRowToggle) return;
-                handleToggleStatus(pendingRowToggle.id, pendingRowToggle.accountStatus);
+                const target = pendingRowToggle;
                 setPendingRowToggle(null);
+                requireStepUp(() => handleToggleStatus(target.id, target.accountStatus));
               }}
             >
               {pendingRowToggle?.accountStatus === 'active' ? 'Suspend account' : 'Activate account'}
@@ -661,13 +667,20 @@ export const AdminUsersPage: React.FC = () => {
               variant="default"
               size="sm"
               disabled={bulkRunning}
-              onClick={() => bulkStatus && void runBulkStatus(bulkStatus)}
+              onClick={() => {
+                if (!bulkStatus) return;
+                const status = bulkStatus;
+                setBulkStatus(null);
+                requireStepUp(() => void runBulkStatus(status));
+              }}
             >
               {bulkStatus === 'suspended' ? 'Suspend accounts' : 'Activate accounts'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {stepUpDialog}
     </WorkspaceLayout>
   );
 };
