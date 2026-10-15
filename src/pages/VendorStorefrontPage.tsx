@@ -3,18 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowRight,
-  Award,
   CheckCircle2,
   Clock,
-  Eye,
-  Heart,
   MessageCircle,
   Package,
   RotateCcw,
   Search,
   Share2,
   ShieldCheck,
-  ShoppingCart,
   SlidersHorizontal,
   Star,
   Truck,
@@ -26,7 +22,8 @@ import { useCurrency } from '../store/currency-store';
 import { useStoreByHandle } from '../features/vendor/hooks/useVendorStore';
 import { StoreLogo } from '../features/vendor/components/StoreLogo';
 import { useProducts } from '../features/catalog/hooks/useProducts';
-import { Badge } from '../components/ui/badge';
+import { ProductCard, type ProductItem } from '../features/products';
+import { cardItemToProduct, domainProductToCardItem } from '../features/products/mappers';
 import {
   Select,
   SelectContent,
@@ -37,7 +34,6 @@ import {
 import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { Toast } from '../components/common/Toast';
-import type { Product } from '../types/domain';
 
 /** One page of the seller's shelf; "Load more" widens this limit and refetches. */
 const PAGE_SIZE = 12;
@@ -72,7 +68,6 @@ export const VendorStorefrontPage: React.FC = () => {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [priceMax, setPriceMax] = useState(PRICE_CEILING);
   const [limit, setLimit] = useState(PAGE_SIZE);
-  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
 
   const storeQuery = useStoreByHandle(handle);
   const store = storeQuery.data;
@@ -128,33 +123,31 @@ export const VendorStorefrontPage: React.FC = () => {
     }
   };
 
-  const handleAddToCart = (product: Product) => {
+  // Card actions take the shared ProductCard's ProductItem — the same wiring
+  // the catalogue grid uses (CatalogBrowser), so a product added from this
+  // shelf lands in the cart/wishlist exactly like one added anywhere else.
+  const handleAddToCart = (item: ProductItem) => {
     addItem({
-      id: product.id,
-      productId: product.id,
-      title: product.title,
-      price: product.price,
-      compareAtPrice: product.compareAtPrice,
-      maxStock: product.stock,
-      image: product.images[0] ?? '',
-      sellerId: product.sellerId,
-      sellerName: product.sellerName,
-      sellerType: product.sellerType,
-      type: product.type,
+      id: item.id,
+      productId: item.id,
+      title: item.title,
+      price: item.price,
+      compareAtPrice: item.compareAtPrice,
+      maxStock: item.maxStock,
+      image: item.image,
+      sellerId: item.sellerId,
+      sellerName: item.sellerName,
+      sellerType: item.sellerType,
+      type: item.type,
     });
-    showToast(`Added ${product.title} to cart`);
-
-    setAddedIds((prev) => ({ ...prev, [product.id]: true }));
-    setTimeout(() => {
-      setAddedIds((prev) => ({ ...prev, [product.id]: false }));
-    }, 1500);
+    showToast(`Added ${item.title} to cart`);
   };
 
-  const handleToggleWishlist = (product: Product) => {
-    const wasSaved = isInWishlist(product.id);
-    void toggleWishlist(product);
+  const handleToggleWishlist = (item: ProductItem) => {
+    const wasSaved = isInWishlist(item.id);
+    void toggleWishlist(cardItemToProduct(item));
     showToast(
-      wasSaved ? `Removed ${product.title} from wishlist` : `Saved ${product.title} to wishlist`,
+      wasSaved ? `Removed ${item.title} from wishlist` : `Saved ${item.title} to wishlist`,
       wasSaved ? 'info' : 'success',
     );
   };
@@ -584,133 +577,15 @@ export const VendorStorefrontPage: React.FC = () => {
                 {!productsQuery.isLoading && visibleProducts.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {visibleProducts.map((prod) => {
-                      const isAdded = Boolean(addedIds[prod.id]);
-                      const isSaved = isInWishlist(prod.id);
-                      const discountPct =
-                        prod.compareAtPrice && prod.compareAtPrice > prod.price
-                          ? Math.round((1 - prod.price / prod.compareAtPrice) * 100)
-                          : 0;
-                      const inStock = prod.stock > 0;
-
+                      const item = domainProductToCardItem(prod);
                       return (
-                        <div
-                          key={prod.id}
-                          className="group relative flex flex-col justify-between rounded-3xl border border-white/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                        >
-                          <div>
-                            {/* Image Container with Badges & Wishlist */}
-                            <div className="relative h-44 w-full overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-2 flex items-center justify-center">
-                              <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start">
-                                {discountPct > 0 && (
-                                  <Badge variant="discount-coral" size="sm">
-                                    {discountPct}% off
-                                  </Badge>
-                                )}
-                                {inStock ? (
-                                  <Badge variant="in-stock" size="sm">
-                                    In stock ({prod.stock})
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="secondary" size="sm">
-                                    Out of stock
-                                  </Badge>
-                                )}
-                                {prod.rating >= 4.5 && prod.reviewCount > 0 && (
-                                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-900/85 backdrop-blur-xs px-2 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                                    <Award className="h-2.5 w-2.5 text-amber-400" />
-                                    Top rated
-                                  </span>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => handleToggleWishlist(prod)}
-                                aria-pressed={isSaved}
-                                aria-label={isSaved ? `Remove ${prod.title} from wishlist` : `Save ${prod.title} to wishlist`}
-                                title="Toggle wishlist"
-                                className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs shadow-xs hover:scale-110 transition-transform"
-                              >
-                                <Heart className={`h-3.5 w-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
-                              </button>
-
-                              <img
-                                src={prod.images[0] ?? ''}
-                                alt={prod.title}
-                                className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                              />
-                            </div>
-
-                            {/* Brand & Rating */}
-                            <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
-                              <span className="font-semibold text-slate-400">{prod.brand}</span>
-                              <div className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200">
-                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                                <span>{prod.rating.toFixed(1)}</span>
-                                <span className="text-slate-400 text-[10px]">({prod.reviewCount})</span>
-                              </div>
-                            </div>
-
-                            {/* Product Title (links to its detail page) */}
-                            <h4 className="font-outfit mt-1 text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-sun-orange transition-colors">
-                              <Link to={`/products/${prod.id}`}>{prod.title}</Link>
-                            </h4>
-
-                            {/* Description Snippet */}
-                            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                              {prod.description}
-                            </p>
-                          </div>
-
-                          {/* Price and Actions */}
-                          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <div className="flex items-baseline gap-2 mb-1">
-                              <span className="font-outfit text-sm font-extrabold text-slate-900 dark:text-white">
-                                {formatPrice(prod.price)}
-                              </span>
-                              {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
-                                <span className="text-[11px] text-slate-400 line-through">
-                                  {formatPrice(prod.compareAtPrice)}
-                                </span>
-                              )}
-                            </div>
-                            {prod.shippingSettings?.freeShipping && (
-                              <p className="mb-2 flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-                                <Truck className="h-3 w-3" />
-                                Free shipping on this item
-                              </p>
-                            )}
-
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleAddToCart(prod)}
-                                disabled={!inStock}
-                                aria-label={inStock ? `Add ${prod.title} to cart` : `${prod.title} is out of stock`}
-                                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all shadow-xs disabled:cursor-not-allowed disabled:opacity-50 ${
-                                  isAdded
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-gradient-to-r from-sun-orange to-[#FF9040] text-white hover:from-sun-orange-600 hover:to-sun-orange'
-                                }`}
-                              >
-                                {isAdded ? (
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                ) : (
-                                  <ShoppingCart className="h-3.5 w-3.5" />
-                                )}
-                                <span>{!inStock ? 'Out of stock' : isAdded ? 'Added' : 'Add to Cart'}</span>
-                              </button>
-                              <Link
-                                to={`/products/${prod.id}`}
-                                aria-label={`View details for ${prod.title}`}
-                                title="View product details"
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                              </Link>
-                            </div>
-                          </div>
-                        </div>
+                        <ProductCard
+                          key={item.id}
+                          product={item}
+                          onAddToCart={handleAddToCart}
+                          onToggleWishlist={handleToggleWishlist}
+                          isWishlisted={isInWishlist(item.id)}
+                        />
                       );
                     })}
                   </div>
