@@ -47,11 +47,23 @@ describe('RiderNav', () => {
       [/history/i, '/rider/history'],
       [/earnings/i, '/rider/earnings'],
       [/profile/i, '/rider/profile'],
-      [/view storefront/i, '/'],
     ];
     for (const [name, href] of routes) {
       expect(screen.getByRole('link', { name })).toHaveAttribute('href', href);
     }
+  });
+
+  it('shows no storefront link to a rider who owns no store', () => {
+    renderWorkspace(<RiderNav />, ['/rider']);
+
+    expect(screen.queryByRole('link', { name: /view storefront/i })).toBeNull();
+  });
+
+  it('links a rider who also owns a store to that storefront', () => {
+    useAuthStore.getState().setUser({ ...RIDER, vendorId: 'store-1' }, 'test-token');
+    renderWorkspace(<RiderNav />, ['/rider']);
+
+    expect(screen.getByRole('link', { name: /view storefront/i })).toHaveAttribute('href', '/vendors/store-1');
   });
 
   it('badges My Deliveries with the open queue the board reports', async () => {

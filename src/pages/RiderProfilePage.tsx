@@ -9,6 +9,8 @@ import { useAuthStore } from '../store/auth-store';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { FormField } from '../components/ui/form-field';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { vehicleOptions } from '../features/rider/api/vehicles';
 
 /** `rider_availability` in Postgres; anything else the row holds is shown as offline. */
 const AVAILABILITY: RiderAvailability[] = ['available', 'busy', 'offline'];
@@ -66,7 +68,9 @@ export const RiderProfilePage: React.FC = () => {
     event.preventDefault();
     setSaved(false);
     actions.profile.mutate(
-      { phone: phone.trim(), vehicleType: vehicleType.trim() },
+      // The vehicle comes from the canonical Select (or the row's own stored
+      // value), so it is saved verbatim — no trim rewriting a legacy value.
+      { phone: phone.trim(), vehicleType },
       { onSuccess: () => setSaved(true) },
     );
   };
@@ -167,17 +171,24 @@ export const RiderProfilePage: React.FC = () => {
                   />
                 </FormField>
                 <FormField label="Vehicle type" htmlFor="rider-vehicle">
-                  <Input
-                    id="rider-vehicle"
-                    data-testid="profile-vehicle-input"
-                    type="text"
+                  <Select
                     value={vehicleType}
-                    onChange={(event) => {
-                      setVehicleEdit(event.target.value);
+                    onValueChange={(value) => {
+                      setVehicleEdit(value);
                       setSaved(false);
                     }}
-                    placeholder="e.g. Motorcycle"
-                  />
+                  >
+                    <SelectTrigger id="rider-vehicle" data-testid="profile-vehicle-input">
+                      <SelectValue placeholder="Select your vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicleOptions(vehicleType).map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormField>
 
                 <div className="flex flex-wrap items-center gap-3 sm:col-span-2">

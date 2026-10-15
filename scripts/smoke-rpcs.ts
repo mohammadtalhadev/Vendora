@@ -1888,6 +1888,61 @@ await q(`select admin_update_category($1::uuid, null, null, null, null, null, nu
 ok('banner: p_clear_image nulls the stored image',
   (await q(`select image from categories where id = $1`, [bannerCat.id]))[0].image === null);
 
+console.log('\n[batch 83] rider + support panels: assignment reads and the staff model');
+const SUPPORT83 = '83838383-8383-4838-8838-838383838383';
+await as('postgres');
+await q(`insert into auth.users (id, email, raw_user_meta_data) values ($1,'support83@demo.test','{}')`, [SUPPORT83]);
+await q(`update profiles set roles = array['support','customer']::user_role[] where id = $1`, [SUPPORT83]);
+const order83 = (await q(
+  `insert into orders (customer_id, customer_email) values ($1,'customer@demo.test') returning id`,
+  [CU],
+))[0].id;
+// Assigned on the deliveries row ONLY (sub_orders.rider_id left null): the
+// exact shape the pre-83 rider policy could not see.
+const sub83 = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,500,50,'ready_for_pickup') returning id`,
+  [order83, STORE],
+))[0].id;
+await q(`insert into deliveries (sub_order_id, rider_id, status) values ($1,$2,'assigned')`, [sub83, RPID]);
+const sub83Other = (await q(
+  `insert into sub_orders (order_group_id, seller_id, subtotal, shipping_fee, status)
+   values ($1,$2,300,40,'ready_for_pickup') returning id`,
+  [order83, STORE],
+))[0].id;
+await q(
+  `insert into disputes (sub_order_id, order_group_id, customer_id, customer_name, vendor_id, vendor_name, reason, status)
+   values ($1,$2,$3,'Cust One',$4,'Tech Store','Item arrived damaged','open')`,
+  [sub83, order83, CU, STORE],
+);
+
+await as('authenticated', RIDER);
+ok('[batch 83] rider reads the sub-order the deliveries row assigns to them',
+  (await q('select count(*)::int c from sub_orders where id = $1', [sub83]))[0].c === 1);
+ok('[batch 83] rider cannot read a sub-order assigned to nobody',
+  (await q('select count(*)::int c from sub_orders where id = $1', [sub83Other]))[0].c === 0);
+const board83 = (await q('select rider_delivery_board() as b'))[0].b;
+ok('[batch 83] rider board returns the assigned delivery',
+  Array.isArray(board83?.deliveries) && board83.deliveries.some((d: { subOrderId?: string }) => d.subOrderId === sub83),
+  `(got ${JSON.stringify(board83?.deliveries)})`);
+
+await as('authenticated', SUPPORT83);
+const queue83 = (await q('select support_dispute_queue() as r'))[0].r;
+ok('[batch 83] support role reads the triage dispute queue',
+  typeof queue83?.total === 'number' && queue83.total >= 1,
+  `(got ${JSON.stringify(queue83)})`);
+const tickets83 = (await q(`select support_ticket_queue('all', false, '', 1, 12) as r`))[0].r;
+ok('[batch 83] support role reads the ticket queue',
+  tickets83 != null && Array.isArray(tickets83.rows));
+
+await as('authenticated', CU);
+await expectThrow('[batch 83] customer refused by the triage dispute queue',
+  () => q('select support_dispute_queue()'), 'Only staff');
+await expectThrow('[batch 83] customer refused by the ticket queue',
+  () => q(`select support_ticket_queue('all', false, '', 1, 12)`), 'Only staff');
+await expectThrow('[batch 83] non-rider refused by the rider board',
+  () => q('select rider_delivery_board()'), 'Not a rider');
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

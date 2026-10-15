@@ -38,11 +38,23 @@ describe('SupportNav', () => {
       [/help center/i, '/help'],
       [/faq/i, '/faq'],
       [/refund policy/i, '/refund-policy'],
-      [/view storefront/i, '/'],
     ];
     for (const [name, href] of routes) {
       expect(screen.getByRole('link', { name })).toHaveAttribute('href', href);
     }
+  });
+
+  it('shows no storefront link to an agent who owns no store', () => {
+    renderWorkspace(<SupportNav />, ['/support']);
+
+    expect(screen.queryByRole('link', { name: /view storefront/i })).toBeNull();
+  });
+
+  it('links an agent who also owns a store to that storefront', () => {
+    useAuthStore.getState().setUser({ ...AGENT, vendorId: 'store-1' }, 'test-token');
+    renderWorkspace(<SupportNav />, ['/support']);
+
+    expect(screen.getByRole('link', { name: /view storefront/i })).toHaveAttribute('href', '/vendors/store-1');
   });
 
   it('badges the dispute queue with the unassigned count the desk read returns', async () => {

@@ -168,15 +168,22 @@ export const SupportNav: React.FC<SupportNavProps> = ({ className, onNavigate })
             </div>
           </div>
 
-          <div className="mt-2.5 border-t border-slate-100 dark:border-slate-800 pt-2 flex items-center justify-between text-[11px]">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 font-semibold text-sun-orange-600 dark:text-sun-orange hover:underline"
-            >
-              <span>View Storefront</span>
-              <ExternalLink className="h-3 w-3" aria-hidden="true" />
-            </Link>
-          </div>
+          {/* A storefront link belongs to a store: only an agent who also owns
+              one (vendorId on the session profile) gets it, pointing at their
+              own store — a support-only account has no storefront to view. */}
+          {user?.vendorId && (
+            <div className="mt-2.5 border-t border-slate-100 dark:border-slate-800 pt-2 flex items-center justify-between text-[11px]">
+              <Link
+                to={`/vendors/${user.vendorId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-semibold text-sun-orange-600 dark:text-sun-orange hover:underline"
+              >
+                <span>View Storefront</span>
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Grouped Navigation Sections */}
