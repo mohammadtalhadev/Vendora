@@ -246,23 +246,24 @@ export const HomePage: React.FC = () => {
 
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
 
+  // One clock for the whole hero (Batch 96): a single interval advances the
+  // main carousel and the portrait rail in the same tick, so the two always
+  // switch together, and the shared hover pause stops both. (Two private
+  // intervals used to restart at different moments — whenever their own
+  // list's CMS read landed — and drift apart.) A side whose list is empty
+  // stays put, and a single published portrait stays static.
   useEffect(() => {
-    if (isCarouselPaused || heroSlides.length === 0) return;
+    if (isCarouselPaused) return;
     const timer = setInterval(() => {
-      setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
+      if (heroSlides.length > 0) {
+        setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
+      }
+      if (heroPortraits.length > 1) {
+        setHeroPortraitIndex((prev) => (prev + 1) % heroPortraits.length);
+      }
     }, 6500);
     return () => clearInterval(timer);
-  }, [isCarouselPaused, heroSlides.length]);
-
-  // The portrait rail rotates on the same clock and pause as the main
-  // carousel (Batch 85); a single published portrait stays static.
-  useEffect(() => {
-    if (isCarouselPaused || heroPortraits.length <= 1) return;
-    const timer = setInterval(() => {
-      setHeroPortraitIndex((prev) => (prev + 1) % heroPortraits.length);
-    }, 6500);
-    return () => clearInterval(timer);
-  }, [isCarouselPaused, heroPortraits.length]);
+  }, [isCarouselPaused, heroSlides.length, heroPortraits.length]);
 
   const nextHeroSlide = () => {
     setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
@@ -333,7 +334,7 @@ export const HomePage: React.FC = () => {
         <section className="mb-10">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
             <div
-              className="relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl group aspect-[16/9] min-h-[260px] sm:min-h-[320px] flex items-center justify-center self-start lg:col-span-9"
+              className="relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl group aspect-[16/9] lg:aspect-auto lg:h-full min-h-[260px] sm:min-h-[320px] flex items-center justify-center lg:col-span-9"
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >
@@ -376,12 +377,13 @@ export const HomePage: React.FC = () => {
                 (homepage_hero_portrait) with a built-in campaign fallback.
                 Batch 85: every published banner joins the rail and it
                 rotates like the main carousel; a single banner is static.
-                Batch 87: the rail's media box is a strict 9:16 at every
-                breakpoint (no desktop stretch), so the portrait creatives
-                are never cropped by the row's height. Stacked under the
-                carousel on mobile; beside it on desktop. */}
+                Batch 96: the rail's strict 9:16 box is the hero row's height
+                driver — neither column self-starts, so on desktop the grid
+                stretches the main carousel to the same height while the
+                portrait creatives keep their designed ratio. Stacked under
+                the carousel on mobile; beside it on desktop. */}
             <div
-              className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg self-start lg:col-span-3"
+              className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3"
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >

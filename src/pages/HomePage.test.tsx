@@ -457,7 +457,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     return el;
   }
 
-  it('hero shows the slides plus all three portrait banners in a strict 9:16 rail, and no promo column', async () => {
+  it('hero shows the slides plus all three portrait banners in a strict 9:16 rail that sets the row height, and no promo column', async () => {
     seedSlide();
     seedPortraitWatch();
     seedPortraitKitchen();
@@ -482,11 +482,22 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(watchImg).toBeInTheDocument();
     expect(beautyImg).toBeInTheDocument();
 
-    // The rail is a strict 9:16 box (no desktop stretch) at col-span 3.
+    // Batch 96: the rail's strict 9:16 box drives the hero row's height —
+    // it keeps its ratio, and neither column self-starts, so the desktop
+    // grid stretches both columns to that one height.
     const rail = blockOf(kitchenImg);
     expect(rail.className).toContain('aspect-[9/16]');
     expect(rail.className).not.toContain('lg:aspect-auto');
+    expect(rail.className).not.toContain('self-start');
     expect(rail.className).toContain('lg:col-span-3');
+
+    // The main carousel keeps 16:9 below lg but gives the fixed ratio up on
+    // desktop, stretching to the portrait rail's height instead.
+    const mainBlock = blockOf(slideImg);
+    expect(mainBlock.className).toContain('aspect-[16/9]');
+    expect(mainBlock.className).toContain('lg:aspect-auto');
+    expect(mainBlock.className).toContain('lg:h-full');
+    expect(mainBlock.className).not.toContain('self-start');
 
     // The promo banner appears exactly once on the page and NOT in the hero:
     // it lives in the deals section further down.
@@ -533,6 +544,45 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     act(() => {
       vi.advanceTimersByTime(13000);
     });
+    expect(frameOf(beautyImg).className).toContain('opacity-100');
+    vi.useRealTimers();
+  });
+
+  it('main carousel and portrait rail advance on the same tick (Batch 96: one shared clock)', async () => {
+    seedPortraitWatch();
+    seedPortraitKitchen();
+    seedPortraitBeauty();
+    // No CMS slide seeded, so the three built-in slides render from the
+    // start while the portraits land with the CMS read. One interval drives
+    // both sides (Batch 96): after a single 6.5s tick the active slide AND
+    // the active portrait have each moved exactly one step — the old pair
+    // of private timers drifted because each restarted when its own list's
+    // read landed.
+    vi.useFakeTimers();
+    renderHome();
+
+    const kitchenImg = await vi.waitFor(() =>
+      screen.getByAltText('Home & Kitchen Made Beautiful'),
+    );
+    const iphoneImg = screen.getByAltText('iPhone 18 Pro Max');
+    const airpodsImg = screen.getByAltText('AirPods Pro 2');
+    const fashionImg = screen.getByAltText('Fashion — upgrade your style');
+    const watchImg = screen.getByAltText('Apple Watch Series 10');
+    const beautyImg = screen.getByAltText('Your Beauty & Self-Care, All in One Place');
+    const frameOf = (img: HTMLElement) => img.parentElement as HTMLElement;
+    expect(frameOf(iphoneImg).className).toContain('opacity-100');
+    expect(frameOf(watchImg).className).toContain('opacity-100');
+
+    act(() => {
+      vi.advanceTimersByTime(6500);
+    });
+    expect(frameOf(airpodsImg).className).toContain('opacity-100');
+    expect(frameOf(kitchenImg).className).toContain('opacity-100');
+
+    act(() => {
+      vi.advanceTimersByTime(6500);
+    });
+    expect(frameOf(fashionImg).className).toContain('opacity-100');
     expect(frameOf(beautyImg).className).toContain('opacity-100');
     vi.useRealTimers();
   });
