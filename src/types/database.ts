@@ -838,19 +838,19 @@ export type Database = {
     "media_folders": {
       Row: {
         "id": string,
-        "vendor_id": string,
+        "vendor_id": string | null,
         "name": string,
         "created_at": string
       }
       Insert: {
         "id"?: string,
-        "vendor_id": string,
+        "vendor_id"?: string | null,
         "name": string,
         "created_at"?: string
       }
       Update: {
         "id"?: string,
-        "vendor_id"?: string,
+        "vendor_id"?: string | null,
         "name"?: string,
         "created_at"?: string
       }
@@ -867,7 +867,7 @@ export type Database = {
     "media_items": {
       Row: {
         "id": string,
-        "vendor_id": string,
+        "vendor_id": string | null,
         "name": string,
         "folder": string,
         "object_path": string,
@@ -881,7 +881,7 @@ export type Database = {
       }
       Insert: {
         "id"?: string,
-        "vendor_id": string,
+        "vendor_id"?: string | null,
         "name": string,
         "folder"?: string,
         "object_path"?: string,
@@ -895,7 +895,7 @@ export type Database = {
       }
       Update: {
         "id"?: string,
-        "vendor_id"?: string,
+        "vendor_id"?: string | null,
         "name"?: string,
         "folder"?: string,
         "object_path"?: string,
@@ -2940,6 +2940,33 @@ export type Database = {
         "p_address": Json
       }
       Returns: Json
+    },
+    "admin_upload_media": {
+      Args: {
+        "p_vendor_id": string | null,
+        "p_name": string,
+        "p_folder": string,
+        "p_object_path": string,
+        "p_cdn_url": string,
+        "p_mime_type": string,
+        "p_size_bytes": number,
+        "p_width"?: number | null,
+        "p_height"?: number | null
+      }
+      Returns: {
+        "id": string,
+        "vendor_id": string | null,
+        "name": string,
+        "folder": string,
+        "object_path": string,
+        "cdn_url": string,
+        "mime_type": string,
+        "size_bytes": number,
+        "width": number | null,
+        "height": number | null,
+        "status": string,
+        "created_at": string
+      }
     },
     "admin_user_queue": {
       Args: {

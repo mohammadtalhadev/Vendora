@@ -8,6 +8,7 @@ import {
   moveAdminMedia,
   renameAdminMedia,
   renameAdminMediaFolder,
+  uploadAdminMedia,
   type AdminMediaItem,
 } from '../api/media';
 import { adminKeys, useAdminScope } from './admin-keys';
@@ -77,10 +78,11 @@ export function useDeleteAdminMedia() {
   });
 }
 
+/** A folder for a store, or for the platform itself when vendorId is null (Batch 72). */
 export function useCreateAdminMediaFolder() {
   const refresh = useRefreshAdminMedia();
   return useMutation({
-    mutationFn: ({ vendorId, name }: { vendorId: string; name: string }) =>
+    mutationFn: ({ vendorId, name }: { vendorId: string | null; name: string }) =>
       createAdminMediaFolder(vendorId, name),
     onSuccess: () => refresh(),
   });
@@ -94,7 +96,7 @@ export function useRenameAdminMediaFolder() {
       oldName,
       newName,
     }: {
-      vendorId: string;
+      vendorId: string | null;
       oldName: string;
       newName: string;
     }) => renameAdminMediaFolder(vendorId, oldName, newName),
@@ -105,8 +107,18 @@ export function useRenameAdminMediaFolder() {
 export function useDeleteAdminMediaFolder() {
   const refresh = useRefreshAdminMedia();
   return useMutation({
-    mutationFn: ({ vendorId, name }: { vendorId: string; name: string }) =>
+    mutationFn: ({ vendorId, name }: { vendorId: string | null; name: string }) =>
       deleteAdminMediaFolder(vendorId, name),
+    onSuccess: () => refresh(),
+  });
+}
+
+/** A staff upload to the platform's own library or a store's (Batch 72). */
+export function useUploadAdminMedia() {
+  const refresh = useRefreshAdminMedia();
+  return useMutation({
+    mutationFn: ({ file, vendorId, folder }: { file: File; vendorId: string | null; folder: string }) =>
+      uploadAdminMedia(file, { vendorId, folder }),
     onSuccess: () => refresh(),
   });
 }

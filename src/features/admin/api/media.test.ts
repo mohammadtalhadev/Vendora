@@ -16,6 +16,7 @@ import {
   renameAdminMedia,
   renameAdminMediaFolder,
   setMediaStatus,
+  uploadAdminMedia,
 } from './media';
 import {
   mediaFolderRow,
@@ -273,5 +274,137 @@ describe('Batch 66: listAdminMediaStores (New Folder picker)', () => {
     await expect(listAdminMediaStores()).rejects.toThrow(
       /only the platform team can list media stores/i,
     );
+  });
+});
+
+describe('Batch 72: platform media - the admin’s own folders and uploads', () => {
+  const bannerFile = () =>
+    new File([new Uint8Array([1, 2, 3])], 'hero banner.png', { type: 'image/png' });
+
+  it('surfaces a platform item in the library with the Platform label', async () => {
+    signInAsAdmin();
+    seedStores();
+    supabaseDouble.seedMediaItem(mediaItemRow({
+      id: 'm-platform', vendor_id: null, name: 'banner.png', folder: 'banners', status: 'approved',
+    }));
+    supabaseDouble.seedMediaItem(mediaItemRow({ id: 'm-store', vendor_id: STORE_A }));
+
+    const items = await fetchAdminMediaLibrary();
+    const byId = new Map(items.map((item) => [item.id, item]));
+
+    expect(byId.get('m-platform')).toMatchObject({
+      vendorId: null, storeName: 'Platform', storeSlug: 'platform', folder: 'banners',
+    });
+    expect(byId.get('m-store')).toMatchObject({ vendorId: STORE_A, storeName: 'Alpha Audio' });
+  });
+
+  it('creates, lists, renames (relabeling files) and deletes platform folder rows', async () => {
+    signInAsAdmin();
+    seedStores();
+
+    const created = await createAdminMediaFolder(null, 'Site Banners');
+    expect(created).toMatchObject({ vendorId: null, name: 'site-banners' });
+    expect((await listAdminMediaFolders()).map((folder) => folder.name)).toEqual(['site-banners']);
+
+    // The NULL owner must not collide with a store folder of the same name,
+    // and the pair must stay distinct in the listing.
+    await createAdminMediaFolder(STORE_A, 'site-banners');
+    expect((await listAdminMediaFolders()).length).toBe(2);
+
+    supabaseDouble.seedMediaItem(mediaItemRow({ id: 'm-p', vendor_id: null, folder: 'site-banners' }));
+    const renamed = await renameAdminMediaFolder(null, 'site-banners', 'Hero Banners');
+    expect(renamed).toMatchObject({ vendorId: null, name: 'hero-banners' });
+    const platformItem = (await fetchAdminMediaLibrary()).find((item) => item.id === 'm-p');
+    expect(platformItem?.folder).toBe('hero-banners');
+
+    await expect(deleteAdminMediaFolder(null, 'hero-banners')).rejects.toThrow(/still holds 1 file/i);
+    await deleteAdminMedia('m-p');
+    await deleteAdminMediaFolder(null, 'hero-banners');
+    expect((await listAdminMediaFolders()).map((folder) => folder.vendorId)).toEqual([STORE_A]);
+  });
+
+  it('refuses a duplicate platform folder name', async () => {
+    signInAsAdmin();
+    await createAdminMediaFolder(null, 'banners');
+    await expect(createAdminMediaFolder(null, 'banners')).rejects.toThrow(/duplicate key/i);
+  });
+
+  it('uploads to the platform: platform/ path, null-vendor row, born approved', async () => {
+    signInAsAdmin();
+    seedStores();
+
+    const uploaded = await uploadAdminMedia(bannerFile(), { vendorId: null, folder: 'Banners' });
+
+    expect(supabaseDouble.storageUploads).toHaveLength(1);
+    expect(supabaseDouble.storageUploads[0]?.bucket).toBe('vendor-assets');
+    expect(supabaseDouble.storageUploads[0]?.path).toMatch(/^platform\/banners\/\d+_hero_banner\.png$/);
+    expect(uploaded).toMatchObject({
+      vendorId: null,
+      storeName: 'Platform',
+      storeSlug: 'platform',
+      folder: 'banners',
+      name: 'hero banner.png',
+      status: 'approved',
+    });
+    expect(uploaded.objectPath).toBe(supabaseDouble.storageUploads[0]?.path);
+    // The destination exists as a folder row for the sidebar afterwards.
+    expect((await listAdminMediaFolders()).map((folder) => folder.name)).toEqual(['banners']);
+  });
+
+  it('uploads on a store’s behalf under the store slug, owned by that store', async () => {
+    signInAsAdmin();
+    seedStores();
+
+    const uploaded = await uploadAdminMedia(bannerFile(), { vendorId: STORE_A, folder: 'products' });
+
+    expect(supabaseDouble.storageUploads[0]?.path).toMatch(/^alpha-audio\/products\/\d+_hero_banner\.png$/);
+    expect(uploaded).toMatchObject({
+      vendorId: STORE_A, storeName: 'Alpha Audio', storeSlug: 'alpha-audio', status: 'approved',
+    });
+  });
+
+  it('refuses an upload for a store that does not exist, before any object is stored', async () => {
+    signInAsAdmin();
+    seedStores();
+
+    await expect(
+      uploadAdminMedia(bannerFile(), { vendorId: 'store-gone', folder: 'products' }),
+    ).rejects.toThrow(/does not exist/i);
+    expect(supabaseDouble.storageUploads).toEqual([]);
+  });
+
+  it('refuses a non-admin upload before storage is touched', async () => {
+    supabaseDouble.authState.session = {
+      access_token: 't',
+      user: { id: SELLER, email: 'seller@vendora.test' },
+    };
+    supabaseDouble.seedProfile(
+      profileRow({ id: SELLER, name: 'Sana Seller', email: 'seller@vendora.test', roles: ['seller'] }),
+    );
+    seedStores();
+
+    await expect(
+      uploadAdminMedia(bannerFile(), { vendorId: null, folder: 'banners' }),
+    ).rejects.toThrow(/only the platform team can upload a media asset/i);
+    expect(supabaseDouble.storageUploads).toEqual([]);
+  });
+
+  it('moves a platform asset between platform folders under the platform segment', async () => {
+    signInAsAdmin();
+    supabaseDouble.seedMediaItem(mediaItemRow({
+      id: 'm-pmove',
+      vendor_id: null,
+      folder: 'banners',
+      object_path: 'platform/banners/hero.png',
+      cdn_url: 'https://double.supabase.co/storage/v1/object/public/vendor-assets/platform/banners/hero.png',
+    }));
+    const [item] = await fetchAdminMediaLibrary();
+
+    const moved = await moveAdminMedia(item!, 'Campaigns');
+
+    expect(supabaseDouble.storageMoves).toEqual([
+      { bucket: 'vendor-assets', from: 'platform/banners/hero.png', to: 'platform/campaigns/hero.png' },
+    ]);
+    expect(moved).toMatchObject({ vendorId: null, folder: 'campaigns', objectPath: 'platform/campaigns/hero.png' });
   });
 });

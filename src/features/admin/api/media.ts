@@ -19,13 +19,25 @@ import type { VendorMediaItem } from '../../vendor/api/media';
  * removes the object with the paths it returns. Folders are real rows in
  * `media_folders` since Batch 61, written directly under that table's RLS
  * (owner or admin); renaming one also relabels its files' `folder` column.
+ *
+ * Batch 72 adds the platform itself as an owner: since migration
+ * 20261017020000 a NULL `vendor_id` IS the platform's own library - its
+ * folders, and the banners / CMS assets staff upload into them (objects
+ * under the `platform/` path prefix, rows recorded through the guarded
+ * `admin_upload_media` RPC and born `approved`). Platform rows resolve to
+ * the store name "Platform" everywhere a store's rows resolve to theirs.
  */
 
 /** The bucket every store's files live in; the vendor API uses the same name. */
 const BUCKET = 'vendor-assets';
 
+/** How a platform-owned (NULL vendor) row names its owner across the console. */
+export const PLATFORM_STORE_NAME = 'Platform';
+export const PLATFORM_STORE_SLUG = 'platform';
+
 export interface AdminMediaItem extends VendorMediaItem {
-  vendorId: string;
+  /** The owning store's id, or null for a platform-owned asset. */
+  vendorId: string | null;
   storeName: string;
   storeSlug: string;
 }
@@ -42,8 +54,13 @@ function mapAdminMedia(
   row: Record<string, unknown>,
   stores: Map<string, { name: string; slug: string }>,
 ): AdminMediaItem {
-  const vendorId = text(row.vendor_id);
-  const store = stores.get(vendorId);
+  // A NULL vendor_id is a platform-owned row (Batch 72), not a missing store.
+  const vendorId =
+    row.vendor_id === null || row.vendor_id === undefined ? null : text(row.vendor_id);
+  const store =
+    vendorId === null
+      ? { name: PLATFORM_STORE_NAME, slug: PLATFORM_STORE_SLUG }
+      : stores.get(vendorId);
   const status = text(row.status);
   return {
     id: text(row.id),
@@ -170,7 +187,12 @@ export async function moveAdminMedia(item: AdminMediaItem, targetFolder: string)
   if (!item.cdnUrl.includes(`/${BUCKET}/`)) {
     throw rpcFailed('Could not move the asset', 'this demo asset has no file stored in the vendor-assets bucket, so it cannot be moved');
   }
-  if (!item.storeSlug) {
+  // The first path segment is the owner: the store's slug, or 'platform' for
+  // the platform's own files (Batch 72). A move only ever takes a folder, so
+  // an asset can only travel between folders of the same owner, platform
+  // included - cross-owner moves stay impossible by construction.
+  const ownerSlug = item.vendorId === null ? PLATFORM_STORE_SLUG : item.storeSlug;
+  if (!ownerSlug) {
     throw rpcFailed('Could not move the asset', 'the owning store could not be resolved, so the stored path cannot be rebuilt');
   }
   const fileName = text(item.objectPath.split('/').pop());
@@ -178,7 +200,7 @@ export async function moveAdminMedia(item: AdminMediaItem, targetFolder: string)
     throw rpcFailed('Could not move the asset', 'the asset has no stored object path to move');
   }
 
-  const nextPath = `${item.storeSlug}/${folder}/${fileName}`;
+  const nextPath = `${ownerSlug}/${folder}/${fileName}`;
   const { error: moveError } = await supabase.storage.from(BUCKET).move(item.objectPath, nextPath);
   if (moveError) throw rpcFailed('Could not move the asset', moveError.message);
 
@@ -198,6 +220,90 @@ export async function moveAdminMedia(item: AdminMediaItem, targetFolder: string)
   }
 
   return resolveAdminMedia(data as unknown as Record<string, unknown>);
+}
+
+/**
+ * Batch 72: a staff upload. The object goes to the bucket first at
+ * `<owner slug>/<folder>/<timestamp>_<name>` - `platform/...` for the
+ * platform's own files, the store's slug for a file uploaded on a seller's
+ * behalf - and the row is then recorded through `admin_upload_media`: the
+ * direct insert is closed to staff by `media_insert_owner` (it demands the
+ * caller's own store), so the guarded RPC is the one write path for both
+ * destinations, and its rows are born `approved`. If recording fails, the
+ * orphaned object is removed again, mirroring the vendor upload. Image
+ * dimensions are left unknown rather than guessed, exactly as the vendor
+ * upload leaves them.
+ */
+export async function uploadAdminMedia(
+  file: File,
+  target: { vendorId: string | null; folder: string },
+): Promise<AdminMediaItem> {
+  await requireAdmin('upload a media asset');
+
+  if (!file.type) {
+    throw rpcFailed(
+      'Could not upload the asset',
+      'this file has no detectable type and cannot be uploaded - choose an image or video file',
+    );
+  }
+  const folder = cleanFolderName(target.folder);
+  if (!folder) {
+    throw rpcFailed('Could not upload the asset', 'give the destination folder a name of letters, numbers, dashes or underscores');
+  }
+
+  let ownerSlug = PLATFORM_STORE_SLUG;
+  if (target.vendorId) {
+    const { data: store, error: storeError } = await supabase
+      .from('vendor_profiles')
+      .select('id, slug')
+      .eq('id', target.vendorId)
+      .maybeSingle();
+    if (storeError) throw rpcFailed('Could not upload the asset', storeError.message);
+    if (!store) throw rpcFailed('Could not upload the asset', 'that store does not exist');
+    ownerSlug = text((store as unknown as Record<string, unknown>).slug);
+    if (!ownerSlug) {
+      throw rpcFailed('Could not upload the asset', 'that store has no slug, so the stored path cannot be built');
+    }
+  }
+
+  const safeName = file.name.replace(/[^A-Za-z0-9._-]+/g, '_');
+  const objectPath = `${ownerSlug}/${folder}/${Date.now()}_${safeName}`;
+
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(objectPath, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type,
+  });
+  if (uploadError) throw rpcFailed('Could not upload the asset', uploadError.message);
+
+  const { data: publicUrl } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
+
+  const { data, error } = await supabase.rpc('admin_upload_media', {
+    p_vendor_id: target.vendorId,
+    p_name: file.name,
+    p_folder: folder,
+    p_object_path: objectPath,
+    p_cdn_url: publicUrl.publicUrl,
+    p_mime_type: file.type,
+    p_size_bytes: file.size,
+  });
+  if (error || !data) {
+    // No row points at the object now; remove it so storage stays truthful.
+    await supabase.storage.from(BUCKET).remove([objectPath]);
+    throw rpcFailed('Could not record the upload', error?.message ?? 'the upload was not recorded');
+  }
+
+  // The sidebar reads folder rows, and staff destinations should exist as
+  // rows whether or not a file landed in them yet. Best-effort: the recorded
+  // item already carries the folder label, so an existing row (the unique
+  // constraint answering) must not fail the upload.
+  try {
+    await supabase.from('media_folders').insert({ vendor_id: target.vendorId, name: folder });
+  } catch {
+    // The label is already carried by the item; nothing else to do.
+  }
+
+  return resolveAdminMedia(asRecord(data) as unknown as Record<string, unknown>);
 }
 
 /**
@@ -221,12 +327,14 @@ export async function deleteAdminMedia(id: string): Promise<{ objectPath: string
 }
 
 // ---------------------------------------------------------------------------
-// Folders: real `media_folders` rows since Batch 61, one per (store, name).
+// Folders: real `media_folders` rows since Batch 61, one per (owner, name) -
+// the owner is a store, or the platform itself (NULL) since Batch 72.
 // ---------------------------------------------------------------------------
 
 export interface AdminMediaFolder {
   id: string;
-  vendorId: string;
+  /** The owning store's id, or null for a platform folder (Batch 72). */
+  vendorId: string | null;
   name: string;
   createdAt: string;
 }
@@ -234,7 +342,7 @@ export interface AdminMediaFolder {
 function mapAdminMediaFolder(row: Record<string, unknown>): AdminMediaFolder {
   return {
     id: text(row.id),
-    vendorId: text(row.vendor_id),
+    vendorId: row.vendor_id === null || row.vendor_id === undefined ? null : text(row.vendor_id),
     name: text(row.name),
     createdAt: text(row.created_at),
   };
@@ -285,11 +393,15 @@ export async function listAdminMediaFolders(signal?: AbortSignal): Promise<Admin
   return ((data ?? []) as unknown as Array<Record<string, unknown>>).map(mapAdminMediaFolder);
 }
 
-export async function createAdminMediaFolder(vendorId: string, name: string): Promise<AdminMediaFolder> {
+/**
+ * Creates a folder row for an owner: a store, or the platform itself when
+ * `vendorId` is null (Batch 72 - the NULL is the platform's own row, and the
+ * platform policies in migration 20261017020000 admit it).
+ */
+export async function createAdminMediaFolder(vendorId: string | null, name: string): Promise<AdminMediaFolder> {
   await requireAdmin('create a media folder');
 
   const folder = cleanFolderName(name);
-  if (!vendorId) throw rpcFailed('Could not create the folder', 'choose the store the folder belongs to');
   if (!folder) {
     throw rpcFailed('Could not create the folder', 'give the folder a name of letters, numbers, dashes or underscores');
   }
@@ -310,7 +422,7 @@ export async function createAdminMediaFolder(vendorId: string, name: string): Pr
  * renamed, the error says which half landed.
  */
 export async function renameAdminMediaFolder(
-  vendorId: string,
+  vendorId: string | null,
   oldName: string,
   newName: string,
 ): Promise<AdminMediaFolder> {
@@ -320,32 +432,33 @@ export async function renameAdminMediaFolder(
   if (!folder) {
     throw rpcFailed('Could not rename the folder', 'give the folder a name of letters, numbers, dashes or underscores');
   }
+  // A NULL owner cannot be matched with `.eq` (SQL NULL never equals
+  // anything), so platform rows filter with `.is('vendor_id', null)`.
+  const ownerLabel = vendorId === null ? 'the platform' : 'this store';
   if (folder === oldName) {
-    const { data } = await supabase
-      .from('media_folders')
-      .select('*')
-      .eq('vendor_id', vendorId)
-      .eq('name', oldName)
-      .maybeSingle();
-    if (!data) throw rpcFailed('Could not rename the folder', 'that folder does not exist for this store');
+    const scoped = supabase.from('media_folders').select('*').eq('name', oldName);
+    const { data } = await (vendorId === null
+      ? scoped.is('vendor_id', null)
+      : scoped.eq('vendor_id', vendorId)
+    ).maybeSingle();
+    if (!data) throw rpcFailed('Could not rename the folder', `that folder does not exist for ${ownerLabel}`);
     return mapAdminMediaFolder(data as unknown as Record<string, unknown>);
   }
 
-  const { data, error } = await supabase
-    .from('media_folders')
-    .update({ name: folder })
-    .eq('vendor_id', vendorId)
-    .eq('name', oldName)
+  const scopedUpdate = supabase.from('media_folders').update({ name: folder }).eq('name', oldName);
+  const { data, error } = await (vendorId === null
+    ? scopedUpdate.is('vendor_id', null)
+    : scopedUpdate.eq('vendor_id', vendorId)
+  )
     .select('*')
     .maybeSingle();
   if (error) throw rpcFailed('Could not rename the folder', error.message);
-  if (!data) throw rpcFailed('Could not rename the folder', 'that folder does not exist for this store');
+  if (!data) throw rpcFailed('Could not rename the folder', `that folder does not exist for ${ownerLabel}`);
 
-  const { error: relabelError } = await supabase
-    .from('media_items')
-    .update({ folder })
-    .eq('vendor_id', vendorId)
-    .eq('folder', oldName);
+  const relabel = supabase.from('media_items').update({ folder }).eq('folder', oldName);
+  const { error: relabelError } = await (vendorId === null
+    ? relabel.is('vendor_id', null)
+    : relabel.eq('vendor_id', vendorId));
   if (relabelError) {
     throw rpcFailed(
       'Could not rename the folder',
@@ -357,14 +470,16 @@ export async function renameAdminMediaFolder(
 }
 
 /** Refuses while files still sit in the folder: deleting it would orphan their label. */
-export async function deleteAdminMediaFolder(vendorId: string, name: string): Promise<void> {
+export async function deleteAdminMediaFolder(vendorId: string | null, name: string): Promise<void> {
   await requireAdmin('delete a media folder');
 
-  const { count, error: countError } = await supabase
+  const itemCount = supabase
     .from('media_items')
     .select('*', { count: 'exact', head: true })
-    .eq('vendor_id', vendorId)
     .eq('folder', name);
+  const { count, error: countError } = await (vendorId === null
+    ? itemCount.is('vendor_id', null)
+    : itemCount.eq('vendor_id', vendorId));
   if (countError) throw rpcFailed('Could not delete the folder', countError.message);
   if ((count ?? 0) > 0) {
     throw rpcFailed(
@@ -373,10 +488,9 @@ export async function deleteAdminMediaFolder(vendorId: string, name: string): Pr
     );
   }
 
-  const { error } = await supabase
-    .from('media_folders')
-    .delete()
-    .eq('vendor_id', vendorId)
-    .eq('name', name);
+  const folderDelete = supabase.from('media_folders').delete().eq('name', name);
+  const { error } = await (vendorId === null
+    ? folderDelete.is('vendor_id', null)
+    : folderDelete.eq('vendor_id', vendorId));
   if (error) throw rpcFailed('Could not delete the folder', error.message);
 }

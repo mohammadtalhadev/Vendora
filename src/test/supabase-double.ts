@@ -2502,6 +2502,40 @@ export function createSupabaseDouble() {
         error: null,
       };
     }
+    if (fn === 'admin_upload_media') {
+      // Batch 72: mirrors migration 20261017020000 - guarded, audited, and the
+      // row is born 'approved' for a store destination or the platform (null).
+      const denied = refuse('upload a media asset');
+      if (denied) return denied;
+      const name = args.p_name === null || args.p_name === undefined ? '' : String(args.p_name).trim();
+      if (name === '') return { data: null, error: { message: 'An uploaded asset needs a file name' } };
+      const folder = args.p_folder === null || args.p_folder === undefined ? '' : String(args.p_folder).trim();
+      if (folder === '') return { data: null, error: { message: 'An uploaded asset needs a destination folder' } };
+      const objectPath = args.p_object_path === null || args.p_object_path === undefined ? '' : String(args.p_object_path).trim();
+      if (objectPath === '') return { data: null, error: { message: 'An uploaded asset needs a stored object path' } };
+      const vendorId = args.p_vendor_id ?? null;
+      if (vendorId !== null && !tables.vendor_profiles.some((row) => row.id === vendorId)) {
+        return { data: null, error: { message: 'That store does not exist' } };
+      }
+      const row: Row = {
+        id: `media-item-${++syntheticId}`,
+        vendor_id: vendorId,
+        name: String(args.p_name),
+        folder: String(args.p_folder),
+        object_path: String(args.p_object_path),
+        cdn_url: args.p_cdn_url ?? '',
+        mime_type: args.p_mime_type ?? '',
+        size_bytes: Math.max(Number(args.p_size_bytes ?? 0) || 0, 0),
+        width: args.p_width ?? null,
+        height: args.p_height ?? null,
+        status: 'approved',
+        created_at: new Date().toISOString(),
+      };
+      tables.media_items.push(row);
+      audit('media.upload', 'media_item', String(row.id),
+        { name: row.name, vendorId: row.vendor_id, folder: row.folder, objectPath: row.object_path }, null);
+      return { data: { ...row }, error: null };
+    }
     if (fn === 'admin_delete_category') {
       const denied = refuse('delete a category');
       if (denied) return denied;

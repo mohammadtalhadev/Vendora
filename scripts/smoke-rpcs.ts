@@ -1705,6 +1705,102 @@ ok('delete: a zero-product registered brand deletes and returns its row',
   deleted62.id === created62.id &&
   (await q(`select count(*)::int c from brands where id = $1`, [created62.id]))[0].c === 0);
 
+console.log('\n[batch 72] platform media: NULL-vendor folders/items + admin_upload_media');
+await as('postgres');
+const SUPPORT72 = '12121212-1212-4212-8212-121212121212';
+await q(
+  `insert into auth.users (id, email, raw_user_meta_data) values ($1,'support72@demo.test','{}')`,
+  [SUPPORT72],
+);
+await q(`update profiles set roles = array['support','customer']::user_role[] where id = $1`, [SUPPORT72]);
+
+await as('authenticated', ADMIN);
+await q(`insert into media_folders (vendor_id, name) values (null, 'banners')`);
+ok('an admin creates a platform folder (vendor_id NULL)',
+  (await q(`select count(*)::int c from media_folders where vendor_id is null and name='banners'`))[0].c === 1);
+await expectThrow('a duplicate platform folder name is refused, case-insensitively',
+  () => q(`insert into media_folders (vendor_id, name) values (null, 'BANNERS')`),
+  'duplicate key');
+await q(`insert into media_folders (vendor_id, name) values ($1, 'banners')`, [STORE]);
+ok('a store folder may still carry the same name - uniqueness is per owner',
+  (await q(`select count(*)::int c from media_folders where vendor_id=$1 and name='banners'`, [STORE]))[0].c === 1);
+
+await as('authenticated', SUPPORT72);
+ok('support can read platform folders',
+  (await q(`select count(*)::int c from media_folders where vendor_id is null`))[0].c === 1);
+await expectThrow('support cannot create a platform folder - platform writes are admin-only',
+  () => q(`insert into media_folders (vendor_id, name) values (null, 'support-made')`),
+  'row-level security');
+
+await as('authenticated', VENDOR);
+ok('a vendor sees no platform folders',
+  (await q(`select count(*)::int c from media_folders where vendor_id is null`))[0].c === 0);
+await expectThrow('a vendor cannot create a platform folder',
+  () => q(`insert into media_folders (vendor_id, name) values (null, 'vendor-made')`),
+  'row-level security');
+
+await as('authenticated', ADMIN);
+const b72Item = (
+  await q(
+    `insert into media_items (vendor_id, name, folder, object_path, cdn_url, status)
+     values (null,'b72-hero.png','banners','platform/banners/b72-hero.png',
+             'https://x.test/storage/v1/object/public/vendor-assets/platform/banners/b72-hero.png','approved')
+     returning id`,
+  )
+)[0].id;
+ok('an admin inserts a platform item directly, born approved',
+  (await q(`select count(*)::int c from media_items where id=$1 and status='approved'`, [b72Item]))[0].c === 1);
+await as('authenticated', SUPPORT72);
+ok('support can read platform items',
+  (await q(`select count(*)::int c from media_items where id=$1`, [b72Item]))[0].c === 1);
+await as('authenticated', VENDOR);
+ok('a vendor cannot see platform items',
+  (await q(`select count(*)::int c from media_items where id=$1`, [b72Item]))[0].c === 0);
+await expectThrow('a vendor cannot insert a platform item',
+  () => q(`insert into media_items (vendor_id, name, folder) values (null,'sneaky.png','banners')`),
+  'row-level security');
+
+await expectThrow('a non-admin cannot admin_upload_media',
+  () => q(`select * from admin_upload_media(null,'x.png','banners','platform/banners/x.png','', 'image/png', 10)`),
+  'only the platform team');
+await as('authenticated', ADMIN);
+const b72Uploaded = (
+  await q(
+    `select * from admin_upload_media(null,'b72-up.png','banners','platform/banners/b72-up.png',
+       'https://x.test/storage/v1/object/public/vendor-assets/platform/banners/b72-up.png','image/png', 42)`,
+  )
+)[0];
+ok('admin_upload_media records a platform upload, born approved',
+  b72Uploaded.vendor_id === null && b72Uploaded.status === 'approved' && b72Uploaded.size_bytes === 42,
+  `(got ${JSON.stringify(b72Uploaded)})`);
+ok('the platform upload is audited',
+  (await q(`select count(*)::int c from audit_logs where action='media.upload' and entity_id=$1`, [String(b72Uploaded.id)]))[0].c === 1);
+const b72StoreUpload = (
+  await q(
+    `select * from admin_upload_media($1,'b72-store.png','products','tech-store/products/b72-store.png',
+       'https://x.test/storage/v1/object/public/vendor-assets/tech-store/products/b72-store.png','image/png', 7)`,
+    [STORE],
+  )
+)[0];
+ok('admin_upload_media records a store upload owned by that store',
+  String(b72StoreUpload.vendor_id) === STORE && b72StoreUpload.status === 'approved');
+await expectThrow('admin_upload_media refuses a store that does not exist',
+  () => q(`select * from admin_upload_media('99999999-9999-4999-8999-999999999999','x.png','products','x/products/x.png','','image/png', 1)`),
+  'does not exist');
+
+await as('postgres');
+ok('the refused uploads recorded nothing',
+  (await q(`select count(*)::int c from media_items where name='x.png'`))[0].c === 0);
+await as('authenticated', ADMIN);
+const b72Deleted = (await q(`select admin_delete_media($1) as r`, [b72Item]))[0].r;
+ok('admin_delete_media deletes a platform row and returns its paths',
+  b72Deleted.deleted === true && b72Deleted.objectPath === 'platform/banners/b72-hero.png',
+  `(got ${JSON.stringify(b72Deleted)})`);
+await q(`update media_folders set name='hero-banners' where vendor_id is null and name='banners'`);
+await q(`delete from media_folders where vendor_id is null and name='hero-banners'`);
+ok('an admin renames and deletes a platform folder row',
+  (await q(`select count(*)::int c from media_folders where vendor_id is null`))[0].c === 0);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();
 if (failed) process.exitCode = 1;

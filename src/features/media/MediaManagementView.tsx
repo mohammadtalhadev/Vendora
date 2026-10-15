@@ -55,6 +55,7 @@ import {
   useMoveAdminMedia,
   useRenameAdminMedia,
   useRenameAdminMediaFolder,
+  useUploadAdminMedia,
 } from '../admin/hooks/useAdminMedia';
 import type { AdminMediaItem } from '../admin/api/media';
 import {
@@ -95,6 +96,17 @@ interface FolderEntry {
   count: number;
 }
 
+/**
+ * The owner segment of an admin folder key for a platform-owned folder
+ * (Batch 72): a NULL vendor_id cannot ride in the key, so the platform's own
+ * folders key as `platform::<name>` - the same word its storage paths use.
+ */
+const PLATFORM_OWNER_KEY = 'platform';
+
+/** The sidebar/filter key for an admin folder: `${owner}::${name}`. */
+const folderKeyOf = (vendorId: string | null, name: string): string =>
+  `${vendorId ?? PLATFORM_OWNER_KEY}::${name}`;
+
 const CARD =
   'rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col justify-between';
 const TILE_HEAD =
@@ -117,8 +129,10 @@ const FIELD =
  * (Batch 61) holds the full management set over them too: rename, move (dialog or
  * drag-and-drop onto a folder), delete through the audited `admin_delete_media` RPC,
  * and folder create/rename/delete over the `media_folders` rows - plus the moderation
- * verdict vendor mode never offers. Either way, a write the server refuses is
- * reported with the server's own words instead of a toast.
+ * verdict vendor mode never offers. Batch 72 adds the platform itself as an owner:
+ * admin mode can hold platform folders (a NULL `vendor_id`) and staff can upload
+ * their own files, to the platform library or a store's. Either way, a write the
+ * server refuses is reported with the server's own words instead of a toast.
  */
 export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }) => {
   const isAdmin = mode === 'admin';
@@ -127,6 +141,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const { setMediaStatus } = useAdminActions();
   const library = isAdmin ? adminLibrary : vendorLibrary;
   const upload = useUploadMedia();
+  const adminUpload = useUploadAdminMedia();
+  /** The one pending flag both upload paths share, so the dialog never branches on mode. */
+  const uploadPending = isAdmin ? adminUpload.isPending : upload.isPending;
   const vendorRename = useRenameMedia();
   const vendorMove = useMoveMedia();
   const vendorRemove = useDeleteMedia();
@@ -179,6 +196,8 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<File[]>([]);
   const [uploadFolder, setUploadFolder] = useState('products');
+  /** Admin upload destination (Batch 72): an owner key - 'platform' or a store id. */
+  const [uploadOwner, setUploadOwner] = useState(PLATFORM_OWNER_KEY);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [moveOpen, setMoveOpen] = useState(false);
@@ -195,7 +214,8 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
   // Batch 61 folder management + drag-and-drop (admin). A folder entry is keyed
   // `${vendorId}::${name}` in admin mode because the same folder name can exist
-  // under several stores; vendor entries keep the plain folder name as key.
+  // under several stores; a platform folder (Batch 72) keys as `platform::name`.
+  // Vendor entries keep the plain folder name as key.
   const [folderCreateOpen, setFolderCreateOpen] = useState(false);
   const [folderCreateStore, setFolderCreateStore] = useState('');
   const [folderCreateName, setFolderCreateName] = useState('');
@@ -269,13 +289,15 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
       }));
     }
     const adminItems = items as AdminMediaItem[];
-    const storeLabelOf = (vendorId: string): string => {
+    const storeLabelOf = (vendorId: string | null): string => {
+      // The platform's own folders carry their label directly (Batch 72).
+      if (vendorId === null) return 'Platform';
       const owner = adminItems.find((item) => item.vendorId === vendorId);
       return owner ? owner.storeName || owner.storeSlug || 'Unnamed store' : 'Unnamed store';
     };
     const byKey = new Map<string, FolderEntry>();
-    const add = (vendorId: string, name: string) => {
-      const key = `${vendorId}::${name}`;
+    const add = (vendorId: string | null, name: string) => {
+      const key = folderKeyOf(vendorId, name);
       if (!byKey.has(key)) {
         byKey.set(key, {
           key,
@@ -288,9 +310,12 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     };
     for (const row of adminFoldersQuery.data ?? []) add(row.vendorId, row.name);
     for (const item of adminItems) add(item.vendorId, item.folder);
+    // Platform folders lead the directory: they are the platform team's own.
     return [...byKey.values()].sort(
       (a, b) =>
-        (a.storeLabel ?? '').localeCompare(b.storeLabel ?? '') || a.name.localeCompare(b.name),
+        Number(b.vendorId === null) - Number(a.vendorId === null) ||
+        (a.storeLabel ?? '').localeCompare(b.storeLabel ?? '') ||
+        a.name.localeCompare(b.name),
     );
   }, [isAdmin, folders, folderCounts, items, adminFoldersQuery.data]);
 
@@ -323,10 +348,13 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     return items.filter((item) => {
       if (folderFilter !== 'all') {
         if (isAdmin) {
-          // Admin folder keys are `${vendorId}::${name}`: the same folder name
-          // under another store is a different folder.
+          // Admin folder keys are `${owner}::${name}`: the same folder name
+          // under another owner is a different folder. The platform owner's
+          // segment is the literal `platform` (Batch 72) and maps back to a
+          // NULL vendor_id.
           const separator = folderFilter.indexOf('::');
-          const ownerId = separator >= 0 ? folderFilter.slice(0, separator) : '';
+          const ownerSegment = separator >= 0 ? folderFilter.slice(0, separator) : '';
+          const ownerId = ownerSegment === PLATFORM_OWNER_KEY ? null : ownerSegment;
           const folderName = separator >= 0 ? folderFilter.slice(separator + 2) : folderFilter;
           if ((item as AdminMediaItem).vendorId !== ownerId || item.folder !== folderName) {
             return false;
@@ -379,8 +407,10 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   /** Folder names valid as Move destinations for the current targets' owner. */
   const moveFolderOptions = useMemo(() => {
     if (!isAdmin) return folders;
-    const ownerId = selected[0] ? (selected[0] as AdminMediaItem).vendorId : null;
-    if (!ownerId) return folders;
+    if (selected.length === 0) return folders;
+    // The owner may be the platform (a NULL vendorId, Batch 72): its folders
+    // are the entries whose vendorId is equally null, so they match directly.
+    const ownerId = (selected[0] as AdminMediaItem).vendorId;
     return [
       ...new Set(
         folderEntries.filter((entry) => entry.vendorId === ownerId).map((entry) => entry.name),
@@ -388,7 +418,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     ];
   }, [isAdmin, folders, folderEntries, selected]);
 
-  /** Bulk move is one-owner only in admin mode: a folder belongs to one store. */
+  /** Bulk move is one-owner only in admin mode: a folder belongs to one owner. */
   const selectionMixedOwners =
     isAdmin &&
     new Set(selected.map((item) => (item as AdminMediaItem).vendorId)).size > 1;
@@ -437,10 +467,20 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     let stored = 0;
     let reason: string | null = null;
     // One file at a time, so a rejected write is reported as the file that actually failed
-    // rather than as a batch that never happened.
+    // rather than as a batch that never happened. Vendor mode uploads to the
+    // signed-in store; admin mode (Batch 72) uploads to the chosen owner -
+    // the platform itself ('platform') or a store, through the guarded RPC.
     for (const file of uploadQueue) {
       try {
-        await upload.mutateAsync({ file, folder });
+        if (isAdmin) {
+          await adminUpload.mutateAsync({
+            file,
+            vendorId: uploadOwner === PLATFORM_OWNER_KEY ? null : uploadOwner,
+            folder,
+          });
+        } else {
+          await upload.mutateAsync({ file, folder });
+        }
         stored += 1;
       } catch (cause) {
         reason = cause instanceof Error ? cause.message : String(cause);
@@ -461,7 +501,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     setUploadQueue([]);
     if (uploadInputRef.current) uploadInputRef.current.value = '';
     note(
-      `Uploaded ${stored} file${stored === 1 ? '' : 's'} into “${folder}”. Each one is recorded as pending until platform review.`,
+      isAdmin
+        ? `Uploaded ${stored} file${stored === 1 ? '' : 's'} into “${folder}”. Staff uploads are recorded as approved.`
+        : `Uploaded ${stored} file${stored === 1 ? '' : 's'} into “${folder}”. Each one is recorded as pending until platform review.`,
     );
   };
 
@@ -496,7 +538,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     }
 
     if (selectionMixedOwners) {
-      setMoveError('These files belong to different stores. Select files from one store to move them together - a folder belongs to a single store.');
+      setMoveError('These files belong to different owners. Select files from one owner to move them together - a folder belongs to a single owner.');
       return;
     }
 
@@ -573,8 +615,10 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   // ── Folder management (admin) ──────────────────────────────────────
   const submitCreateFolder = async (event: React.FormEvent) => {
     event.preventDefault();
+    // The owner is the platform itself ('platform') or a chosen store
+    // (Batch 72); every non-empty key is a valid choice.
     if (!folderCreateStore) {
-      setFolderCreateError('Choose the store this folder belongs to.');
+      setFolderCreateError('Choose who this folder belongs to.');
       return;
     }
     if (!cleanFolderName(folderCreateName)) {
@@ -584,12 +628,16 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     setFolderCreateError(null);
     try {
       const created = await createFolderMutation.mutateAsync({
-        vendorId: folderCreateStore,
+        vendorId: folderCreateStore === PLATFORM_OWNER_KEY ? null : folderCreateStore,
         name: folderCreateName,
       });
       setFolderCreateOpen(false);
       setFolderCreateName('');
-      note(`Created the folder “${created.name}” for that store. It exists now, even before any file is moved into it.`);
+      note(
+        created.vendorId === null
+          ? `Created the platform folder “${created.name}”. It exists now, even before any file is moved into it.`
+          : `Created the folder “${created.name}” for that store. It exists now, even before any file is moved into it.`,
+      );
     } catch (cause) {
       setFolderCreateError(cause instanceof Error ? cause.message : String(cause));
     }
@@ -597,7 +645,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
   const submitFolderRename = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!folderRenameTarget?.vendorId) return;
+    // A platform folder's vendorId is null (Batch 72) - the target itself is
+    // the only thing that must exist.
+    if (!folderRenameTarget) return;
     setFolderRenameError(null);
     try {
       const renamed = await renameFolderMutation.mutateAsync({
@@ -606,7 +656,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
         newName: folderRenameDraft,
       });
       if (folderFilter === folderRenameTarget.key) {
-        setFolderFilter(`${folderRenameTarget.vendorId}::${renamed.name}`);
+        setFolderFilter(folderKeyOf(folderRenameTarget.vendorId, renamed.name));
       }
       setFolderRenameTarget(null);
       note(`Renamed the folder to “${renamed.name}” and relabelled its files.`);
@@ -616,7 +666,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   };
 
   const confirmFolderDelete = async () => {
-    if (!folderDeleteTarget?.vendorId) return;
+    if (!folderDeleteTarget) return;
     setFolderDeleteError(null);
     try {
       await deleteFolderMutation.mutateAsync({
@@ -647,8 +697,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     setDropKey(null);
     if (ids.length === 0) return;
 
-    // A drop only moves files that belong to the folder's store; the rest stay
-    // put and are named in the result instead of being silently skipped.
+    // A drop only moves files that belong to the folder's owner (a store, or
+    // the platform - a NULL vendorId matches a platform folder's NULL); the
+    // rest stay put and are named in the result instead of silently skipped.
     const targets = items.filter(
       (item) =>
         ids.includes(item.id) &&
@@ -674,10 +725,10 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     }
     if (moved > 0) {
       note(
-        `Moved ${moved} file${moved === 1 ? '' : 's'} into “${entry.name}”${skipped > 0 ? `; ${skipped} selected file${skipped === 1 ? '' : 's'} belong${skipped === 1 ? 's' : ''} to another store and stayed put` : ''}.`,
+        `Moved ${moved} file${moved === 1 ? '' : 's'} into “${entry.name}”${skipped > 0 ? `; ${skipped} selected file${skipped === 1 ? '' : 's'} belong${skipped === 1 ? 's' : ''} to another owner and stayed put` : ''}.`,
       );
     } else if (skipped > 0) {
-      setError('Those files belong to another store, so nothing was moved into this folder.');
+      setError('Those files belong to another owner, so nothing was moved into this folder.');
     }
   };
 
@@ -708,19 +759,17 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
           </h1>
           <p className="mt-0.5 text-xs text-slate-500 max-w-2xl">
             {mode === 'admin'
-              ? 'All stores’ media files and their moderation status.'
+              ? 'Every store’s media files, the platform’s own files, and their moderation status.'
               : 'Your store’s media files.'}
           </p>
         </div>
 
-        {!isAdmin && (
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button type="button" onClick={() => setUploadOpen(true)} className={PRIMARY_BUTTON}>
-              <Upload className="h-3.5 w-3.5" />
-              <span>Upload Files</span>
-            </button>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button type="button" onClick={() => setUploadOpen(true)} className={PRIMARY_BUTTON}>
+            <Upload className="h-3.5 w-3.5" />
+            <span>Upload Files</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Real outcome banners ────────────────────────────────────── */}
@@ -815,8 +864,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             </div>
           </div>
           <div className="mt-4 pt-2 text-xs text-slate-500 border-t border-slate-100">
-            A fresh upload is written as <code className="font-mono">pending</code>; only platform staff
-            can change that verdict.
+            {isAdmin
+              ? 'A seller’s upload is written as pending; staff uploads are written as approved. Only platform staff can change a verdict.'
+              : 'A fresh upload is written as pending; only platform staff can change that verdict.'}
           </div>
         </div>
 
@@ -837,7 +887,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
           </div>
           <div className="mt-4 pt-2 text-xs text-slate-500 border-t border-slate-100">
             {isAdmin
-              ? `${folderEntries.length} folder${folderEntries.length === 1 ? '' : 's'} across the stores in this library.`
+              ? `${folderEntries.length} folder${folderEntries.length === 1 ? '' : 's'} across the stores and the platform in this library.`
               : `${folders.length} folder label${folders.length === 1 ? '' : 's'} appear in these rows.`}
           </div>
         </div>
@@ -980,7 +1030,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               type="button"
               onClick={() => {
                 setFolderCreateError(null);
-                setFolderCreateStore(folderStoreOptions[0]?.id ?? '');
+                // The platform itself is the default owner (Batch 72): an
+                // admin's own folder needs no store to exist first.
+                setFolderCreateStore(PLATFORM_OWNER_KEY);
                 setFolderCreateName('');
                 setFolderCreateOpen(true);
               }}
@@ -1066,7 +1118,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                           setFolderRenameDraft(entry.name);
                           setFolderRenameTarget(entry);
                         }}
-                        aria-label={`Rename folder ${entry.name} for ${entry.storeLabel ?? 'its store'}`}
+                        aria-label={`Rename folder ${entry.name} for ${entry.storeLabel ?? 'its owner'}`}
                         title={`Rename folder ${entry.name}`}
                         className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
                       >
@@ -1153,7 +1205,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                   setMoveOpen(true);
                 }}
                 disabled={selected.length === 0 || movePending || selectionMixedOwners}
-                title={selectionMixedOwners ? 'Select files from one store to move them together' : undefined}
+                title={selectionMixedOwners ? 'Select files from one owner to move them together' : undefined}
                 className={GHOST_BUTTON}
               >
                 <Move className="h-3.5 w-3.5 text-slate-500" />
@@ -1172,7 +1224,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
               {selectionMixedOwners && (
                 <span className="text-[11px] font-semibold text-amber-700">
-                  Move needs one store at a time - this selection spans stores.
+                  Move needs one owner at a time - this selection spans owners.
                 </span>
               )}
             </div>
@@ -1227,20 +1279,18 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 {items.length === 0
                   ? isAdmin
-                    ? 'No store has uploaded a file yet. Rows appear here as sellers add assets to their libraries, each recorded as pending until staff review it.'
+                    ? 'Nothing is stored yet. Upload the platform’s own files, or wait for sellers to add assets to their libraries - theirs are recorded as pending until staff review them.'
                     : 'Upload an image or document and it will be written to your bucket, then recorded here as pending review.'
                   : 'Widen the filters above, or pick “All folders” in the directory.'}
               </p>
-              {!isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => setUploadOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
-                >
-                  <Upload className="h-3.5 w-3.5" />
-                  <span>Upload a file</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setUploadOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                <span>Upload a file</span>
+              </button>
             </div>
           ) : layout === 'grid' ? (
             <div role="group" aria-label="Media assets" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1568,7 +1618,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                           <span>•</span>
                           <span>
                             {inspectedOwner.storeName || 'Unnamed store'}
-                            {inspectedOwner.storeSlug ? ` (${inspectedOwner.storeSlug})` : ''}
+                            {inspectedOwner.vendorId !== null && inspectedOwner.storeSlug
+                              ? ` (${inspectedOwner.storeSlug})`
+                              : ''}
                           </span>
                         </>
                       )}
@@ -1665,10 +1717,12 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <dl className="grid grid-cols-2 gap-4 text-xs pt-1 md:grid-cols-4">
                 {inspectedOwner && (
                   <div>
-                    <dt className="text-xs font-bold uppercase text-slate-500">Owning store</dt>
+                    <dt className="text-xs font-bold uppercase text-slate-500">
+                      {inspectedOwner.vendorId === null ? 'Owner' : 'Owning store'}
+                    </dt>
                     <dd className="mt-0.5 font-bold text-slate-900">
                       {inspectedOwner.storeName || 'Unnamed store'}
-                      {inspectedOwner.storeSlug && (
+                      {inspectedOwner.vendorId !== null && inspectedOwner.storeSlug && (
                         <span className="ml-1 font-mono text-xs font-medium text-slate-500">
                           {inspectedOwner.storeSlug}
                         </span>
@@ -1787,30 +1841,39 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
       <Dialog
         open={uploadOpen}
         onOpenChange={(open) => {
-          if (!open && upload.isPending) return;
+          if (!open && uploadPending) return;
           setUploadOpen(open);
         }}
       >
         <DialogContent
           className="sm:max-w-md"
           onEscapeKeyDown={(event) => {
-            if (upload.isPending) event.preventDefault();
+            if (uploadPending) event.preventDefault();
           }}
           onPointerDownOutside={(event) => {
-            if (upload.isPending) event.preventDefault();
+            if (uploadPending) event.preventDefault();
           }}
           onInteractOutside={(event) => {
-            if (upload.isPending) event.preventDefault();
+            if (uploadPending) event.preventDefault();
           }}
         >
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
               <Upload className="h-5 w-5 text-slate-700" />
-              Upload files to your media library
+              {isAdmin ? 'Upload files' : 'Upload files to your media library'}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Each file is written to <code className="font-mono">vendor-assets/&lt;your slug&gt;/&lt;folder&gt;/</code>{' '}
-              and recorded as pending until the platform reviews it.
+              {isAdmin ? (
+                <>
+                  Each file is written to <code className="font-mono">vendor-assets/&lt;owner&gt;/&lt;folder&gt;/</code>{' '}
+                  - the platform’s own library or a store’s - and recorded as approved.
+                </>
+              ) : (
+                <>
+                  Each file is written to <code className="font-mono">vendor-assets/&lt;your slug&gt;/&lt;folder&gt;/</code>{' '}
+                  and recorded as pending until the platform reviews it.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -1825,12 +1888,12 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               multiple
               className="hidden"
               onChange={pickedFiles}
-              disabled={upload.isPending}
+              disabled={uploadPending}
             />
             <button
               type="button"
               onClick={() => uploadInputRef.current?.click()}
-              disabled={upload.isPending}
+              disabled={uploadPending}
               className="w-full cursor-pointer space-y-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/70 p-6 text-center transition-all hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60"
             >
               <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-2xs">
@@ -1848,6 +1911,30 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               </span>
             </button>
 
+            {isAdmin && (
+              <div>
+                <label htmlFor="upload-owner" className="block font-bold text-slate-700 mb-1">
+                  Upload to
+                </label>
+                <Select value={uploadOwner} onValueChange={setUploadOwner}>
+                  <SelectTrigger id="upload-owner" aria-label="Owner for the upload" className="h-auto rounded-lg px-3 py-2 text-xs font-semibold text-slate-700">
+                    <SelectValue placeholder="Choose an owner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={PLATFORM_OWNER_KEY}>Platform (Admin)</SelectItem>
+                    {folderStoreOptions.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-slate-500">
+                  Platform files are the platform team’s own assets; a store’s files join that store’s library.
+                </p>
+              </div>
+            )}
+
             <div>
               <label htmlFor="upload-folder" className="block font-bold text-slate-700 mb-1">
                 Destination folder
@@ -1857,7 +1944,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 list="media-folder-options"
                 value={uploadFolder}
                 onChange={(event) => setUploadFolder(event.target.value)}
-                disabled={upload.isPending}
+                disabled={uploadPending}
                 placeholder="products"
                 className={`${FIELD} font-mono`}
               />
@@ -1867,7 +1954,12 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             </div>
 
             <datalist id="media-folder-options">
-              {folders.map((name) => (
+              {(isAdmin
+                ? folderEntries
+                    .filter((entry) => (entry.vendorId ?? PLATFORM_OWNER_KEY) === uploadOwner)
+                    .map((entry) => entry.name)
+                : folders
+              ).map((name) => (
                 <option key={name} value={name} />
               ))}
             </datalist>
@@ -1882,17 +1974,17 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               <button
                 type="button"
                 onClick={() => setUploadOpen(false)}
-                disabled={upload.isPending}
+                disabled={uploadPending}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={upload.isPending || uploadQueue.length === 0}
+                disabled={uploadPending || uploadQueue.length === 0}
                 className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {upload.isPending ? `Uploading… (${uploadQueue.length})` : `Upload ${uploadQueue.length || ''}`.trim()}
+                {uploadPending ? `Uploading… (${uploadQueue.length})` : `Upload ${uploadQueue.length || ''}`.trim()}
               </button>
             </div>
           </form>
@@ -1955,8 +2047,8 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
             {isAdmin && (
               <p className="text-xs text-slate-500">
-                Folders belong to the file&apos;s owning store, so the suggestions list that
-                store&apos;s folders. You can also type a new folder name for that store -
+                Folders belong to the file&apos;s owner, so the suggestions list that
+                owner&apos;s folders. You can also type a new folder name for that owner -
                 or drag files onto a folder in the sidebar instead.
               </p>
             )}
@@ -2060,7 +2152,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
         </DialogContent>
       </Dialog>
 
-      {/* ── New Folder dialog (admin): a folder row for one chosen store ── */}
+      {/* ── New Folder dialog (admin): a folder row for the platform or one chosen store ── */}
       <Dialog open={folderCreateOpen} onOpenChange={(open) => {
         if (!open && createFolderMutation.isPending) return;
         setFolderCreateOpen(open);
@@ -2072,32 +2164,27 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               New folder
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Folders belong to a single store. The folder is created as its own row, so it
-              exists even before any file is moved into it.
+              Folders belong to a single owner - the platform itself, or one store. The folder
+              is created as its own row, so it exists even before any file is moved into it.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={(event) => void submitCreateFolder(event)} className="space-y-3.5 py-2 text-xs">
             <div>
               <label htmlFor="folder-create-store" className="block font-bold text-slate-700 mb-1">
-                Store
+                Owner
               </label>
               {adminStoresQuery.isPending ? (
                 <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-500">
                   Loading the store list…
                 </p>
-              ) : folderStoreOptions.length === 0 ? (
-                <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 font-semibold text-amber-800">
-                  {adminStoresQuery.isError
-                    ? 'The store list could not be loaded, so there is no store to create the folder for yet. Close this dialog and try again.'
-                    : 'No stores exist yet. A folder belongs to a store, so a store has to be created before the first folder can.'}
-                </p>
               ) : (
                 <Select value={folderCreateStore} onValueChange={setFolderCreateStore}>
-                  <SelectTrigger id="folder-create-store" aria-label="Store for the new folder" className="h-auto rounded-lg px-3 py-2 text-xs font-semibold text-slate-700">
-                    <SelectValue placeholder="Choose a store" />
+                  <SelectTrigger id="folder-create-store" aria-label="Owner for the new folder" className="h-auto rounded-lg px-3 py-2 text-xs font-semibold text-slate-700">
+                    <SelectValue placeholder="Choose an owner" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={PLATFORM_OWNER_KEY}>Platform (Admin)</SelectItem>
                     {folderStoreOptions.map((store) => (
                       <SelectItem key={store.id} value={store.id}>
                         {store.label}
@@ -2105,6 +2192,13 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                     ))}
                   </SelectContent>
                 </Select>
+              )}
+              {folderStoreOptions.length === 0 && !adminStoresQuery.isPending && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {adminStoresQuery.isError
+                    ? 'The store list could not be loaded; platform folders can still be created.'
+                    : 'No stores exist yet; platform folders can still be created.'}
+                </p>
               )}
             </div>
 
@@ -2139,7 +2233,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               </button>
               <button
                 type="submit"
-                disabled={createFolderMutation.isPending || !folderCreateStore}
+                disabled={createFolderMutation.isPending || !folderCreateStore || adminStoresQuery.isPending}
                 className="rounded-xl bg-gradient-to-r from-sun-orange to-[#FF9233] hover:from-sun-orange-600 hover:to-[#e88020] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-orange-500/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createFolderMutation.isPending ? 'Creating…' : 'Create folder'}
@@ -2161,7 +2255,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               Rename folder
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Renaming “{folderRenameTarget?.name}” for {folderRenameTarget?.storeLabel ?? 'its store'} also
+              Renaming “{folderRenameTarget?.name}” for {folderRenameTarget?.storeLabel ?? 'its owner'} also
               relabels every file in it. Stored object paths do not change.
             </DialogDescription>
           </DialogHeader>
@@ -2220,7 +2314,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               Delete folder “{folderDeleteTarget?.name}”?
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              This deletes the folder row for {folderDeleteTarget?.storeLabel ?? 'its store'}. A folder that
+              This deletes the folder row for {folderDeleteTarget?.storeLabel ?? 'its owner'}. A folder that
               still holds files cannot be deleted - move or delete its files first, and the delete will
               tell you if any remain.
             </DialogDescription>
