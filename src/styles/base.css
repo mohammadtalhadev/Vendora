@@ -1492,6 +1492,10 @@ html.dark .workspace-shell textarea:focus {
 
 .brand-logo-marquee-track {
   animation: vendora-logo-marquee 32s linear infinite;
+  /* Batch 107: keep the ever-running marquee on its own compositor layer
+     so its 32s transform loop never triggers main-thread paint work that
+     would fight the Lenis scroll loop. */
+  will-change: transform;
 }
 
 .brand-logo-marquee:hover .brand-logo-marquee-track {

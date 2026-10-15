@@ -50,18 +50,18 @@ import { useToast } from '../hooks/useToast';
 
 // The 12 Parent Categories with High-Resolution 2K Thumbnails
 const POPULAR_CATEGORIES = [
-  { id: 'cat-electronics', name: 'Electronics', image: '/images/categories/cat_electronics_2k.png', slug: 'electronics' },
-  { id: 'cat-audio', name: 'Audio & Wearables', image: '/images/categories/cat_audio_wearables_2k.png', slug: 'audio-wearables' },
-  { id: 'cat-cameras', name: 'Cameras & Photo', image: '/images/categories/cat_cameras_photo_2k.png', slug: 'cameras-photo' },
-  { id: 'cat-fashion', name: 'Fashion', image: '/images/categories/cat_fashion_2k.png', slug: 'fashion' },
-  { id: 'cat-shoes', name: 'Shoes', image: '/images/categories/cat_shoes_2k.png', slug: 'shoes' },
-  { id: 'cat-bags', name: 'Bags & Luggage', image: '/images/categories/cat_bags_luggage_2k.png', slug: 'bags-luggage' },
-  { id: 'cat-jewelry', name: 'Jewelry & Watches', image: '/images/categories/cat_jewelry_watches_2k.png', slug: 'jewelry-watches' },
-  { id: 'cat-beauty', name: 'Beauty & Personal Care', image: '/images/categories/cat_beauty_personalcare_2k.png', slug: 'beauty-personal-care' },
-  { id: 'cat-home', name: 'Home & Kitchen', image: '/images/categories/cat_home_kitchen_2k.png', slug: 'home-kitchen' },
-  { id: 'cat-kids', name: 'Kids & Baby', image: '/images/categories/cat_kids_baby_2k.png', slug: 'kids-baby' },
-  { id: 'cat-sports', name: 'Sports & Outdoors', image: '/images/categories/cat_sports_outdoors_2k.png', slug: 'sports-outdoors' },
-  { id: 'cat-digital', name: 'Digital Products', image: '/images/categories/cat_digital_products_2k.png', slug: 'digital-products' },
+  { id: 'cat-electronics', name: 'Electronics', image: '/images/categories/cat_electronics_thumb.webp', slug: 'electronics' },
+  { id: 'cat-audio', name: 'Audio & Wearables', image: '/images/categories/cat_audio_wearables_thumb.webp', slug: 'audio-wearables' },
+  { id: 'cat-cameras', name: 'Cameras & Photo', image: '/images/categories/cat_cameras_photo_thumb.webp', slug: 'cameras-photo' },
+  { id: 'cat-fashion', name: 'Fashion', image: '/images/categories/cat_fashion_thumb.webp', slug: 'fashion' },
+  { id: 'cat-shoes', name: 'Shoes', image: '/images/categories/cat_shoes_thumb.webp', slug: 'shoes' },
+  { id: 'cat-bags', name: 'Bags & Luggage', image: '/images/categories/cat_bags_luggage_thumb.webp', slug: 'bags-luggage' },
+  { id: 'cat-jewelry', name: 'Jewelry & Watches', image: '/images/categories/cat_jewelry_watches_thumb.webp', slug: 'jewelry-watches' },
+  { id: 'cat-beauty', name: 'Beauty & Personal Care', image: '/images/categories/cat_beauty_personalcare_thumb.webp', slug: 'beauty-personal-care' },
+  { id: 'cat-home', name: 'Home & Kitchen', image: '/images/categories/cat_home_kitchen_thumb.webp', slug: 'home-kitchen' },
+  { id: 'cat-kids', name: 'Kids & Baby', image: '/images/categories/cat_kids_baby_thumb.webp', slug: 'kids-baby' },
+  { id: 'cat-sports', name: 'Sports & Outdoors', image: '/images/categories/cat_sports_outdoors_thumb.webp', slug: 'sports-outdoors' },
+  { id: 'cat-digital', name: 'Digital Products', image: '/images/categories/cat_digital_products_thumb.webp', slug: 'digital-products' },
 ];
 
 /**

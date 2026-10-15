@@ -5,8 +5,8 @@ const DEFAULT_IMAGE_BY_CATEGORY: Array<[string, string]> = [
   ['audio', '/images/bevesi/1-13.jpg'],
   ['beauty', '/images/bevesi/beauty_primer_full.jpg'],
   ['home', '/images/bevesi/banner-16.jpg'],
-  ['fashion', '/images/categories/cat_fashion_2k.png'],
-  ['shoes', '/images/categories/cat_shoes_2k.png'],
+  ['fashion', '/images/categories/cat_fashion_card.webp'],
+  ['shoes', '/images/categories/cat_shoes_card.webp'],
 ];
 
 /** Prefer the stored category id/name over the title heuristics when it is a known taxonomy key. */

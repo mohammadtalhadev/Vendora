@@ -66,6 +66,8 @@ export const CategoryTilesSection: React.FC<{ section: SiteSection }> = ({ secti
                 <img
                   src={item.imageUrl}
                   alt={item.heading}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-xs"
                 />
               </div>

@@ -1,29 +1,88 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { useSmoothScroll } from '../../../components/SmoothScrollProvider';
 
+const RING_CIRCUMFERENCE = 125.6;
+
+/**
+ * Back-to-top floating button with a scroll-progress ring.
+ *
+ * Performance contract (Batch 107): Lenis animates the window scroll on
+ * every animation frame, so a scroll listener that calls setState per
+ * event re-renders React for the whole glide and reads
+ * `documentElement.scrollHeight` (a layout read) per event — the main
+ * thread saturates and the smooth scroll stutters. This component
+ * therefore:
+ *  - throttles scroll handling to one rAF callback per frame,
+ *  - writes the progress ring + tooltip text straight to the DOM via
+ *    refs (no React re-render while scrolling),
+ *  - only flips `isVisible` state when the 350px threshold is crossed,
+ *  - caches the document height and refreshes it on resize / when the
+ *    page grows past it, instead of reading layout every frame,
+ *  - scrolls back through Lenis when it is running, so two competing
+ *    smooth-scroll animations never fight over the same scroll offset.
+ */
 export const BackToTopButton: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const { lenis } = useSmoothScroll();
+  const ringRef = useRef<SVGCircleElement | null>(null);
+  const labelRef = useRef<HTMLSpanElement | null>(null);
+  const progressRef = useRef(0);
+  const docHeightRef = useRef(0);
 
   useEffect(() => {
-    const handleScroll = () => {
+    const measureDocHeight = () => {
+      docHeightRef.current =
+        document.documentElement.scrollHeight - window.innerHeight;
+    };
+    measureDocHeight();
+
+    let rafId = 0;
+    const applyProgress = () => {
+      rafId = 0;
       const scrollY = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (docHeight > 0) {
-        setScrollProgress(Math.min(100, Math.round((scrollY / docHeight) * 100)));
+      // The homepage grows as rails stream in; if the cached height is
+      // stale the percentage would clamp early, so refresh it then.
+      if (scrollY > docHeightRef.current) measureDocHeight();
+      const docHeight = docHeightRef.current;
+      const progress =
+        docHeight > 0
+          ? Math.min(100, Math.round((scrollY / docHeight) * 100))
+          : 0;
+      progressRef.current = progress;
+      if (ringRef.current) {
+        ringRef.current.style.strokeDashoffset = String(
+          RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * progress) / 100,
+        );
       }
-      setIsVisible(scrollY > 350);
+      if (labelRef.current) {
+        labelRef.current.textContent = `Top (${progress}%)`;
+      }
+      setIsVisible((prev) => {
+        const next = scrollY > 350;
+        return prev === next ? prev : next;
+      });
+    };
+    const handleScroll = () => {
+      if (!rafId) rafId = window.requestAnimationFrame(applyProgress);
     };
 
+    applyProgress();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', measureDocHeight);
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', measureDocHeight);
+    };
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    if (lenis) {
+      lenis.scrollTo(0);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   if (!isVisible) return null;
@@ -48,24 +107,30 @@ export const BackToTopButton: React.FC = () => {
             className="text-slate-100 dark:text-slate-800"
           />
           <circle
+            ref={ringRef}
             cx="24"
             cy="24"
             r="20"
             fill="none"
             stroke="currentColor"
             strokeWidth="2.5"
-            strokeDasharray={125.6}
-            strokeDashoffset={125.6 - (125.6 * scrollProgress) / 100}
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={
+              RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * progressRef.current) / 100
+            }
             strokeLinecap="round"
-            className="text-sun-orange transition-all duration-150"
+            className="text-sun-orange"
           />
         </svg>
 
         <ArrowUp className="h-5 w-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
 
         {/* Hover Tooltip Pill */}
-        <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-bold text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-          Top ({scrollProgress}%)
+        <span
+          ref={labelRef}
+          className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-bold text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100"
+        >
+          Top ({progressRef.current}%)
         </span>
       </button>
     </div>
