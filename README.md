@@ -1,9 +1,10 @@
-# Vendora — Multi-Vendor Marketplace Frontend
+# Vendora — Multi-Vendor Marketplace
 
 > **Author**: Mohammad Talha Javaid  
 > **Version**: 1.0, October 2026  
 > **Prepared for**: Mentor Review  
-> **Stack**: React 19, TypeScript (Strict), Vite, Tailwind CSS, TanStack Query, Zustand, React Router, MSW
+> **Live**: https://vendora-plum.vercel.app/  
+> **Stack**: React 19, TypeScript (Strict), Vite, Tailwind CSS v4, TanStack Query, Zustand, React Router, Supabase (PostgreSQL, Auth, RLS, RPCs)
 
 ---
 
@@ -13,7 +14,7 @@
 1. **Platform Products** — Sold directly by the platform with the distinct **"Sold by Vendora"** verification seal.
 2. **Independent Vendor Listings** — Sold by verified third-party merchants who manage their own catalog, fulfillment, and payouts. The platform automatically levies and freezes a commission on every vendor order.
 
-The entire frontend operates against an in-browser Mock Service Worker (MSW) architecture with local persistence, simulating realistic latency (200–800ms), network errors, and complete state machine transitions without requiring an external backend.
+The app runs on a real Supabase backend — PostgreSQL with row-level security (RLS) and RPC functions for privileged operations. There is no mock data layer: an earlier in-browser mock (MSW) architecture was removed in full, and every page reads and writes the live database.
 
 ---
 
@@ -33,7 +34,7 @@ The entire frontend operates against an in-browser Mock Service Worker (MSW) arc
 - **4-Step Accordion Checkout (`/checkout`)**:
   - **Step 1: Shipping Address**: Validated with Zod schema and saved address book picker.
   - **Step 2: Delivery Options**: Individual standard/express shipping options selected per vendor.
-  - **Step 3: Payment**: Simulated card with Luhn algorithm checksum validation and presets, or Cash on Delivery (COD).
+  - **Step 3: Payment**: Saved payment methods store display metadata only (brand + last 4 digits) — card numbers are never stored — or Cash on Delivery (COD).
   - **Step 4: Review & Split Order Placement**: Validates stock, freezes platform commissions, and generates child sub-orders.
 
 ### 3. Order Lifecycle & 7-Stage Stepper
@@ -45,25 +46,25 @@ The entire frontend operates against an in-browser Mock Service Worker (MSW) arc
 ### 4. Six Distinct User Workspaces (RBAC)
 - **Guest / Customer**: Storefront, orders, digital downloads, wishlist, address book, disputes.
 - **Vendor Workspace (`/vendor`)**: Store KPIs, product inventory CRUD with variant matrices, order fulfillment, earnings, and store policies.
-- **Platform Admin (`/admin`)**: Full Catmin governance console: vendor approvals, product moderation queue, commission rate overrides, dispute triage, user management, and platform analytics.
+- **Platform Admin (`/admin`)**: Full governance console: vendor approvals, product moderation queue, commission rate overrides, dispute triage, user management, and platform analytics.
 - **Delivery Rider (`/rider`)**: Shift toggle (online/offline), delivery queue, turn-by-turn navigation shortcut, and 4-digit PIN customer handover modal (`HandoverVerificationModal`).
 - **Customer Support (`/support`)**: 3-pane dispute triage, internal staff notes, canned policy templates, and refund issuance controls.
 - **In-App Notification Center (`/notifications`)**: Real-time notification bell dropdown with unread badge counter, category filters, and bulk read actions.
 
 ---
 
-## 👥 Seeded Demo Accounts (1-Click Switcher)
+## 👥 Access & Roles
 
-You can switch between any of the pre-seeded personas instantly using the **Role Switcher** in the top navigation bar or through `/login`:
+The demo personas that existed during early development were deleted for security. For the mentor evaluation, a small set of clearly-labelled test accounts (`@vendora.test` — customer, seller, rider, support, admin) exists so every role can be demonstrated end to end; their credentials are shared privately with the reviewer, never published here, and the accounts are removed after the evaluation.
 
-| Role | Demo Email | Password | Primary Capabilities & Purpose |
-| :--- | :--- | :--- | :--- |
-| **Customer** | `customer@demo.test` | `demo1234` | Full order history, active cart, saved addresses, wishlist |
-| **New Customer** | `newuser@demo.test` | `demo1234` | Fresh account to test the `/become-a-seller` application flow |
-| **Approved Vendor** | `vendor@demo.test` | `demo1234` | Manages store catalog, packs orders, views earnings after commission |
-| **Platform Admin** | `admin@demo.test` | `demo1234` | Approves vendors, moderates products, sets commission rates, resolves disputes |
-| **Support Agent** | `support@demo.test` | `demo1234` | Triages dispute tickets, writes internal notes, issues customer refunds |
-| **Delivery Rider** | `rider@demo.test` | `demo1234` | Toggles shift, handles package pickup, verifies 4-digit customer PIN |
+To explore the live site:
+
+- **Customer**: register your own account at `/register`.
+- **Vendor**: register, then apply at `/become-a-seller`; an admin approves the application.
+- **Staff (admin / support)**: sign in at `/admin/login` — staff accounts only; non-staff accounts are signed out with an access denial.
+- **Rider**: provisioned by an admin.
+
+A separate, isolated public demo environment (its own database and deployment, public demo accounts, scheduled data reset) is planned for portfolio use, so demo access never touches production data.
 
 ---
 
@@ -78,18 +79,17 @@ Vendora enforces strict separation between server state, client persistent state
              │                              │                         │
      TanStack Query                   Zustand Stores              URL State
   (Server Data Cache)             (Persistent Client)        (Single Source)
-  - Catalog & Search               - vd:v1:auth_session        - Search term (q)
-  - Orders & Sub-orders            - vd:v1:cart_items          - Category & Brand
-  - Reviews & Ratings              - vd:v1:wishlist            - Price Min/Max
-  - Analytics & Reports            - vd:v1:notifications       - Sort & Pagination
-             │                     - vd:v1:compare
+  - Catalog & Search               - Cart (vd:v1:cart:<user>)   - Search term (q)
+  - Orders & Sub-orders            - Wishlist (per-user keys)   - Category & Brand
+  - Reviews & Ratings              - Compare (vd:v1:compare)    - Price Min/Max
+  - Analytics & Reports            - Currency (vd:v1:currency)  - Sort & Pagination
              ▼
       Service Layer (src/features/*/api)
              │  (fetch client with Zod response parsing)
              ▼
-      MSW Service Worker Interceptor (/api/...)
+      Supabase Client (PostgREST + RPC)
              │
-      Mock Database Engine (Seed JSON + LocalStorage Overlay)
+      PostgreSQL (RLS Policies + RPC Functions)
 ```
 
 ### State Placement Rules
@@ -119,8 +119,7 @@ src/
 │   ├── support/          # 3-pane dispute triage, internal staff notes
 │   └── vendor/           # VendorNav, KPI cards, product form modal
 ├── hooks/                # useDebouncedValue, custom UI utilities
-├── lib/                  # apiClient, API schemas, order-state-machine, formatters
-├── mocks/                # MSW worker, mockDb (seed JSON + localStorage overlay)
+├── lib/                  # Supabase client, API schemas, order-state-machine, formatters, friendly-error mapping
 ├── pages/                # Thin route components (HomePage, CheckoutPage, etc.)
 ├── store/                # Zustand stores (auth, cart, wishlist, notifications, compare)
 └── types/                # Strict domain interfaces (Product, SubOrder, Dispute, User)
@@ -131,26 +130,42 @@ src/
 ## ⚡ Performance & Quality Verification
 
 - **TypeScript Strict Mode**: 100% compliant with zero type errors (`verbatimModuleSyntax: true`).
-- **Test Suite**: **199 unit & integration tests passing** across 26 test suites in Vitest.
+- **Test Suite**: **1,053 unit & integration tests passing** across 136 test files in Vitest, with GitHub Actions CI green on every push. Database checks: **364 assertions passing** (`db:check`, PGlite replay of the full migration chain).
 - **Route-Level Code Splitting**: All workspace, checkout, and secondary pages are asynchronously chunked via `React.lazy()` and `<Suspense>`, keeping initial page loads fast.
-- **Deterministic Seed Data**: Static immutable seed data bundled with mutable browser overlay prevents third-party API downtime.
+- **Real Catalogue Data**: Products, stores, orders, and commissions live in Supabase (seeded catalogue re-priced to realistic PKR); nothing on the site is mock or invented data.
+
+---
+
+## 🔒 Security Posture
+
+- **Row-Level Security everywhere**: RLS is enabled on every table; privileged money operations (checkout pricing, order placement, payouts, gift cards) run server-side in `SECURITY DEFINER` RPCs with a pinned `search_path`, and checkout totals are computed by the database, never trusted from the client.
+- **One password policy**: new passwords require at least 8 characters on every surface (registration, reset, settings), validated by shared client code and Zod schemas; sign-in accepts the account's existing password and lets the server verify it.
+- **No open redirects**: post-login `?redirect=` targets pass through a single `safeRedirect` check that only honours same-origin paths.
+- **Public forms are capped**: the anonymous contact/newsletter inboxes enforce field-length limits in the client and as database CHECK constraints; new tables receive no automatic anonymous grants.
+- **Headers**: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, HSTS and `Permissions-Policy` are set at the edge; a full Content-Security-Policy is deployed in Report-Only mode first, so violations are collected before enforcement.
+- **Demo access stays out of production code paths**: the one-click demo persona switcher exists only in development builds (`import.meta.env.DEV`); the production bundle contains no demo credentials.
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 22+
 - npm or pnpm
+- A Supabase project (see `SUPABASE_SETUP.md`)
 
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/vendora.git
-cd vendora
+git clone https://github.com/mohammadtalhadev/Vendora.git
+cd Vendora
 
 # Install dependencies
 npm install
+
+# Configure environment: create .env with your Supabase project's
+# VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (anon key only —
+# never expose the service-role key to the browser)
 
 # Start development server
 npm run dev

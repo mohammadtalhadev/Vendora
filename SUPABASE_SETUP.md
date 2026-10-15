@@ -62,23 +62,29 @@ npm run dev
 `db:reset` seeds identity + catalog + marketing content only. Orders, deliveries and
 payouts are created through the RPCs so demo transactions stay internally consistent.
 
-## Demo logins
+## Demo logins (local development ONLY)
 
-Password for every account: `demo1234`.
+`supabase/seed.sql` creates demo personas for a **local or throwaway** project,
+all with the password `demo1234`:
 
 `customer@demo.test` · `newuser@demo.test` · `vendor@demo.test` · `vendor2@demo.test` ·
 `admin@demo.test` · `support@demo.test` · `rider@demo.test`
 
+> **Never run the seed against a shared or production project.** These are
+> publicly documented credentials — a seeded `admin@demo.test` is a working
+> admin backdoor. The production project does not contain these accounts;
+> evaluation accounts there use a separate domain and unpublished passwords.
+
 ## The client
 
 ```ts
-import { supabase } from '../lib/supabase';          // SupabaseClient<Database> — use this
-import { supabase } from '../lib/supabase-legacy';   // untyped escape hatch, see below
+import { supabase } from '../lib/supabase';          // SupabaseClient<Database> — the only client
 ```
 
-`src/lib/supabase-legacy.ts` exists only so the pre-migration data layer
-(`supabase-service.ts`, `supabase-vendor.ts`) keeps compiling while it still speaks the
-old column names. Every phase deletes part of it; new code must use the typed client.
+The typed client in `src/lib/supabase.ts` is the single data-layer entry
+point. The untyped legacy clients that existed during the migration were
+deleted once every feature moved to typed feature APIs under
+`src/features/*/api`.
 
 ## Catalog reads
 
@@ -106,5 +112,5 @@ the index-friendly predicate).
 
 ## Verification gates
 
-`npm run db:check` (23 tables, 85 policies, 46 smoke assertions), `npm run test`
-(286 tests), `tsc -b`, `npm run build`. All four must stay green before a phase is committed.
+`npm run db:check` (364 assertions over the full migration chain), `npm run test`
+(1,053 tests), `tsc -b`, `npm run build`. All four must stay green before a phase is committed.
