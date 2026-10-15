@@ -27,6 +27,11 @@ import {
 } from '../components/ui/dialog';
 import { foldersOf, type VendorMediaItem } from '../features/vendor/api/media';
 import {
+  compareFolderNames,
+  folderDisplayName,
+  folderSectionLabel,
+} from '../features/media/mediaData';
+import {
   useDeleteMedia,
   useMediaLibrary,
   useMoveMedia,
@@ -93,6 +98,22 @@ export const VendorMediaPage: React.FC = () => {
 
   const items = useMemo(() => library.data ?? [], [library.data]);
   const folders = useMemo(() => foldersOf(items), [items]);
+  // Library order (Batch 80): the kind subfolders first - Product Images,
+  // Storefront Banners, Profile Images - then the store's own folders A-Z.
+  const sectionFolders = useMemo(
+    () => folders.filter((name) => folderSectionLabel(name)).sort(compareFolderNames),
+    [folders],
+  );
+  const otherFolders = useMemo(
+    () => folders.filter((name) => !folderSectionLabel(name)).sort(compareFolderNames),
+    [folders],
+  );
+
+  /** Standing in a folder also makes it the working folder uploads land in. */
+  const openFolder = (name: string) => {
+    setFolder(name);
+    if (name !== 'all') setTarget(name);
+  };
 
   const visible = useMemo(
     () => (folder === 'all' ? items : items.filter((item) => item.folder === folder)),
@@ -134,7 +155,7 @@ export const VendorMediaPage: React.FC = () => {
     try {
       for (const file of queue) last = await upload.mutateAsync({ file, folder: folderName });
       note(
-        `Uploaded ${queue.length} file${queue.length === 1 ? '' : 's'}${last ? ` into ${last.folder}` : ''}. Each one waits for platform review before a buyer can see it.`,
+        `Uploaded ${queue.length} file${queue.length === 1 ? '' : 's'}${last ? ` into ${folderDisplayName(last.folder)}` : ''}. Each one waits for platform review before a buyer can see it.`,
       );
     } catch (cause) {
       fail(cause);
@@ -161,7 +182,7 @@ export const VendorMediaPage: React.FC = () => {
       { itemId: item.id, folder: next },
       {
         onSuccess: (saved) => {
-          note(`Moved to ${saved.folder}.`);
+          note(`Moved to ${folderDisplayName(saved.folder)}.`);
           setMovingId(null);
         },
         onError: fail,
@@ -284,7 +305,7 @@ export const VendorMediaPage: React.FC = () => {
         <nav aria-label="Folders in this library" className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setFolder('all')}
+            onClick={() => openFolder('all')}
             aria-current={folder === 'all' ? 'true' : undefined}
             className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
               folder === 'all'
@@ -294,11 +315,32 @@ export const VendorMediaPage: React.FC = () => {
           >
             All folders
           </button>
-          {folders.map((name) => (
+          {sectionFolders.map((name) => (
             <button
               key={name}
               type="button"
-              onClick={() => setFolder(name)}
+              onClick={() => openFolder(name)}
+              aria-current={folder === name ? 'true' : undefined}
+              title={name}
+              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
+                folder === name
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {folderDisplayName(name)}
+            </button>
+          ))}
+          {sectionFolders.length > 0 && otherFolders.length > 0 && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Other folders
+            </span>
+          )}
+          {otherFolders.map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => openFolder(name)}
               aria-current={folder === name ? 'true' : undefined}
               className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
                 folder === name
@@ -400,7 +442,7 @@ export const VendorMediaPage: React.FC = () => {
                         {STATUS_LABEL[item.status]}
                       </span>
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                        {item.folder || 'root'}
+                        {folderDisplayName(item.folder)}
                       </span>
                     </div>
 

@@ -105,7 +105,71 @@ export async function uploadMedia(file: File, folder = 'products'): Promise<Vend
     await supabase.storage.from(BUCKET).remove([objectPath]);
     throw new Error(`Failed to record the asset: ${error.message}`);
   }
+
+  // The folder exists as a `media_folders` row as well as a label on the
+  // asset (Batch 61), so the destination the upload filed into is a real
+  // subfolder of this store in the library tree - created on demand here,
+  // exactly as the admin upload creates its destination row. Best-effort:
+  // the asset already carries the label, so an existing row (the unique
+  // constraint answering) must not fail the upload.
+  try {
+    await supabase.from('media_folders').insert({ vendor_id: store.id, name: folder });
+  } catch {
+    // The label is already carried by the asset; nothing else to do.
+  }
+
   return mapMedia(data as unknown as MediaRow);
+}
+
+/**
+ * Files the seller's current profile photo into the library's Profile Images
+ * section (Batch 80). The photo itself lives in the `user-avatars` bucket
+ * under the account's uid prefix and `profiles.avatar_url` points at it; this
+ * records the same file as a media row for the store the account owns, so it
+ * sits in the library alongside the store's other assets. The previous
+ * profile photo's row is replaced, not piled up. Best-effort by design: an
+ * account with no store has no library to file into, and a failed record
+ * must never fail the photo change itself.
+ */
+export async function recordProfileImage(input: {
+  name: string;
+  objectPath: string;
+  cdnUrl: string;
+  mimeType: string;
+  sizeBytes: number;
+}): Promise<void> {
+  try {
+    const store = await fetchVendorStore();
+
+    // Only earlier avatar records are replaced - a file the seller uploaded
+    // into the profile folder from the media page is theirs to keep.
+    await supabase
+      .from('media_items')
+      .delete()
+      .eq('vendor_id', store.id)
+      .eq('folder', 'profile')
+      .ilike('cdn_url', '%/user-avatars/%');
+
+    const { error } = await supabase.from('media_items').insert({
+      vendor_id: store.id,
+      name: input.name,
+      folder: 'profile',
+      object_path: input.objectPath,
+      cdn_url: input.cdnUrl,
+      mime_type: input.mimeType,
+      size_bytes: input.sizeBytes,
+      status: 'pending',
+    });
+    if (error) return;
+
+    try {
+      await supabase.from('media_folders').insert({ vendor_id: store.id, name: 'profile' });
+    } catch {
+      // The label is already carried by the asset; nothing else to do.
+    }
+  } catch {
+    // No store, or the library write was refused: the photo change stands.
+  }
 }
 
 /** Renames the label only; the stored object keeps its path, so live links stay valid. */

@@ -95,6 +95,55 @@ export function folderLabel(folder: string): string {
   return folder.trim() ? folder : 'root';
 }
 
+/**
+ * The canonical library sections (Batch 80). A seller's library is organised
+ * as the store itself, then one subfolder per kind of asset; the subfolder IS
+ * the row's `folder` label (and its storage path segment), so no new storage
+ * concept exists - these are simply the folder names the upload flows file
+ * into, with the labels the library shows for them:
+ *
+ *   products   - product-form and catalogue uploads  -> "Product Images"
+ *   storefront - store banner and logo uploads       -> "Storefront Banners"
+ *   profile    - the seller's profile photo          -> "Profile Images"
+ *
+ * Any other folder a seller or admin created keeps its own name and lists
+ * after these, under no invented heading in the data - the tree groups them
+ * as the owner's remaining folders.
+ */
+export const MEDIA_FOLDER_PRODUCTS = 'products';
+export const MEDIA_FOLDER_STOREFRONT = 'storefront';
+export const MEDIA_FOLDER_PROFILE = 'profile';
+
+export const MEDIA_FOLDER_SECTIONS: ReadonlyArray<{ folder: string; label: string }> = [
+  { folder: MEDIA_FOLDER_PRODUCTS, label: 'Product Images' },
+  { folder: MEDIA_FOLDER_STOREFRONT, label: 'Storefront Banners' },
+  { folder: MEDIA_FOLDER_PROFILE, label: 'Profile Images' },
+];
+
+/** The section label for a canonical folder name, or null for a custom folder. */
+export function folderSectionLabel(folder: string): string | null {
+  return MEDIA_FOLDER_SECTIONS.find((section) => section.folder === folder)?.label ?? null;
+}
+
+/** What the library calls a folder: its section label when canonical, else its own name. */
+export function folderDisplayName(folder: string): string {
+  return folderSectionLabel(folder) ?? folderLabel(folder);
+}
+
+/**
+ * Sort rank for the tree: canonical sections first, in the order above;
+ * custom folders share the last rank and fall back to alphabetical order.
+ */
+export function folderSectionRank(folder: string): number {
+  const index = MEDIA_FOLDER_SECTIONS.findIndex((section) => section.folder === folder);
+  return index === -1 ? MEDIA_FOLDER_SECTIONS.length : index;
+}
+
+/** Tree order for one owner's folders: canonical sections first, then names A-Z. */
+export function compareFolderNames(a: string, b: string): number {
+  return folderSectionRank(a) - folderSectionRank(b) || a.localeCompare(b);
+}
+
 export function formatDate(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString();

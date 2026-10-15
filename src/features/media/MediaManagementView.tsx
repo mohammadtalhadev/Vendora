@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
+  Building2,
   Check,
   Clock,
   Copy,
@@ -17,6 +18,7 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
+  Store,
   Trash2,
   Upload,
   X,
@@ -60,16 +62,20 @@ import {
 import type { AdminMediaItem } from '../admin/api/media';
 import {
   cleanFolderName,
+  compareFolderNames,
   DATE_FILTERS,
   dimensionLabel,
   FILE_KIND_ICONS,
+  folderDisplayName,
   folderLabel,
+  folderSectionLabel,
   formatDate,
   formatBytes,
   formatOf,
   isStoredObject,
   KIND_FILTERS,
   matchesQuery,
+  MEDIA_FOLDER_PRODUCTS,
   MEDIA_PAGE_SIZE,
   mediaKindOf,
   STATUS_LABEL,
@@ -94,6 +100,21 @@ interface FolderEntry {
   vendorId: string | null;
   storeLabel: string | null;
   count: number;
+}
+
+/**
+ * One node of the sidebar tree (Batch 80): an owner - the platform or one
+ * store - with its subfolders under it. Groups are only ever built from the
+ * folder entries the library actually holds, so an owner with no folders and
+ * no files never appears, and no section is invented for an owner who has
+ * nothing filed in it.
+ */
+interface FolderGroup {
+  key: string;
+  vendorId: string | null;
+  label: string;
+  total: number;
+  entries: FolderEntry[];
 }
 
 /**
@@ -131,7 +152,11 @@ const FIELD =
  * and folder create/rename/delete over the `media_folders` rows - plus the moderation
  * verdict vendor mode never offers. Batch 72 adds the platform itself as an owner:
  * admin mode can hold platform folders (a NULL `vendor_id`) and staff can upload
- * their own files, to the platform library or a store's. Either way, a write the
+ * their own files, to the platform library or a store's. Batch 80 presents the
+ * sidebar as the hierarchy the library actually is - each owner (the platform,
+ * then one parent node per store) over its kind subfolders (Product Images,
+ * Storefront Banners, Profile Images, then the owner's own folders) - and an
+ * upload opens aimed at the folder currently selected. Either way, a write the
  * server refuses is reported with the server's own words instead of a toast.
  */
 export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }) => {
@@ -195,7 +220,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<File[]>([]);
-  const [uploadFolder, setUploadFolder] = useState('products');
+  const [uploadFolder, setUploadFolder] = useState(MEDIA_FOLDER_PRODUCTS);
   /** Admin upload destination (Batch 72): an owner key - 'platform' or a store id. */
   const [uploadOwner, setUploadOwner] = useState(PLATFORM_OWNER_KEY);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -318,6 +343,49 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
         a.name.localeCompare(b.name),
     );
   }, [isAdmin, folders, folderCounts, items, adminFoldersQuery.data]);
+
+  /**
+   * The sidebar tree (Batch 80): folder entries grouped under their owner -
+   * the platform first, then one parent node per store - with each owner's
+   * subfolders in library order (canonical sections first, then A-Z).
+   * Vendor mode has a single implicit owner (the signed-in store), so its
+   * entries are simply re-sorted into that same library order.
+   */
+  const folderGroups = useMemo<FolderGroup[]>(() => {
+    if (!isAdmin) return [];
+    const byOwner = new Map<string, FolderGroup>();
+    for (const entry of folderEntries) {
+      const key = entry.vendorId ?? PLATFORM_OWNER_KEY;
+      const group = byOwner.get(key) ?? {
+        key,
+        vendorId: entry.vendorId,
+        label: entry.vendorId === null ? 'Platform' : (entry.storeLabel ?? 'Unnamed store'),
+        total: 0,
+        entries: [],
+      };
+      group.entries.push(entry);
+      group.total += entry.count;
+      byOwner.set(key, group);
+    }
+    return [...byOwner.values()]
+      .map((group) => ({
+        ...group,
+        entries: [...group.entries].sort((a, b) => compareFolderNames(a.name, b.name)),
+      }))
+      .sort(
+        (a, b) =>
+          Number(b.vendorId === null) - Number(a.vendorId === null) ||
+          a.label.localeCompare(b.label),
+      );
+  }, [isAdmin, folderEntries]);
+
+  const vendorFolderEntries = useMemo(
+    () =>
+      isAdmin
+        ? []
+        : [...folderEntries].sort((a, b) => compareFolderNames(a.name, b.name)),
+    [isAdmin, folderEntries],
+  );
 
   /**
    * The New Folder dialog's store picker. Batch 66: this reads the platform's
@@ -449,6 +517,29 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const pickedFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUploadQueue(Array.from(event.target.files ?? []));
     setUploadError(null);
+  };
+
+  /**
+   * Uploads file into the folder the user is standing in (Batch 80): the
+   * dialog opens aimed at the active sidebar folder - and, in admin mode, at
+   * that folder's owner - instead of always restarting at Product Images.
+   * With no folder selected, the default is Product Images.
+   */
+  const openUpload = () => {
+    if (folderFilter !== 'all') {
+      if (isAdmin) {
+        if (activeFolderEntry) {
+          setUploadFolder(activeFolderEntry.name);
+          setUploadOwner(activeFolderEntry.vendorId ?? PLATFORM_OWNER_KEY);
+        }
+      } else {
+        setUploadFolder(folderFilter);
+      }
+    } else {
+      setUploadFolder(MEDIA_FOLDER_PRODUCTS);
+      if (isAdmin) setUploadOwner(PLATFORM_OWNER_KEY);
+    }
+    setUploadOpen(true);
   };
 
   const submitUpload = async (event: React.FormEvent) => {
@@ -739,6 +830,96 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     [currentPage, pageCount],
   );
 
+  /**
+   * One folder row of the sidebar tree (Batch 80), rendered identically under
+   * whichever owner group claims it: a canonical section shows its label
+   * ("Product Images") with the folder name beneath it; a custom folder shows
+   * its own name. Rename/delete stay admin-only, as before.
+   */
+  const renderFolderEntry = (entry: FolderEntry) => {
+    const isActive = folderFilter === entry.key;
+    const isDropTarget = dropKey === entry.key;
+    const sectionLabel = folderSectionLabel(entry.name);
+    return (
+      <div
+        key={entry.key}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          setDropKey(entry.key);
+        }}
+        onDragLeave={() => setDropKey((current) => (current === entry.key ? null : current))}
+        onDrop={(event) => {
+          event.preventDefault();
+          void dropOnFolder(entry);
+        }}
+        className={`flex items-center gap-1 rounded-lg transition-colors ${
+          isDropTarget ? 'bg-sky-100 ring-2 ring-sky-400' : ''
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => changeFilter(() => setFolderFilter(entry.key))}
+          aria-current={isActive ? 'true' : undefined}
+          className={`flex-1 min-w-0 flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+            isActive
+              ? 'bg-slate-900 text-white font-bold'
+              : 'text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <span className="flex items-center gap-2 truncate">
+            <Folder className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              <span
+                className={`block truncate text-xs ${sectionLabel ? 'font-semibold' : 'font-mono'}`}
+              >
+                {folderDisplayName(entry.name)}
+              </span>
+              {sectionLabel && (
+                <span
+                  className={`block truncate font-mono text-[10px] font-medium ${isActive ? 'text-slate-300' : 'text-slate-400'}`}
+                >
+                  {entry.name}
+                </span>
+              )}
+            </span>
+          </span>
+          <span className={isActive ? 'text-slate-300' : 'text-slate-400'}>{entry.count}</span>
+        </button>
+
+        {isAdmin && (
+          <span className="flex shrink-0 items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setFolderRenameError(null);
+                setFolderRenameDraft(entry.name);
+                setFolderRenameTarget(entry);
+              }}
+              aria-label={`Rename folder ${entry.name} for ${entry.storeLabel ?? 'its owner'}`}
+              title={`Rename folder ${entry.name}`}
+              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFolderDeleteError(null);
+                setFolderDeleteTarget(entry);
+              }}
+              aria-label={`Delete folder ${entry.name} for ${entry.storeLabel ?? 'its store'}`}
+              title={`Delete folder ${entry.name}`}
+              className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </span>
+        )}
+      </div>
+    );
+  };
+
   const InspectedIcon = inspected
     ? FILE_KIND_ICONS[mediaKindOf(inspected.mimeType)]
     : FILE_KIND_ICONS.other;
@@ -765,7 +946,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <button type="button" onClick={() => setUploadOpen(true)} className={PRIMARY_BUTTON}>
+          <button type="button" onClick={openUpload} className={PRIMARY_BUTTON}>
             <Upload className="h-3.5 w-3.5" />
             <span>Upload Files</span>
           </button>
@@ -1014,7 +1195,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
       {/* ── Main two-column layout ──────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-        {/* Folder directory: `media_folders` rows (admin) / labels on the rows (vendor) */}
+        {/* Folder tree (Batch 80): owners (admin) over their kind subfolders */}
         <div className="lg:col-span-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <h3 className="font-extrabold text-slate-900 text-xs">
@@ -1063,84 +1244,44 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               </span>
             </button>
 
-            {folderEntries.map((entry) => {
-              const isActive = folderFilter === entry.key;
-              const isDropTarget = dropKey === entry.key;
-              return (
-                <div
-                  key={entry.key}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = 'move';
-                    setDropKey(entry.key);
-                  }}
-                  onDragLeave={() => setDropKey((current) => (current === entry.key ? null : current))}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    void dropOnFolder(entry);
-                  }}
-                  className={`flex items-center gap-1 rounded-lg transition-colors ${
-                    isDropTarget ? 'bg-sky-100 ring-2 ring-sky-400' : ''
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => changeFilter(() => setFolderFilter(entry.key))}
-                    aria-current={isActive ? 'true' : undefined}
-                    className={`flex-1 min-w-0 flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-slate-900 text-white font-bold'
-                        : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      <Folder className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">
-                        <span className="block truncate font-mono text-xs">{entry.name}</span>
-                        {isAdmin && entry.storeLabel && (
-                          <span className={`block truncate text-[10px] font-medium ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
-                            {entry.storeLabel}
-                          </span>
+            {isAdmin
+              ? folderGroups.map((group) => (
+                  <div key={group.key} className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between px-2.5">
+                      <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-slate-700">
+                        {group.vendorId === null ? (
+                          <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        ) : (
+                          <Store className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                         )}
+                        <span className="truncate">{group.label}</span>
                       </span>
-                    </span>
-                    <span className={isActive ? 'text-slate-300' : 'text-slate-400'}>
-                      {entry.count}
-                    </span>
-                  </button>
-
-                  {isAdmin && (
-                    <span className="flex shrink-0 items-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFolderRenameError(null);
-                          setFolderRenameDraft(entry.name);
-                          setFolderRenameTarget(entry);
-                        }}
-                        aria-label={`Rename folder ${entry.name} for ${entry.storeLabel ?? 'its owner'}`}
-                        title={`Rename folder ${entry.name}`}
-                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFolderDeleteError(null);
-                          setFolderDeleteTarget(entry);
-                        }}
-                        aria-label={`Delete folder ${entry.name} for ${entry.storeLabel ?? 'its store'}`}
-                        title={`Delete folder ${entry.name}`}
-                        className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+                      <span className="text-slate-400">{group.total}</span>
+                    </div>
+                    <div className="ml-3 space-y-1 border-l border-slate-100 pl-1.5">
+                      {group.entries.map((entry) => renderFolderEntry(entry))}
+                    </div>
+                  </div>
+                ))
+              : (() => {
+                  const sections = vendorFolderEntries.filter((entry) =>
+                    folderSectionLabel(entry.name),
+                  );
+                  const others = vendorFolderEntries.filter(
+                    (entry) => !folderSectionLabel(entry.name),
+                  );
+                  return (
+                    <>
+                      {sections.map((entry) => renderFolderEntry(entry))}
+                      {sections.length > 0 && others.length > 0 && (
+                        <p className="px-2.5 pt-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                          Other folders
+                        </p>
+                      )}
+                      {others.map((entry) => renderFolderEntry(entry))}
+                    </>
+                  );
+                })()}
 
             {folderEntries.length === 0 && (
               <p className="px-1 text-xs text-slate-500">
@@ -1167,8 +1308,8 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 {folderFilter === 'all'
                   ? 'all folders'
                   : isAdmin
-                    ? `${activeFolderEntry?.name ?? 'folder'}${activeFolderEntry?.storeLabel ? ` (${activeFolderEntry.storeLabel})` : ''}`
-                    : folderFilter}
+                    ? `${activeFolderEntry ? folderDisplayName(activeFolderEntry.name) : 'folder'}${activeFolderEntry?.storeLabel ? ` (${activeFolderEntry.storeLabel})` : ''}`
+                    : folderDisplayName(folderFilter)}
                 <span className="ml-2 text-slate-400">
                   {filtered.length} of {items.length} rows
                 </span>
@@ -1417,7 +1558,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
             <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
               <table className="w-full text-left text-xs">
                 <caption className="sr-only">
-                  Media assets in {folderFilter === 'all' ? 'all folders' : activeFolderEntry?.name ?? folderFilter}, page{' '}
+                  Media assets in {folderFilter === 'all' ? 'all folders' : folderDisplayName(activeFolderEntry?.name ?? folderFilter)}, page{' '}
                   {currentPage} of {pageCount}
                 </caption>
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-500">
@@ -1949,7 +2090,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
                 className={`${FIELD} font-mono`}
               />
               <p className="mt-1 text-xs text-slate-500">
-                A label on the row, not a record: a new name here creates the folder for that file.
+                Pick a folder from the list, or type a new name to create one.
               </p>
             </div>
 

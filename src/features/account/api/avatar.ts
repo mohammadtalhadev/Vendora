@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { toFriendlyError } from '../../../lib/friendly-error';
 import { updateProfileIdentity } from '../../auth/api/session';
+import { recordProfileImage } from '../../vendor/api/media';
 
 /**
  * Profile photos. The `user-avatars` bucket and its owner policies already
@@ -74,5 +75,17 @@ export async function uploadAvatar(file: File): Promise<string> {
     await supabase.storage.from(AVATAR_BUCKET).remove([objectPath]);
     throw cause;
   }
+
+  // A seller's photo also files into their store library's Profile Images
+  // folder (Batch 80). Best-effort: accounts without a store have no library,
+  // and the helper never throws - the photo change has already landed.
+  await recordProfileImage({
+    name: file.name,
+    objectPath,
+    cdnUrl: urlData.publicUrl,
+    mimeType: file.type,
+    sizeBytes: file.size,
+  });
+
   return urlData.publicUrl;
 }

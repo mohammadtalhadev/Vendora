@@ -678,9 +678,8 @@ export const VendorSettingsPage: React.FC = () => {
                   </div>
 
                   <p className="text-[11px] leading-relaxed text-slate-500">
-                    Images are stored as a URL on your profile row. To host a file, upload it on
-                    the Files &amp; Media page and paste the address it gives you - a pasted
-                    base64 blob would be stored too, and it makes every read of your store heavy.
+                    To host a file, upload it to the Storefront Banners folder on the
+                    Files &amp; Media page and paste the address it gives you here.
                   </p>
                 </section>
 
