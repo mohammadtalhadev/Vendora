@@ -43,6 +43,7 @@ import { ProductDossierSection } from '../features/products/components/ProductDo
 import { useReveal } from '../hooks/useReveal';
 import { CustomerReviewsShowcase } from '../features/products/components/CustomerReviewsShowcase';
 import { ProductSectionNav, ProductQuickAddPill, AddedBurstIcon } from '../features/products/components/PdpStickyBars';
+import { StoreLogo } from '../features/vendor/components/StoreLogo';
 import { useProductReviews } from '../features/reviews/hooks/useReviews';
 import { ProductsYouMayLikeGrid } from '../features/products/components/ProductsYouMayLikeGrid';
 import type { ProductItem } from '../features/products/components/ProductCard';
@@ -331,12 +332,6 @@ export const ProductDetailPage: React.FC = () => {
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase()) || 'Products';
 
-  const sellerTags = useMemo(() => {
-    const tags = [categoryLabel, displayBrand];
-    if (product?.type === 'digital') tags.push('Instant Download');
-    return [...new Set(tags.filter(Boolean))];
-  }, [categoryLabel, displayBrand, product?.type]);
-
   // Marketing Headline & Summary
   const marketingHeadline = useMemo(() => {
     return 'Product Overview';
@@ -544,33 +539,42 @@ export const ProductDetailPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Seller Store Card */}
+                {/* Seller Store Card — the LISTING's seller (Batch 123):
+                    real store logo, the seller's OWN rating rollup, and
+                    seller facts only. An accepted offer from another
+                    seller never relabels this card. */}
                 <div className="order-4 lg:order-none glass-panel rounded-3xl border border-white/80 dark:border-white/10 p-5 shadow-xl space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sun-orange">
-                      <Store className="h-5 w-5" />
-                    </div>
+                    <StoreLogo
+                      name={product.sellerName}
+                      logo={product.sellerLogo}
+                      className="h-10 w-10 shrink-0 rounded-xl ring-1 ring-slate-200/70"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Link
                           to={`/vendors/${product.sellerId}`}
                           className="font-bold text-sm text-slate-900 hover:text-sun-orange transition-colors truncate"
                         >
-                          {currentSellerName}
+                          {product.sellerName}
                         </Link>
                         <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-aqua border border-cyan-200/60">
                           <ShieldCheck className="h-3 w-3 text-aqua" />
                           Verified
                         </span>
                       </div>
+                      {/* The seller's rating rollup from vendor_profiles —
+                          NOT this product's reviews aggregate. */}
                       <div className="flex items-center gap-1 text-xs text-amber-500 pt-0.5">
-                        {reviewsLoading ? (
-                          <span className="text-slate-400 font-normal">Loading reviews…</span>
-                        ) : hasReviews ? (
+                        {(product.sellerReviewCount ?? 0) > 0 ? (
                           <>
                             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                            <span className="font-bold text-slate-800">{displayRating.toFixed(1)}</span>
-                            <span className="text-slate-400 font-normal">({displayReviews.toLocaleString()})</span>
+                            <span className="font-bold text-slate-800">
+                              {(product.sellerRating ?? 0).toFixed(1)}
+                            </span>
+                            <span className="text-slate-400 font-normal">
+                              ({(product.sellerReviewCount ?? 0).toLocaleString()} reviews)
+                            </span>
                           </>
                         ) : (
                           <span className="text-slate-400">No reviews yet</span>
@@ -579,16 +583,34 @@ export const ProductDetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Seller attribute pills, derived from the actual product */}
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {sellerTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600"
-                      >
-                        {tag}
+                  {/* Seller facts (Batch 123, owner order — the product-tag
+                      pills that used to sit here are gone): the seller's
+                      published delivery window, the same range the buy
+                      box quotes, and the ships-from city when published.
+                      No response-time or orders-delivered tiles: the
+                      system does not record them, so none are shown. */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-0.5">
+                      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <Truck className="h-3.5 w-3.5 text-sun-orange" />
+                        Delivery time
                       </span>
-                    ))}
+                      <span className="block text-xs font-bold text-slate-900">
+                        {deliveryRange.min}–{deliveryRange.max} business days
+                      </span>
+                    </div>
+                    {sellerProfile?.originCity && (
+                      <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-0.5">
+                        <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                          <MapPin className="h-3.5 w-3.5 text-sun-orange" />
+                          Ships from
+                        </span>
+                        <span className="block text-xs font-bold text-slate-900">
+                          {sellerProfile.originCity}
+                          {sellerProfile.originState ? `, ${sellerProfile.originState}` : ''}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Live Chat conversation invite */}

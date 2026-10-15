@@ -58,6 +58,8 @@ export interface Product {
   sellerName: string;
   sellerType: 'platform' | 'vendor';
   sellerLogo?: string | null;
+  sellerRating?: number;
+  sellerReviewCount?: number;
   variants: Variant[];
   stock: number;
   shippingSettings?: {

@@ -12,6 +12,8 @@ export interface ProductWithRefs extends ProductRow {
     slug: string;
     seller_type: 'platform' | 'vendor';
     logo: string | null;
+    rating: number | null;
+    review_count: number | null;
   } | null;
 }
 
@@ -20,7 +22,7 @@ export interface ProductWithRefs extends ProductRow {
  * FK embeds, so no extra round-trip is needed to name the store or the shelf.
  */
 export const PRODUCT_SELECT =
-  '*, category:categories(id, name, slug), seller:vendor_profiles(id, store_name, slug, seller_type, logo)';
+  '*, category:categories(id, name, slug), seller:vendor_profiles(id, store_name, slug, seller_type, logo, rating, review_count)';
 
 export function mapProduct(row: ProductWithRefs): Product {
   return {
@@ -38,6 +40,8 @@ export function mapProduct(row: ProductWithRefs): Product {
     sellerName: row.seller?.store_name ?? '',
     sellerType: row.seller?.seller_type ?? 'vendor',
     sellerLogo: row.seller?.logo ?? null,
+    sellerRating: Number(row.seller?.rating ?? 0),
+    sellerReviewCount: row.seller?.review_count ?? 0,
     variants: (row.variants ?? []) as unknown as Variant[],
     stock: row.stock,
     shippingSettings: row.shipping_settings as Product['shippingSettings'],
