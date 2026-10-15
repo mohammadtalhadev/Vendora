@@ -254,10 +254,12 @@ export function useHeroPortraits(): HeroPortrait[] {
 }
 
 /* --------------------------------------------------------------------------
- * Batch 85: the hero's LEFT promo column, its own placement
- * (`homepage_left_promo`). Unlike the other hero slots there is no built-in
- * creative for it: no published banner means no column, and the hero row
- * keeps exactly its pre-batch layout.
+ * The `homepage_left_promo` placement (added in Batch 85, re-homed in
+ * Batch 87): the left promo picture of the homepage's New Arrivals /
+ * Best Seller / Best Offers section (DealsStrip). A published banner
+ * replaces that card's built-in Tech Fest creative; no published banner
+ * means the section renders its built-in card, exactly as before. (The
+ * placement key keeps its Batch 85 name; only its home on the page moved.)
  * ------------------------------------------------------------------------ */
 
 const LEFT_PROMO_PLACEMENT = 'homepage_left_promo';
@@ -308,7 +310,7 @@ export async function fetchPublishedHeroLeftPromo(
   return heroLeftPromoFromRows((data ?? []) as unknown as Array<Record<string, unknown>>);
 }
 
-/** The left promo the hero renders, or null when the column stays absent. */
+/** The promo the deals section's left card renders, or null for the built-in card. */
 export function useHeroLeftPromo(): HeroLeftPromo | null {
   const { data } = useQuery({
     queryKey: ['home', 'hero-left-promo'] as const,

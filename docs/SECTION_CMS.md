@@ -5,9 +5,12 @@ The homepage's image blocks are data, not code. They live in two tables —
 (the tiles/cards inside a section) — and are managed end to end from
 **Admin → Homepage Sections**: create, edit, reorder, enable/disable and
 delete, with image uploads going through the admin media library
-(platform folder `cms`). The hero banners (main carousel, right portrait
-rail, left promo) are a separate, older mechanism — CMS `content_blocks`
-placements managed from **Admin → CMS & Banners**.
+(platform folder `cms`). The hero banners (slides carousel, right
+portrait rail) are a separate, older mechanism — CMS `content_blocks`
+placements managed from **Admin → CMS & Banners**. The
+`homepage_left_promo` placement is one of those banner placements too,
+but since Batch 87 it renders as the left banner of the New Arrivals /
+Best Seller / Best Offers section, not in the hero.
 
 ## How rendering works
 

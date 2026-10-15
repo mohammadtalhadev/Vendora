@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductCard, domainProductToCardItem, type ProductItem } from '../../products';
 import { useProducts } from '../../catalog/hooks/useProducts';
+import { useHeroLeftPromo } from '../api/hero-banners';
 import { GridSkeleton } from '../../../components/common/QueryState';
 import { useReveal } from '../../../hooks/useReveal';
 
@@ -24,6 +25,9 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
   isInWishlist,
 }) => {
   useReveal();
+  // The section's left promo picture is CMS-driven (Batch 87): a published
+  // `homepage_left_promo` banner replaces the built-in Tech Fest card below.
+  const leftPromo = useHeroLeftPromo();
   const [activeTab, setActiveTab] = useState<'best-sellers' | 'new-arrivals' | 'best-offers'>('best-sellers');
 
   const { data: bestSellerData, isLoading: bestSellersLoading } = useProducts({
@@ -126,7 +130,25 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
 
       {/* Main Grid: Left Tall Promo Card + Right 4x2 Grid of Standard ProductCards */}
       <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12">
-        {/* Left Column: Tall Promo Card */}
+        {/* Left Column: the CMS banner when one is published for the
+            `homepage_left_promo` placement (Batch 87), otherwise the
+            built-in Tech Fest promo card. The banner creative is a full
+            poster, so the card is the image alone, linked as a whole. */}
+        {leftPromo ? (
+          <div className="group relative min-h-[440px] overflow-hidden rounded-[26px] bg-[#0C1046] shadow-lg lg:col-span-3">
+            <img
+              src={leftPromo.image}
+              alt={leftPromo.alt}
+              className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            />
+            <Link
+              to={leftPromo.link}
+              className="absolute inset-0 z-20"
+              title={leftPromo.title}
+              aria-label={leftPromo.alt}
+            />
+          </div>
+        ) : (
         <div className="group relative flex min-h-[440px] flex-col justify-between overflow-hidden rounded-[26px] bg-black p-6 sm:p-7 text-white shadow-lg lg:col-span-3">
           {/* Subtle Ambient Glow */}
           <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-cyan-500/20 blur-3xl" />
@@ -159,6 +181,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
             </Link>
           </div>
         </div>
+        )}
 
         {/* Right Column: 4 Columns x 2 Rows (8 Standard ProductCards) */}
         <div className="lg:col-span-9">

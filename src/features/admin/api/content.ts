@@ -14,14 +14,16 @@ const PLACEMENT = 'homepage_hero';
 
 /**
  * The homepage banner placements the console manages (Batch 85 added the
- * portrait rail and the left promo to the original hero carousel). The
- * storefront reads each placement separately; the console lists and
- * writes all three from this one screen.
+ * portrait rail and the promo placement to the original hero carousel).
+ * The storefront reads each placement separately; the console lists and
+ * writes all three from this one screen. Batch 87: `homepage_left_promo`
+ * renders as the left banner of the New Arrivals / Best Seller / Best
+ * Offers section, not in the hero (its key keeps the Batch 85 name).
  */
 export const BANNER_PLACEMENTS = [
   { value: 'homepage_hero', label: 'Homepage hero — main carousel' },
   { value: 'homepage_hero_portrait', label: 'Homepage hero — right carousel' },
-  { value: 'homepage_left_promo', label: 'Homepage left promo' },
+  { value: 'homepage_left_promo', label: 'Best sellers section — left banner' },
 ] as const;
 
 export type BannerPlacement = (typeof BANNER_PLACEMENTS)[number]['value'];

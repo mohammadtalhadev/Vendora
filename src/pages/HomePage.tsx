@@ -25,7 +25,6 @@ import {
   BannerCta,
 } from '../features/home';
 import {
-  useHeroLeftPromo,
   useHeroPortraits,
   useHeroSlides,
 } from '../features/home/api/hero-banners';
@@ -152,7 +151,6 @@ export const HomePage: React.FC = () => {
   // read lands, so the rendered index is always taken modulo the list.
   const heroSlides = useHeroSlides();
   const heroPortraits = useHeroPortraits();
-  const heroLeftPromo = useHeroLeftPromo();
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const activeHeroIndex = heroSlides.length > 0 ? heroSlideIndex % heroSlides.length : 0;
   const [heroPortraitIndex, setHeroPortraitIndex] = useState(0);
@@ -322,34 +320,16 @@ export const HomePage: React.FC = () => {
       <h1 className="sr-only">Vendora — Electronics, Beauty, Home &amp; More</h1>
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6">
         {/* =========================================================================
-            1. Hero Featured Carousel & Highlights
+            1. Hero Featured Carousel & Portrait Rail (Batch 87: back to the
+            two planned parts — the slides carousel plus the 9:16 portrait
+            carousel. The Batch 85 left-promo column that briefly lived in
+            this row is gone; that placement now feeds the left picture of
+            the New Arrivals / Best Seller / Best Offers section below.)
             ========================================================================= */}
         <section className="mb-10">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            {/* Left promo column (Batch 85): its own CMS placement
-                (homepage_left_promo). Published banner = the hero row gains
-                this column (stacked above the hero on mobile); none
-                published = the column is absent and the row is exactly the
-                pre-batch two-column hero. */}
-            {heroLeftPromo && (
-              <div className="group relative aspect-[4/5] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-2 lg:aspect-auto">
-                <img
-                  src={heroLeftPromo.image}
-                  alt={heroLeftPromo.alt}
-                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105 lg:object-center"
-                />
-                <Link
-                  to={heroLeftPromo.link}
-                  className="absolute inset-0 z-20"
-                  title={heroLeftPromo.title}
-                  aria-label={heroLeftPromo.alt}
-                />
-              </div>
-            )}
             <div
-              className={`relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl group aspect-[16/9] min-h-[260px] sm:min-h-[320px] flex items-center justify-center ${
-                heroLeftPromo ? 'lg:col-span-7' : 'lg:col-span-9'
-              }`}
+              className="relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl group aspect-[16/9] min-h-[260px] sm:min-h-[320px] flex items-center justify-center self-start lg:col-span-9"
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >
@@ -388,15 +368,16 @@ export const HomePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Right rail: the portrait (9:16) banners — their own CMS
-                placement (homepage_hero_portrait) with a built-in campaign
-                fallback. Batch 85: every published banner joins the rail
-                and it rotates like the main carousel; a single banner is
-                static, exactly the pre-batch rail. Stacked under the
-                carousel on mobile at its natural ratio; beside it on
-                desktop, filling the row's height. */}
+            {/* Right rail: the portrait banners — their own CMS placement
+                (homepage_hero_portrait) with a built-in campaign fallback.
+                Batch 85: every published banner joins the rail and it
+                rotates like the main carousel; a single banner is static.
+                Batch 87: the rail's media box is a strict 9:16 at every
+                breakpoint (no desktop stretch), so the portrait creatives
+                are never cropped by the row's height. Stacked under the
+                carousel on mobile; beside it on desktop. */}
             <div
-              className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3 lg:aspect-auto"
+              className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg self-start lg:col-span-3"
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >

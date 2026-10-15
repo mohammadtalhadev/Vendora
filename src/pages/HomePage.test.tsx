@@ -1,17 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../lib/supabase', async () => {
   const { supabaseDouble } = await import('../test/supabase-double');
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
 });
 
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
-import { categoryRow, productRow, storeRow, supabaseDouble } from '../test/supabase-double';
+import { categoryRow, contentBlockRow, productRow, storeRow, supabaseDouble } from '../test/supabase-double';
 
 /**
  * The homepage used to render ~115 hard-coded products; it now reads the real
@@ -333,5 +333,240 @@ describe('HomePage fabricated-content takedown (Batch 5, Pro-0)', { timeout: 400
     expect(await screen.findByText('Limited Campaign')).toBeInTheDocument();
     expect(screen.queryByText(/VENDORAMOBILE/)).not.toBeInTheDocument();
     expect(screen.queryByText(/10% OFF your first mobile order/)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Batch 87 — the hero is back to its two planned parts: the slides carousel
+ * (`homepage_hero`) and the 9:16 portrait carousel (`homepage_hero_portrait`,
+ * every published banner). The Batch 85 promo column no longer lives in the
+ * hero; the `homepage_left_promo` banner is the left picture of the
+ * New Arrivals / Best Seller / Best Offers section (DealsStrip) instead.
+ */
+describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, () => {
+  beforeEach(() => {
+    supabaseDouble.reset();
+    localStorage.clear();
+    useCartStore.getState().clearCart();
+    useWishlistStore.getState().clearWishlist();
+    productSeq = 2000;
+    seedCatalogue();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function seedSlide() {
+    supabaseDouble.seedContentBlock(
+      contentBlockRow({
+        id: '00000000-0000-4000-8000-000000000921',
+        slug: 'hero-slide-iphone',
+        placement: 'homepage_hero',
+        sort_order: 10,
+        body: {
+          headline: 'iPhone 18 Pro Max',
+          subtitle: 'The next generation is here.',
+          imageUrl: '/banners/hero-iphone.webp',
+          ctaLink: '/brands/apple-official',
+          ctaText: 'Shop Now',
+        },
+      }),
+    );
+  }
+
+  function seedPortraitWatch() {
+    supabaseDouble.seedContentBlock(
+      contentBlockRow({
+        id: '00000000-0000-4000-8000-000000000922',
+        slug: 'hero-watch-portrait',
+        placement: 'homepage_hero_portrait',
+        sort_order: 10,
+        body: {
+          headline: 'Apple Watch Series 10',
+          imageUrl: '/banners/hero-watch.webp',
+          ctaLink: '/brands/apple-official',
+        },
+      }),
+    );
+  }
+
+  function seedPortraitKitchen() {
+    supabaseDouble.seedContentBlock(
+      contentBlockRow({
+        id: '00000000-0000-4000-8000-000000000923',
+        slug: 'hero-poster-kitchen',
+        placement: 'homepage_hero_portrait',
+        sort_order: 20,
+        body: {
+          headline: 'Home & Kitchen Made Beautiful',
+          imageUrl: '/images/home/hero-home-kitchen.png',
+          ctaLink: '/products?category=home-kitchen',
+        },
+      }),
+    );
+  }
+
+  function seedPortraitBeauty() {
+    supabaseDouble.seedContentBlock(
+      contentBlockRow({
+        id: '00000000-0000-4000-8000-000000000924',
+        slug: 'hero-poster-beauty',
+        placement: 'homepage_hero_portrait',
+        sort_order: 30,
+        body: {
+          headline: 'Your Beauty & Self-Care, All in One Place',
+          imageUrl: '/images/home/hero-beauty.png',
+          ctaLink: '/products?category=beauty-personal-care',
+        },
+      }),
+    );
+  }
+
+  function seedSidePromo() {
+    supabaseDouble.seedContentBlock(
+      contentBlockRow({
+        id: '00000000-0000-4000-8000-000000000925',
+        slug: 'hero-side-promo-best-seller',
+        placement: 'homepage_left_promo',
+        sort_order: 10,
+        body: {
+          headline: 'Best Seller Category',
+          imageUrl: '/images/home/hero-left-best-seller.png',
+          ctaLink: '/deals',
+        },
+      }),
+    );
+  }
+
+  /** The first ancestor whose class list carries a col-span token. */
+  function blockOf(img: HTMLElement): HTMLElement {
+    let el: HTMLElement | null = img;
+    for (let depth = 0; depth < 6 && el; depth += 1) {
+      if (el.className.includes('col-span')) return el;
+      el = el.parentElement;
+    }
+    throw new Error('grid block not found for image');
+  }
+
+  /** The <section> element wrapping a node. */
+  function sectionOf(node: HTMLElement): HTMLElement {
+    let el: HTMLElement | null = node;
+    while (el && el.tagName !== 'SECTION') el = el.parentElement;
+    if (!el) throw new Error('section not found');
+    return el;
+  }
+
+  it('hero shows the slides plus all three portrait banners in a strict 9:16 rail, and no promo column', async () => {
+    seedSlide();
+    seedPortraitWatch();
+    seedPortraitKitchen();
+    seedPortraitBeauty();
+    seedSidePromo();
+    renderHome();
+
+    // Wait for the CMS portrait read to land first: the kitchen poster only
+    // exists once it has (the watch alt also matches the built-in fallback,
+    // so it cannot be the wait target).
+    const kitchenImg = await screen.findByAltText('Home & Kitchen Made Beautiful');
+
+    // Slides section is back, untouched — and showing the published CMS
+    // slide, not the built-in set (no AirPods slide beside it).
+    const slideImg = screen.getByAltText('iPhone 18 Pro Max');
+    expect(blockOf(slideImg).className).toContain('lg:col-span-9');
+    expect(screen.queryByAltText('AirPods Pro 2')).not.toBeInTheDocument();
+
+    // All three published portrait banners join the rail.
+    const watchImg = screen.getByAltText('Apple Watch Series 10');
+    const beautyImg = screen.getByAltText('Your Beauty & Self-Care, All in One Place');
+    expect(watchImg).toBeInTheDocument();
+    expect(beautyImg).toBeInTheDocument();
+
+    // The rail is a strict 9:16 box (no desktop stretch) at col-span 3.
+    const rail = blockOf(kitchenImg);
+    expect(rail.className).toContain('aspect-[9/16]');
+    expect(rail.className).not.toContain('lg:aspect-auto');
+    expect(rail.className).toContain('lg:col-span-3');
+
+    // The promo banner appears exactly once on the page and NOT in the hero:
+    // it lives in the deals section further down.
+    const promoImgs = await screen.findAllByAltText('Best Seller Category');
+    expect(promoImgs).toHaveLength(1);
+    const heroSection = sectionOf(slideImg);
+    expect(within(heroSection).queryByAltText('Best Seller Category')).not.toBeInTheDocument();
+    expect(sectionOf(promoImgs[0])).not.toBe(heroSection);
+  });
+
+  it('portrait rail rotates through all three banners on its 6.5s timer and pauses on hover', async () => {
+    seedPortraitWatch();
+    seedPortraitKitchen();
+    seedPortraitBeauty();
+    // Fake timers from the start: the rotation interval must be created
+    // under them (an interval registered on the real clock cannot be
+    // advanced afterwards). vi.waitFor drives the wait because it advances
+    // fake time itself (RTL's findBy polling deadlocks under fake timers);
+    // its 1s fake-time budget stays well under the 6.5s rotation period.
+    vi.useFakeTimers();
+    renderHome();
+
+    // Kitchen first (see the composition test): it only renders once the
+    // CMS read has landed, so the rotation starts from a known frame.
+    const kitchenImg = await vi.waitFor(() =>
+      screen.getByAltText('Home & Kitchen Made Beautiful'),
+    );
+    const watchImg = screen.getByAltText('Apple Watch Series 10');
+    const beautyImg = screen.getByAltText('Your Beauty & Self-Care, All in One Place');
+    const frameOf = (img: HTMLElement) => img.parentElement as HTMLElement;
+    expect(frameOf(watchImg).className).toContain('opacity-100');
+
+    act(() => {
+      vi.advanceTimersByTime(6500);
+    });
+    expect(frameOf(kitchenImg).className).toContain('opacity-100');
+    act(() => {
+      vi.advanceTimersByTime(6500);
+    });
+    expect(frameOf(beautyImg).className).toContain('opacity-100');
+
+    // Hovering the rail pauses the rotation.
+    fireEvent.mouseEnter(blockOf(watchImg));
+    act(() => {
+      vi.advanceTimersByTime(13000);
+    });
+    expect(frameOf(beautyImg).className).toContain('opacity-100');
+    vi.useRealTimers();
+  });
+
+  it('deals section shows the published promo banner as its left picture, replacing the built-in card', async () => {
+    seedSidePromo();
+    renderHome();
+
+    const tab = await screen.findByRole('button', { name: 'Best Seller' });
+    const dealsSection = sectionOf(tab);
+    const promoImg = await within(dealsSection).findByAltText('Best Seller Category');
+    expect(promoImg).toBeInTheDocument();
+    expect(blockOf(promoImg).className).toContain('lg:col-span-3');
+
+    // The whole card links to the banner's link.
+    const promoLink = promoImg.parentElement?.querySelector('a');
+    expect(promoLink?.getAttribute('href')).toBe('/deals');
+
+    // The built-in Tech Fest card is replaced, and products still render.
+    expect(within(dealsSection).queryByText('Tech Fest 2026')).not.toBeInTheDocument();
+    expect(
+      await within(dealsSection).findByText('Sony WH-1000XM5 Wireless Headphones'),
+    ).toBeInTheDocument();
+  });
+
+  it('deals section renders its built-in promo card unchanged when no banner is published', async () => {
+    renderHome();
+
+    const tab = await screen.findByRole('button', { name: 'Best Seller' });
+    const dealsSection = sectionOf(tab);
+    expect(await within(dealsSection).findByText('Tech Fest 2026')).toBeInTheDocument();
+    expect(
+      within(dealsSection).getByAltText('Smartphones and audio on sale'),
+    ).toBeInTheDocument();
+    expect(screen.queryByAltText('Best Seller Category')).not.toBeInTheDocument();
   });
 });
