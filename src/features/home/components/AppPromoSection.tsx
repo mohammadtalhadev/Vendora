@@ -22,6 +22,12 @@ import { Link } from 'react-router-dom';
  * via container-query units) and leads to /app-coming-soon. The rest of
  * the image stays a plain, non-clickable <img>.
  *
+ * Batch 124 (owner's call): back to FULL container width — the 960px
+ * narrowing lasted one look. The overlay button needed no repositioning:
+ * its geometry is percentage-based and its font scales in container-query
+ * units, so both track the panel at any width (font clamp cap raised to
+ * 34px so the overlay text still matches the baked text at full width).
+ *
  * Batch 119 (owner's call): the owner supplied a finished banner image
  * (light site palette, copy baked in) and ordered it placed in this
  * section's slot INSTEAD of the rendered copy, converted to WebP, and
@@ -57,7 +63,7 @@ export interface AppPromoSectionProps {
 export const AppPromoSection: React.FC<AppPromoSectionProps> = () => {
   return (
     <section className="reveal mb-14" aria-label="Vendora on mobile">
-      <div className="relative mx-auto max-w-[960px] overflow-hidden rounded-[32px] shadow-xl ring-1 ring-black/5 [container-type:inline-size]">
+      <div className="relative overflow-hidden rounded-[32px] shadow-xl ring-1 ring-black/5 [container-type:inline-size]">
         <img
           src="/banners/app-promo.webp"
           alt="Shop Faster. Track Live. All in Your Pocket. Vendora in your mobile browser \u2014 no app to install."
@@ -78,7 +84,7 @@ export const AppPromoSection: React.FC<AppPromoSectionProps> = () => {
             width: '19.62%',
             height: '9.36%',
             background: 'linear-gradient(180deg, #FF8A2A 0%, #F1601E 100%)',
-            fontSize: 'clamp(9px, 2.05cqw, 20px)',
+            fontSize: 'clamp(9px, 2.05cqw, 34px)',
             letterSpacing: '0.01em',
           }}
         >
