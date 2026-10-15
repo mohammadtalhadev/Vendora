@@ -376,7 +376,7 @@ export const Navbar: React.FC = () => {
             {/* Center: Frosted Search Capsule with Category Selector & Orange Submit Button */}
             <div className="relative flex-1 max-w-2xl lg:max-w-3xl hidden sm:block" ref={searchContainerRef}>
               <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-                <div className="flex w-full items-center rounded-full bg-white/75 shadow-inner overflow-hidden h-11 sm:h-12 border border-white/80 transition-all focus-within:border-sun-orange/60 focus-within:bg-white/95 focus-within:shadow-md">
+                <div className="flex w-full items-center rounded-full overflow-hidden h-11 sm:h-12 border transition-all bg-orange-50/80 border-orange-200/90 shadow-sm focus-within:bg-white focus-within:border-sun-orange focus-within:ring-4 focus-within:ring-sun-orange/15 focus-within:shadow-md dark:bg-white/10 dark:border-white/15 dark:focus-within:bg-white/15 dark:focus-within:border-sun-orange">
                   {/* Category Dropdown Pill — backed by the real seeded categories */}
                   <div className="relative shrink-0 hidden sm:block h-full">
                     <button
@@ -821,7 +821,7 @@ export const Navbar: React.FC = () => {
               value={mobileSearchTerm}
               onChange={(e) => setMobileSearchTerm(e.target.value)}
               placeholder="Search products, brands and more..."
-              className="w-full bg-white/80 rounded-full border border-white/80 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-sun-orange/60 focus:bg-white transition-all"
+              className="w-full rounded-full border px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all bg-orange-50/80 border-orange-200/90 shadow-sm focus:outline-hidden focus:bg-white focus:border-sun-orange focus:ring-4 focus:ring-sun-orange/15 focus:shadow-md dark:bg-white/10 dark:border-white/15 dark:focus:bg-white/15 dark:focus:border-sun-orange"
             />
             <button
               type="submit"
