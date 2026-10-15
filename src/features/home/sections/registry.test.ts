@@ -39,7 +39,6 @@ describe('section registry (Batch 85)', () => {
 
   it('registers the product-data rails as documentation only (no renderer)', () => {
     for (const type of [
-      'best-sellers-rail',
       'recommended-shelf',
       'deals-strip',
       'brand-spotlight',
@@ -70,7 +69,7 @@ describe('section registry (Batch 85)', () => {
       section('promo-banner', 'promo'),
       section('category-tiles', 'tiles'),
       section('inspiration-mosaic', 'mosaic'),
-      section('best-sellers-rail', 'rail'),
+      section('recommended-shelf', 'rail'),
       section('category-tiles', 'tiles-2'),
     ];
     expect(sectionsForAnchor(sections, 'categories').map((s) => s.key)).toEqual([

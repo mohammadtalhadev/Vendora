@@ -16,7 +16,6 @@ import { useLiveRecentlyViewed } from '../features/catalog/recently-viewed';
 import {
   SectionHeading,
   DealsStrip,
-  BestSellersRail,
   RecommendedShelf,
   BrandSpotlight,
   DigitalShowcase,
@@ -643,15 +642,6 @@ export const HomePage: React.FC = () => {
             />
           </div>
         )}
-
-        {/* =========================================================================
-            3B-2. Best-Sellers Rail (Leaderboard & Top Sales Velocity)
-            ========================================================================= */}
-        <BestSellersRail
-          onAddToCart={handleAddToCart}
-          onToggleWishlist={handleToggleWishlist}
-          isInWishlist={isInWishlist}
-        />
 
         {/* =========================================================================
             3C. Dual Countdown Beauty Promo

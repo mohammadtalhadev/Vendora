@@ -24,8 +24,8 @@ import { PromoBannerSection } from './renderers/PromoBannerSection';
  * instances of anchored types render at their anchor in sort order.
  *
  * Product-data rails are registered with `component: null`: they render
- * catalogue data through their own components (BestSellersRail,
- * RecommendedShelf, DealsStrip, BrandSpotlight, SellerSpotlight,
+ * catalogue data through their own components (RecommendedShelf,
+ * DealsStrip, BrandSpotlight, SellerSpotlight,
  * DigitalShowcase) and are listed so the registry names every homepage
  * block, but they are not admin-creatable section instances - there is no
  * image/copy for a console to own; the catalogue is the content.
@@ -104,17 +104,6 @@ export const SECTION_TYPE_REGISTRY: SectionTypeDefinition[] = [
   },
   /* Data-driven rails: registered for completeness, rendered by their own
    * catalogue-fed components, not creatable as section instances. */
-  {
-    type: 'best-sellers-rail',
-    label: 'Best sellers rail (product data)',
-    description: 'Renders live catalogue data via BestSellersRail.',
-    anchor: null,
-    component: null,
-    usesItems: false,
-    usesImage: false,
-    usesCta: false,
-    settingsFields: [],
-  },
   {
     type: 'recommended-shelf',
     label: 'Recommended shelf (product data)',

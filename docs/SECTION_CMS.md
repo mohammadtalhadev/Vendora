@@ -61,7 +61,7 @@ and preserves the rest (the mosaic's shop-the-look pins in
 | `inspiration-mosaic` | mid-page, before Brand Spotlight | Items: card image/title/subtitle/tag; pins in settings |
 | `promo-banner` | end of homepage | Copy only, in settings (eyebrow, headings, subtext, bullets) |
 
-Product-data rails (`best-sellers-rail`, `recommended-shelf`,
+Product-data rails (`recommended-shelf`,
 `deals-strip`, `brand-spotlight`, `seller-spotlight`, `digital-showcase`)
 are registered with no renderer: they render live catalogue data through
 their own components, so there is nothing for a console to own.
