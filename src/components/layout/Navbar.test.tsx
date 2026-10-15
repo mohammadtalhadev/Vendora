@@ -1,0 +1,197 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// The header reads the catalogue (categories for the strip, suggestions for
+// the search) and the session through the same doubles the rest of the
+// migrated screens use — there is no second fixture behind it.
+vi.mock('../../lib/auth-context', async () => {
+  const { useAuthStub } = await import('../../test/auth-context-stub');
+  return { useAuth: useAuthStub };
+});
+vi.mock('../../lib/supabase', async () => {
+  const { supabaseDouble } = await import('../../test/supabase-double');
+  return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
+});
+
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
+import { Navbar } from './Navbar';
+import { categoryRow, productRow, supabaseDouble } from '../../test/supabase-double';
+
+const SearchProbe = () => {
+  const [params] = useSearchParams();
+  return <div>PRODUCTS PAGE q={params.get('q') ?? ''} category={params.get('category') ?? ''}</div>;
+};
+
+const renderNavbar = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/']}>
+        <Navbar />
+        <Routes>
+          <Route path="/products" element={<SearchProbe />} />
+          <Route path="/products/:id" element={<div>PRODUCT DETAIL PAGE</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+};
+
+const seedCategories = (names: string[]) => {
+  names.forEach((name, i) => {
+    supabaseDouble.seedCategory(
+      categoryRow({ id: `cat-${i + 1}`, name, slug: name.toLowerCase() }),
+    );
+  });
+};
+
+describe('Navbar (Batch 98 header redesign)', () => {
+  beforeEach(() => {
+    supabaseDouble.reset();
+    localStorage.clear();
+    document.documentElement.classList.remove('dark');
+  });
+
+  it('renders the dark-mode toggle in the header and flips the real vd_theme preference', () => {
+    renderNavbar();
+
+    const toggle = screen.getByRole('button', { name: 'Toggle dark mode' });
+    expect(toggle).toHaveAttribute('title', 'Switch to Dark Mode');
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+
+    fireEvent.click(toggle);
+    // The same mechanism the workspace toggle writes: class on <html> + the
+    // persisted vd_theme value, so every surface agrees on the scheme.
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(localStorage.getItem('vd_theme')).toBe('dark');
+    expect(toggle).toHaveAttribute('title', 'Switch to Light Mode');
+
+    fireEvent.click(toggle);
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(localStorage.getItem('vd_theme')).toBe('light');
+    expect(toggle).toHaveAttribute('title', 'Switch to Dark Mode');
+  });
+
+  it('honours a stored dark preference on mount, like the workspace toggle does', () => {
+    localStorage.setItem('vd_theme', 'dark');
+    renderNavbar();
+
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Toggle dark mode' })).toHaveAttribute(
+      'title',
+      'Switch to Light Mode',
+    );
+  });
+
+  it('keeps the All Categories trigger on its frozen classes while opening the MegaMenu', async () => {
+    seedCategories(['Audio']);
+    renderNavbar();
+
+    const trigger = screen.getByRole('button', { name: /All Categories/ });
+    // Frozen (owner decision): the exact recipe the pill header shipped —
+    // solid orange when open, slate wash when closed.
+    expect(trigger.className).toContain('rounded-full');
+    expect(trigger.className).toContain('px-3.5');
+    expect(trigger.className).toContain('py-2.5');
+    expect(trigger.className).toContain('bg-slate-900/5');
+    expect(trigger.className).toContain('text-slate-700');
+    expect(trigger.className).toContain('hover:bg-sun-orange/10');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(trigger.className).toContain('bg-sun-orange');
+    expect(trigger.className).toContain('text-white');
+    // The MegaMenu itself is untouched: it mounts under its stable id.
+    await waitFor(() =>
+      expect(document.getElementById('all-categories-menu')).toBeInTheDocument(),
+    );
+  });
+
+  it('fills the category strip with the catalogue’s own categories, capped at six', async () => {
+    seedCategories(['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel']);
+    renderNavbar();
+
+    const nav = await screen.findByRole('navigation', { name: 'Top categories' });
+    await waitFor(() => expect(within(nav).getAllByRole('link')).toHaveLength(6));
+    for (const name of ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot']) {
+      expect(within(nav).getByRole('link', { name })).toHaveAttribute(
+        'href',
+        `/products?category=${name.toLowerCase()}`,
+      );
+    }
+    expect(within(nav).queryByRole('link', { name: 'Golf' })).not.toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'Hotel' })).not.toBeInTheDocument();
+  });
+
+  it('puts Track Order, Become a Seller and Help on the strip’s right with real routes', () => {
+    renderNavbar();
+
+    expect(screen.getByRole('link', { name: 'Become a Seller' })).toHaveAttribute(
+      'href',
+      '/become-a-seller',
+    );
+    // Track Order and Help also live on the utility strip above; every
+    // instance must land on the same real route.
+    for (const link of screen.getAllByRole('link', { name: 'Track Order' })) {
+      expect(link).toHaveAttribute('href', '/track-order');
+    }
+    for (const link of screen.getAllByRole('link', { name: 'Help' })) {
+      expect(link).toHaveAttribute('href', '/faq');
+    }
+  });
+
+  it('keeps the search pill recipe: tinted surface, visible border, orange focus state', () => {
+    renderNavbar();
+
+    const input = screen.getByRole('combobox', { name: /Search Vendora/ });
+    const pill = input.closest('div.flex.w-full');
+    expect(pill).not.toBeNull();
+    expect(pill!.className).toContain('rounded-full');
+    expect(pill!.className).toContain('border-orange-200/90');
+    expect(pill!.className).toContain('bg-orange-50/80');
+    expect(pill!.className).toContain('focus-within:border-sun-orange');
+    expect(pill!.className).toContain('focus-within:bg-white');
+    expect(pill!.className).toContain('focus-within:ring-sun-orange/15');
+    expect(pill!.className).toContain('dark:bg-white/10');
+    expect(pill!.className).toContain('dark:border-white/15');
+  });
+
+  it('submits the search to the catalogue with the typed query', async () => {
+    renderNavbar();
+
+    const input = screen.getByRole('combobox', { name: /Search Vendora/ });
+    fireEvent.change(input, { target: { value: 'desk lamp' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/PRODUCTS PAGE/)).toHaveTextContent('q=desk lamp'),
+    );
+  });
+
+  it('shows live suggestions and follows a product suggestion to its page', async () => {
+    supabaseDouble.seedCategory(categoryRow({ id: 'cat-audio', name: 'Audio', slug: 'audio' }));
+    supabaseDouble.seedProduct(
+      productRow({
+        id: '00000000-0000-4000-8000-000000000101',
+        title: 'Reference Headphones',
+        slug: 'reference-headphones',
+        category_id: 'cat-audio',
+        price: 199.99,
+        status: 'approved',
+      }),
+    );
+    renderNavbar();
+
+    const input = screen.getByRole('combobox', { name: /Search Vendora/ });
+    fireEvent.change(input, { target: { value: 'Reference' } });
+
+    const option = await screen.findByRole('option', { name: /Reference Headphones/ });
+    fireEvent.click(option);
+
+    await waitFor(() => expect(screen.getByText('PRODUCT DETAIL PAGE')).toBeInTheDocument());
+  });
+});

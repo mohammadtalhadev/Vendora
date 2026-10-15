@@ -8,6 +8,8 @@ import {
   Shield,
   ChevronDown,
   Menu,
+  Moon,
+  Sun,
   ArrowLeftRight,
   LayoutGrid,
   Store,
@@ -38,7 +40,15 @@ import { NotificationDropdown } from '../common/NotificationDropdown';
  * default inside NotificationDropdown); there are no exceptions now.
  */
 const NAV_ICON_BUTTON_CLASS =
-  'relative h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-all group shrink-0 cursor-pointer hover:bg-white hover:shadow-lg hover:shadow-orange-500/20 hover:ring-2 hover:ring-sun-orange hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
+  'relative h-10 w-10 items-center justify-center rounded-full text-slate-700 dark:text-slate-200 transition-all group shrink-0 cursor-pointer hover:bg-white dark:hover:bg-white/10 hover:shadow-lg hover:shadow-orange-500/20 dark:hover:shadow-black/30 hover:ring-2 hover:ring-sun-orange hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
+
+/**
+ * The category strip's text-link recipe (Batch 98): the quick category links
+ * and the strip's right-aligned utility links share one hover/focus treatment
+ * on the solid bar, in both schemes.
+ */
+const NAV_STRIP_LINK_CLASS =
+  'whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors hover:bg-sun-orange/10 hover:text-sun-orange dark:hover:bg-white/10 dark:hover:text-[#ff944d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -112,6 +122,35 @@ export const Navbar: React.FC = () => {
 
   // Frosted pill elevation + utility strip collapse on scroll
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Dark mode — the storefront toggle (Batch 98) writes the SAME preference
+  // the workspace header's toggle writes: the `vd_theme` localStorage value
+  // plus the `.dark` class on <html> that Tailwind's `dark:` variant keys
+  // off (see src/lib/theme.ts). Initializer and persistence mirror
+  // WorkspaceLayout exactly, so the two toggles can never disagree.
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        localStorage.getItem('vd_theme') === 'dark' ||
+        document.documentElement.classList.contains('dark')
+      );
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('vd_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('vd_theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => !prev);
+  };
 
   // Expandable mobile search overlay
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -265,8 +304,8 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full pt-2 sm:pt-3">
-      <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full">
+      <div className="mx-auto w-full max-w-[1600px] px-3 pt-2 sm:px-6 sm:pt-3 lg:px-8">
         {/* =========================================================================
             0. Slim Utility Strip (collapses on scroll)
             ========================================================================= */}
@@ -316,13 +355,24 @@ export const Navbar: React.FC = () => {
             </span>
           </div>
         </div>
+      </div>
 
-        {/* =========================================================================
-            1. Floating Frosted Pill — Brand, All Categories, Search, Quick Actions
-            ========================================================================= */}
-        <div className={`header-pill-shell ${isScrolled ? 'is-scrolled' : ''}`}>
-          <div className="flex w-full items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5">
-            {/* Left: Brand Logo & All Categories Button */}
+      {/* =========================================================================
+          1. Main Bar (Batch 98) — solid full-width marketplace bar: brand,
+          the floating search pill, and the quick actions. The bar surface is
+          solid in both schemes (white / the Batch 81 raised zinc #121214)
+          with a hairline bottom border; it only gains its shadow once the
+          page scrolls, like the pill it replaces did.
+          ========================================================================= */}
+      <div
+        className={`w-full border-b border-slate-200/80 bg-white transition-shadow duration-300 dark:border-white/10 dark:bg-[#121214] ${
+          isScrolled
+            ? 'shadow-[0_12px_32px_-12px_rgba(15,23,42,0.25)] dark:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]'
+            : ''
+        }`}
+      >
+        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-6 lg:px-8">
+            {/* Left: Brand Logo */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Mobile Hamburger Drawer Button */}
               <button
@@ -336,53 +386,27 @@ export const Navbar: React.FC = () => {
 
               {/* Logo: "Vendora" in bold navy with interactive dot */}
               <Link to="/" className="flex items-center group pl-1 sm:pl-2">
-                <span className="font-outfit text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 leading-none group-hover:text-sun-orange transition-colors">
-                  Vendora<span className="inline-block h-2 w-2 rounded-full bg-sun-orange group-hover:bg-slate-900 ml-0.5 transition-colors" />
+                <span className="font-outfit text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-sun-orange transition-colors">
+                  Vendora<span className="inline-block h-2 w-2 rounded-full bg-sun-orange group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-colors" />
                 </span>
               </Link>
-
-              {/* "All Categories" Button with Full Mega Menu */}
-              <div className="relative hidden md:block" ref={allCategoriesRef}>
-                <button
-                  ref={allCategoriesTriggerRef}
-                  type="button"
-                  onClick={() => setIsAllCategoriesOpen(!isAllCategoriesOpen)}
-                  className={`flex items-center gap-2 rounded-full px-3.5 py-2.5 text-xs sm:text-[13px] font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
-                    isAllCategoriesOpen
-                      ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25'
-                      : 'bg-slate-900/5 text-slate-700 hover:bg-sun-orange/10 hover:text-sun-orange'
-                  }`}
-                  aria-expanded={isAllCategoriesOpen}
-                  aria-haspopup="true"
-                  aria-controls="all-categories-menu"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                  <span>All Categories</span>
-                  <ChevronDown
-                    className={`h-3 w-3 transition-transform duration-200 ${
-                      isAllCategoriesOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-
-                {/* Mega Dropdown Menu */}
-                <MegaMenu
-                  isOpen={isAllCategoriesOpen}
-                  onClose={() => setIsAllCategoriesOpen(false)}
-                />
-              </div>
             </div>
 
-            {/* Center: Frosted Search Capsule with Category Selector & Orange Submit Button */}
-            <div className="relative flex-1 max-w-2xl lg:max-w-3xl hidden sm:block" ref={searchContainerRef}>
+            {/* Center: Floating Search Pill (Batch 98) — the Batch 97 recipe
+                kept as its core: a tinted surface with a border you can see
+                at rest, and an unmistakable focus-within state (solid white,
+                sun-orange border, soft ring), floating on the solid bar via
+                its shadow. Dark pair: white/10 tint on white/15 border,
+                lifting to white/15 on focus. */}
+            <div className="relative flex-1 max-w-2xl lg:max-w-3xl hidden sm:block mx-auto" ref={searchContainerRef}>
               <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-                <div className="flex w-full items-center rounded-full overflow-hidden h-11 sm:h-12 border transition-all bg-orange-50/80 border-orange-200/90 shadow-sm focus-within:bg-white focus-within:border-sun-orange focus-within:ring-4 focus-within:ring-sun-orange/15 focus-within:shadow-md dark:bg-white/10 dark:border-white/15 dark:focus-within:bg-white/15 dark:focus-within:border-sun-orange">
+                <div className="flex w-full items-center rounded-full overflow-hidden h-11 sm:h-12 border border-orange-200/90 bg-orange-50/80 shadow-[0_10px_30px_-10px_rgba(234,88,12,0.25)] transition-all focus-within:border-sun-orange focus-within:bg-white focus-within:shadow-[0_14px_36px_-10px_rgba(234,88,12,0.35)] focus-within:ring-4 focus-within:ring-sun-orange/15 dark:border-white/15 dark:bg-white/10 dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] dark:focus-within:border-sun-orange dark:focus-within:bg-white/15 dark:focus-within:ring-sun-orange/20">
                   {/* Category Dropdown Pill — backed by the real seeded categories */}
                   <div className="relative shrink-0 hidden sm:block h-full">
                     <button
                       type="button"
                       onClick={() => setIsCategoryPickerOpen(!isCategoryPickerOpen)}
-                      className="flex h-full items-center gap-1.5 px-4 bg-transparent hover:bg-slate-900/5 text-xs font-semibold text-slate-700 cursor-pointer transition-colors rounded-l-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+                      className="flex h-full items-center gap-1.5 px-4 bg-transparent hover:bg-slate-900/5 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer transition-colors rounded-l-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                       aria-expanded={isCategoryPickerOpen}
                       aria-controls="navbar-search-category-picker"
                     >
@@ -414,7 +438,7 @@ export const Navbar: React.FC = () => {
                   </div>
 
                   {/* Divider Line */}
-                  <div className="hidden sm:block h-6 w-px bg-slate-900/10 shrink-0" />
+                  <div className="hidden sm:block h-6 w-px bg-slate-900/10 dark:bg-white/15 shrink-0" />
 
                   {/* Search Text Input */}
                   <input
@@ -438,7 +462,7 @@ export const Navbar: React.FC = () => {
                     onFocus={() => setIsSearchOpen(true)}
                     onKeyDown={handleSearchKeyDown}
                     placeholder="Search products, brands and stores…"
-                    className="w-full bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden px-4"
+                    className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden px-4"
                   />
 
                   {/* Orange Search Button */}
@@ -500,22 +524,38 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/* Right Action Items: Mobile Search, Wishlist, Exchange, Account, Cart */}
+            {/* Right Action Items: Mobile Search, Theme, Wishlist, Exchange, Account, Cart */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Mobile search toggle — opens the frosted search overlay below the pill */}
+              {/* Mobile search toggle — opens the search overlay below the bar */}
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen((v) => !v)}
                 className={`sm:hidden flex h-10 w-10 items-center justify-center rounded-full transition-all shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
                   isMobileSearchOpen
-                    ? 'bg-orange-50 text-sun-orange shadow-xs'
-                    : 'text-slate-700 hover:bg-white/80 hover:shadow-sm hover:text-sun-orange'
+                    ? 'bg-orange-50 dark:bg-white/10 text-sun-orange shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-white/80 dark:hover:bg-white/10 hover:shadow-sm hover:text-sun-orange'
                 }`}
                 title="Search products"
                 aria-expanded={isMobileSearchOpen}
                 aria-label="Search products"
               >
                 <Search className="h-5 w-5" />
+              </button>
+
+              {/* Dark Mode / Theme Toggle (Batch 98) — same vd_theme
+                  preference the workspace toggle writes, flipped in place. */}
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                className={`flex ${NAV_ICON_BUTTON_CLASS}`}
+                title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                aria-label="Toggle dark mode"
+              >
+                {isDarkMode ? (
+                  <Sun className="h-5 w-5 text-amber-400 transition-transform group-hover:scale-110" />
+                ) : (
+                  <Moon className="h-5 w-5 transition-transform group-hover:scale-110" />
+                )}
               </button>
 
               {/* Wishlist */}
@@ -556,12 +596,12 @@ export const Navbar: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-                  className="flex items-center gap-2 rounded-full pl-1.5 pr-2 sm:pr-3 py-1.5 text-slate-700 hover:text-sun-orange hover:bg-white/80 hover:shadow-sm transition-all cursor-pointer shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
+                  className="flex items-center gap-2 rounded-full pl-1.5 pr-2 sm:pr-3 py-1.5 text-slate-700 dark:text-slate-200 hover:text-sun-orange hover:bg-white/80 dark:hover:bg-white/10 hover:shadow-sm transition-all cursor-pointer shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60"
                   aria-expanded={isRoleMenuOpen}
                   aria-controls="navbar-account-menu"
                   aria-label="Account and personas menu"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-900/5 group-hover:bg-sun-orange/10 group-hover:text-sun-orange text-slate-700 transition-colors">
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-900/5 dark:bg-white/10 group-hover:bg-sun-orange/10 group-hover:text-sun-orange text-slate-700 dark:text-slate-200 transition-colors">
                     {user?.avatar ? (
                       <img src={user.avatar} alt="" className="h-full w-full object-cover" />
                     ) : (
@@ -575,7 +615,7 @@ export const Navbar: React.FC = () => {
                     <span className="text-[10px] text-slate-400 font-normal">
                       {authLoading ? 'Account' : user ? 'Welcome,' : 'Sign In'}
                     </span>
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-sun-orange flex items-center gap-1 transition-colors">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-sun-orange flex items-center gap-1 transition-colors">
                       {user ? user.name.split(' ')[0] : 'Account'}
                       <ChevronDown className="h-3 w-3 text-slate-400" />
                     </span>
@@ -802,17 +842,94 @@ export const Navbar: React.FC = () => {
                 </span>
               )}
             </button>
+        </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          2. Category Strip (Batch 98) — the marketplace second row on the
+          same solid surface, split from the main bar by a hairline: the All
+          Categories trigger (unchanged — same classes, same MegaMenu),
+          quick links for the first root categories the catalogue returns,
+          and the utility links right-aligned. The strip stays pinned with
+          the sticky header; only the utility strip above collapses on
+          scroll. On small screens the quick links scroll horizontally and
+          the All Categories trigger keeps its md+ visibility (the mobile
+          drawer covers categories there, as before).
+          ========================================================================= */}
+      <div className="w-full border-b border-slate-200/80 bg-white dark:border-white/10 dark:bg-[#121214]">
+        <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 px-3 py-1.5 sm:gap-3 sm:px-6 lg:px-8">
+          {/* "All Categories" Button with Full Mega Menu — FROZEN (owner
+              decision, Batch 98): classes and behaviour exactly as the pill
+              header had them; only its home moved, into this strip. */}
+          <div className="relative hidden md:block" ref={allCategoriesRef}>
+            <button
+              ref={allCategoriesTriggerRef}
+              type="button"
+              onClick={() => setIsAllCategoriesOpen(!isAllCategoriesOpen)}
+              className={`flex items-center gap-2 rounded-full px-3.5 py-2.5 text-xs sm:text-[13px] font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
+                isAllCategoriesOpen
+                  ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25'
+                  : 'bg-slate-900/5 text-slate-700 hover:bg-sun-orange/10 hover:text-sun-orange'
+              }`}
+              aria-expanded={isAllCategoriesOpen}
+              aria-haspopup="true"
+              aria-controls="all-categories-menu"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span>All Categories</span>
+              <ChevronDown
+                className={`h-3 w-3 transition-transform duration-200 ${
+                  isAllCategoriesOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {/* Mega Dropdown Menu */}
+            <MegaMenu
+              isOpen={isAllCategoriesOpen}
+              onClose={() => setIsAllCategoriesOpen(false)}
+            />
           </div>
+
+          {/* Quick links — the first categories the catalogue returns (the
+              same list the search picker and MegaMenu read), capped at six. */}
+          <nav aria-label="Top categories" className="no-scrollbar flex flex-1 items-center gap-1 overflow-x-auto">
+            {categories.slice(0, 6).map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/products?category=${encodeURIComponent(cat.slug)}`}
+                className={NAV_STRIP_LINK_CLASS}
+              >
+                {cat.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Right-aligned utility links — all real routes. */}
+          <div className="ml-auto hidden shrink-0 items-center gap-1 md:flex">
+            <Link to="/track-order" className={NAV_STRIP_LINK_CLASS}>
+              Track Order
+            </Link>
+            <Link to="/become-a-seller" className={NAV_STRIP_LINK_CLASS}>
+              Become a Seller
+            </Link>
+            <Link to="/faq" className={NAV_STRIP_LINK_CLASS}>
+              Help
+            </Link>
           </div>
         </div>
+      </div>
 
+      <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
         {/* =========================================================================
-            1A. Expandable Mobile Search Overlay (frosted glass)
+            3. Expandable Mobile Search Overlay — the same floating pill
+            recipe as the desktop search, on a solid shell.
             ========================================================================= */}
         {isMobileSearchOpen && (
           <form
             onSubmit={handleMobileSearchSubmit}
-            className="header-pill-shell mt-2 flex items-center gap-2 px-3 py-2 sm:hidden animate-in fade-in slide-in-from-top-1"
+            className="mt-2 flex items-center gap-2 rounded-full border border-slate-200/80 bg-white p-1.5 shadow-lg dark:border-white/10 dark:bg-[#121214] dark:shadow-black/40 sm:hidden animate-in fade-in slide-in-from-top-1"
           >
             <input
               ref={mobileSearchInputRef}
@@ -821,7 +938,7 @@ export const Navbar: React.FC = () => {
               value={mobileSearchTerm}
               onChange={(e) => setMobileSearchTerm(e.target.value)}
               placeholder="Search products, brands and more..."
-              className="w-full rounded-full border px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all bg-orange-50/80 border-orange-200/90 shadow-sm focus:outline-hidden focus:bg-white focus:border-sun-orange focus:ring-4 focus:ring-sun-orange/15 focus:shadow-md dark:bg-white/10 dark:border-white/15 dark:focus:bg-white/15 dark:focus:border-sun-orange"
+              className="w-full rounded-full border border-orange-200/90 bg-orange-50/80 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-sun-orange focus:bg-white focus:outline-none focus:ring-4 focus:ring-sun-orange/15 dark:border-white/15 dark:bg-white/10 dark:text-white dark:placeholder-slate-500 dark:focus:bg-white/15 dark:focus:ring-sun-orange/20"
             />
             <button
               type="submit"
@@ -836,7 +953,7 @@ export const Navbar: React.FC = () => {
 
 
         {/* =========================================================================
-            3. Mobile Menu Drawer
+            4. Mobile Menu Drawer
             ========================================================================= */}
         {isMobileMenuOpen && (
           <div className="lg:hidden mt-2 rounded-3xl border border-white/70 bg-white/85 backdrop-blur-xl px-4 py-4 text-slate-800 shadow-2xl animate-in slide-in-from-top-2">
