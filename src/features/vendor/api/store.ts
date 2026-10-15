@@ -189,3 +189,40 @@ export async function fetchStoreDirectory(signal?: AbortSignal): Promise<VendorS
   if (error) throw new Error(`Failed to load stores: ${error.message}`);
   return ((data ?? []) as unknown as StoreRow[]).map(mapStore);
 }
+
+/**
+ * Delivered-order counts for a set of stores, from the public
+ * `store_order_stats` aggregate view (Batch 74) — one query for the whole
+ * set, returned as a vendor_id → count map. Stores with no delivered orders
+ * have no row in the view and so no entry in the map; callers render the
+ * count only for ids the map contains.
+ *
+ * This NEVER rejects. The view exists only once the Batch 74 migration has
+ * run on the hosted database; until then PostgREST answers with a
+ * relation-missing error, and the honest outcome is "no stats" — the cards
+ * simply omit the count, exactly as they did before the view existed. Any
+ * other failure (network, abort) takes the same path.
+ */
+export async function fetchStoreOrderStats(
+  vendorIds: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, number>> {
+  const stats = new Map<string, number>();
+  if (vendorIds.length === 0) return stats;
+  try {
+    let query = supabase
+      .from('store_order_stats')
+      .select('vendor_id, orders_delivered')
+      .in('vendor_id', vendorIds);
+    if (signal) query = query.abortSignal(signal);
+
+    const { data, error } = await query;
+    if (error) return stats;
+    for (const row of data ?? []) {
+      if (row.vendor_id) stats.set(row.vendor_id, num(row.orders_delivered));
+    }
+  } catch {
+    return stats;
+  }
+  return stats;
+}

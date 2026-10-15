@@ -5,7 +5,7 @@ vi.mock('../../../lib/supabase', async () => {
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
 });
 
-import { fetchStoreByHandle } from './store';
+import { fetchStoreByHandle, fetchStoreOrderStats } from './store';
 import { storeRow, supabaseDouble } from '../../../test/supabase-double';
 
 const UUID = '2b1e2b62-8f0a-4d2e-9a77-9a1f0d3c4b55';
@@ -41,5 +41,33 @@ describe('fetchStoreByHandle', () => {
 
   it('says a store is missing instead of reporting a database error', async () => {
     await expect(fetchStoreByHandle('no-such-store')).rejects.toThrow('Store not found.');
+  });
+});
+
+describe('fetchStoreOrderStats', () => {
+  it('returns delivered counts keyed by vendor id, for the requested ids only', async () => {
+    supabaseDouble.seedStoreOrderStat({ vendor_id: UUID, orders_delivered: 7 });
+    supabaseDouble.seedStoreOrderStat({ vendor_id: 'store-2', orders_delivered: 3 });
+    supabaseDouble.seedStoreOrderStat({ vendor_id: 'store-9', orders_delivered: 42 });
+
+    const stats = await fetchStoreOrderStats([UUID, 'store-2']);
+
+    expect(stats.get(UUID)).toBe(7);
+    expect(stats.get('store-2')).toBe(3);
+    expect(stats.has('store-9')).toBe(false);
+    expect(stats.size).toBe(2);
+  });
+
+  it('resolves to an empty map when the view is missing (pre-migration hosted database)', async () => {
+    // The Batch 74 view exists only once its migration runs on the hosted
+    // database; until then the read must fail soft — no throw, no stats.
+    supabaseDouble.failures.store_order_stats =
+      'relation "public.store_order_stats" does not exist';
+
+    await expect(fetchStoreOrderStats([UUID])).resolves.toEqual(new Map());
+  });
+
+  it('resolves to an empty map for an empty id list', async () => {
+    await expect(fetchStoreOrderStats([])).resolves.toEqual(new Map());
   });
 });

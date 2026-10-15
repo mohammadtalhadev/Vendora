@@ -279,6 +279,36 @@ describe('HomePage fabricated-content takedown (Batch 5, Pro-0)', { timeout: 400
     expect(screen.queryByText(/Verified Partnerships/)).not.toBeInTheDocument();
   });
 
+  it('shows orders delivered only for stores the stats view has a row for (Batch 74)', async () => {
+    supabaseDouble.seedVendorProfile(
+      storeRow({
+        id: 'store-alpha',
+        store_name: 'SoundWave Direct',
+        slug: 'soundwave-direct',
+        rating: 4.5,
+        review_count: 10,
+      }),
+    );
+    supabaseDouble.seedVendorProfile(
+      storeRow({
+        id: 'store-beta',
+        store_name: 'Quiet Corner Store',
+        slug: 'quiet-corner',
+        rating: 5.0,
+        review_count: 0,
+      }),
+    );
+    supabaseDouble.seedStoreOrderStat({ vendor_id: 'store-alpha', orders_delivered: 7 });
+
+    renderHome();
+
+    const withDeliveries = await screen.findByRole('link', { name: /SoundWave Direct/ });
+    expect(await within(withDeliveries).findByText(/7 orders delivered/)).toBeInTheDocument();
+
+    const withoutDeliveries = screen.getByRole('link', { name: /Quiet Corner Store/ });
+    expect(within(withoutDeliveries).queryByText(/delivered/)).not.toBeInTheDocument();
+  });
+
   it('hides the store rail entirely when the directory is empty', async () => {
     renderHome();
 

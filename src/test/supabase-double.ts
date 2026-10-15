@@ -251,6 +251,9 @@ export function createSupabaseDouble() {
     // The brands registry (migration 20261017010000): rows an admin manages
     // through the admin_*_brand RPCs; products.brand stays free text.
     brands: [],
+    // The store_order_stats aggregate view (migration 20261017020000): one
+    // { vendor_id, orders_delivered } row per vendor with >= 1 delivery.
+    store_order_stats: [],
     cart_items: [],
     wishlist_items: [],
     // The customer's own address book and saved payment methods (Phase 8 tables):
@@ -3252,6 +3255,10 @@ export function createSupabaseDouble() {
     seedBrand(brand: Row) {
       tables.brands.push(brand);
       return brand;
+    },
+    seedStoreOrderStat(stat: Row) {
+      tables.store_order_stats.push(stat);
+      return stat;
     },
     seedProduct(product: Row) {
       tables.products.push(product);

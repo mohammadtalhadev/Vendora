@@ -2617,7 +2617,21 @@ export type Database = {
     }
     };
     Views: {
-      [key: string]: never;
+    "store_order_stats": {
+      Row: {
+        "vendor_id": string | null,
+        "orders_delivered": number | null
+      }
+      Insert: {
+        "vendor_id"?: string | null,
+        "orders_delivered"?: number | null
+      }
+      Update: {
+        "vendor_id"?: string | null,
+        "orders_delivered"?: number | null
+      }
+      Relationships: []
+    }
     };
     Functions: {
     "add_dispute_message": {

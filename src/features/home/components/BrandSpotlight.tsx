@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, ChevronLeft, Store, ArrowUpRight, Star } from 'lucide-react';
-import { fetchStoreDirectory } from '../../vendor/api/store';
+import { ChevronRight, ChevronLeft, Store, ArrowUpRight, Star, PackageCheck } from 'lucide-react';
+import { fetchStoreDirectory, fetchStoreOrderStats } from '../../vendor/api/store';
 import { StoreLogo } from '../../vendor/components/StoreLogo';
 import { SectionHeading } from './SectionHeading';
 import { useReveal } from '../../../hooks/useReveal';
@@ -27,11 +27,13 @@ import { useReveal } from '../../../hooks/useReveal';
  * load, the section renders nothing rather than placeholder stores.
  *
  * Batch 51 (owner points) asked for orders-delivered and response-time on
- * these cards too. Neither has a public data source today: order counts
- * live in `sub_orders`, which no public policy or aggregate view exposes
- * (it would take a migration), and seller response time is not recorded
- * anywhere. Both are deliberately omitted rather than estimated — the
- * stat row carries only the real rating/review rollup.
+ * these cards too. Orders delivered is served since Batch 74 by the public
+ * `store_order_stats` aggregate view (counts only, no order rows): the card
+ * renders it when the store has a row in the view, and the fetch fails soft
+ * — before the migration runs on the hosted database the count is simply
+ * absent, like it was before the view existed. Seller response time is
+ * still not recorded anywhere, so it remains deliberately omitted rather
+ * than estimated.
  */
 export const BrandSpotlight: React.FC = () => {
   useReveal();
@@ -42,6 +44,18 @@ export const BrandSpotlight: React.FC = () => {
   });
 
   const stores = (data ?? []).filter((store) => store.status === 'active').slice(0, 12);
+
+  // Delivered-order counts for exactly the stores on display, one query.
+  // fetchStoreOrderStats never rejects (the view may not exist on the
+  // hosted database yet), so this query has no error state to handle.
+  const storeIds = stores.map((store) => store.id);
+  const { data: orderStats } = useQuery({
+    queryKey: ['home', 'store-order-stats', storeIds],
+    queryFn: ({ signal }) => fetchStoreOrderStats(storeIds, signal),
+    enabled: stores.length > 0,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
 
   if (isError || stores.length === 0) return null;
 
@@ -97,6 +111,7 @@ export const BrandSpotlight: React.FC = () => {
       >
         {stores.map((store) => {
           const blurb = store.tagline || store.description;
+          const delivered = orderStats?.get(store.id);
           return (
             <Link
               key={store.id}
@@ -130,20 +145,29 @@ export const BrandSpotlight: React.FC = () => {
               </div>
 
               {/* Bottom: the card's one minimal stat row — the store's real
-                  rating/review rollup on the left (only when it has reviews),
-                  Visit Store on the right. */}
+                  rating/review rollup and its delivered-order count (Batch
+                  74; only when the stats view has a row for this store) on
+                  the left, Visit Store on the right. */}
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[11px]">
-                {store.reviewCount > 0 ? (
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-slate-600">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    <span>
-                      {store.rating.toFixed(1)} · {store.reviewCount}{' '}
-                      {store.reviewCount === 1 ? 'review' : 'reviews'}
+                <div className="flex flex-col gap-1">
+                  {store.reviewCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-slate-600">
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      <span>
+                        {store.rating.toFixed(1)} · {store.reviewCount}{' '}
+                        {store.reviewCount === 1 ? 'review' : 'reviews'}
+                      </span>
                     </span>
-                  </span>
-                ) : (
-                  <span aria-hidden="true" />
-                )}
+                  )}
+                  {delivered !== undefined && (
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-slate-600">
+                      <PackageCheck className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>
+                        {delivered} {delivered === 1 ? 'order' : 'orders'} delivered
+                      </span>
+                    </span>
+                  )}
+                </div>
                 <span className="inline-flex shrink-0 items-center gap-1 font-bold text-sun-orange group-hover:underline">
                   Visit Store <ArrowUpRight className="h-3 w-3" />
                 </span>

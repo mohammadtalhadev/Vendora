@@ -1800,6 +1800,64 @@ await q(`update media_folders set name='hero-banners' where vendor_id is null an
 await q(`delete from media_folders where vendor_id is null and name='hero-banners'`);
 ok('an admin renames and deletes a platform folder row',
   (await q(`select count(*)::int c from media_folders where vendor_id is null`))[0].c === 0);
+console.log('\n[batch 74] store stats: public orders-delivered aggregate view');
+// Batch 74 (20261017020000): `store_order_stats` is the storefront's only
+// window onto sub_orders — one aggregate row per vendor, delivered count
+// only. The fixtures use two fresh stores so earlier sections' order flow
+// cannot pollute the counts: STAT_STORE74 has 2 delivered + 1 shipped +
+// 1 cancelled sub-order; STAT_STORE74B has orders but zero deliveries.
+const STAT_STORE74 = '74747474-7474-4474-8474-747474747474';
+const STAT_STORE74B = '75757575-7575-4575-8575-757575757575';
+const STAT_ORDER74A = '74747474-1111-4111-8111-111111111111';
+const STAT_ORDER74B = '74747474-2222-4222-8222-222222222222';
+await as('postgres');
+await q(
+  `insert into vendor_profiles (id, user_id, store_name, slug, seller_type) values
+     ($1,null,'Stats Store','stats-store','vendor'),($2,null,'Stats Store B','stats-store-b','vendor')`,
+  [STAT_STORE74, STAT_STORE74B],
+);
+await q(`insert into orders (id, customer_id) values ($1,$3),($2,$3)`, [STAT_ORDER74A, STAT_ORDER74B, CU]);
+await q(
+  `insert into sub_orders (order_group_id, seller_id, status) values
+     ($1,$3,'delivered'),($1,$3,'delivered'),($2,$3,'shipped'),($2,$3,'cancelled'),($2,$4,'placed')`,
+  [STAT_ORDER74A, STAT_ORDER74B, STAT_STORE74, STAT_STORE74B],
+);
+
+// -- shape: the view exposes counts and nothing else --------------------------
+const statCols = (await q(
+  `select column_name from information_schema.columns
+    where table_schema = 'public' and table_name = 'store_order_stats' order by column_name`,
+)).map((r: any) => r.column_name);
+ok('shape: the view exposes exactly vendor_id + orders_delivered (no order rows, no customer data)',
+  statCols.length === 2 && statCols[0] === 'orders_delivered' && statCols[1] === 'vendor_id',
+  `(got: ${statCols.join(',')})`);
+const statPrivs74 = (await q(
+  `select has_table_privilege('anon','public.store_order_stats','select') anon_select,
+          has_table_privilege('authenticated','public.store_order_stats','select') auth_select,
+          has_table_privilege('anon','public.store_order_stats','insert') anon_insert`,
+))[0];
+ok('grants: anon and authenticated hold SELECT, anon holds nothing else',
+  statPrivs74.anon_select === true && statPrivs74.auth_select === true && statPrivs74.anon_insert === false,
+  `(got: ${JSON.stringify(statPrivs74)})`);
+
+// -- reads: the public count is delivered-only --------------------------------
+await as('anon');
+const anonStat74 = (await q(
+  `select orders_delivered::int d from store_order_stats where vendor_id = $1`, [STAT_STORE74],
+))[0];
+ok('anon reads the aggregate: 2 delivered of 4 sub-orders (shipped + cancelled excluded)',
+  anonStat74?.d === 2, `(got: ${anonStat74?.d})`);
+ok('a vendor with orders but zero deliveries has no row (the card renders nothing)',
+  (await q(`select count(*)::int c from store_order_stats where vendor_id = $1`, [STAT_STORE74B]))[0].c === 0);
+const anonSubOrderRows = await q('select count(*)::int c from sub_orders')
+  .then((rows) => rows[0].c as number)
+  .catch(() => 0); // a refused read is also zero exposure
+ok('the underlying rows stay locked down: anon sees no sub_orders directly',
+  anonSubOrderRows === 0, `(got: ${anonSubOrderRows})`);
+await as('authenticated', CU);
+ok('a signed-in customer reads the same public count',
+  (await q(`select orders_delivered::int d from store_order_stats where vendor_id = $1`, [STAT_STORE74]))[0]?.d === 2);
+await as('postgres');
 
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();

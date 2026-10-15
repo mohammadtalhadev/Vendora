@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, ChevronRight, Search, Star, Store } from 'lucide-react';
-import { fetchStoreDirectory } from '../features/vendor/api/store';
+import { ArrowRight, ChevronRight, PackageCheck, Search, Star, Store } from 'lucide-react';
+import { fetchStoreDirectory, fetchStoreOrderStats } from '../features/vendor/api/store';
 import { StoreLogo } from '../features/vendor/components/StoreLogo';
 
 /**
@@ -18,6 +18,22 @@ export const BrandsPage: React.FC = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['home', 'store-directory'],
     queryFn: ({ signal }) => fetchStoreDirectory(signal),
+  });
+
+  // Delivered-order counts for every active store, one query (Batch 74's
+  // public store_order_stats view, shared cache with the homepage rail).
+  // fetchStoreOrderStats never rejects — before the migration runs on the
+  // hosted database the map is simply empty and no card shows a count.
+  const activeStoreIds = useMemo(
+    () => (data ?? []).filter((store) => store.status === 'active').map((store) => store.id),
+    [data],
+  );
+  const { data: orderStats } = useQuery({
+    queryKey: ['home', 'store-order-stats', activeStoreIds],
+    queryFn: ({ signal }) => fetchStoreOrderStats(activeStoreIds, signal),
+    enabled: activeStoreIds.length > 0,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const stores = useMemo(() => {
@@ -148,9 +164,18 @@ export const BrandsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-bold text-sun-orange dark:border-white/5">
-                  <span>View brand page</span>
+                  <div className="flex flex-col gap-1">
+                    {orderStats?.get(store.id) !== undefined && (
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        <PackageCheck className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                        {orderStats.get(store.id)}{' '}
+                        {orderStats.get(store.id) === 1 ? 'order' : 'orders'} delivered
+                      </span>
+                    )}
+                    <span>View brand page</span>
+                  </div>
                   <ArrowRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                    className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1"
                     aria-hidden="true"
                   />
                 </div>
