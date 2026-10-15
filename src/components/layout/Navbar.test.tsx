@@ -181,6 +181,23 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smar
     expect(menu!.className).not.toContain('backdrop-blur');
   });
 
+  it('stacks the main pill above the category strip so its dropdowns win the overlap (header stacking fix)', () => {
+    renderNavbar();
+
+    // Both pills create backdrop-filter stacking contexts and paint in DOM
+    // order, so without explicit stacking the later strip pill covered the
+    // top of the account menu hanging out of the main pill. The main pill
+    // must stack above the strip; the strip stays above the page via the
+    // sticky header itself.
+    const mainTokens = screen.getByTestId('header-main-pill').className.split(/\s+/);
+    expect(mainTokens).toContain('relative');
+    expect(mainTokens).toContain('z-50');
+
+    const stripTokens = screen.getByTestId('header-strip-pill').className.split(/\s+/);
+    expect(stripTokens).toContain('relative');
+    expect(stripTokens).toContain('z-30');
+  });
+
   it('animates the pills in on mount and slides the header up on scroll down, back down on scroll up (Batch 111)', async () => {
     renderNavbar();
 

@@ -419,7 +419,7 @@ export const Navbar: React.FC = () => {
       <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
         <div
           data-testid="header-main-pill"
-          className={`header-pill-shell header-pill-enter flex w-full items-center justify-between gap-2 rounded-full px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5 ${
+          className={`header-pill-shell header-pill-enter relative z-50 flex w-full items-center justify-between gap-2 rounded-full px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5 ${
             isScrolled ? 'is-scrolled' : ''
           }`}
         >
@@ -936,7 +936,7 @@ export const Navbar: React.FC = () => {
           >
             <div
               data-testid="header-strip-pill"
-              className={`header-pill-nav header-pill-enter header-pill-enter-delayed flex w-full items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 ${
+              className={`header-pill-nav header-pill-enter header-pill-enter-delayed relative z-30 flex w-full items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 ${
                 isScrolled ? 'is-scrolled' : ''
               }`}
             >
