@@ -5,6 +5,24 @@ import type { SiteSection } from '../../api/sections';
 import { SectionHeading } from '../../components/SectionHeading';
 import { ViewAllLink } from '../../../../components/common/ViewAllLink';
 
+const LEGACY_TILE_IMAGE = /^\/images\/categories\/(cat_[a-z0-9_]+)_2k\.png$/;
+
+/**
+ * Batch 117: section items stored in the database still carry the legacy
+ * full-size tile paths (`/images/categories/cat_*_2k.png`, ~450 KB each)
+ * until the owner's VENDORA_B113_IMAGE_URLS.sql repoints them — the
+ * built-in fallback list was fixed in Batch 109, but the CMS section is
+ * the one that actually renders, so live tiles kept decoding the giant
+ * PNGs at a 112px display size and scroll stayed heavy. The renderer
+ * therefore swaps any legacy local tile path for the right-sized WebP
+ * thumbnail that ships in the repo (same artwork, 256px). External or
+ * already-optimised URLs pass through untouched.
+ */
+export const resolveCategoryTileImageUrl = (url: string): string => {
+  const match = LEGACY_TILE_IMAGE.exec(url);
+  return match ? `/images/categories/${match[1]}_thumb.webp` : url;
+};
+
 /**
  * The "Explore Popular Categories" tiles row as a section renderer
  * (Batch 85). The markup is the homepage's original block, unchanged; the
@@ -64,7 +82,7 @@ export const CategoryTilesSection: React.FC<{ section: SiteSection }> = ({ secti
             >
               <div className="flex h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 items-center justify-center rounded-full bg-[#F4F6F8] p-3 overflow-hidden shadow-2xs border border-slate-100 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md group-hover:bg-[#FFF4EC] group-hover:border-sun-orange/60 group-hover:ring-4 group-hover:ring-orange-500/15">
                 <img
-                  src={item.imageUrl}
+                  src={resolveCategoryTileImageUrl(item.imageUrl)}
                   alt={item.heading}
                   loading="lazy"
                   decoding="async"

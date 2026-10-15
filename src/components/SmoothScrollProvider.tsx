@@ -41,7 +41,19 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
 
     const lenis = new Lenis({
       autoRaf: true,
-      lerp: 0.1, // True responsive linear damping: silky smooth, zero floaty input lag
+      // Batch 117: duration/easing mode, the exact recipe the owner's
+      // trip-planner site runs ({ lerp: 0.08, duration: 1.2 }) and the
+      // feel he asked to match. When `duration` is set, Lenis's Animate
+      // runs a TIMED animation (advance() prefers duration+easing over
+      // lerp): every wheel impulse glides along the same 1.2s curve no
+      // matter how busy the main thread is, so a dropped frame samples
+      // the curve later instead of stretching the motion — the previous
+      // pure-lerp damping (0.1) is frame-rate dependent, which is why it
+      // read as "laggy" stutter on this heavy page while the same library
+      // feels buttery on the light one. lerp stays as the fallback the
+      // library uses for programmatic scrolls without a duration.
+      duration: 1.2,
+      lerp: 0.08,
       smoothWheel: true,
       // Touch is deliberately NOT synced (Lenis's own recommendation): with
       // syncTouch on, Lenis intercepts native touch scrolling and replays it
