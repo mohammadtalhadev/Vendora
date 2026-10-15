@@ -94,7 +94,7 @@ function fillAndSubmit() {
 async function completeChallenge(code = '123456', buttonName = 'Verify code') {
   const firstBox = await screen.findByLabelText('Code digit 1');
   fireEvent.change(firstBox, { target: { value: code } });
-  fireEvent.click(screen.getByRole('button', { name: buttonName }));
+  fireEvent.click(await screen.findByRole('button', { name: buttonName }));
 }
 
 describe('AdminLoginPage', () => {
