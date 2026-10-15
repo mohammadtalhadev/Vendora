@@ -325,6 +325,37 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileDrawerRef = useRef<HTMLDivElement>(null);
+  // Batch 82: the drawer stays mounted for one exit animation after `mobileMenuOpen` flips
+  // false, so it slides out instead of vanishing. Opening still mounts in the same commit as
+  // before, so `useDisclosure`'s focus-on-open is untouched; every close path (X, backdrop,
+  // Esc, nav click, hamburger toggle) funnels through `setMobileMenuOpen(false)`, so the
+  // closing state below animates them all. Reduced-motion users skip the wait entirely.
+  const [drawerClosing, setDrawerClosing] = useState(false);
+  const [prevMobileMenuOpen, setPrevMobileMenuOpen] = useState(mobileMenuOpen);
+  // Render-phase adjustment (the React-docs pattern for state derived from a flip): the
+  // render in which the drawer closes is the render that starts its exit, so the exit
+  // classes land in the same commit — no flash of the un-animated drawer. Reduced-motion
+  // users never enter the closing state: instant unmount, as before.
+  if (mobileMenuOpen !== prevMobileMenuOpen) {
+    setPrevMobileMenuOpen(mobileMenuOpen);
+    if (
+      !mobileMenuOpen &&
+      !(
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      )
+    ) {
+      setDrawerClosing(true);
+    }
+  }
+  useEffect(() => {
+    if (!drawerClosing) return;
+    const timer = window.setTimeout(() => setDrawerClosing(false), 240);
+    return () => window.clearTimeout(timer);
+  }, [drawerClosing, prevMobileMenuOpen]);
+  // Masked while open, so re-opening mid-exit cancels the close cleanly.
+  const closing = drawerClosing && !mobileMenuOpen;
+  const drawerVisible = mobileMenuOpen || closing;
   // The <main> below is an inner scroller (the shell frame is h-screen), so
   // the window Lenis never smooths it — it gets its own wrapper-mode Lenis.
   const mainScrollRef = useLenisWrapper<HTMLElement>();
@@ -1415,17 +1446,27 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 )}
               </div>
             )}
-            {children ?? <Outlet />}
+            {/* Route entrance (Batch 82): same .page-enter treatment as
+                the storefront shell, keyed by pathname so panel pages
+                fade/rise once per navigation. It sits inside the Lenis
+                content wrapper, so the scroller's measurements are
+                unchanged, and query/hash-only changes do not replay it. */}
+            <div key={location.pathname} className="page-enter">
+              {children ?? <Outlet />}
+            </div>
           </div>
         </main>
       </div>
 
       {/* Mobile Sidebar Overlay & Drawer */}
-      {sidebar && mobileMenuOpen && (
+      {sidebar && drawerVisible && (
         <div
           id={MOBILE_DRAWER_ID}
           ref={mobileDrawerRef}
-          className="fixed inset-0 z-50 flex md:hidden focus:outline-none"
+          className={cn(
+            'fixed inset-0 z-50 flex md:hidden focus:outline-none',
+            closing && 'pointer-events-none',
+          )}
           role="dialog"
           aria-modal="true"
           aria-labelledby="workspace-mobile-drawer-title"
@@ -1434,12 +1475,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {/* Backdrop */}
           <button
             type="button"
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-default"
+            className={cn(
+              'fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity cursor-default',
+              closing ? 'drawer-backdrop-exit' : 'animate-in fade-in-0',
+            )}
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Close sidebar menu"
           />
           {/* Drawer */}
-          <div className={cn("relative flex w-72 max-w-[80vw] flex-col bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.85))] dark:bg-slate-900/85 backdrop-blur-2xl p-5 shadow-2xl border-r border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10", panelSidebarClass)}>
+          <div className={cn(closing ? 'drawer-exit' : 'drawer-enter', "relative flex w-72 max-w-[80vw] flex-col bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.85))] dark:bg-slate-900/85 backdrop-blur-2xl p-5 shadow-2xl border-r border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10", panelSidebarClass)}>
             <div className="mb-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <span id="workspace-mobile-drawer-title" className="text-base font-bold text-slate-900 dark:text-white">Navigation</span>

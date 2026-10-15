@@ -20,6 +20,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
+import { Reveal } from '../components/common/Reveal';
 import { RiderHeader } from '../features/rider/components/RiderHeader';
 import { RiderNav } from '../features/rider/components/RiderNav';
 import { HandoverVerificationModal } from '../features/rider/components/HandoverVerificationModal';
@@ -797,6 +798,7 @@ export const RiderDashboardPage: React.FC = () => {
                     </button>
                   </span>
                 </div>
+                <Reveal>
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
                   <CountTile
                     testId="rider-count-assigned"
@@ -831,6 +833,7 @@ export const RiderDashboardPage: React.FC = () => {
                     icon={<Truck className="h-4 w-4" />}
                   />
                 </div>
+                </Reveal>
               </section>
             )}
 

@@ -36,6 +36,7 @@ import {
   YAxis,
 } from 'recharts';
 import { UpdatedAgo } from '../components/common/UpdatedAgo';
+import { Reveal } from '../components/common/Reveal';
 import { useAdminLive } from '../features/admin/hooks/useLive';
 import { exportToCsv } from '../lib/export-csv';
 import { formatPrice } from '../store/currency-store';
@@ -291,8 +292,9 @@ export const AdminDashboardPage: React.FC = () => {
             {/* =====================================================================
                 2. Top 4 KPI Cards (from `admin_dashboard`)
                 ===================================================================== */}
+            <Reveal>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs hover-lift">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-600">
                     Gross Merchandise Value
@@ -322,7 +324,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs hover-lift">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-600">
                     Commission Earned
@@ -341,7 +343,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs hover-lift">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-600">
                     Active Brand Stores
@@ -360,7 +362,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-2xs hover-lift">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-600">
                     Approved Catalog Listings
@@ -379,6 +381,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            </Reveal>
 
             {/* =====================================================================
                 3. Orders, Total Revenue, Commission Overview (3 Columns)

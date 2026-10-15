@@ -44,7 +44,13 @@ export const RootLayout: React.FC = () => {
       <div className="relative z-10 flex min-h-screen flex-col">
         {!isChromeless && <Navbar />}
         <main id="main-content" tabIndex={-1} className={`flex-1 ${isChromeless ? '' : 'pb-16 md:pb-0'}`}>
-          <Outlet />
+          {/* Route entrance (Batch 82): the keyed wrapper replays the
+              .page-enter fade/rise once per navigation. Keying by
+              pathname remounts only the routed page subtree; the
+              shell chrome (nav, footer, ambient layer) never moves. */}
+          <div key={pathname} className="page-enter">
+            <Outlet />
+          </div>
         </main>
         {!isChromeless && <BottomNav />}
         {!isChromeless && <Footer />}

@@ -240,36 +240,12 @@
 }
 
 /* ==========================================================================
-   5. Skeleton Shimmer Keyframes & Animation
+   5. Skeleton Shimmer — defined ONCE in base.css ("Skeleton Shimmer
+   (Shared)"), which owns the keyframes, the light gradient and the
+   reduced-motion opt-out. This file previously carried a duplicate
+   copy; Batch 82 removed it so there is a single definition to keep
+   in step. Only the dark-scheme gradient override lives here (§8).
    ========================================================================== */
-@keyframes vendora-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    #F1F5F9 0%,
-    #E2E8F0 25%,
-    #F8FAFC 50%,
-    #E2E8F0 75%,
-    #F1F5F9 100%
-  );
-  background-size: 200% 100%;
-  animation: vendora-shimmer 1.8s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer {
-    animation: none !important;
-    background: #F1F5F9 !important;
-  }
-}
 
 /* ==========================================================================
    6. Utility Classes for Glassmorphism Effects

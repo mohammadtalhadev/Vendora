@@ -1298,6 +1298,110 @@ html.dark .workspace-shell textarea:focus {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Motion: Site-Wide System (Batch 82)
+   One motion language for the storefront and every panel, transform /
+   opacity only so nothing repaints layout:
+   - .page-enter: route-change entrance, applied by the shells
+     (RootLayout for the storefront tree, WorkspaceLayout for panels)
+     around the routed content, keyed by pathname so it replays once
+     per navigation. The end keyframe is `transform: none` on purpose:
+     a retained fill transform would become a containing block and
+     break position:fixed descendants after the animation finished.
+   - .data-table-rows: DataTable body rows fade in on mount with a
+     per-row stagger that caps at the 10th row, so a 50-row page does
+     not cascade for seconds.
+   - .drawer-enter: the WorkspaceLayout mobile drawer slides in; the
+     drawer is conditionally mounted, so there is no exit state to
+     animate (closing is instant, matching the backdrop behaviour).
+   ========================================================================== */
+@keyframes vendora-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-enter {
+  animation: vendora-page-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes vendora-row-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.data-table-rows > tr {
+  animation: vendora-row-in 0.3s ease-out both;
+  animation-delay: 300ms;
+}
+
+.data-table-rows > tr:nth-child(1) { animation-delay: 0ms; }
+.data-table-rows > tr:nth-child(2) { animation-delay: 30ms; }
+.data-table-rows > tr:nth-child(3) { animation-delay: 60ms; }
+.data-table-rows > tr:nth-child(4) { animation-delay: 90ms; }
+.data-table-rows > tr:nth-child(5) { animation-delay: 120ms; }
+.data-table-rows > tr:nth-child(6) { animation-delay: 150ms; }
+.data-table-rows > tr:nth-child(7) { animation-delay: 180ms; }
+.data-table-rows > tr:nth-child(8) { animation-delay: 210ms; }
+.data-table-rows > tr:nth-child(9) { animation-delay: 240ms; }
+.data-table-rows > tr:nth-child(10) { animation-delay: 270ms; }
+
+@keyframes vendora-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.drawer-enter {
+  animation: vendora-drawer-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Exit half of the pair: WorkspaceLayout keeps the drawer mounted for 240ms after close
+   (`drawerClosing`) so it can slide out; `both` holds the end state until the unmount. The
+   backdrop fades on the same clock. */
+@keyframes vendora-drawer-out {
+  to {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+.drawer-exit {
+  animation: vendora-drawer-out 0.24s ease-in both;
+}
+
+@keyframes vendora-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.drawer-backdrop-exit {
+  animation: vendora-fade-out 0.24s ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .data-table-rows > tr,
+  .drawer-enter {
+    animation: none !important;
+  }
+}
 /* ==========================================================================
    Accessibility foundation (Batch 49)
    - Global :focus-visible ring: keyboard focus is always visible, mouse
@@ -1331,4 +1435,24 @@ html.dark .workspace-shell textarea:focus {
 .skip-link:focus-visible {
   top: 0.75rem;
   color: #ffffff;
+}
+
+/* ==========================================================================
+   Reduced Motion: Global Kill-Switch (Batch 82)
+   The per-class rules above switch off individual effects; this is the
+   floor under all of them — with reduced motion requested, every
+   animation and transition on the site completes effectively instantly,
+   including ones added later that forgot their own opt-out. Durations
+   collapse rather than animations being removed, so end states (the
+   `both` fills, dialog open states) still apply exactly as designed.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

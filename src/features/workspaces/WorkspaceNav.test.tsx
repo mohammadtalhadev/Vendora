@@ -111,6 +111,77 @@ describe('Workspace Navigation & Layout Shell', () => {
       // Dialog drawer is opened
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
+
+    it('slides the drawer out on close before unmounting (Batch 82)', async () => {
+      render(
+        <MemoryRouter>
+          <WorkspaceLayout
+            role="vendor"
+            sidebar={<div>Sidebar Links</div>}
+          >
+            <div>Content</div>
+          </WorkspaceLayout>
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /open sidebar menu/i }));
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      // Esc closes via useDisclosure; the drawer must stay mounted wearing its exit
+      // classes for one animation instead of vanishing instantly.
+      fireEvent.keyDown(document, { key: 'Escape' });
+      const closingDialog = screen.getByRole('dialog');
+      expect(closingDialog.querySelector('.drawer-exit')).not.toBeNull();
+      expect(closingDialog.querySelector('.drawer-backdrop-exit')).not.toBeNull();
+
+      await waitFor(
+        () => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        { timeout: 2000 },
+      );
+    });
+
+    it('closes the drawer instantly when the user prefers reduced motion (Batch 82)', () => {
+      const originalMatchMedia = window.matchMedia;
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: (query: string): MediaQueryList => ({
+          matches: query.includes('prefers-reduced-motion'),
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }),
+      });
+      try {
+        render(
+          <MemoryRouter>
+            <WorkspaceLayout
+              role="vendor"
+              sidebar={<div>Sidebar Links</div>}
+            >
+              <div>Content</div>
+            </WorkspaceLayout>
+          </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /open sidebar menu/i }));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+        fireEvent.keyDown(document, { key: 'Escape' });
+        // No 240ms exit window under reduced motion: unmounted immediately, as before.
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      } finally {
+        Object.defineProperty(window, 'matchMedia', {
+          configurable: true,
+          writable: true,
+          value: originalMatchMedia,
+        });
+      }
+    });
   });
 
   describe('VendorNav', () => {

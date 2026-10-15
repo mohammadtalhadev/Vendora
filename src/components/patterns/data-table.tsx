@@ -312,7 +312,10 @@ export function DataTable<T>({
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          {/* data-table-rows (Batch 82): body rows fade in on mount with
+              the capped stagger defined in base.css; opacity-only, so
+              row hover/selection rendering is untouched. */}
+          <tbody className="divide-y divide-slate-100 data-table-rows">
             {isLoading ? (
               Array.from({ length: loadingRowCount }, (_, rowIndex) => (
                 <tr key={`loading-${rowIndex}`} aria-hidden="true">

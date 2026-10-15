@@ -37,6 +37,7 @@ import { Button } from '../components/ui/button';
 import { StatusBadge } from '../components/ui/status-badge';
 import { useVendorDashboard } from '../features/vendor/hooks/useVendorDashboard';
 import { UpdatedAgo } from '../components/common/UpdatedAgo';
+import { Reveal } from '../components/common/Reveal';
 import { useVendorLive } from '../features/vendor/hooks/useLive';
 import { useVendorEarnings } from '../features/vendor/hooks/useVendorEarnings';
 import { useShippingSettings } from '../features/vendor/hooks/useVendorStore';
@@ -839,9 +840,10 @@ export const VendorDashboardPage: React.FC = () => {
         {/* =====================================================================
             3. Section 1: Top 4 KPI Cards (Admin Typography & Grid)
             ===================================================================== */}
+        <Reveal>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Net Earnings */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs">
+          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover-lift">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                 Net Earnings
@@ -864,7 +866,7 @@ export const VendorDashboardPage: React.FC = () => {
           </div>
 
           {/* Card 2: Total Orders */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs">
+          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover-lift">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                 Total Orders
@@ -885,7 +887,7 @@ export const VendorDashboardPage: React.FC = () => {
           </div>
 
           {/* Card 3: Pending Fulfillment */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs">
+          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover-lift">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                 Pending Fulfillment
@@ -913,7 +915,7 @@ export const VendorDashboardPage: React.FC = () => {
           </div>
 
           {/* Card 4: Store Rating */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs">
+          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover-lift">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                 Store Rating
@@ -942,6 +944,7 @@ export const VendorDashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
+        </Reveal>
 
         {/* =====================================================================
             4. Section 2: Orders, Gross Volume, Earnings Retention (3 Columns)
