@@ -14,7 +14,7 @@ import { createBrand, deleteBrand, renameBrand, updateBrand } from '../api/brand
 import { setGlobalCommission } from '../api/commission';
 import { savePlatformSettings, type PlatformSettingsPatch } from '../api/settings';
 import { setMediaStatus, type MediaStatus } from '../api/media';
-import { confirmCodHandover } from '../api/logistics';
+import { confirmCodHandover, inviteRider, type RiderInviteInput } from '../api/logistics';
 import { adminKeys, useAdminScope } from './admin-keys';
 
 /**
@@ -56,6 +56,14 @@ export function useAdminActions() {
       mutationFn: (deliveryId: string) => confirmCodHandover(deliveryId),
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: adminKeys.codSettlements(userId) });
+        refresh();
+      },
+    }),
+    /** Invites a rider by email (Batch 65); the fleet roster re-reads so the new rider appears. */
+    inviteRider: useMutation({
+      mutationFn: (input: RiderInviteInput) => inviteRider(input),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: adminKeys.logistics(userId) });
         refresh();
       },
     }),

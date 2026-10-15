@@ -415,3 +415,9 @@ verify_jwt = false
 
 [functions.delete-account]
 verify_jwt = true
+
+# Batch 65: invite-rider acts on the caller's JWT (admin role is re-checked
+# against the caller's profile inside the function); the service role stays
+# inside the function.
+[functions.invite-rider]
+verify_jwt = true

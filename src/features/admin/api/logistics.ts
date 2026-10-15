@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { toFriendlyError } from '../../../lib/friendly-error';
 import { asRecord, asRows, num, rpcFailed, text } from './admin-client';
 import { readShippingAddress, type AdminOrderAddress } from './orders';
 
@@ -212,4 +213,79 @@ export async function fetchCodSettlements(signal?: AbortSignal): Promise<CodSett
 export async function confirmCodHandover(deliveryId: string): Promise<void> {
   const { error } = await supabase.rpc('confirm_cod_handover', { p_delivery_id: deliveryId });
   if (error) throw rpcFailed('Could not confirm the cash handover', error.message);
+}
+
+/** Vehicle labels the fleet roster already carries (vehicle_type is free text). */
+export const RIDER_VEHICLE_TYPES = ['Motorcycle', 'Bicycle', 'Car', 'Cargo Van', 'Truck'] as const;
+
+export interface RiderInviteInput {
+  email: string;
+  name: string;
+  phone?: string;
+  vehicle?: string;
+}
+
+export interface RiderInviteResult {
+  userId: string;
+  /** True when the email already had an account: role + fleet row re-asserted, no new email sent by the invite call. */
+  alreadyInvited: boolean;
+}
+
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * The desk-side validation for the invite form, shared by the dialog and
+ * its tests so what the form refuses is exactly what the API refuses.
+ * Returns the refusal sentence, or null when the input is sendable.
+ */
+export function validateRiderInvite(input: RiderInviteInput): string | null {
+  if (!input.name.trim()) return "Enter the rider's full name.";
+  if (!EMAIL_SHAPE.test(input.email.trim())) return 'Enter a valid email address for the rider.';
+  return null;
+}
+
+/**
+ * Invites a rider through the `invite-rider` Edge Function (Batch 65).
+ * The function — never this client — holds the service role: it sends
+ * the Supabase invite email, grants the rider role on the profile and
+ * creates the fleet row. The rider follows the email link and sets
+ * their own password; no password exists anywhere in this flow.
+ */
+export async function inviteRider(input: RiderInviteInput): Promise<RiderInviteResult> {
+  const refusal = validateRiderInvite(input);
+  if (refusal) throw new Error(refusal);
+
+  const { data, error } = await supabase.functions.invoke<{ ok?: boolean; userId?: string; alreadyInvited?: boolean; error?: string }>(
+    'invite-rider',
+    {
+      body: {
+        email: input.email.trim().toLowerCase(),
+        name: input.name.trim(),
+        phone: input.phone?.trim() ?? '',
+        vehicle: input.vehicle?.trim() || 'Motorcycle',
+      },
+    },
+  );
+  if (!error && data?.ok) {
+    return { userId: data.userId ?? '', alreadyInvited: data.alreadyInvited === true };
+  }
+
+  // Same contract as deleteAccount(): a non-2xx surfaces as a generic
+  // FunctionsHttpError, and the function's own `{ error }` sentence rides
+  // on its context response — that sentence is the one the desk deserves.
+  let message = error?.message ?? data?.error ?? 'The invite could not be sent.';
+  const context = (error as { context?: Response } | null)?.context;
+  if (context && typeof context.clone === 'function') {
+    try {
+      const body = (await context.clone().json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      // Body was not JSON (e.g. a 404 from an undeployed function) — keep
+      // the transport message rather than inventing one.
+    }
+  }
+  throw toFriendlyError(new Error(message), {
+    prefix: 'Could not send the rider invite',
+    staff: true,
+  });
 }

@@ -138,6 +138,12 @@ the index-friendly predicate).
 - **Payouts**: capped at accrued net for the vendor.
 - **Moderation**: `products.status` and the rating rollups are frozen for vendors by RLS,
   recomputed by triggers.
+- **Rider invites** (Batch 65): the `invite-rider` Edge Function is the only path that
+  grants the `rider` role to a new account — it verifies the caller's admin role, sends
+  the Supabase invite email, adds `rider` to `profiles.roles` and creates the
+  `rider_profiles` row, all with the service role inside the function. Deploy it with
+  `supabase functions deploy invite-rider` (see `supabase/functions/README.md` §6,
+  including the Auth redirect-URL allowlist entry for `/reset-password`).
 
 ## Verification gates
 

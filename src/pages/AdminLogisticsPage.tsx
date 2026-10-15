@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { friendlyError } from '../lib/friendly-error';
-import { Truck, Bike, Phone, AlertTriangle } from 'lucide-react';
+import { Truck, Bike, Phone, AlertTriangle, MailPlus } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
+import { InviteRiderDialog } from '../features/admin/components/InviteRiderDialog';
 import { formatPrice } from '../store/currency-store';
 import { useLogisticsBoard } from '../features/admin/hooks/useAdminQueries';
 import { CodSettlementSection } from '../features/admin/components/CodSettlementSection';
@@ -85,6 +86,7 @@ const destinationOf = (row: LogisticsQueueRow): string => {
 
 export const AdminLogisticsPage: React.FC = () => {
   const { data: board, isPending, isError, error, refetch } = useLogisticsBoard();
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   if (isPending) {
     return (
@@ -201,15 +203,27 @@ export const AdminLogisticsPage: React.FC = () => {
               Registered couriers and the delivery queue, read from <code className="font-mono">rider_delivery_board</code> on every refresh.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
-          >
-            <Bike className="h-3.5 w-3.5 text-sun-orange" />
-            <span>Refresh Board</span>
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-sun-orange px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:opacity-90 cursor-pointer"
+            >
+              <MailPlus className="h-3.5 w-3.5" />
+              <span>Invite Rider</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
+            >
+              <Bike className="h-3.5 w-3.5 text-sun-orange" />
+              <span>Refresh Board</span>
+            </button>
+          </div>
         </div>
+
+        <InviteRiderDialog open={inviteOpen} onOpenChange={setInviteOpen} />
 
         {/* Stats — each tile is a count produced by the board read, not a demo total. */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

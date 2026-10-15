@@ -323,6 +323,16 @@ export function createSupabaseDouble() {
     mfaVerifiedThisSession: false,
     mfaError: null as DoubleError | null,
   };
+  /**
+   * Edge Function invocations (Batch 65): tests set the next invoke's
+   * outcome here; every call is recorded with its function name and body.
+   * The default outcome is an honest "not deployed" refusal, like a
+   * project where the function was never deployed.
+   */
+  const functionsState = {
+    result: null as { data: unknown; error: { message: string; context?: unknown } | null } | null,
+    calls: [] as Array<{ name: string; body: unknown }>,
+  };
   /** Every `auth.updateUser` payload, in call order. */
   const updateUserCalls: Array<Record<string, unknown>> = [];
   /** Every `auth.resend` payload, in call order. */
@@ -2809,6 +2819,7 @@ export function createSupabaseDouble() {
     tables,
     failures,
     authState,
+    functionsState,
     listeners,
     rpcCalls,
     updateUserCalls,
@@ -3175,6 +3186,16 @@ export function createSupabaseDouble() {
      * client. `failStorageUpload` makes uploads refuse, the way an RLS denial
      * or a missing bucket would surface.
      */
+    functions: {
+      invoke: vi.fn(async (name: string, options?: { body?: unknown }) => {
+        functionsState.calls.push({ name, body: options?.body });
+        if (functionsState.result) return functionsState.result;
+        return {
+          data: null,
+          error: { message: `Failed to send a request to the Edge Function` },
+        };
+      }),
+    },
     storage: {
       from: (bucket: string) => ({
         upload: vi.fn(async (path: string, file: unknown) => {
@@ -3466,6 +3487,9 @@ export function createSupabaseDouble() {
       storageMoves.length = 0;
       storageRemovals.length = 0;
       storageUploadError = null;
+      functionsState.result = null;
+      functionsState.calls.length = 0;
+      double.functions.invoke.mockClear();
       rpcError = null;
       rpcCalls.length = 0;
       quoteFixture = null;

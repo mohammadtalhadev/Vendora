@@ -1,11 +1,12 @@
-# Vendora Edge Functions — owner runbook (Batch 43)
+# Vendora Edge Functions — owner runbook (Batch 43, invite-rider added Batch 65)
 
-Two functions live here:
+Three functions live here:
 
 | Function | Who calls it | Auth |
 | --- | --- | --- |
 | `send-notifications` | A scheduler, every minute | `x-cron-secret` header must equal the `CRON_SECRET` secret |
 | `delete-account` | The signed-in user from Account → Settings | The caller's own Supabase JWT (`verify_jwt = true`) |
+| `invite-rider` | An admin from Fleet Logistics → Invite Rider | The caller's own Supabase JWT, and their profile must carry the `admin` role (re-checked inside the function) |
 
 ## 1. Deploy
 
@@ -14,10 +15,11 @@ From the repo root, with the Supabase CLI linked to the Vendora project:
 ```bash
 supabase functions deploy send-notifications
 supabase functions deploy delete-account
+supabase functions deploy invite-rider
 ```
 
 `supabase/config.toml` already carries the right `verify_jwt` settings
-(`send-notifications` = false, `delete-account` = true).
+(`send-notifications` = false, `delete-account` = true, `invite-rider` = true).
 
 ## 2. Secrets
 
@@ -87,3 +89,29 @@ their orders (`customer_email` → `deleted@vendora.market`, shipping address
 wiped), deletes their notifications / cart / wishlist / addresses / saved
 payment methods, then deletes the auth user. If the function is not deployed,
 the settings page shows the function's error and points the user at support.
+
+## 6. Rider invites (Batch 65)
+
+Deploy with the commands in §1 — no new secrets are needed:
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are
+provided to the function automatically. Optionally set `SITE_URL`
+(e.g. `supabase secrets set SITE_URL=https://vendora-plum.vercel.app`)
+to change where invite links land; the live storefront URL above is the
+built-in default.
+
+One dashboard step is required, or the invite email's link lands on an
+error page: in **Supabase → Authentication → URL Configuration**, the
+Redirect URLs allowlist must cover the set-password page the invite
+points at — `https://vendora-plum.vercel.app/reset-password` (the
+existing `https://vendora-plum.vercel.app/**` entry already covers it).
+
+How it behaves: Fleet Logistics → **Invite Rider** calls the function,
+which re-checks the caller's JWT + admin role, sends the Supabase invite
+email, grants the `rider` role on the rider's profile and creates their
+`rider_profiles` row (status `offline` until they mark themselves
+available). The rider follows the email link, sets **their own**
+password on `/reset-password`, and signs in to the Rider Board.
+Re-inviting the same email is safe: the role and fleet row are simply
+re-asserted and the dialog says the account already existed. Until this
+function is deployed, the dialog surfaces the function's error honestly
+— no rider is created and no password exists to share.
