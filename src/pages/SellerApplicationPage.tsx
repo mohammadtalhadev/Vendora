@@ -109,7 +109,7 @@ export const SellerApplicationPage: React.FC = () => {
   const applications = applicationsQuery.data ?? [];
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] font-sans text-slate-800 antialiased pb-24">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-none dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 antialiased pb-24">
       <div className="relative z-10 mx-auto w-full max-w-3xl px-4 pt-10 sm:px-6">
         <div className="text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-sun-orange">

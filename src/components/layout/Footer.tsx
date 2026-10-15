@@ -46,17 +46,17 @@ export const Footer: React.FC = () => {
       {/* Ethereal Ambient Glowing Orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
         <div className="absolute -top-36 -left-20 w-80 h-80 rounded-full bg-gradient-to-tr from-sun-orange-200/35 via-sun-orange-100/40 to-transparent blur-[110px] dark:from-sun-orange/10 pointer-events-none" />
-        <div className="absolute -bottom-28 -right-20 w-72 h-72 rounded-full bg-gradient-to-bl from-aqua-100/40 via-[#F1F5F9]/60 to-transparent blur-[100px] dark:from-aqua/10 pointer-events-none" />
+        <div className="absolute -bottom-28 -right-20 w-72 h-72 rounded-full bg-gradient-to-bl from-aqua-100/40 via-[#F1F5F9]/60 to-transparent blur-[100px] dark:from-aqua/10 dark:via-transparent pointer-events-none" />
       </div>
 
 
 
       {/* 4. Newsletter Signup Strip (Homepage Ambient Background) */}
-      <div className="relative z-10 border-b border-slate-200/60 dark:border-white/10 bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 backdrop-blur-xl py-8 overflow-hidden">
+      <div className="relative z-10 border-b border-slate-200/60 dark:border-white/10 bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-none dark:bg-slate-950 backdrop-blur-xl py-8 overflow-hidden">
         {/* Radiant ambient glow orbs (Matching Homepage) */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
           <div className="absolute -top-24 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-sun-orange-200/65 via-sun-orange-100/70 to-sun-orange-200/40 blur-[90px] dark:from-sun-orange/15 pointer-events-none" />
-          <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[90px] dark:from-aqua/15 pointer-events-none" />
+          <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-gradient-to-bl from-aqua-100/70 via-[#F1F5F9]/80 to-sun-orange-100/50 blur-[90px] dark:from-aqua/15 dark:via-transparent pointer-events-none" />
         </div>
 
         <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-6 px-4 sm:px-6 lg:flex-row lg:px-8">

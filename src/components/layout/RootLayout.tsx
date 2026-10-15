@@ -26,7 +26,7 @@ export const RootLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-[#0a0a0b] font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-900 dark:text-slate-100">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-none dark:bg-[#0a0a0b] font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-900 dark:text-slate-100">
       <SkipLink />
       <ScrollManager />
       {/* =========================================================================
@@ -38,7 +38,7 @@ export const RootLayout: React.FC = () => {
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <div className="absolute -top-36 -left-28 w-[640px] h-[640px] rounded-full bg-gradient-to-tr from-sun-orange-200/50 via-sun-orange-100/60 to-sun-orange-200/30 blur-[130px] dark:from-sun-orange/10 dark:via-sun-orange-200/5 pointer-events-none transform-gpu will-change-transform contain-paint" />
         <div className="absolute top-1/3 -right-32 w-[600px] h-[600px] rounded-full bg-gradient-to-bl from-aqua-100/60 via-[#F1F5F9]/80 to-sun-orange-100/40 blur-[140px] dark:from-aqua/10 dark:via-transparent pointer-events-none transform-gpu will-change-transform contain-paint" />
-        <div className="absolute -bottom-40 left-1/4 w-[580px] h-[580px] rounded-full bg-gradient-to-tr from-sun-orange-100/60 via-aqua-100/40 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 pointer-events-none transform-gpu will-change-transform contain-paint" />
+        <div className="absolute -bottom-40 left-1/4 w-[580px] h-[580px] rounded-full bg-gradient-to-tr from-sun-orange-100/60 via-aqua-100/40 to-[#F1F5F9] blur-[130px] dark:from-sun-orange/5 dark:to-transparent pointer-events-none transform-gpu will-change-transform contain-paint" />
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
