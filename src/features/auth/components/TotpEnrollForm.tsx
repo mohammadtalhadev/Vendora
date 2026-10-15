@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { OtpInput } from '../../../components/ui/otp-input';
-import { enrollTotp, verifyTotp, type TotpEnrollment } from '../api/mfa';
+import {
+  enrollTotp,
+  isMfaAlreadyEnrolledError,
+  listTotpFactors,
+  verifyTotp,
+  type TotpEnrollment,
+} from '../api/mfa';
 
 /**
  * TotpEnrollForm — first-time authenticator setup (Batch 64): starts the
@@ -13,10 +19,20 @@ import { enrollTotp, verifyTotp, type TotpEnrollment } from '../api/mfa';
  */
 interface TotpEnrollFormProps {
   onEnrolled: () => void;
+  /**
+   * The account turned out to already hold a verified authenticator
+   * (Batch 88): the host takes over — the staff portal switches to the
+   * code step, the settings card reloads into its set-up state.
+   */
+  onAlreadyEnrolled?: () => void;
   variant?: 'dark' | 'light';
 }
 
-export const TotpEnrollForm: React.FC<TotpEnrollFormProps> = ({ onEnrolled, variant = 'light' }) => {
+export const TotpEnrollForm: React.FC<TotpEnrollFormProps> = ({
+  onEnrolled,
+  onAlreadyEnrolled,
+  variant = 'light',
+}) => {
   const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [code, setCode] = useState('');
@@ -29,9 +45,23 @@ export const TotpEnrollForm: React.FC<TotpEnrollFormProps> = ({ onEnrolled, vari
     try {
       setEnrollment(await enrollTotp());
     } catch (cause) {
+      if (isMfaAlreadyEnrolledError(cause)) {
+        // Setup collided with an authenticator the account already holds —
+        // set up on another device, or an earlier attempt that landed
+        // after all. Re-read the factor list: if a verified factor is
+        // really there, the host moves the person to the step that fits
+        // (entering its code) instead of stranding them on a setup screen
+        // that can never succeed. If none shows, the honest message stays
+        // below and the retry button re-runs the stale-factor cleanup.
+        const lists = await listTotpFactors();
+        if (lists?.verified.length && onAlreadyEnrolled) {
+          onAlreadyEnrolled();
+          return;
+        }
+      }
       setLoadError((cause as Error).message);
     }
-  }, []);
+  }, [onAlreadyEnrolled]);
 
   useEffect(() => {
     if (startedRef.current) return;

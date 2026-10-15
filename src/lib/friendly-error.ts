@@ -72,6 +72,16 @@ export function markRpcError(error: Error, operation: string): Error {
   return error;
 }
 
+/**
+ * The MFA factor-conflict sentence (Batch 88). Supabase refuses a second
+ * enrollment under a friendly name the account already uses, and that
+ * refusal must never be rendered with the sign-up "email already exists"
+ * copy it superficially resembles: the person is already signed in, and
+ * what they need to know is that an authenticator is already set up.
+ */
+export const MFA_FACTOR_CONFLICT_TEXT =
+  'An authenticator is already set up on this account. Sign in and enter your code — or remove the existing authenticator from your profile first if you need to start over.';
+
 const SERVER_TEXT = 'Something went wrong on our side — please try again in a moment.';
 const RATE_LIMIT_TEXT = 'Too many attempts — wait a few minutes before trying again.';
 const SESSION_TEXT = 'Your session has expired. Sign in again to continue.';
@@ -126,6 +136,11 @@ function byCode(code: string): FriendlyError | null {
         retryable: false,
         report: false,
       };
+    case 'mfa_factor_name_conflict':
+      // An MFA enrollment refused because the account already holds a
+      // factor under that friendly name (Batch 88): the MFA sentence,
+      // never the sign-up one above.
+      return { message: MFA_FACTOR_CONFLICT_TEXT, kind: 'conflict', retryable: false, report: false };
     case 'weak_password':
       return validation('Use a stronger password — at least 8 characters with mixed case and a number.');
     case 'over_email_send_rate_limit':
@@ -213,6 +228,12 @@ function byMessage(message: string): FriendlyError | null {
       retryable: false,
       report: false,
     };
+  }
+  // An MFA factor conflict that arrived without its code (Batch 88): it
+  // outranks the sign-up "already exists" rule directly below, which its
+  // wording otherwise resembles.
+  if (/factor.*already exists|already exists.*factor/.test(text)) {
+    return { message: MFA_FACTOR_CONFLICT_TEXT, kind: 'conflict', retryable: false, report: false };
   }
   if (/already registered|user already exists|email already exists|already been registered/.test(text)) {
     return {

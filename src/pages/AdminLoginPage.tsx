@@ -95,6 +95,13 @@ export const AdminLoginPage: React.FC = () => {
     });
   }, []);
 
+  /**
+   * Batch 88: enrollment discovered an authenticator already on the
+   * account (set up on another device, or an earlier attempt that landed)
+   * — the code step is the way forward, not a fresh setup.
+   */
+  const handleAlreadyEnrolled = useCallback(() => setPhase('challenge'), []);
+
   /** The code verified: record the fresh step-up proof and hand over. */
   const completeMfa = async () => {
     markStepUpVerified();
@@ -268,7 +275,11 @@ export const AdminLoginPage: React.FC = () => {
                 />
               )}
               {phase === 'enroll' && (
-                <TotpEnrollForm variant={theme} onEnrolled={() => void completeMfa()} />
+                <TotpEnrollForm
+                  variant={theme}
+                  onEnrolled={() => void completeMfa()}
+                  onAlreadyEnrolled={handleAlreadyEnrolled}
+                />
               )}
               <p className="border-t border-slate-200 pt-4 text-center text-xs text-slate-500 dark:border-white/10">
                 Not your account?{' '}

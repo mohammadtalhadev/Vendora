@@ -1,5 +1,5 @@
 import { supabase } from '../../../lib/supabase';
-import { toFriendlyError } from '../../../lib/friendly-error';
+import { MFA_FACTOR_CONFLICT_TEXT, toFriendlyError } from '../../../lib/friendly-error';
 
 /**
  * mfa — the TOTP two-factor layer (Batch 64).
@@ -91,23 +91,91 @@ export async function listTotpFactors(): Promise<TotpFactorLists | null> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Already-set-up enrollments (Batch 88)
+//
+// GoTrue refuses to enrol a second factor under a friendly name the account
+// already uses. When that refusal — or a factor list that already holds a
+// VERIFIED factor — says the account is protected already, enrollTotp
+// throws this typed error instead of letting the refusal be dressed up as
+// the sign-up "email already exists" sentence. The UI branches on it: the
+// staff portal moves the person to the code step, because what they
+// actually need is to enter a code, not to set anything up.
+// ---------------------------------------------------------------------------
+
+/** Stable branch code carried by MfaAlreadyEnrolledError. */
+export const MFA_ALREADY_ENROLLED_CODE = 'mfa_already_enrolled';
+
+export class MfaAlreadyEnrolledError extends Error {
+  readonly code = MFA_ALREADY_ENROLLED_CODE;
+
+  constructor(message: string = MFA_FACTOR_CONFLICT_TEXT) {
+    super(message);
+    this.name = 'MfaAlreadyEnrolledError';
+  }
+}
+
+/** True for the typed error above, including a plain object carrying its code. */
+export function isMfaAlreadyEnrolledError(cause: unknown): cause is MfaAlreadyEnrolledError {
+  if (cause instanceof MfaAlreadyEnrolledError) return true;
+  return Boolean(
+    cause &&
+      typeof cause === 'object' &&
+      (cause as { code?: unknown }).code === MFA_ALREADY_ENROLLED_CODE,
+  );
+}
+
+/**
+ * The raw shapes GoTrue answers a duplicate enrollment with: its
+ * `mfa_factor_name_conflict` code, or — on responses that arrive without
+ * a code — the sentence naming the factor that already exists.
+ */
+function isFactorConflictError(error: unknown): boolean {
+  const shape = error as { code?: unknown; message?: unknown } | null;
+  if (!shape || typeof shape !== 'object') return false;
+  if (shape.code === 'mfa_factor_name_conflict') return true;
+  const message = typeof shape.message === 'string' ? shape.message : '';
+  return /factor/i.test(message) && /already exists/i.test(message);
+}
+
 /**
  * Starts a fresh TOTP enrollment. An abandoned earlier attempt leaves an
  * UNVERIFIED factor behind, and Supabase refuses look-alike enrollments
  * while it lingers — so stale unverified factors are removed first. That
  * cleanup is what keeps forced enrollment at the staff portal from ever
  * becoming a dead end.
+ *
+ * An account that already holds a VERIFIED factor has nothing to set up:
+ * enrolling again can only end in the service's name-conflict refusal, so
+ * the typed MfaAlreadyEnrolledError is thrown before any enroll is
+ * attempted and the caller moves the person to the code step instead
+ * (Batch 88). A stale factor that refuses removal is not fatal either —
+ * the enroll still runs, and a conflict there becomes the same typed
+ * error rather than a misleading sentence about the account's email.
  */
 export async function enrollTotp(): Promise<TotpEnrollment> {
   const existing = await listTotpFactors();
+  if (existing?.verified.length) {
+    throw new MfaAlreadyEnrolledError();
+  }
   if (existing) {
+    let cleanupFailed = false;
     for (const stale of existing.unverified) {
       try {
-        await supabase.auth.mfa.unenroll({ factorId: stale.id });
+        const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: stale.id });
+        if (unenrollError) cleanupFailed = true;
       } catch {
-        // A stale factor that will not remove is not fatal yet — the enroll
-        // below reports the real refusal if one actually applies.
+        cleanupFailed = true;
       }
+    }
+    if (cleanupFailed) {
+      // A stale factor that would not remove may still hold the friendly
+      // name the enroll below wants. Re-read the list once before trying:
+      // a verified factor that has since appeared means the account is
+      // already set up; anything else, the enroll itself decides — and a
+      // conflict there is translated below, never swallowed.
+      const recheck = await listTotpFactors();
+      if (recheck?.verified.length) throw new MfaAlreadyEnrolledError();
     }
   }
   const { data, error } = await supabase.auth.mfa.enroll({
@@ -115,6 +183,7 @@ export async function enrollTotp(): Promise<TotpEnrollment> {
     friendlyName: 'Vendora authenticator',
   });
   if (error) {
+    if (isFactorConflictError(error)) throw new MfaAlreadyEnrolledError();
     throw toFriendlyError(error, { prefix: 'Could not start authenticator setup', context: 'auth' });
   }
   if (!data?.totp) {

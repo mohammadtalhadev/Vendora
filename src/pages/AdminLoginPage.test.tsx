@@ -55,6 +55,14 @@ vi.mock('../features/auth/api/mfa', () => ({
   verifyTotp: mfaApi.verifyTotp,
   markStepUpVerified: mfaApi.markStepUpVerified,
   isMfaExempt: mfaApi.isMfaExempt,
+  // Batch 88: the branch guard the enroll form consults, faithful to the
+  // real one — it recognises the typed error by its stable code.
+  isMfaAlreadyEnrolledError: (cause: unknown) =>
+    Boolean(
+      cause &&
+        typeof cause === 'object' &&
+        (cause as { code?: unknown }).code === 'mfa_already_enrolled',
+    ),
   unenrollTotp: vi.fn(async () => {}),
   getAalLevel: vi.fn(async () => 'aal1'),
   clearStepUp: vi.fn(),
@@ -192,6 +200,39 @@ describe('AdminLoginPage', () => {
     expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
     expect(mfaApi.enrollTotp).toHaveBeenCalledTimes(1);
     expect(mfaApi.verifyTotp).toHaveBeenCalledWith('factor-new', '123456');
+  });
+
+  it('Batch 88: enrollment that finds an authenticator already set up moves to the code step, not a dead end', async () => {
+    auth.signIn.mockResolvedValue(adminUser);
+    // The page's deciding read says "no factor yet" and opens enrollment;
+    // every later read (the enroll form's self-heal re-check, then the
+    // challenge form's own read) sees the verified factor that was on the
+    // account all along.
+    mfaApi.listTotpFactors.mockReset();
+    mfaApi.listTotpFactors
+      .mockResolvedValueOnce({ verified: [], unverified: [] })
+      .mockResolvedValue({
+        verified: [{ id: 'factor-1', status: 'verified', createdAt: '' }],
+        unverified: [],
+      });
+    mfaApi.enrollTotp.mockRejectedValue(
+      Object.assign(
+        new Error(
+          'An authenticator is already set up on this account. Sign in and enter your code — or remove the existing authenticator from your profile first if you need to start over.',
+        ),
+        { code: 'mfa_already_enrolled' },
+      ),
+    );
+    renderPage();
+
+    fillAndSubmit();
+
+    expect(await screen.findByRole('heading', { name: 'Two-Factor Check' })).toBeInTheDocument();
+    expect(screen.queryByText(/email already exists/i)).not.toBeInTheDocument();
+    expect(auth.signOut).not.toHaveBeenCalled();
+
+    await completeChallenge();
+    expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
   });
 
   it('Batch 64: a wrong code stays on the challenge step with a clear message; the right code continues', async () => {

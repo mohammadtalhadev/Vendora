@@ -151,3 +151,98 @@ describe('mfa testing exemption (Batch 86)', () => {
     }
   });
 });
+
+/**
+ * Batch 88: the already-set-up dead end. An account that already holds a
+ * VERIFIED factor must never be walked into a fresh enrollment (GoTrue
+ * refuses the duplicate friendly name, and that refusal once surfaced as
+ * the sign-up "email already exists" sentence). enrollTotp answers with
+ * the typed MfaAlreadyEnrolledError instead, and a stale factor that
+ * refuses removal degrades to the same honest error — never a lockout,
+ * never a misleading one.
+ */
+describe('enrollTotp already-set-up handling (Batch 88)', () => {
+  beforeEach(() => {
+    supabaseDouble.reset();
+    supabaseDouble.seedAdmin();
+    window.sessionStorage.clear();
+  });
+
+  it('refuses up front when a verified factor already exists — no enroll is attempted', async () => {
+    supabaseDouble.seedMfaFactor('verified');
+
+    const failure: unknown = await mfa.enrollTotp().then(
+      () => null,
+      (cause: unknown) => cause,
+    );
+
+    expect(failure).toBeInstanceOf(mfa.MfaAlreadyEnrolledError);
+    expect(mfa.isMfaAlreadyEnrolledError(failure)).toBe(true);
+    expect((failure as Error).message).toMatch(/authenticator is already set up/i);
+    expect((failure as Error).message).not.toMatch(/sign in instead/i);
+    expect(supabaseDouble.auth.mfa.enroll).not.toHaveBeenCalled();
+  });
+
+  it('unenrolls a stale unverified factor before enrolling', async () => {
+    const stale = supabaseDouble.seedMfaFactor('unverified');
+
+    await mfa.enrollTotp();
+
+    expect(supabaseDouble.auth.mfa.unenroll).toHaveBeenCalledWith({ factorId: stale.id });
+    expect(supabaseDouble.auth.mfa.enroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('a stale factor that will not remove, plus an enroll conflict, surfaces the honest typed error', async () => {
+    supabaseDouble.seedMfaFactor('unverified');
+    // The stale factor refuses removal (it keeps the friendly name)…
+    supabaseDouble.auth.mfa.unenroll.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Factor not found', code: 'factor_not_found' },
+    });
+    // …so GoTrue refuses the enroll with its factor-name conflict.
+    supabaseDouble.auth.mfa.enroll.mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: 'A factor with the friendly name "Vendora authenticator" already exists',
+        code: 'mfa_factor_name_conflict',
+        status: 422,
+      },
+    });
+
+    const failure: unknown = await mfa.enrollTotp().then(
+      () => null,
+      (cause: unknown) => cause,
+    );
+
+    expect(failure).toBeInstanceOf(mfa.MfaAlreadyEnrolledError);
+    expect((failure as Error).message).toMatch(/authenticator is already set up/i);
+    expect((failure as Error).message).not.toMatch(/email already exists/i);
+    expect(supabaseDouble.auth.mfa.enroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('an enroll conflict that arrives by wording alone (no code) is translated the same way', async () => {
+    supabaseDouble.auth.mfa.enroll.mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: 'A factor with the friendly name "Vendora authenticator" already exists',
+      },
+    });
+
+    await expect(mfa.enrollTotp()).rejects.toBeInstanceOf(mfa.MfaAlreadyEnrolledError);
+  });
+
+  it('a non-conflict enroll failure keeps the friendly mapping, not the typed error', async () => {
+    supabaseDouble.auth.mfa.enroll.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Database error querying schema', status: 500 },
+    });
+
+    const failure: unknown = await mfa.enrollTotp().then(
+      () => null,
+      (cause: unknown) => cause,
+    );
+
+    expect(failure).not.toBeInstanceOf(mfa.MfaAlreadyEnrolledError);
+    expect((failure as Error).message).toMatch(/Could not start authenticator setup/i);
+  });
+});

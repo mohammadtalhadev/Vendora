@@ -18,6 +18,8 @@ const SESSION = 'Your session has expired. Sign in again to continue.';
 const CREDENTIALS = 'Email or password is incorrect. Check both and try again.';
 const EXISTS =
   'An account with this email already exists. Sign in instead, or reset your password.';
+const MFA_CONFLICT =
+  'An authenticator is already set up on this account. Sign in and enter your code — or remove the existing authenticator from your profile first if you need to start over.';
 const OTP = 'That code is incorrect or has expired. Use the newest email and try again.';
 
 describe('friendlyError — code table', () => {
@@ -35,6 +37,15 @@ describe('friendlyError — code table', () => {
     ],
     [{ code: 'user_already_exists', message: 'User already registered' }, EXISTS, 'conflict'],
     [{ code: 'email_exists', message: 'Email already registered' }, EXISTS, 'conflict'],
+    [
+      {
+        code: 'mfa_factor_name_conflict',
+        message: 'A factor with the friendly name "Vendora authenticator" already exists',
+        status: 422,
+      },
+      MFA_CONFLICT,
+      'conflict',
+    ],
     [
       { code: 'weak_password', message: 'Password should be at least 8 characters' },
       'Use a stronger password — at least 8 characters with mixed case and a number.',
@@ -150,6 +161,33 @@ describe('friendlyError — status and message backstops', () => {
   it('passes app-authored copy through untouched', () => {
     expect(friendlyError(new Error('"SAVE10" has expired.')).message).toBe('"SAVE10" has expired.');
     expect(friendlyError('Enter a promotion code.').message).toBe('Enter a promotion code.');
+  });
+});
+
+describe('friendlyError — MFA factor conflicts (Batch 88)', () => {
+  it('maps a factor conflict that arrives by code to the authenticator sentence', () => {
+    const result = friendlyError({
+      code: 'mfa_factor_name_conflict',
+      message: 'A factor with the friendly name "Vendora authenticator" already exists',
+      status: 422,
+    });
+    expect(result.message).toBe(MFA_CONFLICT);
+    expect(result.kind).toBe('conflict');
+  });
+
+  it('maps a codeless factor conflict by its wording — never to the sign-up sentence', () => {
+    const result = friendlyError({
+      message: 'A factor with the friendly name "Vendora authenticator" already exists',
+    });
+    expect(result.message).toBe(MFA_CONFLICT);
+    expect(result.message).not.toBe(EXISTS);
+  });
+
+  it('a real sign-up duplicate still maps to the email sentence', () => {
+    expect(friendlyError({ message: 'User already registered' }).message).toBe(EXISTS);
+    expect(
+      friendlyError({ code: 'user_already_exists', message: 'User already registered' }).message,
+    ).toBe(EXISTS);
   });
 });
 

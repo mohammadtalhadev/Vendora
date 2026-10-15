@@ -193,6 +193,15 @@ export const MfaSettingsCard: React.FC<MfaSettingsCardProps> = ({ className }) =
               setNotice('Two-factor authentication is on for this account.');
               void load();
             }}
+            onAlreadyEnrolled={() => {
+              // Batch 88: setup found an authenticator already on the
+              // account (this card's factor read was stale). Close the
+              // form and reload into the set-up state above, where the
+              // remove action — the deliberate way to start over — lives.
+              setSettingUp(false);
+              setNotice('Two-factor authentication is already on for this account.');
+              void load();
+            }}
           />
           <button
             type="button"

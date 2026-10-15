@@ -46,6 +46,47 @@ describe('MfaSettingsCard (Batch 64)', () => {
     ).toBeInTheDocument();
   });
 
+  it('Batch 88: an account with a verified factor sees the set-up state and no fresh setup offer', async () => {
+    supabaseDouble.seedMfaFactor('verified');
+    render(<MfaSettingsCard />);
+
+    expect(
+      await screen.findByRole('button', { name: /Remove authenticator/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Set up an authenticator' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('Batch 88: a setup that collides with an existing authenticator lands back on the set-up state', async () => {
+    render(<MfaSettingsCard />);
+
+    expect(await screen.findByText(/Not set up/i)).toBeInTheDocument();
+    // The enroll attempt discovers the factor that was there all along:
+    // GoTrue answers with its friendly-name conflict while the factor
+    // becomes visible to the follow-up reads.
+    supabaseDouble.auth.mfa.enroll.mockImplementationOnce(async () => {
+      supabaseDouble.seedMfaFactor('verified');
+      return {
+        data: null,
+        error: {
+          message: 'A factor with the friendly name "Vendora authenticator" already exists',
+          code: 'mfa_factor_name_conflict',
+          status: 422,
+        },
+      };
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Set up an authenticator' }));
+
+    expect(
+      await screen.findByText(/Two-factor authentication is already on/i),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /Remove authenticator/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/email already exists/i)).not.toBeInTheDocument();
+  });
+
   it('removal asks for a fresh code first, then unenrolls the factor', async () => {
     supabaseDouble.seedMfaFactor('verified');
     render(<MfaSettingsCard />);
