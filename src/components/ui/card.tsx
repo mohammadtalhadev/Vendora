@@ -16,7 +16,7 @@ export const Card = React.forwardRef<
     ref={ref}
     className={cn(
       'rounded-xl border border-slate-200/90 bg-white shadow-2xs',
-      'dark:border-slate-700 dark:bg-slate-900',
+      'dark:border-white/10 dark:bg-[#121214]',
       className,
     )}
     {...props}

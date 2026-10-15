@@ -593,3 +593,133 @@
     border-color: #E2E8F0 !important;
   }
 }
+
+/* ==========================================================================
+   8. Dark Scheme (Batch 81) — glass tokens on the zinc canvas
+
+   Every value below is scoped to .dark; the light glass system above is
+   untouched. Surfaces: canvas #0a0a0b, glass raised tones #121214 →
+   #17171a, borders white/10, shadows black-based, skeleton shimmer in
+   dark grays.
+   ========================================================================== */
+.dark {
+  --glass-bg: rgba(23, 23, 26, 0.72);
+  --glass-bg-subtle: rgba(20, 20, 23, 0.5);
+  --glass-bg-hover: rgba(28, 28, 31, 0.85);
+  --glass-bg-strong: rgba(23, 23, 26, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-subtle: rgba(255, 255, 255, 0.07);
+  --glass-border-strong: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --glass-shadow-pill: 0 4px 16px 0 rgba(0, 0, 0, 0.4);
+  --glass-shadow-hover: 0 12px 36px 0 rgba(0, 0, 0, 0.55);
+  --glass-shadow-lg: 0 20px 48px 0 rgba(0, 0, 0, 0.5);
+  --glass-overlay: rgba(0, 0, 0, 0.62);
+
+  --surface-solid: #17171a;
+  --surface-near-solid: rgba(23, 23, 26, 0.95);
+  --card-solid: #121214;
+  --card-near-solid: rgba(20, 20, 23, 0.96);
+
+  --glass-slate-bg: rgba(255, 255, 255, 0.06);
+  --glass-slate-border: rgba(255, 255, 255, 0.1);
+}
+
+.dark .card-solid,
+.dark .card-near-solid {
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #141416 0%,
+    #1e1e22 25%,
+    #26262b 50%,
+    #1e1e22 75%,
+    #141416 100%
+  );
+  background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dark .skeleton-shimmer {
+    background: #17171a !important;
+  }
+}
+
+.dark .header-pill-shell {
+  background: rgba(18, 18, 20, 0.72);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 12px 40px -8px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.dark .header-pill-shell.is-scrolled {
+  background: rgba(18, 18, 20, 0.86);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.45),
+    0 20px 52px -12px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+
+.dark .header-pill-nav {
+  background: rgba(18, 18, 20, 0.6);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 8px 28px -10px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.dark .header-pill-nav.is-scrolled {
+  background: rgba(18, 18, 20, 0.78);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 12px 36px -10px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.dark .glass-caption-chip {
+  background: rgba(18, 18, 20, 0.62);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 10px 30px -8px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.dark .glass-caption-panel {
+  background: rgba(18, 18, 20, 0.6);
+  border-color: rgba(255, 255, 255, 0.11);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 16px 44px -10px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* No-backdrop-filter fallback, dark variant: panels fall back to the
+   raised solid tone instead of white. */
+@supports not ((-webkit-backdrop-filter: blur(16px)) or (backdrop-filter: blur(16px))) {
+  .dark .glass-surface,
+  .dark .glass-surface-strong,
+  .dark .glass-surface-subtle,
+  .dark .glass-pill,
+  .dark .glass-pill-orange,
+  .dark .glass-pill-aqua,
+  .dark .glass-card,
+  .dark .glass-card-subtle,
+  .dark .header-pill-shell,
+  .dark .header-pill-nav,
+  .dark .glass-caption-chip,
+  .dark .glass-caption-panel {
+    background: #17171a !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .dark .glass-overlay {
+    background: rgba(0, 0, 0, 0.82) !important;
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useDarkMode, chartTheme } from '../hooks/useDarkMode';
 import { BarChart3, Package, TrendingUp, Wallet } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { VendorNav } from '../features/vendor/components/VendorNav';
@@ -37,6 +38,7 @@ const axisPrice = (value: number) => (value >= 1000 ? `${Math.round(value / 1000
  * list — so the chart can never disagree with the ledger.
  */
 export const VendorAnalyticsPage: React.FC = () => {
+  const dark = useDarkMode();
   const earnings = useVendorEarnings(MONTHS);
   const balance = useVendorBalance();
   const packagesQuery = useVendorPackages();
@@ -170,28 +172,29 @@ export const VendorAnalyticsPage: React.FC = () => {
                       data={series.map((m) => ({ ...m, label: monthLabel(m.month) }))}
                       margin={{ top: 4, right: 8, bottom: 0, left: 8 }}
                     >
-                      <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <CartesianGrid vertical={false} stroke={chartTheme.gridStroke(dark)} strokeDasharray="4 4" />
                       <XAxis
                         dataKey="label"
-                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={axisPrice}
                         width={40}
                       />
                       <Tooltip
+                        contentStyle={chartTheme.tooltipStyle(dark)}
                         formatter={(value, name) => [
                           formatPrice(Number(value)),
                           name === 'gross' ? 'Gross' : 'Net after commission',
                         ]}
                       />
-                      <Bar dataKey="gross" fill="#cbd5e1" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="gross" fill={dark ? '#3f3f46' : '#cbd5e1'} radius={[3, 3, 0, 0]} />
                       <Bar dataKey="net" fill="#FF7A1A" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

@@ -632,13 +632,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   ];
 
   return (
-    <div className={cn("workspace-shell h-screen max-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-none dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-row font-sans transition-colors duration-200 relative isolate", panelShellClass)}>
+    <div className={cn("workspace-shell h-screen max-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-none dark:bg-[#0a0a0b] text-slate-900 dark:text-slate-100 flex flex-row font-sans transition-colors duration-200 relative isolate", panelShellClass)}>
       <SkipLink />
       <ScrollManager />
       {/* Ambient soft glow mesh for Frosted Glass depth */}
       <div className="workspace-mesh-bg" aria-hidden="true">
         <div className="absolute -top-32 -left-32 h-[550px] w-[550px] rounded-full bg-gradient-to-br from-orange-400/15 via-amber-300/10 to-transparent blur-3xl dark:from-orange-500/15 dark:via-orange-950/20" />
-        <div className="absolute top-1/4 -right-32 h-[600px] w-[600px] rounded-full bg-gradient-to-bl from-blue-400/15 via-indigo-300/10 to-transparent blur-3xl dark:from-indigo-900/20 dark:via-slate-900/30" />
+        <div className="absolute top-1/4 -right-32 h-[600px] w-[600px] rounded-full bg-gradient-to-bl from-blue-400/15 via-indigo-300/10 to-transparent blur-3xl dark:from-white/[0.04] dark:via-white/[0.02]" />
         <div className="absolute top-2/3 left-1/4 h-[550px] w-[550px] rounded-full bg-gradient-to-tr from-emerald-400/12 via-teal-300/8 to-transparent blur-3xl dark:from-emerald-950/20" />
         <div className="absolute -bottom-32 right-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-tl from-purple-400/12 via-pink-300/8 to-transparent blur-3xl dark:from-purple-950/20" />
       </div>
@@ -650,7 +650,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         <aside
           data-lenis-prevent
           className={cn(
-            "hidden h-screen max-h-screen w-64 shrink-0 overflow-hidden border-r border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10 bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.65))] dark:bg-slate-900/65 backdrop-blur-xl md:flex md:flex-col transition-colors select-none relative z-30",
+            "hidden h-screen max-h-screen w-64 shrink-0 overflow-hidden border-r border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10 bg-[var(--panel-sidebar-bg,rgba(255,255,255,0.65))] dark:bg-[#121214]/80 backdrop-blur-xl md:flex md:flex-col transition-colors select-none relative z-30",
             panelSidebarClass
           )}
         >
@@ -663,7 +663,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           ========================================================================= */}
       <div className="flex flex-col flex-1 min-w-0 h-screen overflow-hidden relative z-10">
         {/* Top Header Bar */}
-        <header className={cn("shrink-0 z-20 w-full border-b border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10 bg-[var(--panel-header-bg,rgba(255,255,255,0.75))] dark:bg-slate-900/75 backdrop-blur-xl shadow-xs transition-colors", panelHeaderClass)}>
+        <header className={cn("shrink-0 z-20 w-full border-b border-[var(--panel-glass-border,rgba(255,255,255,0.6))] dark:border-white/10 bg-[var(--panel-header-bg,rgba(255,255,255,0.75))] dark:bg-[#121214]/85 backdrop-blur-xl shadow-xs transition-colors", panelHeaderClass)}>
           <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
             {/* Left section: Mobile menu + Global Search + Storefront Option */}
             <div className="flex items-center gap-2.5 sm:gap-3">

@@ -490,32 +490,483 @@ img {
   background-color: rgba(148, 163, 184, 0.65) !important;
 }
 
+.dark .sidebar-scroll {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent !important;
+}
+
 .dark .sidebar-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.25) !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
 }
 
 .dark .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(148, 163, 184, 0.5) !important;
+  background-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 /* ==========================================================================
    Dark Mode Support (Base)
    ========================================================================== */
 html.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
+  /* Batch 81 dark scheme — neutral zinc, replacing the legacy blue-slate
+     shadcn values (#0b1120 family). Canvas #0a0a0b, surface #121214,
+     raised #17171a, hairlines ≈ white/10 (opaque approximation in HSL),
+     text zinc-100 / zinc-400 / zinc-500, ring = lifted brand orange. */
+  --background: 240 6% 4%;
+  --foreground: 240 5% 96%;
+  --card: 240 6% 7%;
+  --card-foreground: 240 5% 96%;
+  --popover: 240 6% 10%;
+  --popover-foreground: 240 5% 96%;
+  --primary: 240 5% 96%;
+  --primary-foreground: 240 6% 7%;
+  --secondary: 240 5% 13%;
+  --secondary-foreground: 240 5% 96%;
+  --muted: 240 5% 13%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 240 5% 13%;
+  --accent-foreground: 240 5% 96%;
+  --destructive: 0 75% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 4% 16%;
+  --input: 240 4% 16%;
+  --ring: 27 100% 62%;
+  --sidebar-background: 240 6% 7%;
+  --sidebar-foreground: 240 5% 96%;
+  --sidebar-primary: 27 100% 62%;
+  --sidebar-primary-foreground: 240 10% 4%;
+  --sidebar-accent: 240 5% 13%;
+  --sidebar-accent-foreground: 240 5% 96%;
+  --sidebar-border: 240 4% 16%;
+  --sidebar-ring: 27 100% 62%;
   color-scheme: dark;
 }
 
 html.dark body {
-  background-color: #0b1120;
-  color: #f1f5f9;
+  background-color: #0a0a0b;
+  color: #f4f4f5;
+}
+
+/* ==========================================================================
+   Dark Mode — Palette Remap + Adaptation Layer (Batch 81)
+
+   The UI consumes hardcoded Tailwind palette utilities far more than the
+   semantic tokens above (bg-white ≈1,300 uses, text-slate-900 ≈1,400,
+   border-slate-200 ≈1,300; semantic bg-card/bg-background ≈ 0). A scheme
+   change therefore has to work through the palette itself:
+
+   1. VARIABLE REMAPS (.dark): brand stops are lifted/softened and every
+      pastel tint stop (50/100/200 of the accent scales) becomes a dark
+      tint, so bg-{scale}-50 chips read as dark-tinted surfaces. The deep
+      neutral stops (slate/ink 700–950) are remapped to zinc surface tones;
+      this is direction-safe because their dark:text-* uses sit on light
+      surfaces (badges, the inverted ink button), where the remapped
+      near-black value is still the correct dark text colour, while
+      text-slate-{700..950} in normal flow is re-pointed by the class
+      rules below. Stops that dark:text-* uses as light text on dark
+      (slate 50–500) are deliberately NOT remapped.
+
+   2. CLASS RULES (html.dark …): re-point the dominant hardcoded light
+      utilities at the new scheme. Every rule carries a
+      :not([class*="dark:…-"]) guard so elements that ship their own
+      dark: variant keep it — the layer only adapts elements that were
+      written light-only. Nothing in this section applies outside .dark,
+      so light mode is pixel-identical by construction.
+   ========================================================================== */
+.dark {
+  /* Brand: sun-orange lifted so it glows on black without vibrating;
+     lemon softened from neon to a warm gold. */
+  --color-sun-orange: #ff8a3d;
+  --color-sun-orange-400: #ffa25e;
+  --color-sun-orange-500: #ff8a3d;
+  --color-orange-cta: #ff8a3d;
+  --color-lemon: #f2d13c;
+  --color-lemon-400: #f2d13c;
+  --color-lemon-500: #f2d13c;
+  --color-aqua-400: #4fd8e8;
+
+  /* Deep neutral stops → zinc surface tones (see direction note above). */
+  --color-slate-700: #232329;
+  --color-slate-800: #17171b;
+  --color-slate-900: #0e0e10;
+  --color-slate-950: #08080a;
+  --color-ink: #0e0e10;
+  --color-ink-700: #232329;
+  --color-ink-800: #17171b;
+  --color-ink-900: #0e0e10;
+  --color-ink-950: #08080a;
+
+  /* Pastel tint stops → dark tints (solid approximations of the hue at
+     ~15% alpha on the canvas). Badges/chips keep their semantic hue. */
+  --color-sun-orange-50: #2a1708;
+  --color-sun-orange-100: #38200c;
+  --color-sun-orange-200: #57300f;
+  --color-orange-50: #2a1708;
+  --color-orange-100: #38200c;
+  --color-orange-200: #57300f;
+  --color-aqua-50: #082a2e;
+  --color-aqua-100: #0b363b;
+  --color-aqua-200: #10545c;
+  --color-coral-50: #2c1218;
+  --color-coral-100: #3a1820;
+  --color-coral-200: #5c2432;
+  --color-lemon-50: #27200a;
+  --color-lemon-100: #332a0d;
+  --color-lemon-200: #52420f;
+  --color-emerald-50: #0b211a;
+  --color-emerald-100: #0e2c22;
+  --color-emerald-200: #174434;
+  --color-green-50: #0c2212;
+  --color-green-100: #102e18;
+  --color-green-200: #1a4726;
+  --color-rose-50: #2b1216;
+  --color-rose-100: #38171d;
+  --color-rose-200: #57222b;
+  --color-red-50: #2b1214;
+  --color-red-100: #381719;
+  --color-red-200: #572124;
+  --color-amber-50: #261b07;
+  --color-amber-100: #332408;
+  --color-amber-200: #4f380d;
+  --color-yellow-50: #26200a;
+  --color-yellow-100: #332a0d;
+  --color-yellow-200: #52420f;
+  --color-blue-50: #0e1a2e;
+  --color-blue-100: #12233d;
+  --color-blue-200: #1d3a61;
+  --color-sky-50: #0c2231;
+  --color-sky-100: #0f2f42;
+  --color-sky-200: #1b4a63;
+  --color-indigo-50: #171a30;
+  --color-indigo-100: #1e2242;
+  --color-indigo-200: #2e3465;
+  --color-violet-50: #1d1433;
+  --color-violet-100: #271b45;
+  --color-violet-200: #3d2a6b;
+  --color-purple-50: #211331;
+  --color-purple-100: #2c1a42;
+  --color-purple-200: #452a66;
+  --color-cyan-50: #092228;
+  --color-cyan-100: #0c2e36;
+  --color-cyan-200: #124653;
+  --color-teal-50: #0a2420;
+  --color-teal-100: #0d302a;
+  --color-teal-200: #14473f;
+}
+
+/* --- Adaptation: text --- */
+html.dark .text-slate-900:not([class*="dark:text-"]),
+html.dark .text-ink:not([class*="dark:text-"]),
+html.dark .text-ink-900:not([class*="dark:text-"]),
+html.dark .text-slate-50:not([class*="dark:text-"]) {
+  color: #f4f4f5;
+}
+
+html.dark .text-slate-950:not([class*="dark:text-"]),
+html.dark .text-ink-950:not([class*="dark:text-"]) {
+  color: #fafafa;
+}
+
+html.dark .text-slate-800:not([class*="dark:text-"]),
+html.dark .text-ink-800:not([class*="dark:text-"]) {
+  color: #e7e7ea;
+}
+
+html.dark .text-slate-100:not([class*="dark:text-"]) {
+  color: #ededf0;
+}
+
+html.dark .text-slate-700:not([class*="dark:text-"]),
+html.dark .text-ink-700:not([class*="dark:text-"]),
+html.dark .text-slate-200:not([class*="dark:text-"]) {
+  color: #d4d4d8;
+}
+
+html.dark .text-slate-300:not([class*="dark:text-"]) {
+  color: #c9c9cf;
+}
+
+html.dark .text-slate-600:not([class*="dark:text-"]),
+html.dark .text-ink-600:not([class*="dark:text-"]) {
+  color: #b3b3ba;
+}
+
+html.dark .text-slate-500:not([class*="dark:text-"]),
+html.dark .text-ink-500:not([class*="dark:text-"]) {
+  color: #a1a1aa;
+}
+
+html.dark .text-ink-400:not([class*="dark:text-"]) {
+  color: #8b8b93;
+}
+
+/* dark:text-slate-500 is used as muted text on dark surfaces; the raw
+   slate-500 (#64748b) is too dim on the new canvas, lift it one step. */
+html.dark [class~="dark:text-slate-500"] {
+  color: #8e8e96;
+}
+
+/* Brand + semantic text stops: the 600–800 stops are written for light
+   pastel backgrounds; on the dark tints they need their 300-step form. */
+html.dark .text-sun-orange-600:not([class*="dark:text-"]),
+html.dark .text-orange-600:not([class*="dark:text-"]) {
+  color: #ff9a4d;
+}
+
+html.dark .text-sun-orange-700:not([class*="dark:text-"]),
+html.dark .text-orange-700:not([class*="dark:text-"]) {
+  color: #ffab66;
+}
+
+html.dark .text-sun-orange-800:not([class*="dark:text-"]),
+html.dark .text-orange-800:not([class*="dark:text-"]) {
+  color: #ffc08a;
+}
+
+html.dark .text-aqua-600:not([class*="dark:text-"]),
+html.dark .text-aqua-700:not([class*="dark:text-"]),
+html.dark .text-cyan-600:not([class*="dark:text-"]),
+html.dark .text-cyan-700:not([class*="dark:text-"]),
+html.dark .text-cyan-800:not([class*="dark:text-"]) {
+  color: #4fd8e8;
+}
+
+html.dark .text-coral-600:not([class*="dark:text-"]),
+html.dark .text-coral-700:not([class*="dark:text-"]),
+html.dark .text-rose-600:not([class*="dark:text-"]),
+html.dark .text-rose-700:not([class*="dark:text-"]),
+html.dark .text-rose-800:not([class*="dark:text-"]),
+html.dark .text-red-600:not([class*="dark:text-"]),
+html.dark .text-red-700:not([class*="dark:text-"]),
+html.dark .text-red-800:not([class*="dark:text-"]) {
+  color: #fda4af;
+}
+
+html.dark .text-emerald-600:not([class*="dark:text-"]),
+html.dark .text-emerald-700:not([class*="dark:text-"]),
+html.dark .text-emerald-800:not([class*="dark:text-"]),
+html.dark .text-green-600:not([class*="dark:text-"]),
+html.dark .text-green-700:not([class*="dark:text-"]),
+html.dark .text-green-800:not([class*="dark:text-"]) {
+  color: #6ee7b7;
+}
+
+html.dark .text-teal-600:not([class*="dark:text-"]),
+html.dark .text-teal-700:not([class*="dark:text-"]),
+html.dark .text-teal-800:not([class*="dark:text-"]) {
+  color: #5eead4;
+}
+
+html.dark .text-amber-600:not([class*="dark:text-"]),
+html.dark .text-amber-700:not([class*="dark:text-"]),
+html.dark .text-amber-800:not([class*="dark:text-"]),
+html.dark .text-yellow-600:not([class*="dark:text-"]),
+html.dark .text-yellow-700:not([class*="dark:text-"]),
+html.dark .text-yellow-800:not([class*="dark:text-"]),
+html.dark .text-lemon-600:not([class*="dark:text-"]),
+html.dark .text-lemon-700:not([class*="dark:text-"]) {
+  color: #fcd34d;
+}
+
+html.dark .text-blue-600:not([class*="dark:text-"]),
+html.dark .text-blue-700:not([class*="dark:text-"]),
+html.dark .text-blue-800:not([class*="dark:text-"]) {
+  color: #93c5fd;
+}
+
+html.dark .text-sky-600:not([class*="dark:text-"]),
+html.dark .text-sky-700:not([class*="dark:text-"]),
+html.dark .text-sky-800:not([class*="dark:text-"]) {
+  color: #7dd3fc;
+}
+
+html.dark .text-indigo-600:not([class*="dark:text-"]),
+html.dark .text-indigo-700:not([class*="dark:text-"]),
+html.dark .text-indigo-800:not([class*="dark:text-"]) {
+  color: #a5b4fc;
+}
+
+html.dark .text-violet-600:not([class*="dark:text-"]),
+html.dark .text-violet-700:not([class*="dark:text-"]),
+html.dark .text-violet-800:not([class*="dark:text-"]) {
+  color: #c4b5fd;
+}
+
+html.dark .text-purple-600:not([class*="dark:text-"]),
+html.dark .text-purple-700:not([class*="dark:text-"]),
+html.dark .text-purple-800:not([class*="dark:text-"]) {
+  color: #d8b4fe;
+}
+
+html.dark .text-orange-500:not([class*="dark:text-"]) {
+  color: #fb923c;
+}
+
+html.dark .text-rose-500:not([class*="dark:text-"]),
+html.dark .text-red-500:not([class*="dark:text-"]) {
+  color: #fb7185;
+}
+
+html.dark .text-emerald-500:not([class*="dark:text-"]) {
+  color: #34d399;
+}
+
+html.dark .text-green-500:not([class*="dark:text-"]) {
+  color: #4ade80;
+}
+
+html.dark .text-amber-500:not([class*="dark:text-"]),
+html.dark .text-yellow-500:not([class*="dark:text-"]) {
+  color: #fbbf24;
+}
+
+html.dark .text-blue-500:not([class*="dark:text-"]) {
+  color: #60a5fa;
+}
+
+html.dark .text-sky-500:not([class*="dark:text-"]) {
+  color: #38bdf8;
+}
+
+html.dark .text-indigo-500:not([class*="dark:text-"]) {
+  color: #818cf8;
+}
+
+html.dark .text-violet-500:not([class*="dark:text-"]) {
+  color: #a78bfa;
+}
+
+html.dark .text-purple-500:not([class*="dark:text-"]) {
+  color: #c084fc;
+}
+
+html.dark .text-cyan-500:not([class*="dark:text-"]) {
+  color: #22d3ee;
+}
+
+html.dark .text-teal-500:not([class*="dark:text-"]) {
+  color: #2dd4bf;
+}
+
+/* --- Adaptation: surfaces --- */
+html.dark .bg-white:not([class*="dark:bg-"]) {
+  background-color: #121214;
+}
+
+html.dark [class~="bg-white/95"]:not([class*="dark:bg-"]) {
+  background-color: #17171b;
+}
+
+html.dark [class~="bg-white/90"]:not([class*="dark:bg-"]) {
+  background-color: #16161a;
+}
+
+html.dark [class~="bg-white/85"]:not([class*="dark:bg-"]) {
+  background-color: #151518;
+}
+
+html.dark [class~="bg-white/80"]:not([class*="dark:bg-"]) {
+  background-color: #141417;
+}
+
+html.dark [class~="bg-white/75"]:not([class*="dark:bg-"]) {
+  background-color: #131316;
+}
+
+html.dark [class~="bg-white/70"]:not([class*="dark:bg-"]) {
+  background-color: #121215;
+}
+
+html.dark [class~="bg-white/60"]:not([class*="dark:bg-"]) {
+  background-color: #101013;
+}
+
+html.dark .bg-slate-50:not([class*="dark:bg-"]),
+html.dark .bg-mist:not([class*="dark:bg-"]),
+html.dark .bg-mist-100:not([class*="dark:bg-"]),
+html.dark .bg-ink-50:not([class*="dark:bg-"]) {
+  background-color: #0b0b0d;
+}
+
+html.dark .bg-slate-100:not([class*="dark:bg-"]),
+html.dark .bg-mist-200:not([class*="dark:bg-"]),
+html.dark .bg-ink-100:not([class*="dark:bg-"]) {
+  background-color: #141417;
+}
+
+html.dark .bg-slate-200:not([class*="dark:bg-"]),
+html.dark .bg-mist-300:not([class*="dark:bg-"]),
+html.dark .bg-ink-200:not([class*="dark:bg-"]) {
+  background-color: #1e1e22;
+}
+
+html.dark .bg-mist-50:not([class*="dark:bg-"]) {
+  background-color: #121214;
+}
+
+/* --- Adaptation: hairlines (white/6–white/10 instead of slate lines) --- */
+html.dark .border-slate-200:not([class*="dark:border-"]),
+html.dark [class~="border-slate-200/90"]:not([class*="dark:border-"]),
+html.dark .border-ink-200:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+html.dark [class~="border-slate-200/80"]:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark [class~="border-slate-200/70"]:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+html.dark [class~="border-slate-200/60"]:not([class*="dark:border-"]),
+html.dark .border-slate-100:not([class*="dark:border-"]),
+html.dark [class~="border-slate-100/80"]:not([class*="dark:border-"]),
+html.dark .border-ink-100:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+html.dark .border-slate-300:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Table row hairlines + hover wash for the shared DataTable and any
+   table composed from the adapted utilities. */
+html.dark .hover\:bg-slate-50:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .hover\:bg-slate-50\/50:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+html.dark .hover\:bg-slate-100:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+html.dark .hover\:bg-slate-100\/80:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .hover\:bg-white:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .hover\:bg-white\/80:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Branded text selection in dark (storefront root sets its own via
+   utilities; this is the floor for panels and plain pages). */
+.dark ::selection {
+  background: rgba(255, 138, 61, 0.4);
+  color: #ffffff;
 }
 
 /* ==========================================================================
@@ -558,9 +1009,9 @@ select.admin-select:focus,
 
 html.dark select.admin-select,
 html.dark .admin-select {
-  background-color: #1e293b;
-  border-color: #334155;
-  color: #f1f5f9;
+  background-color: #17171b;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f4f4f5;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E");
 }
 
@@ -605,7 +1056,7 @@ html.dark select.native-select {
 }
 
 html.dark .glass-panel {
-  background-color: rgba(15, 23, 42, 0.85);
+  background-color: rgba(18, 18, 20, 0.88);
 }
 
 .glass-panel-elevated {
@@ -616,7 +1067,7 @@ html.dark .glass-panel {
 }
 
 html.dark .glass-panel-elevated {
-  background-color: rgba(15, 23, 42, 0.96);
+  background-color: rgba(20, 20, 23, 0.97);
 }
 
 /* Dropdown list items & options styling */
@@ -633,36 +1084,14 @@ select.admin-select option,
 html.dark select option,
 html.dark select.admin-select option,
 html.dark .admin-select option {
-  background-color: #1e293b;
-  color: #f8fafc;
+  background-color: #17171b;
+  color: #f4f4f5;
 }
 
-/* Dark mode button and controls visibility overrides */
-html.dark button.border-slate-200,
-html.dark .border-slate-200 {
-  border-color: #334155;
-}
-
-html.dark button.bg-white:not([class*="dark:bg-"]),
-html.dark a.bg-white:not([class*="dark:bg-"]) {
-  background-color: #1e293b;
-  color: #f1f5f9;
-}
-
-html.dark button.bg-white:not([class*="dark:bg-"]):hover,
-html.dark a.bg-white:not([class*="dark:bg-"]):hover {
-  background-color: #334155;
-}
-
-html.dark button.text-slate-700:not([class*="dark:text-"]),
-html.dark a.text-slate-700:not([class*="dark:text-"]) {
-  color: #cbd5e1;
-}
-
-html.dark button.text-slate-600:not([class*="dark:text-"]),
-html.dark a.text-slate-600:not([class*="dark:text-"]) {
-  color: #94a3b8;
-}
+/* (The Batch-81 adaptation layer above replaced the old per-element
+   dark visibility hacks — bg-white buttons, slate borders and slate
+   text on buttons/links are now covered for every element, not just
+   buttons and anchors.) */
 
 /* ==========================================================================
    Frosted Glass System (Shared - uses panel CSS variables)
@@ -712,6 +1141,14 @@ html.dark a.text-slate-600:not([class*="dark:text-"]) {
 .workspace-shell select:focus,
 .workspace-shell textarea:focus {
   background-color: #ffffff !important;
+}
+
+/* Dark counterpart: focused fields sit on the raised dark field tone,
+   never white (Batch 81). */
+html.dark .workspace-shell input:focus,
+html.dark .workspace-shell select:focus,
+html.dark .workspace-shell textarea:focus {
+  background-color: #1c1c1f !important;
 }
 
 /* ==========================================================================

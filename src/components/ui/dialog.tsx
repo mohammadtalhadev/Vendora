@@ -42,7 +42,7 @@ export const DialogContent = React.forwardRef<
       data-lenis-prevent
       className={cn(
         'fixed left-[50%] top-[50%] z-50 grid w-[92vw] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4',
-        'border border-slate-100 bg-white/95 p-6 shadow-2xl duration-200',
+        'border border-slate-100 bg-white/95 p-6 shadow-2xl duration-200 dark:border-white/10 dark:bg-[#17171a]/95',
         'rounded-3xl sm:p-8',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

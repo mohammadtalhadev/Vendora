@@ -32,21 +32,21 @@
 
 /* Dark mode for Admin */
 html.dark .admin-shell {
-  --panel-bg: #0B1120;
-  --panel-surface: #111827;
-  --panel-surface-hover: #1F2937;
-  --panel-border: #273449;
-  --panel-text: #F8FAFC;
-  --panel-text-muted: #94A3B8;
-  --panel-primary: #6366F1; /* Lighter indigo for dark */
-  --panel-primary-hover: #818CF8;
-  --panel-primary-light: #1E1B4B;
-  --panel-accent: #22D3EE;
-  --panel-sidebar-bg: rgba(17, 24, 39, 0.85);
-  --panel-header-bg: rgba(15, 23, 42, 0.9);
-  --panel-card-bg: rgba(17, 24, 39, 0.9);
-  --panel-glass-border: rgba(255, 255, 255, 0.08);
-  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+  --panel-bg: #0a0a0b;
+  --panel-surface: #121214;
+  --panel-surface-hover: #1c1c1f;
+  --panel-border: rgba(255, 255, 255, 0.09);
+  --panel-text: #f4f4f5;
+  --panel-text-muted: #a1a1aa;
+  --panel-primary: #FF8A3D; /* Brand orange lifted for dark (Batch 81) */
+  --panel-primary-hover: #F4761B;
+  --panel-primary-light: rgba(255, 122, 26, 0.14);
+  --panel-accent: #2DD4EE;
+  --panel-sidebar-bg: rgba(18, 18, 20, 0.85);
+  --panel-header-bg: rgba(18, 18, 20, 0.88);
+  --panel-card-bg: rgba(20, 20, 23, 0.92);
+  --panel-glass-border: rgba(255, 255, 255, 0.09);
+  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45);
 }
 
 /* Catmin/Shadcn design system color overrides for Admin */
@@ -68,16 +68,16 @@ html.dark .admin-shell {
 }
 
 html.dark .admin-shell {
-  --primary: 239 84% 67%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --sidebar-background: 222.2 84% 4.9%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 239 84% 67%;
-  --sidebar-primary-foreground: 222.2 84% 4.9%;
-  --sidebar-accent: 217.2 32.6% 17.5%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-ring: 239 84% 67%;
+  --primary: 27 100% 62%;
+  --primary-foreground: 240 10% 4%;
+  --sidebar-background: 240 6% 7%;
+  --sidebar-foreground: 240 5% 96%;
+  --sidebar-primary: 27 100% 62%;
+  --sidebar-primary-foreground: 240 10% 4%;
+  --sidebar-accent: 240 5% 13%;
+  --sidebar-accent-foreground: 240 5% 96%;
+  --sidebar-border: 240 4% 16%;
+  --sidebar-ring: 27 100% 62%;
 }
 
 /* Admin-specific component overrides */
@@ -221,9 +221,9 @@ html.dark .admin-table tr:hover td {
 }
 
 html.dark .admin-badge-pending {
-  background-color: #78350F;
+  background-color: rgba(245, 158, 11, 0.15);
   color: #FDE68A;
-  border-color: #92400E;
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 .admin-badge-approved {
@@ -233,9 +233,9 @@ html.dark .admin-badge-pending {
 }
 
 html.dark .admin-badge-approved {
-  background-color: #064E3B;
+  background-color: rgba(16, 185, 129, 0.14);
   color: #A7F3D0;
-  border-color: #065F46;
+  border-color: rgba(16, 185, 129, 0.35);
 }
 
 .admin-badge-rejected {
@@ -245,9 +245,9 @@ html.dark .admin-badge-approved {
 }
 
 html.dark .admin-badge-rejected {
-  background-color: #7F1D1D;
+  background-color: rgba(244, 63, 94, 0.13);
   color: #FCA5A5;
-  border-color: #991B1B;
+  border-color: rgba(244, 63, 94, 0.35);
 }
 
 .admin-badge-active {
@@ -257,9 +257,9 @@ html.dark .admin-badge-rejected {
 }
 
 html.dark .admin-badge-active {
-  background-color: #1E3A8A;
+  background-color: rgba(59, 130, 246, 0.14);
   color: #93C5FD;
-  border-color: #1E40AF;
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 /* Admin KPI cards */
@@ -295,7 +295,7 @@ html.dark .admin-badge-active {
 }
 
 html.dark .admin-kpi-icon-success {
-  background-color: #064E3B;
+  background-color: rgba(16, 185, 129, 0.14);
   color: #6EE7B7;
 }
 
@@ -305,7 +305,7 @@ html.dark .admin-kpi-icon-success {
 }
 
 html.dark .admin-kpi-icon-warning {
-  background-color: #78350F;
+  background-color: rgba(245, 158, 11, 0.15);
   color: #FDE68A;
 }
 
@@ -315,7 +315,7 @@ html.dark .admin-kpi-icon-warning {
 }
 
 html.dark .admin-kpi-icon-info {
-  background-color: #1E3A8A;
+  background-color: rgba(59, 130, 246, 0.14);
   color: #93C5FD;
 }
 
@@ -499,8 +499,8 @@ html.dark .admin-modal {
 }
 
 html.dark .admin-urgency-indicator {
-  background-color: #78350F;
-  border-color: #92400E;
+  background-color: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
   color: #FDE68A;
 }
 
@@ -529,9 +529,18 @@ html.dark .admin-urgency-indicator {
 }
 
 html.dark .admin-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(99, 102, 241, 0.25);
+  background-color: rgba(255, 138, 61, 0.28);
 }
 
 html.dark .admin-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(99, 102, 241, 0.45);
+  background-color: rgba(255, 138, 61, 0.5);
+}
+/* Batch 81: the primary button's indigo glow belongs to the light Catmin
+   accent; in dark the button is brand orange, so the glow follows it. */
+html.dark .admin-btn-primary {
+  box-shadow: 0 2px 8px 0 rgba(255, 122, 26, 0.25);
+}
+
+html.dark .admin-btn-primary:hover {
+  box-shadow: 0 4px 16px 0 rgba(255, 122, 26, 0.35);
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDarkMode, chartTheme } from '../hooks/useDarkMode';
 import { Toast } from '../components/common/Toast';
 import { useToast } from '../hooks/useToast';
 import { Link } from 'react-router-dom';
@@ -63,6 +64,7 @@ const deltaLabel = (pct: number | null) =>
 const stageLabel = (status: string) => status.replace(/_/g, ' ');
 
 export const AdminDashboardPage: React.FC = () => {
+  const dark = useDarkMode();
   const [selectedPeriod, setSelectedPeriod] = useState<'30d' | '3m' | '6m' | '1y'>('3m');
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
 
@@ -448,21 +450,21 @@ export const AdminDashboardPage: React.FC = () => {
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                        <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                        <CartesianGrid vertical={false} stroke={chartTheme.gridStroke(dark)} strokeDasharray="4 4" />
                         <XAxis
                           dataKey="label"
-                          tick={{ fontSize: 11, fill: '#64748b' }}
+                          tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                           axisLine={false}
                           tickLine={false}
                         />
                         <YAxis hide domain={[0, 'dataMax']} />
-                        <Tooltip formatter={(value) => [money(Number(value)), 'Gross booked']} />
+                        <Tooltip contentStyle={chartTheme.tooltipStyle(dark)} formatter={(value) => [money(Number(value)), 'Gross booked']} />
                         <Area
                           type="monotone"
                           dataKey="gross"
-                          stroke="#0F172A"
+                          stroke={chartTheme.inkStroke(dark)}
                           strokeWidth={2.5}
-                          fill="rgba(15,23,42,0.08)"
+                          fill={dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -575,29 +577,30 @@ export const AdminDashboardPage: React.FC = () => {
                     <AreaChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
                       <defs>
                         <linearGradient id="grossSalesGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0F172A" stopOpacity={0.25} />
-                          <stop offset="100%" stopColor="#0F172A" stopOpacity={0.02} />
+                          <stop offset="0%" stopColor={chartTheme.inkStroke(dark)} stopOpacity={0.25} />
+                          <stop offset="100%" stopColor={chartTheme.inkStroke(dark)} stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="netSalesGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#94A3B8" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#94A3B8" stopOpacity={0.02} />
+                          <stop offset="0%" stopColor={dark ? '#8e8e96' : '#94A3B8'} stopOpacity={0.3} />
+                          <stop offset="100%" stopColor={dark ? '#8e8e96' : '#94A3B8'} stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <CartesianGrid vertical={false} stroke={chartTheme.gridStroke(dark)} strokeDasharray="4 4" />
                       <XAxis
                         dataKey="label"
-                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={axisMoney}
                         width={48}
                       />
                       <Tooltip
+                        contentStyle={chartTheme.tooltipStyle(dark)}
                         formatter={(value, name) => [
                           money(Number(value)),
                           name === 'gross' ? 'Gross booked' : 'Net to sellers',
@@ -606,14 +609,14 @@ export const AdminDashboardPage: React.FC = () => {
                       <Area
                         type="monotone"
                         dataKey="net"
-                        stroke="#64748B"
+                        stroke={dark ? '#a1a1aa' : '#64748B'}
                         strokeWidth={2}
                         fill="url(#netSalesGrad)"
                       />
                       <Area
                         type="monotone"
                         dataKey="gross"
-                        stroke="#0F172A"
+                        stroke={chartTheme.inkStroke(dark)}
                         strokeWidth={2.5}
                         fill="url(#grossSalesGrad)"
                       />

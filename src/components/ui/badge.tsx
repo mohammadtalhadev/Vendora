@@ -20,17 +20,17 @@ export interface BadgeVariantOptions {
 
 const variantStyles: Record<BadgeVariant, string> = {
   'vendor-verified':
-    'bg-aqua/15 text-[#007E8A] border border-aqua/35 font-medium',
+    'bg-aqua/15 text-[#007E8A] dark:text-[#4fd8e8] border border-aqua/35 font-medium',
   'vendora-platform':
-    'bg-sun-orange/15 text-[#D9610B] border border-sun-orange/35 font-semibold',
+    'bg-sun-orange/15 text-[#D9610B] dark:text-[#ff9a4d] border border-sun-orange/35 font-semibold',
   'discount-coral':
     'bg-coral text-white border border-transparent font-bold shadow-xs',
   'in-stock':
     'bg-emerald-50 text-emerald-700 border border-emerald-200/90 font-medium',
   default:
-    'bg-ink text-white border-transparent',
+    'bg-ink text-white border-transparent dark:bg-zinc-100 dark:text-zinc-900',
   outline:
-    'text-ink border border-slate-200 bg-transparent',
+    'text-ink dark:text-zinc-200 border border-slate-200 bg-transparent',
   secondary:
     'bg-slate-100 text-slate-700 border-transparent',
 };

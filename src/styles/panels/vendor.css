@@ -32,21 +32,21 @@
 
 /* Dark mode for Vendor */
 html.dark .vendor-shell {
-  --panel-bg: #0B1120;
-  --panel-surface: #111827;
-  --panel-surface-hover: #1F2937;
-  --panel-border: #273449;
-  --panel-text: #F8FAFC;
-  --panel-text-muted: #94A3B8;
-  --panel-primary: #FF9233;
-  --panel-primary-hover: var(--color-sun-orange);
-  --panel-primary-light: #7C2D12;
+  --panel-bg: #0a0a0b;
+  --panel-surface: #121214;
+  --panel-surface-hover: #1c1c1f;
+  --panel-border: rgba(255, 255, 255, 0.09);
+  --panel-text: #f4f4f5;
+  --panel-text-muted: #a1a1aa;
+  --panel-primary: #FF8A3D;
+  --panel-primary-hover: #F4761B;
+  --panel-primary-light: rgba(255, 122, 26, 0.14);
   --panel-accent: #FBBF24;
-  --panel-sidebar-bg: rgba(17, 24, 39, 0.85);
-  --panel-header-bg: rgba(15, 23, 42, 0.9);
-  --panel-card-bg: rgba(17, 24, 39, 0.9);
-  --panel-glass-border: rgba(255, 255, 255, 0.08);
-  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+  --panel-sidebar-bg: rgba(18, 18, 20, 0.85);
+  --panel-header-bg: rgba(18, 18, 20, 0.88);
+  --panel-card-bg: rgba(20, 20, 23, 0.92);
+  --panel-glass-border: rgba(255, 255, 255, 0.09);
+  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45);
 }
 
 /* Vendor-specific component overrides */
@@ -204,9 +204,9 @@ html.dark .vendor-table tr:hover td {
 }
 
 html.dark .vendor-badge-pending {
-  background-color: #78350F;
+  background-color: rgba(245, 158, 11, 0.15);
   color: #FDE68A;
-  border-color: #92400E;
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 .vendor-badge-confirmed {
@@ -218,9 +218,9 @@ html.dark .vendor-badge-pending {
 }
 
 html.dark .vendor-badge-confirmed {
-  background-color: #1E3A8A;
+  background-color: rgba(59, 130, 246, 0.14);
   color: #93C5FD;
-  border-color: #1E40AF;
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 .vendor-badge-packed {
@@ -232,9 +232,9 @@ html.dark .vendor-badge-confirmed {
 }
 
 html.dark .vendor-badge-packed {
-  background-color: #4C1D95;
+  background-color: rgba(139, 92, 246, 0.16);
   color: #C4B5FD;
-  border-color: #6D28D9;
+  border-color: rgba(139, 92, 246, 0.38);
 }
 
 .vendor-badge-ready {
@@ -246,9 +246,9 @@ html.dark .vendor-badge-packed {
 }
 
 html.dark .vendor-badge-ready {
-  background-color: #064E3B;
+  background-color: rgba(16, 185, 129, 0.14);
   color: #A7F3D0;
-  border-color: #065F46;
+  border-color: rgba(16, 185, 129, 0.35);
 }
 
 .vendor-badge-delivered {
@@ -260,9 +260,9 @@ html.dark .vendor-badge-ready {
 }
 
 html.dark .vendor-badge-delivered {
-  background-color: #374151;
+  background-color: rgba(255, 255, 255, 0.07);
   color: #D1D5DB;
-  border-color: #4B5563;
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .vendor-badge-cancelled {
@@ -274,9 +274,9 @@ html.dark .vendor-badge-delivered {
 }
 
 html.dark .vendor-badge-cancelled {
-  background-color: #7F1D1D;
+  background-color: rgba(244, 63, 94, 0.13);
   color: #FCA5A5;
-  border-color: #991B1B;
+  border-color: rgba(244, 63, 94, 0.35);
 }
 
 /* Vendor KPI cards */
@@ -312,7 +312,7 @@ html.dark .vendor-badge-cancelled {
 }
 
 html.dark .vendor-kpi-icon-success {
-  background-color: #064E3B;
+  background-color: rgba(16, 185, 129, 0.14);
   color: #6EE7B7;
 }
 
@@ -322,7 +322,7 @@ html.dark .vendor-kpi-icon-success {
 }
 
 html.dark .vendor-kpi-icon-warning {
-  background-color: #78350F;
+  background-color: rgba(245, 158, 11, 0.15);
   color: #FDE68A;
 }
 
@@ -332,7 +332,7 @@ html.dark .vendor-kpi-icon-warning {
 }
 
 html.dark .vendor-kpi-icon-info {
-  background-color: #1E3A8A;
+  background-color: rgba(59, 130, 246, 0.14);
   color: #93C5FD;
 }
 
@@ -366,9 +366,9 @@ html.dark .vendor-kpi-icon-purple {
 }
 
 html.dark .vendor-nav-item.active {
-  background: linear-gradient(135deg, #7C2D12 0%, #9A3412 100%);
+  background: linear-gradient(135deg, rgba(255, 122, 26, 0.2) 0%, rgba(255, 122, 26, 0.08) 100%);
   color: var(--panel-primary);
-  border-color: #9A3412;
+  border-color: rgba(255, 122, 26, 0.35);
 }
 
 .vendor-nav-item.active::before {
@@ -515,7 +515,7 @@ html.dark .vendor-dropdown {
 }
 
 html.dark .vendor-earnings-card {
-  background: linear-gradient(135deg, var(--panel-card-bg) 0%, #7C2D12 100%);
+  background: linear-gradient(135deg, var(--panel-card-bg) 0%, rgba(255, 122, 26, 0.12) 100%);
 }
 
 /* Vendor order status timeline */
@@ -628,8 +628,8 @@ html.dark .vendor-modal {
 }
 
 html.dark .vendor-urgency-indicator {
-  background-color: #78350F;
-  border-color: #92400E;
+  background-color: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
   color: #FDE68A;
 }
 
@@ -658,9 +658,9 @@ html.dark .vendor-urgency-indicator {
 }
 
 html.dark .vendor-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 146, 51, 0.25);
+  background-color: rgba(255, 138, 61, 0.28);
 }
 
 html.dark .vendor-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 146, 51, 0.45);
+  background-color: rgba(255, 138, 61, 0.5);
 }

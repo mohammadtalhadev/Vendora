@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useDarkMode, chartTheme } from '../hooks/useDarkMode';
 import { Toast } from '../components/common/Toast';
 import { friendlyError } from '../lib/friendly-error';
 import { useToast } from '../hooks/useToast';
@@ -152,6 +153,7 @@ const isSellerActionStage = (status: SubOrderStatus) =>
   status === 'placed' || status === 'confirmed' || status === 'packed' || status === 'ready_for_pickup';
 
 export const VendorDashboardPage: React.FC = () => {
+  const dark = useDarkMode();
   const navigate = useNavigate();
   // Every money figure on this page goes through the currency store, so the workspace follows
   // the buyer-facing currency instead of printing a fixed-dollar string.
@@ -971,13 +973,14 @@ export const VendorDashboardPage: React.FC = () => {
                   <BarChart data={chartMonths} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                       axisLine={false}
                       tickLine={false}
                       interval={0}
                     />
                     <YAxis hide />
                     <Tooltip
+                      contentStyle={chartTheme.tooltipStyle(dark)}
                       formatter={(value) => [
                         `${Number(value)} package${Number(value) === 1 ? '' : 's'} settled`,
                         'Packages',
@@ -1021,7 +1024,7 @@ export const VendorDashboardPage: React.FC = () => {
                     <AreaChart data={chartMonths} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                       <XAxis dataKey="label" hide />
                       <YAxis hide domain={[0, 'dataMax']} />
-                      <Tooltip formatter={(value) => [formatPrice(Number(value)), 'Gross settled']} />
+                      <Tooltip contentStyle={chartTheme.tooltipStyle(dark)} formatter={(value) => [formatPrice(Number(value)), 'Gross settled']} />
                       <Area
                         type="monotone"
                         dataKey="gross"
@@ -1174,21 +1177,22 @@ export const VendorDashboardPage: React.FC = () => {
                       <stop offset="100%" stopColor="#FF7A1A" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                  <CartesianGrid vertical={false} stroke={chartTheme.gridStroke(dark)} strokeDasharray="4 4" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={axisPrice}
                     width={48}
                   />
                   <Tooltip
+                    contentStyle={chartTheme.tooltipStyle(dark)}
                     formatter={(value, name) => [
                       formatPrice(Number(value)),
                       name === 'gross' ? 'Gross settled' : 'Net payout',
@@ -1197,9 +1201,9 @@ export const VendorDashboardPage: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="net"
-                    stroke="#3B82F6"
+                    stroke={dark ? '#60a5fa' : '#3B82F6'}
                     strokeWidth={2}
-                    fill="#3B82F6"
+                    fill={dark ? '#60a5fa' : '#3B82F6'}
                     fillOpacity={0.06}
                   />
                   <Area

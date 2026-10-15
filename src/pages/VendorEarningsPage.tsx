@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useDarkMode, chartTheme } from '../hooks/useDarkMode';
 import { Toast } from '../components/common/Toast';
 import { useToast } from '../hooks/useToast';
 import { Link } from 'react-router-dom';
@@ -76,6 +77,7 @@ const longMonth = (month: string) => {
 const isSettled = (status: string) => status === 'delivered' || status === 'available';
 
 export const VendorEarningsPage: React.FC = () => {
+  const dark = useDarkMode();
   const [timeRange, setTimeRange] = useState<'30d' | '90d' | '1y' | 'ytd'>('90d');
   const [activeTab, setActiveTab] = useState<'All' | 'Physical' | 'Digital'>('All');
   const [settlementFilter, setSettlementFilter] = useState<'all' | 'settled' | 'open'>('all');
@@ -428,36 +430,37 @@ export const VendorEarningsPage: React.FC = () => {
                     <ComposedChart data={chartSeries} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
                       <defs>
                         <linearGradient id="grossGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0f172a" stopOpacity={0.25} />
-                          <stop offset="100%" stopColor="#0f172a" stopOpacity={0.02} />
+                          <stop offset="0%" stopColor={chartTheme.inkStroke(dark)} stopOpacity={0.25} />
+                          <stop offset="100%" stopColor={chartTheme.inkStroke(dark)} stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <CartesianGrid vertical={false} stroke={chartTheme.gridStroke(dark)} strokeDasharray="4 4" />
                       <XAxis
                         dataKey="label"
-                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: '#64748b' }}
+                        tick={{ fontSize: 11, fill: chartTheme.tickFill(dark) }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={axisMoney}
                         width={48}
                       />
                       <Tooltip
+                        contentStyle={chartTheme.tooltipStyle(dark)}
                         formatter={(value, name) => [
                           money(Number(value)),
                           name === 'gross' ? 'Gross booked' : 'Net to store',
                         ]}
                       />
                       <Area type="monotone" dataKey="gross" stroke="none" fill="url(#grossGradient)" />
-                      <Line type="monotone" dataKey="gross" stroke="#0f172a" strokeWidth={3} dot={false} />
+                      <Line type="monotone" dataKey="gross" stroke={chartTheme.inkStroke(dark)} strokeWidth={3} dot={false} />
                       <Line
                         type="monotone"
                         dataKey="net"
-                        stroke="#64748b"
+                        stroke={dark ? '#a1a1aa' : '#64748b'}
                         strokeWidth={2}
                         strokeDasharray="4 4"
                         dot={false}

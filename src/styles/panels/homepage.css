@@ -26,21 +26,21 @@
 
 /* Dark mode for Homepage */
 html.dark {
-  --panel-bg: #0B1120;
-  --panel-surface: #111827;
-  --panel-surface-hover: #1F2937;
-  --panel-border: #273449;
-  --panel-text: #F8FAFC;
-  --panel-text-muted: #94A3B8;
+  --panel-bg: #0a0a0b;
+  --panel-surface: #121214;
+  --panel-surface-hover: #1c1c1f;
+  --panel-border: rgba(255, 255, 255, 0.09);
+  --panel-text: #f4f4f5;
+  --panel-text-muted: #a1a1aa;
   --panel-primary: var(--color-sun-orange);
-  --panel-primary-hover: #FF9233;
-  --panel-primary-light: #7C2D12;
-  --panel-accent: #22D3EE;
-  --panel-sidebar-bg: rgba(17, 24, 39, 0.9);
-  --panel-header-bg: rgba(15, 23, 42, 0.95);
-  --panel-card-bg: rgba(17, 24, 39, 0.95);
-  --panel-glass-border: rgba(255, 255, 255, 0.08);
-  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+  --panel-primary-hover: #F4761B;
+  --panel-primary-light: rgba(255, 122, 26, 0.14);
+  --panel-accent: #4FD8E8;
+  --panel-sidebar-bg: rgba(18, 18, 20, 0.88);
+  --panel-header-bg: rgba(18, 18, 20, 0.92);
+  --panel-card-bg: rgba(20, 20, 23, 0.95);
+  --panel-glass-border: rgba(255, 255, 255, 0.09);
+  --panel-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45);
 }
 
 /* Homepage-specific component overrides */
@@ -167,10 +167,10 @@ html.dark .homepage-btn-secondary:hover {
 
 html.dark .homepage-trust-strip {
   background: linear-gradient(90deg, 
-    #7C2D12 0%, 
-    #0B1120 50%, 
-    #713F12 100%);
-  border-color: #273449;
+    rgba(255, 122, 26, 0.13) 0%, 
+    #0a0a0b 50%, 
+    rgba(242, 209, 60, 0.07) 100%);
+  border-color: rgba(255, 255, 255, 0.09);
 }
 
 /* Newsletter section */
@@ -203,6 +203,6 @@ html.dark .homepage-trust-strip {
 }
 
 html.dark .homepage-footer {
-  background-color: #0B1120;
-  border-color: #273449;
+  background-color: #0a0a0b;
+  border-color: rgba(255, 255, 255, 0.09);
 }

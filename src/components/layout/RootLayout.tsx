@@ -26,7 +26,7 @@ export const RootLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-slate-950 font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-900 dark:text-slate-100">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6] dark:bg-[#0a0a0b] font-sans selection:bg-sun-orange/20 selection:text-sun-orange text-slate-900 dark:text-slate-100">
       <SkipLink />
       <ScrollManager />
       {/* =========================================================================
