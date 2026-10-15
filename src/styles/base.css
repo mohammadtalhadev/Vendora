@@ -1412,6 +1412,40 @@ html.dark .workspace-shell textarea:focus {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   Motion: Header Entrance (Batch 111)
+   The sticky header pills drop in once on mount — the main Vendora pill
+   first, the category strip pill a beat behind it (header-pill-enter-
+   delayed). Transform/opacity only; the end keyframe is `transform: none`
+   for the same reason as .page-enter (a retained fill transform would
+   become a containing block for the pills' absolute dropdowns). Disabled
+   under prefers-reduced-motion.
+   ========================================================================== */
+@keyframes vendora-header-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.header-pill-enter {
+  animation: vendora-header-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.header-pill-enter-delayed {
+  animation-delay: 70ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-pill-enter {
+    animation: none !important;
+  }
+}
 /* ==========================================================================
    Accessibility foundation (Batch 49)
    - Global :focus-visible ring: keyboard focus is always visible, mouse
@@ -1514,7 +1548,7 @@ html.dark .workspace-shell textarea:focus {
 }
 
 /* ==========================================================================
-   Motion: App Promo Floating Cards (Batch 110)
+   Motion: App Promo Floating Cards (Batch 111)
    The two glass notification cards around the AppPromoSection phone
    mockup drift up gently and settle back, offset from each other so the
    scene feels alive without moving the phone itself. Placed after the

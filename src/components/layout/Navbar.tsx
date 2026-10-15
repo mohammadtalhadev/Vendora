@@ -123,6 +123,19 @@ export const Navbar: React.FC = () => {
   // Frosted pill elevation + utility strip collapse on scroll
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Smart sticky behaviour (Batch 111, owner): once the page is scrolled,
+  // ONLY the Vendora main pill rides along — the utility strip (existing
+  // collapse) and the category strip pill collapse away with animation —
+  // and the header itself slides UP out of view on a downward scroll and
+  // back DOWN into view on the first upward scroll ("animation ke sath
+  // upper neechy aai"). It never hides near the top of the page, never
+  // while one of its own menus/dropdowns is open, and keyboard focus
+  // inside the header brings it straight back.
+  const [isStripCollapsed, setIsStripCollapsed] = useState(false);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const lastScrollYRef = useRef(0);
+  const menusOpenRef = useRef(false);
+
   // Dark mode — the storefront toggle (Batch 98) writes the SAME preference
   // the workspace header's toggle writes: the `vd_theme` localStorage value
   // plus the `.dark` class on <html> that Tailwind's `dark:` variant keys
@@ -176,13 +189,36 @@ export const Navbar: React.FC = () => {
     }
   }, [isMobileSearchOpen]);
 
+  // Mirror "any header menu open" into a ref for the scroll handler, and
+  // un-hide immediately when a menu opens (a hidden header would take its
+  // own open dropdown with it).
+  const anyHeaderMenuOpen =
+    isAllCategoriesOpen || isRoleMenuOpen || isMobileMenuOpen || isMobileSearchOpen || isSearchOpen;
+  useEffect(() => {
+    menusOpenRef.current = anyHeaderMenuOpen;
+    if (anyHeaderMenuOpen) setIsHeaderHidden(false);
+  }, [anyHeaderMenuOpen]);
+
   useEffect(() => {
     let ticking = false;
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          const next = window.scrollY > 16;
+          const y = window.scrollY;
+          const last = lastScrollYRef.current;
+          const next = y > 16;
           setIsScrolled((prev) => (prev === next ? prev : next));
+          // Past the first stretch only the main pill stays: the category
+          // strip pill collapses (animated in its wrapper below).
+          const nextStrip = y > 80;
+          setIsStripCollapsed((prev) => (prev === nextStrip ? prev : nextStrip));
+          setIsHeaderHidden((prev) => {
+            if (y < 120 || menusOpenRef.current) return prev ? false : prev;
+            if (y > last + 4 && y > 320) return true;
+            if (y < last - 4) return false;
+            return prev;
+          });
+          lastScrollYRef.current = y;
           ticking = false;
         });
         ticking = true;
@@ -304,7 +340,13 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full">
+    <header
+      data-testid="site-header"
+      onFocus={() => setIsHeaderHidden(false)}
+      className={`sticky top-0 z-50 w-full transition-transform duration-300 ease-out will-change-transform ${
+        isHeaderHidden ? '-translate-y-full' : 'translate-y-0'
+      }`}
+    >
       <div className="mx-auto w-full max-w-[1600px] px-3 pt-2 sm:px-6 sm:pt-3 lg:px-8">
         {/* =========================================================================
             0. Slim Utility Strip (collapses on scroll)
@@ -366,12 +408,18 @@ export const Navbar: React.FC = () => {
           frosted surface, scroll elevation) inside the page container, so
           the ends are fully rounded capsules — nothing inside changes:
           brand, the floating search pill, and the quick actions keep their
-          Batch 98 recipes, and no element is removed.
+          Batch 98 recipes, and no element is removed. Batch 111: the
+          header's dropdowns (account menu, search suggestions, category
+          picker, mobile drawer, notifications) are SOLID white — the old
+          bg-white/85–95 glass let the hero show through them once they
+          sat inside this frosted pill (owner screenshot: menu options
+          with the page bleeding through) — and the smart sticky
+          show/hide + entrance animation lives on the header/pills.
           ========================================================================= */}
       <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
         <div
           data-testid="header-main-pill"
-          className={`header-pill-shell flex w-full items-center justify-between gap-2 rounded-full px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5 ${
+          className={`header-pill-shell header-pill-enter flex w-full items-center justify-between gap-2 rounded-full px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5 ${
             isScrolled ? 'is-scrolled' : ''
           }`}
         >
@@ -420,7 +468,7 @@ export const Navbar: React.FC = () => {
                     {isCategoryPickerOpen && (
                       <div
                         id="navbar-search-category-picker"
-                        className="absolute left-2 top-13 z-50 w-52 max-h-80 overflow-y-auto rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-1.5 shadow-2xl animate-in fade-in text-slate-800"
+                        className="absolute left-2 top-13 z-50 w-52 max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800"
                       >
                         {[{ id: 'all', name: 'All', slug: '' }, ...categories].map((cat) => (
                           <button
@@ -486,7 +534,7 @@ export const Navbar: React.FC = () => {
                   id="navbar-search-suggestions"
                   role="listbox"
                   aria-label="Search suggestions"
-                  className="absolute left-0 top-14 z-50 w-full overflow-hidden rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-2 shadow-2xl animate-in fade-in text-slate-800"
+                  className="absolute left-0 top-14 z-50 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800"
                 >
                   <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400">
                     Search Suggestions
@@ -626,7 +674,7 @@ export const Navbar: React.FC = () => {
                 </button>
 
                 {isRoleMenuOpen && (
-                  <div id="navbar-account-menu" className="absolute right-0 top-13 z-50 w-72 rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800">
+                  <div id="navbar-account-menu" className="absolute right-0 top-13 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800">
                   {/* Account Header with Role Badge inside dropdown */}
                   {authLoading && !user ? (
                     <div className="border-b border-slate-100 pb-3 mb-2">
@@ -850,26 +898,35 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          2. Category Strip Pill (Batch 98 + Batch 107) — the marketplace
-          second row as its own floating pill (header-pill-nav, same
-          9999px capsule radius as the main pill), sitting under the main
-          pill inside the same container: the All Categories trigger
+          2. Category Strip Pill (Batch 98 + Batch 107 + Batch 111) — the
+          marketplace second row as its own floating pill (header-pill-nav,
+          same 9999px capsule radius as the main pill), sitting under the
+          main pill inside the same container: the All Categories trigger
           (unchanged — same classes, same MegaMenu), quick links for the
           first root categories the catalogue returns, and the utility
-          links right-aligned. Nothing is removed from the strip. The
-          strip stays pinned with the sticky header; only the utility
-          strip above collapses on scroll. On small screens the quick
+          links right-aligned. Nothing is removed from the strip. Batch
+          109: once the page scrolls past the first stretch the strip
+          collapses away with a grid-rows + fade animation, so ONLY the
+          Vendora main pill rides along at the top; it expands back when
+          the shopper returns near the top. On small screens the quick
           links scroll horizontally and the All Categories trigger keeps
           its md+ visibility (the mobile drawer covers categories there,
           as before).
           ========================================================================= */}
       <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
         <div
-          data-testid="header-strip-pill"
-          className={`header-pill-nav mt-2 flex w-full items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 ${
-            isScrolled ? 'is-scrolled' : ''
+          data-testid="header-strip-collapse"
+          className={`grid transition-all duration-300 ease-out ${
+            isStripCollapsed ? 'grid-rows-[0fr] pt-0 opacity-0' : 'grid-rows-[1fr] pt-2 opacity-100'
           }`}
         >
+          <div className="min-h-0 overflow-hidden">
+            <div
+              data-testid="header-strip-pill"
+              className={`header-pill-nav header-pill-enter header-pill-enter-delayed flex w-full items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 ${
+                isScrolled ? 'is-scrolled' : ''
+              }`}
+            >
           {/* "All Categories" Button with Full Mega Menu — FROZEN (owner
               decision, Batch 98): classes and behaviour exactly as the pill
               header had them; only its home moved, into this strip. */}
@@ -929,6 +986,8 @@ export const Navbar: React.FC = () => {
               Help
             </Link>
           </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -967,7 +1026,7 @@ export const Navbar: React.FC = () => {
             4. Mobile Menu Drawer
             ========================================================================= */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden mt-2 rounded-3xl border border-white/70 bg-white/85 backdrop-blur-xl px-4 py-4 text-slate-800 shadow-2xl animate-in slide-in-from-top-2">
+          <div className="lg:hidden mt-2 rounded-3xl border border-slate-200 bg-white px-4 py-4 text-slate-800 shadow-2xl animate-in slide-in-from-top-2">
             <div className="space-y-1 text-sm font-semibold">
               <Link
                 to="/"

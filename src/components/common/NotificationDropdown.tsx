@@ -235,7 +235,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       {isOpen && (
         <div
           data-testid="notification-popover"
-          className={`absolute top-full mt-2 w-[360px] sm:w-[380px] rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xl text-slate-800 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 ${
+          className={`absolute top-full mt-2 w-[360px] sm:w-[380px] rounded-2xl border border-slate-200 bg-white shadow-xl text-slate-800 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >

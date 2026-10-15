@@ -48,7 +48,7 @@ const seedCategories = (names: string[]) => {
   });
 };
 
-describe('Navbar (Batch 98 header redesign, Batch 107 pill shape)', () => {
+describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smart sticky)', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     localStorage.clear();
@@ -165,6 +165,55 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape)', () => {
     // All Categories trigger and the quick-link nav inside the pill.
     expect(within(stripPill).getByRole('button', { name: /All Categories/ })).toBeInTheDocument();
     expect(within(stripPill).getByRole('navigation', { name: 'Top categories' })).toBeInTheDocument();
+  });
+
+  it('gives the header dropdowns solid backgrounds so page content cannot bleed through (Batch 111)', () => {
+    renderNavbar();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account and personas menu' }));
+    const menu = document.getElementById('navbar-account-menu');
+    expect(menu).not.toBeNull();
+    const tokens = menu!.className.split(/\s+/);
+    // Exactly the opaque token — the old bg-white/90 glass token (and any
+    // backdrop-blur, which stopped working inside the frosted pill) is gone.
+    expect(tokens).toContain('bg-white');
+    expect(tokens).not.toContain('bg-white/90');
+    expect(menu!.className).not.toContain('backdrop-blur');
+  });
+
+  it('animates the pills in on mount and slides the header up on scroll down, back down on scroll up (Batch 111)', async () => {
+    renderNavbar();
+
+    expect(screen.getByTestId('header-main-pill').className).toContain('header-pill-enter');
+    expect(screen.getByTestId('header-strip-pill').className).toContain('header-pill-enter-delayed');
+
+    const header = screen.getByTestId('site-header');
+    expect(header.className).toContain('transition-transform');
+    expect(header.className).toContain('translate-y-0');
+    expect(screen.getByTestId('header-strip-collapse').className).toContain('grid-rows-[1fr]');
+
+    const scrollTo = (y: number) => {
+      Object.defineProperty(window, 'scrollY', { value: y, configurable: true });
+      window.dispatchEvent(new Event('scroll'));
+    };
+
+    // Scrolling down past the thresholds: the category strip collapses so
+    // only the Vendora pill rides along, then the header slides up away.
+    scrollTo(400);
+    await waitFor(() => expect(header.className).toContain('-translate-y-full'));
+    expect(screen.getByTestId('header-strip-collapse').className).toContain('grid-rows-[0fr]');
+
+    // The first upward scroll brings it straight back down.
+    scrollTo(360);
+    await waitFor(() => expect(header.className).toContain('translate-y-0'));
+    expect(header.className).not.toContain('-translate-y-full');
+
+    // Back near the top the strip expands again.
+    scrollTo(40);
+    await waitFor(() =>
+      expect(screen.getByTestId('header-strip-collapse').className).toContain('grid-rows-[1fr]'),
+    );
+    scrollTo(0);
   });
 
   it('keeps the search pill recipe: tinted surface, visible border, orange focus state', () => {
