@@ -39,7 +39,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({
   isInWishlist,
 }) => {
   useReveal();
-  const { data, isLoading } = useProducts({ type: 'digital', page: 1, limit: 4 });
+  const { data, isLoading } = useProducts({ type: 'digital', page: 1, limit: 6 });
 
   const items: ProductItem[] = useMemo(
     () => (data?.items ?? []).map((product: Product) => domainProductToCardItem(product)),
@@ -50,7 +50,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({
     return (
       <section className="reveal mb-14" role="status" aria-label="Loading digital goods">
         <Skeleton className="mb-6 h-8 w-56" />
-        <GridSkeleton count={4} />
+        <GridSkeleton count={6} />
       </section>
     );
   }
@@ -79,7 +79,7 @@ export const DigitalShowcase: React.FC<DigitalShowcaseProps> = ({
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         {items.map((item) => (
           <div key={item.id} className="reveal h-full">
             <ProductCard
