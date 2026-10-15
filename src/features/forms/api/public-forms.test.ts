@@ -44,6 +44,25 @@ describe('public form inboxes', () => {
     });
   });
 
+  it('rejects an over-length contact message before it reaches the table', async () => {
+    await expect(
+      sendContactMessage({
+        name: 'Ayesha Khan',
+        email: 'ayesha@example.com',
+        topic: 'buyer-care',
+        message: 'x'.repeat(4001),
+      }),
+    ).rejects.toThrow('Message must be 4000 characters or fewer.');
+    expect(supabaseDouble.tables.contact_messages).toHaveLength(0);
+  });
+
+  it('rejects an over-length newsletter email', async () => {
+    await expect(subscribeToNewsletter(`${'a'.repeat(250)}@example.com`)).rejects.toThrow(
+      'Email must be 254 characters or fewer.',
+    );
+    expect(supabaseDouble.tables.newsletter_subscribers).toHaveLength(0);
+  });
+
   it('keeps a provided order ref on the contact message', async () => {
     await sendContactMessage({
       name: 'Bilal',
