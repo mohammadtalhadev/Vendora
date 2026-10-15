@@ -341,8 +341,15 @@ export const HomePage: React.FC = () => {
             ========================================================================= */}
         <section className="mb-10">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            {/* Batch 115: no solid background fill on either hero banner.
+                The old navy fill bled through as a hard 1px line along the
+                banners' bottom edge (the grid-stretched height is fractional,
+                so the image paints a hair short of the edge and the fill
+                showed through as a rule instead of a shadow). With no fill,
+                that last pixel is the page canvas itself, the line is gone,
+                and only the soft shadow remains under both banners. */}
             <div
-              className="relative overflow-hidden rounded-[28px] bg-[#0C1046] shadow-xl group aspect-[16/9] lg:aspect-auto lg:h-full min-h-[260px] sm:min-h-[320px] flex items-center justify-center lg:col-span-9"
+              className="relative overflow-hidden rounded-[28px] shadow-xl group aspect-[16/9] lg:aspect-auto lg:h-full min-h-[260px] sm:min-h-[320px] flex items-center justify-center lg:col-span-9"
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >
@@ -359,7 +366,7 @@ export const HomePage: React.FC = () => {
                     {...(idx === 0
                       ? { fetchPriority: 'high' as const }
                       : { loading: 'lazy' as const, decoding: 'async' as const })}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 block h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <Link to={slide.link} className="absolute inset-0 z-20" title={slide.title} aria-label={slide.title} />
                 </div>
@@ -394,7 +401,7 @@ export const HomePage: React.FC = () => {
                 portrait creatives keep their designed ratio. Stacked under
                 the carousel on mobile; beside it on desktop. */}
             <div
-              className="group relative aspect-[9/16] overflow-hidden rounded-[28px] bg-[#0C1046] shadow-lg lg:col-span-3"
+              className="group relative aspect-[9/16] overflow-hidden rounded-[28px] shadow-xl lg:col-span-3"
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >
@@ -413,7 +420,7 @@ export const HomePage: React.FC = () => {
                     {...(idx > 0
                       ? { loading: 'lazy' as const, decoding: 'async' as const }
                       : {})}
-                    className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 block h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   />
                   <Link
                     to={portrait.link}

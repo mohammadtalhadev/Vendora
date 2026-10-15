@@ -530,6 +530,20 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(mainBlock.className).toContain('lg:h-full');
     expect(mainBlock.className).not.toContain('self-start');
 
+    // Batch 115: neither hero banner carries a solid fill — the old navy
+    // fill bled through as a hard 1px line along the bottom edge. Both
+    // banners rest on the same soft shadow instead, and both images are
+    // pinned to their frame's edges (absolute inset-0) rather than laid
+    // in flow, so no edge can open up.
+    expect(mainBlock.className).not.toContain('bg-[#0C1046]');
+    expect(rail.className).not.toContain('bg-[#0C1046]');
+    expect(mainBlock.className).toContain('shadow-xl');
+    expect(rail.className).toContain('shadow-xl');
+    expect(slideImg.className).toContain('absolute');
+    expect(slideImg.className).toContain('inset-0');
+    expect(kitchenImg.className).toContain('absolute');
+    expect(kitchenImg.className).toContain('inset-0');
+
     // Batch 93: a published `homepage_left_promo` banner no longer renders
     // anywhere on the page — the deals section's promo column is gone.
     const heroSection = sectionOf(slideImg);
