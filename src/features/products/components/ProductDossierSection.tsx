@@ -34,7 +34,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
   const factsToRender = keyFacts && keyFacts.length > 0 ? keyFacts : defaultKeyFacts;
 
   return (
-    <section className="reveal mt-12 rounded-3xl border border-slate-200/80 bg-white/90 p-6 sm:p-9 shadow-2xs backdrop-blur-md space-y-8">
+    <section id="pdp-overview" className="reveal mt-12 scroll-mt-40 rounded-3xl border border-slate-200/80 bg-white/90 p-6 sm:p-9 shadow-2xs backdrop-blur-md space-y-8">
       {/* ── Section Header ────────────────────────────────────────── */}
       <div className="border-b border-slate-100 pb-6">
         <h3 className="font-outfit text-2xl font-black text-slate-900 tracking-tight">
@@ -102,7 +102,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
       </div>
 
       {/* ── Sub-Section 3: Technical Specifications & Key Facts ───── */}
-      <div className="space-y-4 pt-2">
+      <div id="pdp-specs" className="space-y-4 pt-2 scroll-mt-40">
         <h4 className="font-outfit text-base sm:text-lg font-black text-slate-900 tracking-tight">
           Technical Specifications &amp; Key Facts
         </h4>

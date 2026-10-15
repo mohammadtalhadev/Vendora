@@ -39,7 +39,7 @@ export const CustomerReviewsShowcase: React.FC<CustomerReviewsShowcaseProps> = (
   };
 
   return (
-    <section id="reviews-section" className="reveal mt-14 space-y-6">
+    <section id="reviews-section" className="reveal mt-14 space-y-6 scroll-mt-32">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>

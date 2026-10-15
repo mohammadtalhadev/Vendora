@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Star,
   ShieldCheck,
   ShoppingCart,
-  Check,
   Heart,
   Share2,
   Search,
@@ -43,6 +42,7 @@ import { OtherOffersSection, type MerchantOffer } from '../features/products/com
 import { ProductDossierSection } from '../features/products/components/ProductDossierSection';
 import { useReveal } from '../hooks/useReveal';
 import { CustomerReviewsShowcase } from '../features/products/components/CustomerReviewsShowcase';
+import { ProductSectionNav, ProductQuickAddPill, AddedBurstIcon } from '../features/products/components/PdpStickyBars';
 import { useProductReviews } from '../features/reviews/hooks/useReviews';
 import { ProductsYouMayLikeGrid } from '../features/products/components/ProductsYouMayLikeGrid';
 import type { ProductItem } from '../features/products/components/ProductCard';
@@ -127,6 +127,25 @@ export const ProductDetailPage: React.FC = () => {
   const zoomPanelRef = useOverlayA11y<HTMLDivElement>(isZoomOpen, () => setIsZoomOpen(false));
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Batch 121 — desktop quick-add pill: shown only once the buy box has
+  // scrolled up out of view (same rule as Ronin's sticky bar). The mobile
+  // sticky buy bar below is untouched and covers small screens.
+  const buyBoxRef = useRef<HTMLDivElement>(null);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  useEffect(() => {
+    if (!buyBoxRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowQuickAdd(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      },
+      { threshold: 0 },
+    );
+    observer.observe(buyBoxRef.current);
+    return () => observer.disconnect();
+    // Re-run when the product arrives: the buy box only mounts after the
+    // detail query resolves, so a mount-only effect would never observe it.
+  }, [product]);
 
   // The selected variant carries its own stock; another seller's offer and a
   // variant-less product fall back to the product row's stock.
@@ -773,7 +792,7 @@ export const ProductDetailPage: React.FC = () => {
               {/* ========================================================= */}
               {/* COLUMN 3: Buy Box & Delivery */}
               {/* ========================================================= */}
-              <div className="order-5 lg:order-none lg:col-span-12 xl:col-span-3 space-y-4">
+              <div ref={buyBoxRef} className="order-5 lg:order-none lg:col-span-12 xl:col-span-3 space-y-4">
                 <div className="glass-panel-elevated rounded-3xl border border-white/90 dark:border-white/15 p-5 shadow-2xl space-y-4">
                   {/* Delivery Option Cards */}
                   <div className="space-y-2.5" role="group" aria-label="Delivery options">
@@ -833,17 +852,18 @@ export const ProductDetailPage: React.FC = () => {
                   {/* Estimated delivery — the seller's published times via
                       the shared resolver (their span here, since the buyer's
                       region is unknown on this page), falling back to the
-                      standard window; labelled an estimate. Digital products
-                      deliver instantly instead. */}
+                      standard window. The word "Estimated" in the label
+                      itself carries that it is an estimate — no trailing
+                      repeat of the word (Batch 122, owner screenshot).
+                      Digital products deliver instantly instead. */}
                   {product.type === 'physical' && shippingOption === 'delivery' && (
-                    <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
+                    <p className="flex flex-nowrap items-center gap-1.5 text-[11px] font-semibold text-slate-600">
                       <Truck className="h-3.5 w-3.5 shrink-0 text-sun-orange" />
-                      <span>
+                      <span className="whitespace-nowrap">
                         Estimated delivery{' '}
                         <span className="font-bold text-slate-900">
                           {formatDeliveryWindow(new Date(), deliveryRange)}
-                        </span>{' '}
-                        (estimate)
+                        </span>
                       </span>
                     </p>
                   )}
@@ -885,7 +905,7 @@ export const ProductDetailPage: React.FC = () => {
                         <span>Out of Stock</span>
                       ) : addedAnimation ? (
                         <>
-                          <Check className="h-4 w-4 stroke-[3]" />
+                          <AddedBurstIcon className="h-5 w-5" />
                           <span>Added to Cart!</span>
                         </>
                       ) : (
@@ -905,6 +925,52 @@ export const ProductDetailPage: React.FC = () => {
                     >
                       Buy Now with 1-Click
                     </button>
+                  </div>
+
+                  {/* Batch 122 — Amazon-style seller details under the CTAs
+                      (owner order). Every value is real page data: the
+                      current seller name (an accepted offer names its own
+                      seller, who has no store id in page state, so plain
+                      text then), the store link + verified chip otherwise,
+                      and the origin city only when the seller published
+                      delivery settings. No Returns/Payment rows here — the
+                      buy box already carries both. */}
+                  <div
+                    data-testid="pdp-seller-details"
+                    className="space-y-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex w-[92px] shrink-0 items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                        <Store className="h-3.5 w-3.5 text-sun-orange" />
+                        Sold by
+                      </span>
+                      {selectedOffer ? (
+                        <span className="text-xs font-bold text-slate-900">{currentSellerName}</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <Link
+                            to={`/vendors/${product.sellerId}`}
+                            className="text-xs font-bold text-slate-900 hover:text-sun-orange transition-colors"
+                          >
+                            {currentSellerName}
+                          </Link>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-aqua border border-cyan-200/60">
+                            <ShieldCheck className="h-3 w-3 text-aqua" />
+                            Verified
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex w-[92px] shrink-0 items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                        <Truck className="h-3.5 w-3.5 text-sun-orange" />
+                        Ships from
+                      </span>
+                      <span className="text-xs font-bold text-slate-900">
+                        {currentSellerName}
+                        {sellerProfile?.originCity ? ` · ${sellerProfile.originCity}` : ''}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Have a better price? Send offer */}
@@ -933,6 +999,9 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Batch 121 — sticky section-nav pill (Overview / Specs / Reviews) */}
+            <ProductSectionNav />
 
             {/* ========================================================= */}
             {/* OTHER OFFERS FOR THIS ITEM                                */}
@@ -986,6 +1055,25 @@ export const ProductDetailPage: React.FC = () => {
             {/* Spacer so the mobile sticky bar never covers page content */}
             <div className="h-24 lg:hidden" aria-hidden="true" />
 
+            {/* Batch 121 — desktop quick-add pill: appears once the buy box
+                scrolls away; hidden while the zoom lightbox is open. */}
+            {showQuickAdd && !isZoomOpen && (
+              <ProductQuickAddPill
+                image={displayImages[selectedImageIndex] || displayImages[0]}
+                title={displayTitle}
+                variantName={selectedVariant?.name}
+                priceLabel={formatPrice(unitPrice)}
+                compareAtLabel={
+                  hasRealSavings && compareAtPrice !== undefined
+                    ? formatPrice(compareAtPrice)
+                    : undefined
+                }
+                inStock={effectiveStock > 0}
+                added={addedAnimation}
+                onAdd={() => handleAddToCart()}
+              />
+            )}
+
             {/* ========================================================= */}
             {/* MOBILE STICKY BUY BAR (< lg) — mirrors the buy box: same
                 variant, same quantity, same actions. Sits above the
@@ -1005,10 +1093,23 @@ export const ProductDetailPage: React.FC = () => {
                   type="button"
                   onClick={() => handleAddToCart()}
                   disabled={effectiveStock <= 0}
-                  className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-sun-orange py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/25 transition-all hover:bg-sun-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    addedAnimation && effectiveStock > 0
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25'
+                      : 'bg-sun-orange hover:bg-sun-orange-600 shadow-orange-500/25'
+                  }`}
                 >
-                  <ShoppingCart className="h-3.5 w-3.5" />
-                  <span>{effectiveStock <= 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+                  {addedAnimation && effectiveStock > 0 ? (
+                    <>
+                      <AddedBurstIcon className="h-4 w-4" />
+                      <span>Added!</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                      <span>{effectiveStock <= 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
