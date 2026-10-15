@@ -57,7 +57,7 @@ export function ProtectedRoute({
 
   // Not authenticated
   if (!user) {
-    return <Navigate to={`${loginPath}?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to={`${loginPath}?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
   // Check roles

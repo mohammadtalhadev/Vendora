@@ -13,6 +13,7 @@ import {
   Store,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { safeRedirect } from '../lib/safe-redirect';
 import { requestPasswordReset } from '../features/auth/api/session';
 import { friendlyErrorText } from '../lib/friendly-error';
 import type { DemoRoleKey } from '../lib/demo-accounts';
@@ -22,7 +23,7 @@ import { Button } from '../components/ui/button';
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || '/';
+  const redirectPath = safeRedirect(searchParams.get('redirect'));
 
   const { signIn, signInAsDemo, signInWithProvider, signOut } = useAuth();
   const { mergeGuestCartIntoUser } = useCartStore();
@@ -60,8 +61,11 @@ export const LoginPage: React.FC = () => {
       setError('Please enter your email address');
       return;
     }
-    if (!password || password.length < 4) {
-      setError('Password must be at least 4 characters');
+    // Sign-in never enforces the new-password policy (see password-policy.ts):
+    // an older account must still be able to log in. Only presence is checked;
+    // the server verifies the password itself.
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
 

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { friendlyErrorText } from '../lib/friendly-error';
+import { safeRedirect } from '../lib/safe-redirect';
 import { Button } from '../components/ui/button';
 
 /**
@@ -28,9 +29,8 @@ function staffHome(roles: string[]): '/admin' | '/support' | null {
  * page, and never to an arbitrary URL.
  */
 function adminDestinationFor(redirectTarget: string | null): string {
-  return redirectTarget && redirectTarget.startsWith('/admin') && redirectTarget !== '/admin/login'
-    ? redirectTarget
-    : '/admin';
+  const target = safeRedirect(redirectTarget, '');
+  return target.startsWith('/admin') && target !== '/admin/login' ? target : '/admin';
 }
 
 export const AdminLoginPage: React.FC = () => {
@@ -75,8 +75,10 @@ export const AdminLoginPage: React.FC = () => {
       setError('Please enter your staff email address');
       return;
     }
-    if (!password || password.length < 4) {
-      setError('Password must be at least 4 characters');
+    // Sign-in never enforces the new-password policy (see password-policy.ts);
+    // only presence is checked here, the server verifies the password itself.
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PASSWORD_MIN_LENGTH } from './password-policy';
 
 /**
  * Zod schemas validating responses at the API boundary (PRD §16.2:
@@ -280,13 +281,15 @@ export const userSchema = z.object({
 
 export const loginRequestSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  // Sign-in accepts whatever password the account was created with; the
+  // new-password policy applies at registration, never at login.
+  password: z.string().min(1),
 });
 
 export const registerRequestSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(PASSWORD_MIN_LENGTH),
 });
 
 export const authResponseSchema = z.object({

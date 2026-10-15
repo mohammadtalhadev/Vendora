@@ -69,6 +69,12 @@ export function foldersOf(items: VendorMediaItem[]): string[] {
  * the image once it renders.
  */
 export async function uploadMedia(file: File, folder = 'products'): Promise<VendorMediaItem> {
+  // Never invent a type for the record: a file whose type the browser cannot
+  // name is rejected here instead of being stored as application/octet-stream,
+  // which would slip it past the bucket's MIME allowlist bookkeeping.
+  if (!file.type) {
+    throw new Error('This file has no detectable type and cannot be uploaded. Choose an image or video file.');
+  }
   const store = await fetchVendorStore();
   const safeName = file.name.replace(/[^A-Za-z0-9._-]+/g, '_');
   const objectPath = `${store.slug}/${folder}/${Date.now()}_${safeName}`;
@@ -88,7 +94,7 @@ export async function uploadMedia(file: File, folder = 'products'): Promise<Vend
       folder,
       object_path: objectPath,
       cdn_url: publicUrl.publicUrl,
-      mime_type: file.type || 'application/octet-stream',
+      mime_type: file.type,
       size_bytes: file.size,
       status: 'pending',
     })

@@ -12,6 +12,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { updatePassword } from '../features/auth/api/session';
 import { friendlyErrorText } from '../lib/friendly-error';
+import { validateNewPassword } from '../lib/password-policy';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
@@ -61,8 +62,9 @@ export const ResetPasswordPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    const passwordError = validateNewPassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (password !== confirmPassword) {
