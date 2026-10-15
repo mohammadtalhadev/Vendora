@@ -9,8 +9,8 @@ import {
 describe('BrandLogoMarquee (Batch 94)', () => {
   it('renders every logo twice for the seamless loop; the duplicate pass is decorative', () => {
     const logos = [
-      { src: '/images/brands/electronics/apple.png', alt: 'Apple' },
-      { src: '/images/brands/electronics/sony.png', alt: 'Sony' },
+      { src: '/images/brands/electronics/apple.webp', alt: 'Apple' },
+      { src: '/images/brands/electronics/sony.webp', alt: 'Sony' },
     ];
     const { container } = render(
       <BrandLogoMarquee logos={logos} label="Official electronics brands" />,
@@ -42,7 +42,7 @@ describe('BrandLogoMarquee (Batch 94)', () => {
   it('logos rest muted (grayscale, reduced opacity) and colour on hover', () => {
     render(
       <BrandLogoMarquee
-        logos={[{ src: '/images/brands/beauty/dior.png', alt: 'Dior' }]}
+        logos={[{ src: '/images/brands/beauty/dior.webp', alt: 'Dior' }]}
         label="Official beauty brands"
       />,
     );
@@ -55,15 +55,15 @@ describe('BrandLogoMarquee (Batch 94)', () => {
     expect(img.className).toContain('sm:h-10');
   });
 
-  it('ready sets point at the individual per-brand PNGs, 12 each', () => {
+  it('ready sets point at the individual per-brand WebPs, 12 each', () => {
     expect(ELECTRONICS_BRAND_LOGOS).toHaveLength(12);
     expect(BEAUTY_BRAND_LOGOS).toHaveLength(12);
     for (const logo of ELECTRONICS_BRAND_LOGOS) {
-      expect(logo.src).toMatch(/^\/images\/brands\/electronics\/[a-z-]+\.png$/);
+      expect(logo.src).toMatch(/^\/images\/brands\/electronics\/[a-z-]+\.webp$/);
       expect(logo.alt.length).toBeGreaterThan(0);
     }
     for (const logo of BEAUTY_BRAND_LOGOS) {
-      expect(logo.src).toMatch(/^\/images\/brands\/beauty\/[a-z-]+\.png$/);
+      expect(logo.src).toMatch(/^\/images\/brands\/beauty\/[a-z-]+\.webp$/);
       expect(logo.alt.length).toBeGreaterThan(0);
     }
   });

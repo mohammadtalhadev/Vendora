@@ -550,7 +550,7 @@ export const HomePage: React.FC = () => {
             {/* Left Large Card: Headphones, Laptops & More */}
             <div className="group relative min-h-[400px] overflow-hidden rounded-[26px] bg-[#EFEFEF] shadow-sm transition-all hover:shadow-lg sm:min-h-[460px] md:col-span-7">
               <img
-                src="/images/bevesi/art_elec_man.png"
+                src="/images/bevesi/art_elec_man.webp"
                 alt="Man wearing wireless headphones"
                 loading="lazy" decoding="async"
                 className="absolute bottom-0 right-0 h-full w-auto max-w-[62%] object-cover object-left [mask-image:linear-gradient(to_right,transparent,black_18%)] transition-transform duration-700 group-hover:scale-105"
@@ -593,7 +593,7 @@ export const HomePage: React.FC = () => {
                     Compare top brands. Free returns.
                   </p>
                   <img
-                    src="/images/bevesi/art_elec_phones.png"
+                    src="/images/bevesi/art_elec_phones.webp"
                     alt="Foldable smartphones"
                     loading="lazy" decoding="async"
                     className="mt-auto w-[88%] object-contain transition-transform duration-500 group-hover:scale-105"
@@ -613,7 +613,7 @@ export const HomePage: React.FC = () => {
                     Speakers, radios & soundbars for every room.
                   </p>
                   <img
-                    src="/images/bevesi/art_elec_radio.png"
+                    src="/images/bevesi/art_elec_radio.webp"
                     alt="Retro bluetooth radio"
                     loading="lazy" decoding="async"
                     className="mt-auto w-full object-contain transition-transform duration-500 group-hover:scale-105"
@@ -636,7 +636,7 @@ export const HomePage: React.FC = () => {
                   </p>
                 </div>
                 <img
-                  src="/images/bevesi/art_elec_coffee.png"
+                  src="/images/bevesi/art_elec_coffee.webp"
                   alt="Coffee maker"
                   loading="lazy" decoding="async"
                   className="absolute bottom-0 right-[6%] h-[92%] w-auto object-contain object-bottom transition-transform duration-500 group-hover:scale-105"
@@ -680,7 +680,7 @@ export const HomePage: React.FC = () => {
             {/* Card 1: Glow Up Your Routine */}
             <div className="group relative min-h-[360px] overflow-hidden rounded-[26px] bg-[#F2F1EF] shadow-sm transition-all hover:shadow-lg sm:min-h-[440px]">
               <img
-                src="/images/bevesi/beauty_face_full.jpg"
+                src="/images/bevesi/beauty_face_full.webp"
                 alt="Skincare model applying cleanser"
                 loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105"
@@ -710,7 +710,7 @@ export const HomePage: React.FC = () => {
             {/* Card 2: Serums, SPF & Moisturizers */}
             <div className="group relative min-h-[360px] overflow-hidden rounded-[26px] bg-[#F2F1EF] shadow-sm transition-all hover:shadow-lg sm:min-h-[440px]">
               <img
-                src="/images/bevesi/beauty_primer_full.jpg"
+                src="/images/bevesi/beauty_primer_full.webp"
                 alt="Coastal Glow Hydrating Tint SPF 30"
                 loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105"
@@ -810,7 +810,7 @@ export const HomePage: React.FC = () => {
               className="group relative min-h-[420px] overflow-hidden rounded-[26px] bg-[#F3F3F3] shadow-sm transition-all hover:shadow-lg md:col-span-3 md:min-h-[480px]"
             >
               <img
-                src="/images/bevesi/banner-16.jpg"
+                src="/images/bevesi/banner-16.webp"
                 alt="Pastel green stand mixer"
                 loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
@@ -829,7 +829,7 @@ export const HomePage: React.FC = () => {
             {/* Center wide card: Home Appliances + countdown */}
             <div className="group relative min-h-[420px] overflow-hidden rounded-[26px] bg-[#EEF2F8] shadow-sm transition-all hover:shadow-lg md:col-span-6 md:min-h-[480px]">
               <img
-                src="/images/bevesi/banner-13.jpg"
+                src="/images/bevesi/banner-13.webp"
                 alt="Front-load washing machine"
                 loading="lazy" decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-right-bottom transition-transform duration-700 group-hover:scale-105"
@@ -863,7 +863,7 @@ export const HomePage: React.FC = () => {
                 className="group relative min-h-[230px] flex-1 overflow-hidden rounded-[22px] bg-[#F1EFEA] shadow-sm transition-all hover:shadow-lg"
               >
                 <img
-                  src="/images/bevesi/banner-14.jpg"
+                  src="/images/bevesi/banner-14.webp"
                   alt="Air purifier"
                   loading="lazy" decoding="async"
                   className="absolute inset-0 h-full w-full object-cover object-bottom transition-transform duration-500 group-hover:scale-105"
@@ -883,7 +883,7 @@ export const HomePage: React.FC = () => {
                 className="group relative min-h-[230px] flex-1 overflow-hidden rounded-[22px] bg-[#EEF6EE] shadow-sm transition-all hover:shadow-lg"
               >
                 <img
-                  src="/images/bevesi/banner-15.jpg"
+                  src="/images/bevesi/banner-15.webp"
                   alt="Pastel green toaster"
                   loading="lazy" decoding="async"
                   className="absolute inset-0 h-full w-full object-cover object-bottom transition-transform duration-500 group-hover:scale-105"

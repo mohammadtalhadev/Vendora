@@ -381,7 +381,7 @@ export const ReturnsPage: React.FC = () => {
                     >
                       <div className="flex gap-3">
                         <img
-                          src={item.items[0]?.image || '/images/placeholder.png'}
+                          src={item.items[0]?.image || '/images/placeholder.webp'}
                           alt={item.items[0]?.title || item.sellerName}
                           className="h-16 w-16 rounded-xl object-contain bg-white border border-slate-200 p-1 shrink-0"
                         />

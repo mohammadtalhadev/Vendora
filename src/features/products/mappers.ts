@@ -2,9 +2,9 @@ import type { Product } from '../../types/domain';
 import type { ProductItem } from './components/ProductCard';
 
 const DEFAULT_IMAGE_BY_CATEGORY: Array<[string, string]> = [
-  ['audio', '/images/bevesi/1-13.jpg'],
-  ['beauty', '/images/bevesi/beauty_primer_full.jpg'],
-  ['home', '/images/bevesi/banner-16.jpg'],
+  ['audio', '/images/bevesi/1-13.webp'],
+  ['beauty', '/images/bevesi/beauty_primer_full.webp'],
+  ['home', '/images/bevesi/banner-16.webp'],
   ['fashion', '/images/categories/cat_fashion_card.webp'],
   ['shoes', '/images/categories/cat_shoes_card.webp'],
 ];
@@ -97,7 +97,7 @@ export function domainProductToCardItem(p: Product): ProductItem {
   const stock = p.stock ?? 0;
   const fallbackImage =
     DEFAULT_IMAGE_BY_CATEGORY.find(([key]) => categoryKey.includes(key))?.[1] ??
-    '/images/products/prod_titanium_phone.jpg';
+    '/images/products/prod_titanium_phone.webp';
 
   return {
     id: p.id,

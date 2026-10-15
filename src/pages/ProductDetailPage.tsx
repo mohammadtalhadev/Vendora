@@ -233,7 +233,7 @@ export const ProductDetailPage: React.FC = () => {
 
   // Product image gallery source list
   const displayImages = useMemo(() => {
-    const fallback = '/images/products/prod_silver_headphones.jpg';
+    const fallback = '/images/products/prod_silver_headphones.webp';
     const list: string[] = product?.images?.length ? [...product.images] : [fallback];
     while (list.length < 4) list.push(list[list.length - 1]);
     return list;

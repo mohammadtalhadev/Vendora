@@ -64,7 +64,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   'toys-games': Gamepad2,
 };
 
-const FALLBACK_IMAGE = '/images/bevesi/1-13.jpg';
+const FALLBACK_IMAGE = '/images/bevesi/1-13.webp';
 
 export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
   const { data: categoriesData, isLoading: isLoadingCategories, isError: categoriesError } = useCategories();

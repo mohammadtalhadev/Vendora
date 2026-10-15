@@ -49,7 +49,7 @@ export interface ProductCardProps {
   showStockUrgency?: boolean;
 }
 
-const PRODUCT_IMAGE_FALLBACK = '/images/products/prod_silver_headphones.jpg';
+const PRODUCT_IMAGE_FALLBACK = '/images/products/prod_silver_headphones.webp';
 
 /**
  * "Selling fast" fires at the platform's one low-stock rule — stock at or

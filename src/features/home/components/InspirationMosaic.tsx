@@ -30,7 +30,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
     title: 'The Focus Studio Setup',
     subtitle: 'Ultra-clean wireless workspace with noise isolation and ambient glow',
     categoryTag: 'TECH & WORKSPACE',
-    image: '/images/bevesi/banner-08.jpg',
+    image: '/images/bevesi/banner-08.webp',
     spanClass: 'md:col-span-8 min-h-[380px] sm:min-h-[440px]',
     hotspots: [
       {
@@ -40,7 +40,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
         title: 'Sony WH-1000XM5 Headphones',
         price: 298.0,
         productUrl: '/products/bs-sony-wh',
-        image: '/images/bevesi/1-13.jpg',
+        image: '/images/bevesi/1-13.webp',
       },
       {
         id: 'hs-lamp',
@@ -49,7 +49,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
         title: 'Aura Minimalist Ambient Lamp',
         price: 49.5,
         productUrl: '/products/rec-glow-lamp',
-        image: '/images/products/prod_glow_lamp.jpg',
+        image: '/images/products/prod_glow_lamp.webp',
       },
     ],
   },
@@ -58,7 +58,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
     title: 'The Glass Skin Ritual',
     subtitle: 'Morning hydration trio for barrier restoration',
     categoryTag: 'BEAUTY & WELLNESS',
-    image: '/images/bevesi/beauty_face_full.jpg',
+    image: '/images/bevesi/beauty_face_full.webp',
     spanClass: 'md:col-span-4 min-h-[380px] sm:min-h-[440px]',
     hotspots: [
       {
@@ -68,7 +68,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
         title: 'Coastal Glow Bio-Hydra Cream',
         price: 36.0,
         productUrl: '/products/bs-lumina-cream',
-        image: '/images/products/prod_lumina_cream.jpg',
+        image: '/images/products/prod_lumina_cream.webp',
       },
     ],
   },
@@ -77,7 +77,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
     title: 'Minimalist Urban Transit',
     subtitle: 'Premium full-grain leather carry and high-mileage sneakers',
     categoryTag: 'FASHION & ACCESSORIES',
-    image: '/images/bevesi/banner-07.jpg',
+    image: '/images/bevesi/banner-07.webp',
     spanClass: 'md:col-span-6 min-h-[320px] sm:min-h-[380px]',
     hotspots: [
       {
@@ -87,7 +87,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
         title: 'Artisan Full-Grain Crossbody Satchel',
         price: 135.0,
         productUrl: '/products/rec-leather-bag',
-        image: '/images/products/prod_leather_bag.jpg',
+        image: '/images/products/prod_leather_bag.webp',
       },
     ],
   },
@@ -96,7 +96,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
     title: 'The Modern Artisan Kitchen',
     subtitle: 'Precision countertop appliances and matte ceramic serveware',
     categoryTag: 'HOME LIVING',
-    image: '/images/bevesi/banner-16.jpg',
+    image: '/images/bevesi/banner-16.webp',
     spanClass: 'md:col-span-6 min-h-[320px] sm:min-h-[380px]',
     hotspots: [
       {
@@ -106,7 +106,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
         title: 'Nordic Fluted Matte Ceramic Vase',
         price: 32.0,
         productUrl: '/products/rv-pampas-vase',
-        image: '/images/products/prod_pampas_vase.jpg',
+        image: '/images/products/prod_pampas_vase.webp',
       },
     ],
   },

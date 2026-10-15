@@ -576,7 +576,7 @@ export const OrdersPage: React.FC = () => {
                               <div key={so.id} className="flex items-center gap-4">
                                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white p-1 shadow-xs">
                                   <img
-                                    src={so.items[0]?.image || '/images/placeholder.png'}
+                                    src={so.items[0]?.image || '/images/placeholder.webp'}
                                     alt={so.items[0]?.title || so.sellerName}
                                     className="h-full w-full object-contain"
                                   />
@@ -677,7 +677,7 @@ export const OrdersPage: React.FC = () => {
                                 </span>
 
                                 <img
-                                  src={entry.line.image || '/images/placeholder.png'}
+                                  src={entry.line.image || '/images/placeholder.webp'}
                                   alt={entry.line.title}
                                   className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                                 />
@@ -970,7 +970,7 @@ export const OrdersPage: React.FC = () => {
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-12 rounded-xl bg-white p-1 border border-slate-200 shrink-0">
                                 <img
-                                  src={so.items[0]?.image || '/images/placeholder.png'}
+                                  src={so.items[0]?.image || '/images/placeholder.webp'}
                                   alt={so.items[0]?.title || so.sellerName}
                                   className="h-full w-full object-contain"
                                 />
@@ -1014,7 +1014,7 @@ export const OrdersPage: React.FC = () => {
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-12 rounded-xl bg-white p-1 border border-slate-200 shrink-0">
                                 <img
-                                  src={so.items[0]?.image || '/images/placeholder.png'}
+                                  src={so.items[0]?.image || '/images/placeholder.webp'}
                                   alt={so.items[0]?.title || so.sellerName}
                                   className="h-full w-full object-contain"
                                 />
