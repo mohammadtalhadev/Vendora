@@ -12,7 +12,6 @@ import {
   type ProductItem,
 } from '../features/products';
 import { useProducts } from '../features/catalog/hooks/useProducts';
-import { useLiveRecentlyViewed } from '../features/catalog/recently-viewed';
 import {
   SectionHeading,
   DealsStrip,
@@ -233,17 +232,6 @@ export const HomePage: React.FC = () => {
   const beautyItems = useMemo<ProductItem[]>(
     () => (beautyData?.items ?? []).map(domainProductToCardItem),
     [beautyData],
-  );
-
-  // Recently Viewed rail: the shopper's own browser-local history,
-  // hydrated with the LIVE product rows (stock, price) before it reaches
-  // the shared card mapping — a raw snapshot renders its view-time stock
-  // (which the snapshot never even recorded, so cards claimed
-  // "Out of stock" for products the PDP showed as In Stock).
-  const { products: recentlyViewedLive } = useLiveRecentlyViewed();
-  const recentlyViewedItems = useMemo<ProductItem[]>(
-    () => recentlyViewedLive.map(domainProductToCardItem),
-    [recentlyViewedLive],
   );
 
   const { data: homeData, isLoading: homeLoading } = useProducts({ category: 'home-kitchen', sort: 'best_selling', page: 1, limit: 20 });
@@ -765,33 +753,11 @@ export const HomePage: React.FC = () => {
         )}
 
         {/* =========================================================================
-            3D-1B. Recently Viewed — the shopper's own history on this device
-            ========================================================================= */}
-        {recentlyViewedItems.length > 0 && (
-          <section className="reveal mb-14" aria-label="Recently viewed">
-            <SectionHeading
-              title="Recently Viewed"
-              action={
-                <ViewAllLink to="/recently-viewed" />
-              }
-            />
-            <div className="flex gap-4 overflow-x-auto scroll-smooth no-scrollbar py-1">
-              {recentlyViewedItems.map((product) => (
-                <div key={product.id} className="w-44 shrink-0 sm:w-52">
-                  <ProductCard
-                    product={product}
-                    onAddToCart={handleAddToCart}
-                    onToggleWishlist={handleToggleWishlist}
-                    isWishlisted={isInWishlist(product.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* =========================================================================
-            3D-2. Recommended For You & Recently Viewed Shelf
+            3D-2. Recommended For You Shelf
+            (Recently Viewed is NOT a homepage section — owner's order,
+            Batch 122: personal browsing history belongs in the shopping
+            context, so the rail lives on /products and the full history
+            on /recently-viewed.)
             ========================================================================= */}
         <RecommendedShelf
           onAddToCart={handleAddToCart}
