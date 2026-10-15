@@ -135,7 +135,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
           </div>
         ) : (
           <>
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+            <div data-lenis-prevent className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
               {items.map((item) => (
                 <div
                   key={item.id}

@@ -154,7 +154,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
           </div>
 
           {/* Currencies List */}
-          <div className="mt-1.5 max-h-72 overflow-y-auto space-y-1 pr-0.5 custom-scrollbar">
+          <div data-lenis-prevent className="mt-1.5 max-h-72 overflow-y-auto space-y-1 pr-0.5 custom-scrollbar">
             {currencies.map((c) => {
               const isSelected = currency === c.code;
               const rate = rates[c.code] ?? 1;

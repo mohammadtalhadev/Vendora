@@ -232,7 +232,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           {/* ── Main Policy Body: 8 Core Articles ────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Sticky Table of Contents (4 cols) */}
-            <div className="hidden lg:block lg:col-span-4 sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto pr-1 [scrollbar-width:thin] space-y-4">
+            <div data-lenis-prevent className="hidden lg:block lg:col-span-4 sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto pr-1 [scrollbar-width:thin] space-y-4">
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xs space-y-3 text-xs">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <FileText className="h-4 w-4 text-sun-orange" />

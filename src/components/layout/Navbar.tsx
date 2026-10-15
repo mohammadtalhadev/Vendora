@@ -468,6 +468,7 @@ export const Navbar: React.FC = () => {
                     {isCategoryPickerOpen && (
                       <div
                         id="navbar-search-category-picker"
+                        data-lenis-prevent
                         className="absolute left-2 top-13 z-50 w-52 max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800"
                       >
                         {[{ id: 'all', name: 'All', slug: '' }, ...categories].map((cat) => (

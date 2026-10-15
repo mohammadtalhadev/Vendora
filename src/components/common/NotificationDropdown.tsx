@@ -327,6 +327,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
           {/* Notifications List */}
           <div
+            data-lenis-prevent
             className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 overscroll-contain"
             aria-busy={firstReadPending}
           >

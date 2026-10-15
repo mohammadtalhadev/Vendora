@@ -977,6 +977,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
               aria-labelledby="mobile-filters-title"
               tabIndex={-1}
               onKeyDown={(e) => { if (e.key === 'Escape') setIsMobileFilterOpen(false); }}
+              data-lenis-prevent
               className="relative ml-auto flex h-full w-full max-w-xs flex-col bg-white dark:bg-slate-900 p-6 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300"
             >
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">

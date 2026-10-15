@@ -93,6 +93,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
     <div
       id="all-categories-menu"
       aria-label="Browse all categories"
+      data-lenis-prevent
       className="absolute left-0 top-full mt-2.5 z-50 rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-top-1 text-slate-800 overflow-hidden w-[720px] lg:w-[840px] xl:w-[920px] max-w-[calc(100vw-24px)] flex flex-row"
     >
       {/* Column 1: Root categories, rendered from useCategories() */}
