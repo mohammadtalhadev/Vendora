@@ -9,7 +9,11 @@ import { fetchCategoryTree } from '../api/categories';
 import { fetchCommissionOverview } from '../api/commission';
 import { fetchAuditQueue, fetchBroadcastLog } from '../api/audit';
 import { fetchReportSummary } from '../api/reports';
-import { fetchCodSettlements, fetchLogisticsBoard } from '../api/logistics';
+import {
+  fetchCodSettlements,
+  fetchLogisticsBoard,
+  fetchPendingRiderApplications,
+} from '../api/logistics';
 import { fetchPlatformSettings } from '../api/settings';
 import { fetchAdminMediaLibrary } from '../api/media';
 import { fetchAdminInventory } from '../api/inventory';
@@ -220,6 +224,17 @@ export function useLogisticsBoard() {
   return useQuery({
     queryKey: adminKeys.logistics(userId),
     queryFn: ({ signal }) => fetchLogisticsBoard(signal),
+    enabled: Boolean(userId),
+    ...liveBoard,
+  });
+}
+
+/** Rider applications waiting on the desk's decision (Batch 77). */
+export function usePendingRiderApplications() {
+  const userId = useAdminScope();
+  return useQuery({
+    queryKey: adminKeys.riderApplications(userId),
+    queryFn: ({ signal }) => fetchPendingRiderApplications(signal),
     enabled: Boolean(userId),
     ...liveBoard,
   });

@@ -1942,6 +1942,116 @@ await expectThrow('[batch 83] customer refused by the ticket queue',
   () => q(`select support_ticket_queue('all', false, '', 1, 12)`), 'Only staff');
 await expectThrow('[batch 83] non-rider refused by the rider board',
   () => q('select rider_delivery_board()'), 'Not a rider');
+console.log('\n[batch 77] rider self-serve onboarding: apply, pending guards, approval, rejection');
+  // Batch 77 (20261017040000): a rider-role account with no profile row can
+  // now apply in-panel; the desk approves or refuses. CU2 plays the applicant
+  // (a plain customer with no rider row), CU a second applicant for the
+  // rejection path. This section runs last, so the roles it grants cannot
+  // disturb the sections above.
+  await as('postgres');
+ok('enum: pending is a rider_availability value now',
+  (await q(`select 'pending'::public.rider_availability::text as v`))[0].v === 'pending');
+ok('schema: rider_profiles carries the application fields',
+  (await q(`select count(*)::int c from information_schema.columns
+            where table_name = 'rider_profiles' and column_name in ('city','vehicle_plate')`))[0].c === 2);
+
+await as('anon');
+await expectThrow('anon cannot apply as a rider',
+  () => q(`select public.apply_as_rider('Motorcycle', '0300-1', 'Lahore', 'LEA-1')`),
+  'permission denied');
+
+await as('authenticated', CU2);
+await expectThrow('apply: a blank phone refuses',
+  () => q(`select public.apply_as_rider('Motorcycle', '   ', 'Lahore', 'LEA-1')`),
+  'phone number');
+await expectThrow('apply: a blank city refuses',
+  () => q(`select public.apply_as_rider('Motorcycle', '0300-1', ' ', 'LEA-1')`),
+  'city');
+const applied77 = (await q(
+  `select public.apply_as_rider('Motorcycle', '0300-111', 'Lahore', 'LEA-100') as app`,
+))[0].app;
+ok('apply: the row is filed as pending with the details the desk reviews',
+  applied77.status === 'pending' && applied77.city === 'Lahore' &&
+  applied77.vehicle_plate === 'LEA-100' && applied77.phone === '0300-111');
+ok('apply: the rider role lands on the profile, once',
+  (await q(`select roles @> array['rider'::public.user_role] as has_it from profiles where id = $1`, [CU2]))[0].has_it === true);
+await expectThrow('board: a pending applicant is refused like a non-rider',
+  () => q(`select public.rider_delivery_board()`),
+  'not a rider');
+
+const reapplied77 = (await q(
+  `select public.apply_as_rider('Motorcycle', '0300-222', 'Lahore', 'LEA-100') as app`,
+))[0].app;
+ok('apply again while pending: details update, still one pending row',
+  reapplied77.phone === '0300-222' && reapplied77.status === 'pending' &&
+  (await q(`select count(*)::int c from rider_profiles where user_id = $1`, [CU2]))[0].c === 1);
+await expectThrow('a pending rider cannot promote themselves through the availability write',
+  () => q(`update rider_profiles set status = 'available' where user_id = $1`, [CU2]),
+  'vendora team');
+
+await as('authenticated', CU);
+await expectThrow('approval: a non-admin is refused by the in-body guard',
+  () => q(`select public.admin_set_rider_approval($1, true)`, [CU2]),
+  'only the platform team');
+
+await as('authenticated', ADMIN);
+const approved77 = (await q(`select public.admin_set_rider_approval($1, true) as r`, [CU2]))[0].r;
+ok('approve: the row joins the fleet as available',
+  approved77.status === 'available' &&
+  (await q(`select status::text s from rider_profiles where user_id = $1`, [CU2]))[0].s === 'available');
+await expectThrow('approve: a decided application cannot be decided again',
+  () => q(`select public.admin_set_rider_approval($1, true)`, [CU2]),
+  'already been decided');
+
+await as('authenticated', CU2);
+const board77 = (await q(`select public.rider_delivery_board() as b`))[0].b;
+ok('board: an approved rider reads their board', board77.rider?.status === 'available');
+const noop77 = (await q(
+  `select public.apply_as_rider('Car', '0300-999', 'Karachi', 'XYZ-9') as app`,
+))[0].app;
+ok('apply while active: a no-op success that changes nothing',
+  noop77.status === 'available' && noop77.phone === '0300-222' && noop77.city === 'Lahore');
+await expectThrow('an active rider cannot park themselves back in pending either',
+  () => q(`update rider_profiles set status = 'pending' where user_id = $1`, [CU2]),
+  'vendora team');
+
+await as('postgres');
+await q(`update rider_profiles set status = 'offline' where user_id = $1`, [CU2]);
+ok('the trigger still lets unsigned SQL contexts (the desk’s own tooling) move a rider',
+  (await q(`select status::text s from rider_profiles where user_id = $1`, [CU2]))[0].s === 'offline');
+await q(`update rider_profiles set status = 'available' where user_id = $1`, [CU2]);
+
+await as('authenticated', CU);
+const appliedCu77 = (await q(
+  `select public.apply_as_rider('Bicycle', '0321-555', 'Multan', 'MLT-7') as app`,
+))[0].app;
+ok('second applicant: filed as pending', appliedCu77.status === 'pending');
+await as('authenticated', ADMIN);
+const rejected77 = (await q(`select public.admin_set_rider_approval($1, false) as r`, [CU]))[0].r;
+ok('reject: the application row is removed and the decision returned',
+  rejected77.status === 'rejected' &&
+  (await q(`select count(*)::int c from rider_profiles where user_id = $1`, [CU]))[0].c === 0);
+ok('reject: the role is left alone (it may predate the application)',
+  (await q(`select roles @> array['rider'::public.user_role] as has_it from profiles where id = $1`, [CU]))[0].has_it === true);
+ok('audit: both decisions were written to the audit log',
+  (await q(`select count(*)::int c from audit_logs where action in
+            ('rider_application.approved','rider_application.rejected')`))[0].c >= 2);
+await as('authenticated', CU);
+const reappliedCu77 = (await q(
+  `select public.apply_as_rider('Bicycle', '0321-555', 'Multan', 'MLT-7') as app`,
+))[0].app;
+ok('a rejected applicant can apply again', reappliedCu77.status === 'pending');
+
+const anySub77 = (await q(`select id::text as id from sub_orders limit 1`))[0];
+if (anySub77) {
+  const pendingRow77 = (await q(`select id from rider_profiles where user_id = $1`, [CU]))[0];
+  await as('authenticated', ADMIN);
+  await expectThrow('assign: a pending application cannot be handed a parcel',
+    () => q(`select public.assign_rider($1, $2)`, [anySub77.id, pendingRow77.id]),
+    'pending approval');
+  const assigned77 = (await q(`select public.assign_rider($1, $2) as r`, [anySub77.id, RPID]))[0].r;
+  ok('assign: an approved rider still takes parcels', assigned77.riderId === RPID);
+}
 
 console.log(`\n${passed} passed, ${failed} failed`);
 await db.close();

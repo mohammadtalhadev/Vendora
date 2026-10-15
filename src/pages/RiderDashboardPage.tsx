@@ -28,10 +28,27 @@ import {
   ReportIssueModal,
   type DeliveryIssueReason,
 } from '../features/rider/components/ReportIssueModal';
-import { useRiderActions, useRiderBoard } from '../features/rider/hooks/useRider';
+import {
+  useOwnRiderApplication,
+  useRiderActions,
+  useRiderBoard,
+} from '../features/rider/hooks/useRider';
 import { useRiderLive } from '../features/rider/hooks/useLive';
 import { isNotARiderError } from '../features/rider/api/board';
 import type { RiderAvailability, RiderDrop } from '../features/rider/api/board';
+import { RIDER_VEHICLE_TYPES } from '../features/rider/api/onboarding';
+import { FormField } from '../components/ui/form-field';
+import { Input } from '../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
+import { friendlyError } from '../lib/friendly-error';
 import { useCurrency } from '../store/currency-store';
 import { cn } from '../lib/utils';
 
@@ -387,45 +404,204 @@ const BoardError: React.FC<{ message: string; retrying: boolean; onRetry: () => 
 );
 
 /**
- * The honest dead end (Batch 59): the account signed in, but dispatch has no
- * rider profile for it, so there is no route to show and no retry can change
- * that. Profiles are created by the Vendora team — saying so plainly beats a
- * "could not be read" error that invites endless retries.
+ * The honest dead end (Batch 59) became a front door (Batch 77): the account
+ * signed in, but dispatch has no approved rider profile for it, so there is
+ * no route to show. The panel reads the caller's own rider row to decide what
+ * to offer — an applicant whose application is 'pending' sees it under
+ * review with the details they sent; everyone else gets the application
+ * form. Either way, what is on screen is the row the database holds.
  */
 const BoardNotRegistered: React.FC<{ checking: boolean; onRecheck: () => void }> = ({
   checking,
   onRecheck,
-}) => (
-  <section
-    data-testid="board-not-registered"
-    className="space-y-4 rounded-3xl border-2 border-slate-300 bg-slate-50 p-5 shadow-sm"
-  >
-    <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-700 text-white">
-        <Truck className="h-5 w-5" />
-      </span>
-      <div>
-        <p className="text-sm font-black text-slate-900">Your rider profile isn&rsquo;t set up yet</p>
-        <p className="mt-1 text-xs font-medium text-slate-600">
-          You are signed in, but dispatch has no rider profile for this account, so there is no
-          route to show. Rider profiles are created by the Vendora team when a rider is brought
-          on — if you believe this account should have one, contact support from your account
-          page and ask them to check the rider setup for your sign-in email.
-        </p>
-      </div>
-    </div>
-    <button
-      type="button"
-      data-testid="btn-recheck-board"
-      disabled={checking}
-      onClick={onRecheck}
-      className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+}) => {
+  const application = useOwnRiderApplication();
+  const actions = useRiderActions();
+  const { toast, showToast, hideToast } = useToast(3600);
+  const [vehicleType, setVehicleType] = useState<string>(RIDER_VEHICLE_TYPES[0]);
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
+  const [plate, setPlate] = useState('');
+
+  const own = application.data ?? null;
+  const isPending = own?.status === 'pending';
+
+  const applyError =
+    actions.apply.isError && actions.apply.error instanceof Error
+      ? friendlyError(actions.apply.error, { staff: true }).message
+      : null;
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    actions.apply.mutate(
+      { vehicleType, phone: phone.trim(), city: city.trim(), vehiclePlate: plate.trim() },
+      { onSuccess: () => showToast('Application sent — the Vendora team will review it.') },
+    );
+  };
+
+  const recheck = () => {
+    void application.refetch();
+    onRecheck();
+  };
+
+  const facts: { label: string; value: string }[] = own
+    ? [
+        { label: 'Vehicle', value: own.vehicleType },
+        { label: 'Phone', value: own.phone },
+        { label: 'City', value: own.city },
+        { label: 'Plate', value: own.vehiclePlate },
+      ].filter((fact) => fact.value.trim() !== '')
+    : [];
+
+  return (
+    <section
+      data-testid="board-not-registered"
+      className="space-y-4 rounded-3xl border-2 border-slate-300 bg-slate-50 p-5 shadow-sm"
     >
-      {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-      <span>Check again</span>
-    </button>
-  </section>
-);
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-700 text-white">
+          {isPending ? <Clock className="h-5 w-5" /> : <Truck className="h-5 w-5" />}
+        </span>
+        <div>
+          <p className="text-sm font-black text-slate-900">
+            {isPending
+              ? 'Your rider application is under review'
+              : 'Your rider profile isn’t set up yet'}
+          </p>
+          <p className="mt-1 text-xs font-medium text-slate-600">
+            {isPending ? (
+              <>
+                You have applied to ride for Vendora. The team reviews every application by
+                hand — when yours is approved, your board opens here with your parcels. If
+                anything on the application needs correcting, contact support from your
+                account page.
+              </>
+            ) : (
+              <>
+                You are signed in, but dispatch has no rider profile for this account, so
+                there is no route to show. Apply to ride for Vendora below — the team
+                reviews every application, and your board opens here once it is approved.
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {application.isPending ? (
+        <p className="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin text-sun-orange" />
+          Reading your application state…
+        </p>
+      ) : isPending ? (
+        <dl
+          data-testid="rider-application-summary"
+          className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-4"
+        >
+          {facts.map((fact) => (
+            <div key={fact.label}>
+              <dt className="text-xs font-extrabold text-slate-500">{fact.label}</dt>
+              <dd className="mt-0.5 text-sm font-bold text-slate-900">{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <form
+          onSubmit={submit}
+          data-testid="rider-apply-form"
+          className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2"
+        >
+          <FormField label="Vehicle type" htmlFor="rider-apply-vehicle">
+            <Select value={vehicleType} onValueChange={setVehicleType}>
+              <SelectTrigger id="rider-apply-vehicle" data-testid="rider-apply-vehicle">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RIDER_VEHICLE_TYPES.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Phone" htmlFor="rider-apply-phone">
+            <Input
+              id="rider-apply-phone"
+              data-testid="rider-apply-phone"
+              type="tel"
+              required
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="Phone dispatch can reach you on"
+            />
+          </FormField>
+          <FormField label="City" htmlFor="rider-apply-city">
+            <Input
+              id="rider-apply-city"
+              data-testid="rider-apply-city"
+              type="text"
+              required
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              placeholder="City you will deliver in"
+            />
+          </FormField>
+          <FormField label="Vehicle plate" htmlFor="rider-apply-plate">
+            <Input
+              id="rider-apply-plate"
+              data-testid="rider-apply-plate"
+              type="text"
+              required
+              value={plate}
+              onChange={(event) => setPlate(event.target.value)}
+              placeholder="e.g. LEA-1234"
+            />
+          </FormField>
+
+          {applyError && (
+            <div
+              role="alert"
+              data-testid="rider-apply-error"
+              className="flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 sm:col-span-2"
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+              <span>{applyError}</span>
+            </div>
+          )}
+
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              data-testid="btn-apply-rider"
+              disabled={actions.apply.isPending}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-sun-orange px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-sun-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {actions.apply.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Truck className="h-4 w-4" />
+              )}
+              <span>Apply to ride for Vendora</span>
+            </button>
+          </div>
+        </form>
+      )}
+
+      <button
+        type="button"
+        data-testid="btn-recheck-board"
+        disabled={checking}
+        onClick={recheck}
+        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+        <span>Check again</span>
+      </button>
+
+      <Toast toast={toast} onDismiss={hideToast} />
+    </section>
+  );
+};
 
 export const RiderDashboardPage: React.FC = () => {
   // `/rider/deliveries/:id` is served by this same component, so the route param decides

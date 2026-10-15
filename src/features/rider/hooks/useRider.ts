@@ -10,11 +10,14 @@ import {
 import { fetchRiderHistory, fetchRiderLedger, updateRiderContact } from '../api/history';
 import { fetchRiderCodSummary, markCodCollected } from '../api/cod';
 import { uploadDeliveryProof } from '../api/location';
+import { applyAsRider, fetchOwnRiderApplication } from '../api/onboarding';
 
 /** The board belongs to the signed-in rider, so it is keyed by them. */
 export const riderKeys = {
   all: ['rider'] as const,
   board: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'board'] as const,
+  application: (userId: string | null | undefined) =>
+    ['rider', userId ?? 'anon', 'application'] as const,
   history: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'history'] as const,
   ledger: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'ledger'] as const,
   cod: (userId: string | null | undefined) => ['rider', userId ?? 'anon', 'cod'] as const,
@@ -29,6 +32,20 @@ export function useRiderBoard() {
   return useQuery({
     queryKey: riderKeys.board(userId),
     queryFn: ({ signal }) => fetchRiderBoard(signal),
+    enabled: Boolean(userId),
+  });
+}
+
+/**
+ * The caller's own rider row in whatever state it is in (Batch 77). The board
+ * refuses an applicant, so this read is how the dashboard knows whether to
+ * offer the application form or show the application under review.
+ */
+export function useOwnRiderApplication() {
+  const userId = useRiderScope();
+  return useQuery({
+    queryKey: riderKeys.application(userId),
+    queryFn: () => fetchOwnRiderApplication(),
     enabled: Boolean(userId),
   });
 }
@@ -87,6 +104,19 @@ export function useRiderActions() {
     availability: useMutation({
       mutationFn: setAvailability,
       onSuccess: refresh,
+    }),
+    /**
+     * Files the caller's rider application (Batch 77). The application read
+     * re-runs so the panel flips to its under-review state from the row the
+     * database now holds, and the board re-reads too — it still refuses a
+     * pending applicant, but after an approval the same button finds a route.
+     */
+    apply: useMutation({
+      mutationFn: applyAsRider,
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: riderKeys.application(userId) });
+        refresh();
+      },
     }),
     profile: useMutation({
       mutationFn: updateRiderContact,

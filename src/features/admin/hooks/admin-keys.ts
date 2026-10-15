@@ -43,6 +43,8 @@ export const adminKeys = {
     ['admin', userId ?? 'anon', 'reports', params] as const,
   logistics: (userId: string | null | undefined) =>
     ['admin', userId ?? 'anon', 'logistics'] as const,
+  riderApplications: (userId: string | null | undefined) =>
+    ['admin', userId ?? 'anon', 'rider-applications'] as const,
   codSettlements: (userId: string | null | undefined) =>
     ['admin', userId ?? 'anon', 'cod-settlements'] as const,
   settings: (userId: string | null | undefined) =>

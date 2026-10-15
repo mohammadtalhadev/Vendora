@@ -14,7 +14,7 @@ import { createBrand, deleteBrand, renameBrand, updateBrand } from '../api/brand
 import { setGlobalCommission } from '../api/commission';
 import { savePlatformSettings, type PlatformSettingsPatch } from '../api/settings';
 import { setMediaStatus, type MediaStatus } from '../api/media';
-import { confirmCodHandover, inviteRider, type RiderInviteInput } from '../api/logistics';
+import { confirmCodHandover, inviteRider, setRiderApproval, type RiderInviteInput } from '../api/logistics';
 import { adminKeys, useAdminScope } from './admin-keys';
 
 /**
@@ -63,6 +63,20 @@ export function useAdminActions() {
     inviteRider: useMutation({
       mutationFn: (input: RiderInviteInput) => inviteRider(input),
       onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: adminKeys.logistics(userId) });
+        refresh();
+      },
+    }),
+    /**
+     * The desk's decision on a rider application (Batch 77): the applications
+     * list and the fleet board both re-read — an approval moves the applicant
+     * onto the roster, a rejection takes the application off the desk.
+     */
+    setRiderApproval: useMutation({
+      mutationFn: ({ userId: applicantId, approve }: { userId: string; approve: boolean }) =>
+        setRiderApproval(applicantId, approve),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: adminKeys.riderApplications(userId) });
         void queryClient.invalidateQueries({ queryKey: adminKeys.logistics(userId) });
         refresh();
       },

@@ -289,3 +289,86 @@ export async function inviteRider(input: RiderInviteInput): Promise<RiderInviteR
     staff: true,
   });
 }
+/**
+ * Rider applications awaiting the desk's decision (Batch 77). A rider row
+ * filed by `apply_as_rider` sits at status 'pending' until an admin approves
+ * or refuses it here. The read is a direct table read — the staff policy on
+ * `rider_profiles` already covers it — with the applicant's account name and
+ * email joined from `profiles` client-side, the way the COD section joins
+ * its names. A database that has not run the onboarding migration cannot
+ * hold a 'pending' row (the enum refuses the filter), so this read errors
+ * there and the Fleet page simply shows no section yet.
+ */
+export interface RiderApplicationRow {
+  /** The rider_profiles row id. */
+  profileId: string;
+  /** The applicant's account id — the key the approval RPC decides on. */
+  userId: string;
+  name: string;
+  email: string;
+  phone: string;
+  vehicleType: string;
+  city: string;
+  vehiclePlate: string;
+  appliedAt: string;
+}
+
+export async function fetchPendingRiderApplications(
+  signal?: AbortSignal,
+): Promise<RiderApplicationRow[]> {
+  let query = supabase
+    .from('rider_profiles')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query;
+  if (error) throw rpcFailed('Failed to load rider applications', error.message);
+  const rows = asRows(data);
+  if (rows.length === 0) return [];
+
+  const userIds = [...new Set(rows.map((row) => text(row.user_id)).filter(Boolean))];
+  const profileById = new Map<string, Record<string, unknown>>();
+  if (userIds.length > 0) {
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .in('id', userIds);
+    if (profileError) throw rpcFailed('Failed to load rider applications', profileError.message);
+    for (const profile of asRows(profileData)) profileById.set(text(profile.id), profile);
+  }
+
+  return rows.map((row) => {
+    const profile = profileById.get(text(row.user_id));
+    return {
+      profileId: text(row.id),
+      userId: text(row.user_id),
+      name: text(row.full_name) || (profile ? text(profile.name) : ''),
+      email: profile ? text(profile.email) : '',
+      phone: text(row.phone),
+      vehicleType: text(row.vehicle_type),
+      city: text(row.city),
+      vehiclePlate: text(row.vehicle_plate),
+      appliedAt: text(row.created_at),
+    };
+  });
+}
+
+/**
+ * The desk's decision on one application. Approval promotes the rider to
+ * 'available'; rejection removes the application row. Both are the RPC's
+ * audit-writing job — this wrapper only fails honestly, including before the
+ * onboarding migration exists in the database at all.
+ */
+export async function setRiderApproval(userId: string, approve: boolean): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_rider_approval', {
+    p_user_id: userId,
+    p_approve: approve,
+  });
+  if (error) {
+    if (error.code === 'PGRST202' || /could not find the function/i.test(error.message)) {
+      throw new Error('Rider approvals are not switched on in this database yet.');
+    }
+    throw rpcFailed('Could not record that decision', error.message);
+  }
+}

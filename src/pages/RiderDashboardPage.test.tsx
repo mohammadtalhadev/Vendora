@@ -72,6 +72,19 @@ const render = () => renderWorkspace(<RiderDashboardPage />, ['/rider']);
 
 const lastCall = (fn: string) => [...supabaseDouble.rpcCalls].reverse().find((entry) => entry.fn === fn);
 
+// jsdom does not implement pointer capture or scrollIntoView, both of which
+// Radix Select calls while opening. Stub them so the interaction can run
+// (the AdminNotificationsPage pattern).
+window.HTMLElement.prototype.hasPointerCapture = () => false;
+window.HTMLElement.prototype.setPointerCapture = () => undefined;
+window.HTMLElement.prototype.releasePointerCapture = () => undefined;
+window.Element.prototype.scrollIntoView = () => undefined;
+
+const chooseVehicle = (optionName: string) => {
+  fireEvent.pointerDown(screen.getByLabelText('Vehicle type'), { button: 0, pointerType: 'mouse' });
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+};
+
 describe('RiderDashboardPage', () => {
   it('shows the parcels this rider was assigned, with the address on the row', async () => {
     seedDrop();
@@ -240,5 +253,48 @@ describe('RiderDashboardPage', () => {
     fireEvent.click(screen.getByTestId('btn-collect'));
 
     await waitFor(() => expect(screen.getByTestId('move-error')).toHaveTextContent(/not authorized/i));
+  });
+
+  it('lets an account with no rider profile apply, then shows the application under review', async () => {
+    supabaseDouble.authState.session = { access_token: 't', user: { id: 'shopper', email: 's@demo.test' } };
+    supabaseDouble.seedProfile(profileRow({ id: 'shopper', roles: ['customer'] }));
+
+    render();
+
+    await waitFor(() => expect(screen.getByTestId('rider-apply-form')).toBeInTheDocument());
+    chooseVehicle('Car');
+    fireEvent.change(screen.getByTestId('rider-apply-phone'), { target: { value: '0300-111' } });
+    fireEvent.change(screen.getByTestId('rider-apply-city'), { target: { value: 'Lahore' } });
+    fireEvent.change(screen.getByTestId('rider-apply-plate'), { target: { value: 'LEA-100' } });
+    fireEvent.submit(screen.getByTestId('rider-apply-form'));
+
+    await waitFor(() => expect(lastCall('apply_as_rider')).toBeTruthy());
+    expect(lastCall('apply_as_rider')?.args).toMatchObject({
+      p_vehicle_type: 'Car',
+      p_phone: '0300-111',
+      p_city: 'Lahore',
+      p_vehicle_plate: 'LEA-100',
+    });
+
+    // The filed row is pending, so the panel turns into the review state
+    // from the row the database now holds — the form is gone.
+    await waitFor(() => expect(screen.getByText(/application is under review/i)).toBeInTheDocument());
+    expect(screen.queryByTestId('rider-apply-form')).not.toBeInTheDocument();
+    expect(screen.getByTestId('rider-application-summary')).toHaveTextContent('LEA-100');
+  });
+
+  it('shows a pending applicant their application under review, not the form or a route', async () => {
+    supabaseDouble.tables.rider_profiles[0] = riderRow({
+      id: PROFILE, user_id: RIDER.id, full_name: 'Nadia Rider', status: 'pending',
+      city: 'Lahore', vehicle_plate: 'LEA-100',
+    });
+
+    render();
+
+    await waitFor(() => expect(screen.getByTestId('board-not-registered')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/application is under review/i)).toBeInTheDocument());
+    expect(screen.queryByTestId('rider-apply-form')).not.toBeInTheDocument();
+    expect(screen.getByTestId('rider-application-summary')).toHaveTextContent('Lahore');
+    expect(screen.queryAllByTestId('drop-card')).toHaveLength(0);
   });
 });

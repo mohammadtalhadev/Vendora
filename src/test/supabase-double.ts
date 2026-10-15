@@ -2115,6 +2115,11 @@ export function createSupabaseDouble() {
     if (fn === 'rider_delivery_board') {
       const rider = tables.rider_profiles.find((row) => row.user_id === sessionUserId());
       if (!rider) return { data: null, error: { message: 'Not a rider' } };
+      // Batch 77: a 'pending' row is an application, not a courier — the
+      // board refuses it with the same refusal as no row at all.
+      if (rider.status === 'pending') {
+        return { data: null, error: { message: 'Not a rider', code: '42501' } };
+      }
       const own = tables.deliveries.filter((row) => row.rider_id === rider.id);
       const open = own.filter((row) => row.status !== 'delivered');
       const dayStart = new Date();
@@ -2160,6 +2165,89 @@ export function createSupabaseDouble() {
         },
         error: null,
       };
+    }
+
+    /**
+     * `apply_as_rider()` (Batch 77): files the caller's own application as
+     * 'pending' and grants the rider role; while pending it corrects the
+     * details, once the rider is active it changes nothing.
+     */
+    if (fn === 'apply_as_rider') {
+      const uid = sessionUserId();
+      if (!uid) return { data: null, error: { message: 'Not authenticated', code: '28000' } };
+      const blank = (value: unknown) => String(value ?? '').trim() === '';
+      if (blank(args.p_vehicle_type)) {
+        return { data: null, error: { message: 'Tell us what you ride or drive — pick a vehicle type.', code: 'P0001' } };
+      }
+      if (blank(args.p_phone)) {
+        return { data: null, error: { message: 'Enter a phone number dispatch can reach you on.', code: 'P0001' } };
+      }
+      if (blank(args.p_city)) {
+        return { data: null, error: { message: 'Enter the city you will deliver in.', code: 'P0001' } };
+      }
+      if (blank(args.p_vehicle_plate)) {
+        return { data: null, error: { message: 'Enter your vehicle plate number.', code: 'P0001' } };
+      }
+      const profile = tables.profiles.find((row) => row.id === uid);
+      if (profile && Array.isArray(profile.roles) && !profile.roles.includes('rider')) {
+        profile.roles = [...profile.roles, 'rider'];
+      }
+      let row = tables.rider_profiles.find((entry) => entry.user_id === uid);
+      if (row && row.status !== 'pending') return { data: row, error: null };
+      if (row) {
+        row.vehicle_type = String(args.p_vehicle_type).trim();
+        row.phone = String(args.p_phone).trim();
+        row.city = String(args.p_city).trim();
+        row.vehicle_plate = String(args.p_vehicle_plate).trim();
+      } else {
+        row = {
+          id: `rider-application-${uid}`,
+          user_id: uid,
+          full_name: profile?.name ?? '',
+          phone: String(args.p_phone).trim(),
+          vehicle_type: String(args.p_vehicle_type).trim(),
+          city: String(args.p_city).trim(),
+          vehicle_plate: String(args.p_vehicle_plate).trim(),
+          status: 'pending',
+          sla_ceiling_hours: 4,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        tables.rider_profiles.push(row);
+      }
+      return { data: row, error: null };
+    }
+
+    /**
+     * `admin_set_rider_approval()` (Batch 77): the desk's decision on a
+     * pending application — approve promotes to 'available', reject removes
+     * the row so the applicant can apply again. Admin-guarded, audited.
+     */
+    if (fn === 'admin_set_rider_approval') {
+      if (!sessionHasRole('admin')) {
+        return {
+          data: null,
+          error: { message: 'Only the platform team can review rider applications', code: '42501' },
+        };
+      }
+      const at = tables.rider_profiles.findIndex((row) => row.user_id === args.p_user_id);
+      if (at < 0) {
+        return { data: null, error: { message: 'No rider profile exists for that account.', code: 'P0001' } };
+      }
+      const row = tables.rider_profiles[at];
+      if (row.status !== 'pending') {
+        return { data: null, error: { message: 'That application has already been decided.', code: 'P0001' } };
+      }
+      if (args.p_approve) {
+        row.status = 'available';
+        audit('rider_application.approved', 'rider_profile', String(row.id),
+          { status: 'pending' }, { status: 'available', user_id: args.p_user_id });
+        return { data: { userId: args.p_user_id, status: 'available' }, error: null };
+      }
+      tables.rider_profiles.splice(at, 1);
+      audit('rider_application.rejected', 'rider_profile', String(row.id),
+        { status: 'pending', user_id: args.p_user_id }, null);
+      return { data: { userId: args.p_user_id, status: 'rejected' }, error: null };
     }
 
     /** `verify_delivery()`: the handover code is the only way a parcel reaches `delivered`. */

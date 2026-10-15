@@ -5,8 +5,17 @@ vi.mock('../../../lib/supabase', async () => {
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
 });
 
-import { fetchLogisticsBoard } from './logistics';
-import { adminLogisticsJson, supabaseDouble } from '../../../test/supabase-double';
+import {
+  fetchLogisticsBoard,
+  fetchPendingRiderApplications,
+  setRiderApproval,
+} from './logistics';
+import {
+  adminLogisticsJson,
+  profileRow,
+  riderRow,
+  supabaseDouble,
+} from '../../../test/supabase-double';
 
 beforeEach(() => {
   supabaseDouble.reset();
@@ -109,5 +118,74 @@ describe('fetchLogisticsBoard', () => {
     supabaseDouble.failRpc('permission denied for function admin_logistics_board');
 
     await expect(fetchLogisticsBoard()).rejects.toThrow(/failed to load the dispatch board/i);
+  });
+});
+
+describe('rider applications (Batch 77)', () => {
+  const APPLICANT = 'applicant-1';
+  const PROFILE = '00000000-0000-4000-8000-000000001601';
+
+  const seedPending = () => {
+    supabaseDouble.seedProfile(
+      profileRow({ id: APPLICANT, email: 'new@demo.test', name: 'New Rider', roles: ['customer', 'rider'] }),
+    );
+    supabaseDouble.seedRider(
+      riderRow({
+        id: PROFILE,
+        user_id: APPLICANT,
+        full_name: 'New Rider',
+        status: 'pending',
+        city: 'Lahore',
+        vehicle_plate: 'LEA-100',
+      }),
+    );
+  };
+
+  it('lists only pending rows, with the account name and email joined in', async () => {
+    seedPending();
+    supabaseDouble.seedRider(
+      riderRow({ id: 'active-1', user_id: 'someone-else', full_name: 'Active Rider', status: 'available' }),
+    );
+
+    const rows = await fetchPendingRiderApplications();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      profileId: PROFILE,
+      userId: APPLICANT,
+      name: 'New Rider',
+      email: 'new@demo.test',
+      city: 'Lahore',
+      vehiclePlate: 'LEA-100',
+    });
+  });
+
+  it('returns an empty list when nobody is waiting', async () => {
+    await expect(fetchPendingRiderApplications()).resolves.toEqual([]);
+  });
+
+  it('approves through the RPC and the rider joins the fleet as available', async () => {
+    seedPending();
+    await setRiderApproval(APPLICANT, true);
+
+    const call = supabaseDouble.rpcCalls.find((entry) => entry.fn === 'admin_set_rider_approval');
+    expect(call?.args).toEqual({ p_user_id: APPLICANT, p_approve: true });
+    const row = supabaseDouble.tables.rider_profiles.find((entry) => entry.user_id === APPLICANT);
+    expect(row?.status).toBe('available');
+  });
+
+  it('rejects through the RPC and the application row is removed', async () => {
+    seedPending();
+    await setRiderApproval(APPLICANT, false);
+
+    expect(
+      supabaseDouble.tables.rider_profiles.find((entry) => entry.user_id === APPLICANT),
+    ).toBeUndefined();
+  });
+
+  it('fails soft with an honest sentence while the migration is not yet run', async () => {
+    supabaseDouble.failRpc(
+      'Could not find the function public.admin_set_rider_approval(p_user_id, p_approve) in the schema cache',
+    );
+    await expect(setRiderApproval(APPLICANT, true)).rejects.toThrow(/not switched on/);
   });
 });

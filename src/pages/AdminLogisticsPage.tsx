@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import { friendlyError } from '../lib/friendly-error';
-import { Truck, Bike, Phone, AlertTriangle, MailPlus } from 'lucide-react';
+import { Truck, Bike, Phone, AlertTriangle, MailPlus, Check, ClipboardList, X } from 'lucide-react';
 import { WorkspaceLayout } from '../features/workspaces/WorkspaceLayout';
 import { AdminNav } from '../features/admin/components/AdminNav';
 import { InviteRiderDialog } from '../features/admin/components/InviteRiderDialog';
 import { formatPrice } from '../store/currency-store';
-import { useLogisticsBoard } from '../features/admin/hooks/useAdminQueries';
+import {
+  useLogisticsBoard,
+  usePendingRiderApplications,
+} from '../features/admin/hooks/useAdminQueries';
+import { useAdminActions } from '../features/admin/hooks/useAdminActions';
 import { CodSettlementSection } from '../features/admin/components/CodSettlementSection';
-import type { LogisticsQueueRow } from '../features/admin/api/logistics';
+import type { LogisticsQueueRow, RiderApplicationRow } from '../features/admin/api/logistics';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { Toast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { StatusBadge } from '../components/ui/status-badge';
 
@@ -121,6 +128,9 @@ export const AdminLogisticsPage: React.FC = () => {
 
   const riderName = new Map(board.fleet.map((rider) => [rider.id, rider.name] as const));
   const { counts } = board;
+  // A 'pending' row is an application, not a courier (Batch 77): it is
+  // reviewed in the applications section below, not counted as fleet.
+  const roster = board.fleet.filter((rider) => rider.status !== 'pending');
 
   const queueColumns: DataTableColumn<LogisticsQueueRow>[] = [
     {
@@ -230,7 +240,7 @@ export const AdminLogisticsPage: React.FC = () => {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
             <span className="text-[11px] font-bold text-slate-400">Riders Available</span>
             <div className="text-xl font-black text-slate-900 mt-1">{counts.ridersAvailable}</div>
-            <span className="text-[11px] text-emerald-600 font-bold">of {board.fleet.length} registered riders</span>
+            <span className="text-[11px] text-emerald-600 font-bold">of {roster.length} registered riders</span>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
@@ -252,6 +262,9 @@ export const AdminLogisticsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Rider applications (Batch 77): self-serve applicants the desk decides on. */}
+        <RiderApplicationsSection />
+
         {/* Fleet roster — only the columns the board returns. */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -259,11 +272,11 @@ export const AdminLogisticsPage: React.FC = () => {
             Registered Delivery Couriers
           </h3>
 
-          {board.fleet.length === 0 ? (
+          {roster.length === 0 ? (
             <p className="text-xs text-slate-400 py-6 text-center">No riders are registered on the platform yet.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              {board.fleet.map((rider) => (
+              {roster.map((rider) => (
                 <div key={rider.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-slate-900 truncate">{rider.name}</span>
@@ -302,5 +315,133 @@ export const AdminLogisticsPage: React.FC = () => {
         <CodSettlementSection />
       </div>
     </WorkspaceLayout>
+  );
+};
+
+/**
+ * Rider applications (Batch 77): accounts that applied to ride from their own
+ * workspace, waiting on this desk. Approving promotes the rider to
+ * 'available' on the roster above; rejecting removes the application (the
+ * applicant can apply again). Before the onboarding migration reaches a
+ * database the read errors — the section then simply is not part of the
+ * page yet, rather than an error the desk cannot act on.
+ */
+const RiderApplicationsSection: React.FC = () => {
+  const applications = usePendingRiderApplications();
+  const actions = useAdminActions();
+  const { toast, showToast, hideToast } = useToast(3600);
+  const [rejecting, setRejecting] = useState<RiderApplicationRow | null>(null);
+
+  if (applications.isError || !applications.data) return null;
+  const rows = applications.data;
+  const busy = actions.setRiderApproval.isPending;
+
+  const decide = (row: RiderApplicationRow, approve: boolean) => {
+    actions.setRiderApproval.mutate(
+      { userId: row.userId, approve },
+      {
+        onSuccess: () =>
+          showToast(
+            approve
+              ? `${row.name || row.email || 'Rider'} approved — their board is open.`
+              : 'Application rejected and removed.',
+          ),
+        onError: (err) => showToast(friendlyError(err, { staff: true }).message, 'error'),
+      },
+    );
+  };
+
+  return (
+    <section
+      data-testid="rider-applications"
+      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4"
+    >
+      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <ClipboardList className="h-4 w-4 text-sun-orange" />
+        Rider Applications
+        {rows.length > 0 && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+            {rows.length} waiting
+          </span>
+        )}
+      </h3>
+
+      {rows.length === 0 ? (
+        <p className="text-xs text-slate-400 py-2">
+          No rider applications are waiting for review. Riders apply from their own workspace;
+          new applications appear here.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <div
+              key={row.profileId}
+              className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="text-xs space-y-0.5 min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate">
+                  {row.name || 'Unnamed applicant'}
+                </p>
+                <p className="text-slate-500 truncate">{row.email || 'No email on the account'}</p>
+                <p className="text-slate-500">
+                  Vehicle: <strong className="text-slate-800">{row.vehicleType || '—'}</strong>
+                  {' · '}Plate: <strong className="text-slate-800">{row.vehiclePlate || '—'}</strong>
+                  {' · '}City: <strong className="text-slate-800">{row.city || '—'}</strong>
+                </p>
+                <p className="flex items-center gap-1 text-slate-500">
+                  <Phone className="h-3 w-3 text-slate-400" />
+                  {row.phone || '—'}
+                  {row.appliedAt && (
+                    <span className="text-slate-400">· applied {formatDate(row.appliedAt)}</span>
+                  )}
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  data-testid="btn-approve-rider"
+                  disabled={busy}
+                  onClick={() => decide(row, true)}
+                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  data-testid="btn-reject-rider"
+                  disabled={busy}
+                  onClick={() => setRejecting(row)}
+                  className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 shadow-2xs transition-all hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={rejecting !== null}
+        onOpenChange={(open) => {
+          if (!open) setRejecting(null);
+        }}
+        title="Reject this rider application?"
+        description={
+          rejecting
+            ? `${rejecting.name || rejecting.email || 'This applicant'}'s application will be removed. They can apply again, and the decision is written to the audit log.`
+            : undefined
+        }
+        confirmLabel="Reject application"
+        isPending={busy}
+        onConfirm={() => {
+          if (rejecting) decide(rejecting, false);
+          setRejecting(null);
+        }}
+      />
+      <Toast toast={toast} onDismiss={hideToast} />
+    </section>
   );
 };

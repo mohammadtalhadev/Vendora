@@ -1897,10 +1897,12 @@ export type Database = {
         "full_name": string,
         "phone": string | null,
         "vehicle_type": string | null,
-        "status": "available" | "busy" | "offline",
+        "status": "available" | "busy" | "offline" | "pending",
         "created_at": string,
         "updated_at": string,
-        "sla_ceiling_hours": number
+        "sla_ceiling_hours": number,
+        "city": string,
+        "vehicle_plate": string
       }
       Insert: {
         "id"?: string,
@@ -1908,10 +1910,12 @@ export type Database = {
         "full_name"?: string,
         "phone"?: string | null,
         "vehicle_type"?: string | null,
-        "status"?: "available" | "busy" | "offline",
+        "status"?: "available" | "busy" | "offline" | "pending",
         "created_at"?: string,
         "updated_at"?: string,
-        "sla_ceiling_hours"?: number
+        "sla_ceiling_hours"?: number,
+        "city"?: string,
+        "vehicle_plate"?: string
       }
       Update: {
         "id"?: string,
@@ -1919,10 +1923,12 @@ export type Database = {
         "full_name"?: string,
         "phone"?: string | null,
         "vehicle_type"?: string | null,
-        "status"?: "available" | "busy" | "offline",
+        "status"?: "available" | "busy" | "offline" | "pending",
         "created_at"?: string,
         "updated_at"?: string,
-        "sla_ceiling_hours"?: number
+        "sla_ceiling_hours"?: number,
+        "city"?: string,
+        "vehicle_plate"?: string
       }
       Relationships: [
         {
@@ -2887,6 +2893,13 @@ export type Database = {
       }
       Returns: Json
     },
+    "admin_set_rider_approval": {
+      Args: {
+        "p_user_id": string,
+        "p_approve": boolean
+      }
+      Returns: Json
+    },
     "admin_set_user_roles": {
       Args: {
         "p_user_id": string,
@@ -3037,6 +3050,15 @@ export type Database = {
         "p_amount": number
       }
       Returns: number
+    },
+    "apply_as_rider": {
+      Args: {
+        "p_vehicle_type": string,
+        "p_phone": string,
+        "p_city": string,
+        "p_vehicle_plate": string
+      }
+      Returns: Json
     },
     "apply_gift_card_to_order": {
       Args: {
@@ -3600,7 +3622,7 @@ export type Database = {
       "payment_status": "pending" | "succeeded" | "failed" | "refunded" | "voided",
       "payout_status": "processing" | "completed" | "failed",
       "product_type": "physical" | "digital",
-      "rider_availability": "available" | "busy" | "offline",
+      "rider_availability": "available" | "busy" | "offline" | "pending",
       "seller_type": "platform" | "vendor",
       "sub_order_status": "placed" | "confirmed" | "packed" | "ready_for_pickup" | "shipped" | "out_for_delivery" | "delivered" | "cancelled" | "delivery_failed" | "return_requested" | "return_approved" | "refunded" | "paid" | "available" | "return_rejected" | "returned",
       "thread_channel": "order_inquiry" | "return_rma" | "product_question" | "dispute",
