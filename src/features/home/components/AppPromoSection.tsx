@@ -28,6 +28,15 @@ import { Link } from 'react-router-dom';
  * units, so both track the panel at any width (font clamp cap raised to
  * 34px so the overlay text still matches the baked text at full width).
  *
+ * Batch 128 (owner's call): the owner supplied new artwork (2048x768,
+ * 8:3 — a wider, shorter strip than the 2:1 Batch 123 art) and ordered
+ * it converted to WebP and placed in this slot, replacing the previous
+ * artwork at the same path. The real "Start Shopping" overlay follows
+ * the new art: its baked button was re-measured off the artwork (left
+ * 4.88%, top 65.76%, width 18.65%, height 11.2% of the panel) and the
+ * destination is unchanged (/app-coming-soon); the rest of the image
+ * stays a plain, non-clickable <img>.
+ *
  * Batch 119 (owner's call): the owner supplied a finished banner image
  * (light site palette, copy baked in) and ordered it placed in this
  * section's slot INSTEAD of the rendered copy, converted to WebP, and
@@ -67,8 +76,8 @@ export const AppPromoSection: React.FC<AppPromoSectionProps> = () => {
         <img
           src="/banners/app-promo.webp"
           alt="Shop Faster. Track Live. All in Your Pocket. Vendora in your mobile browser \u2014 no app to install."
-          width={1774}
-          height={887}
+          width={2048}
+          height={768}
           loading="lazy"
           decoding="async"
           className="block h-auto w-full"
@@ -79,12 +88,12 @@ export const AppPromoSection: React.FC<AppPromoSectionProps> = () => {
           aria-label="Start Shopping — the Vendora app is coming soon"
           className="font-outfit absolute flex items-center justify-center whitespace-nowrap rounded-full font-bold text-white transition duration-300 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F1601E] active:scale-[0.98]"
           style={{
-            left: '4.96%',
-            top: '59.75%',
-            width: '19.62%',
-            height: '9.36%',
+            left: '4.88%',
+            top: '65.76%',
+            width: '18.65%',
+            height: '11.2%',
             background: 'linear-gradient(180deg, #FF8A2A 0%, #F1601E 100%)',
-            fontSize: 'clamp(9px, 2.05cqw, 34px)',
+            fontSize: 'clamp(9px, 1.95cqw, 32px)',
             letterSpacing: '0.01em',
           }}
         >
