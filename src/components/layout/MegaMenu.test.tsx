@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The menu has no static catalog of its own: it renders whichever categories and
-// products the database returns, so the double is the only fixture it needs.
+// The menu has no static catalog of its own: it renders whichever root
+// categories and subcategories the database returns, so the double is the
+// only fixture it needs.
 vi.mock('../../lib/supabase', async () => {
   const { supabaseDouble } = await import('../../test/supabase-double');
   return { supabase: supabaseDouble, isSupabaseConfigured: true, TEST_SUPABASE_URL: 'http://127.0.0.1:54321' };
@@ -10,19 +11,23 @@ vi.mock('../../lib/supabase', async () => {
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { MegaMenu } from './MegaMenu';
 import { renderWorkspace } from '../../test/vendor-render';
-import { categoryRow, productRow, storeRow, supabaseDouble } from '../../test/supabase-double';
-import { formatPrice } from '../../store/currency-store';
+import { categoryRow, storeRow, supabaseDouble } from '../../test/supabase-double';
 
-const AUDIO = '00000000-0000-4000-8000-00000000000a';
-const LAMPS = '00000000-0000-4000-8000-00000000000b';
+const ELECTRONICS = '00000000-0000-4000-8000-00000000000a';
+const FASHION = '00000000-0000-4000-8000-00000000000b';
+const PETS = '00000000-0000-4000-8000-00000000000c';
+const TVS = '00000000-0000-4000-8000-00000000001a';
+const SMART_HOME = '00000000-0000-4000-8000-00000000001b';
+const MENS = '00000000-0000-4000-8000-00000000001c';
 
 const seedCatalog = () => {
   supabaseDouble.seedVendorProfile(storeRow({ id: 'store-1', store_name: 'Nova Tech', slug: 'nova-tech' }));
-  supabaseDouble.seedCategory(categoryRow({ id: AUDIO, name: 'Audio', slug: 'audio' }));
-  supabaseDouble.seedCategory(categoryRow({ id: LAMPS, name: 'Lighting', slug: 'lighting' }));
-  supabaseDouble.seedProduct(
-    productRow({ id: '00000000-0000-4000-8000-000000000101', title: 'Reference Headphones', slug: 'reference-headphones', category_id: AUDIO, price: 199.99, status: 'approved' }),
-  );
+  supabaseDouble.seedCategory(categoryRow({ id: ELECTRONICS, name: 'Electronics', slug: 'electronics' }));
+  supabaseDouble.seedCategory(categoryRow({ id: FASHION, name: 'Fashion', slug: 'fashion' }));
+  supabaseDouble.seedCategory(categoryRow({ id: PETS, name: 'Pet Supplies', slug: 'pet-supplies' }));
+  supabaseDouble.seedCategory(categoryRow({ id: TVS, name: 'Televisions & Video', slug: 'televisions-video', parent_id: ELECTRONICS }));
+  supabaseDouble.seedCategory(categoryRow({ id: SMART_HOME, name: 'Smart Home', slug: 'smart-home', parent_id: ELECTRONICS }));
+  supabaseDouble.seedCategory(categoryRow({ id: MENS, name: "Men's Fashion", slug: 'mens-fashion', parent_id: FASHION }));
 };
 
 const renderMenu = (isOpen = true, onClose = vi.fn()) => ({
@@ -38,18 +43,21 @@ describe('MegaMenu', () => {
   it('renders nothing while closed', () => {
     seedCatalog();
     renderMenu(false);
-    expect(screen.queryByRole('region', { name: /products$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /subcategories$/i })).not.toBeInTheDocument();
   });
 
-  it('lists the categories the catalog actually has, and no others', async () => {
+  it('lists the root categories the catalog actually has, and no others', async () => {
     seedCatalog();
     renderMenu();
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /Audio/ })).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: /Lighting/ })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: /Electronics/ })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /Fashion/ })).toBeInTheDocument();
+    // Subcategories are pane links, never left-column entries of their own.
+    expect(screen.queryByRole('button', { name: /Televisions & Video/ })).not.toBeInTheDocument();
     // The pre-Supabase menu shipped eleven invented entries; a category that was never
     // seeded must not appear just because the design file named it.
     expect(screen.queryByRole('button', { name: /Grocery & Fruits/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Grocery & Fruits/ })).not.toBeInTheDocument();
   });
 
   it('says so when the catalog has no categories', async () => {
@@ -57,64 +65,81 @@ describe('MegaMenu', () => {
     await waitFor(() => expect(screen.getByText(/No categories are available yet/)).toBeInTheDocument());
   });
 
-  it('shows the active category’s approved products with their real prices', async () => {
+  it('shows the active root’s subcategories as plain links to their own slugs', async () => {
     seedCatalog();
-    supabaseDouble.seedProduct(
-      productRow({ id: '00000000-0000-4000-8000-000000000202', title: 'Desk Lamp', slug: 'desk-lamp', category_id: LAMPS, price: 42.5, status: 'approved' }),
-    );
-    supabaseDouble.seedProduct(
-      productRow({ id: '00000000-0000-4000-8000-000000000303', title: 'Unlisted Prototype', slug: 'unlisted-prototype', category_id: AUDIO, price: 999, status: 'pending_review' }),
-    );
-
     renderMenu();
 
-    const pane = await screen.findByRole('region', { name: /products$/i });
-    await waitFor(() => expect(pane).toHaveTextContent('Reference Headphones'));
-    expect(pane).toHaveTextContent(formatPrice(199.99));
-    // A listing still in moderation is not a product the storefront may advertise.
-    expect(pane).not.toHaveTextContent('Unlisted Prototype');
-    expect(pane).not.toHaveTextContent('Desk Lamp');
+    const pane = await screen.findByRole('region', { name: /subcategories$/i });
+    expect(pane).toHaveTextContent('Electronics');
+    const tvs = await screen.findByRole('link', { name: 'Televisions & Video' });
+    expect(tvs).toHaveAttribute('href', '/products?category=televisions-video');
+    expect(screen.getByRole('link', { name: 'Smart Home' })).toHaveAttribute(
+      'href',
+      '/products?category=smart-home',
+    );
+    // Another root's subcategories stay out of this pane.
+    expect(pane).not.toHaveTextContent("Men's Fashion");
+    // The pane is a navigation list, not a product shelf.
+    expect(pane).not.toHaveTextContent('Rs');
   });
 
   it('switches the pane to the clicked category instead of only following the mouse', async () => {
     seedCatalog();
     renderMenu();
 
-    const audio = await screen.findByRole('button', { name: /Audio/ });
-    expect(audio).toHaveAttribute('aria-expanded', 'true');
-    expect(audio).toHaveAttribute('aria-controls', 'mega-menu-pane');
+    const electronics = await screen.findByRole('button', { name: /Electronics/ });
+    expect(electronics).toHaveAttribute('aria-expanded', 'true');
+    expect(electronics).toHaveAttribute('aria-controls', 'mega-menu-pane');
 
-    const lighting = screen.getByRole('button', { name: /Lighting/ });
-    expect(lighting).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(lighting);
+    const fashion = screen.getByRole('button', { name: /Fashion/ });
+    expect(fashion).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(fashion);
 
     await waitFor(() =>
-      expect(screen.getByRole('region', { name: /products$/i })).toHaveTextContent(
-        'No approved products are listed in Lighting yet',
-      ),
+      expect(screen.getByRole('region', { name: /subcategories$/i })).toHaveTextContent("Men's Fashion"),
     );
-    expect(lighting).toHaveAttribute('aria-expanded', 'true');
-    expect(audio).toHaveAttribute('aria-expanded', 'false');
+    expect(fashion).toHaveAttribute('aria-expanded', 'true');
+    expect(electronics).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('opens a keyboard focus on a category, so the menu is reachable without hover', async () => {
     seedCatalog();
     renderMenu();
 
-    const lighting = await screen.findByRole('button', { name: /Lighting/ });
-    fireEvent.focus(lighting);
+    const fashion = await screen.findByRole('button', { name: /Fashion/ });
+    fireEvent.focus(fashion);
     await waitFor(() =>
-      expect(screen.getByRole('region', { name: /products$/i })).toHaveTextContent('Lighting'),
+      expect(screen.getByRole('region', { name: /subcategories$/i })).toHaveTextContent("Men's Fashion"),
     );
   });
 
-  it('links “View All” to the real category slug and closes the menu', async () => {
+  it('renders a root without subcategories as a direct link that closes the menu', async () => {
     seedCatalog();
     const { onClose } = renderMenu();
 
-    const viewAll = await screen.findByRole('link', { name: /View All/ });
-    expect(viewAll).toHaveAttribute('href', '/products?category=audio');
-    fireEvent.click(viewAll);
+    const pets = await screen.findByRole('link', { name: /Pet Supplies/ });
+    expect(pets).toHaveAttribute('href', '/products?category=pet-supplies');
+    expect(screen.queryByRole('button', { name: /Pet Supplies/ })).not.toBeInTheDocument();
+    fireEvent.click(pets);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('links “Explore All” to the active root slug and closes the menu', async () => {
+    seedCatalog();
+    const { onClose } = renderMenu();
+
+    const exploreAll = await screen.findByRole('link', { name: /Explore All Electronics/ });
+    expect(exploreAll).toHaveAttribute('href', '/products?category=electronics');
+    fireEvent.click(exploreAll);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('closes the menu when a subcategory link is clicked', async () => {
+    seedCatalog();
+    const { onClose } = renderMenu();
+
+    const tvs = await screen.findByRole('link', { name: 'Televisions & Video' });
+    fireEvent.click(tvs);
     expect(onClose).toHaveBeenCalled();
   });
 });

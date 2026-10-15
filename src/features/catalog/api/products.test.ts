@@ -116,12 +116,47 @@ describe('fetchProducts', () => {
     expect(result.items.map((item) => item.slug)).toEqual(['budget-earbuds', 'reference-headphones']);
   });
 
-  it('filters by category id without a second lookup', async () => {
-    supabaseDouble.from.mockClear();
+  it('filters by category id, including products filed under its subcategories', async () => {
+    const ULTRABOOKS = '00000000-0000-4000-8000-000000000009';
+    supabaseDouble.seedCategory(categoryRow({ id: ULTRABOOKS, name: 'Ultrabooks', slug: 'ultrabooks', parent_id: LAPTOPS }));
+    supabaseDouble.seedProduct(
+      productRow({
+        id: '00000000-0000-4000-8000-000000000106',
+        title: 'Feather Ultrabook 13',
+        slug: 'feather-ultrabook-13',
+        price: 999,
+        seller_id: VENDOR,
+        category_id: ULTRABOOKS,
+        created_at: '2026-10-11T00:00:00.000Z',
+      }),
+    );
+
     const result = await catalog.fetchProducts({ category: LAPTOPS });
 
-    expect(result.items.map((item) => item.slug)).toEqual(['studio-laptop-14']);
-    expect(supabaseDouble.from.mock.calls.flat()).toEqual(['products']);
+    expect(result.items.map((item) => item.slug)).toEqual(['feather-ultrabook-13', 'studio-laptop-14']);
+  });
+
+  it('filters by a parent category slug, including subcategory products', async () => {
+    const ULTRABOOKS = '00000000-0000-4000-8000-000000000009';
+    supabaseDouble.seedCategory(categoryRow({ id: ULTRABOOKS, name: 'Ultrabooks', slug: 'ultrabooks', parent_id: LAPTOPS }));
+    supabaseDouble.seedProduct(
+      productRow({
+        id: '00000000-0000-4000-8000-000000000106',
+        title: 'Feather Ultrabook 13',
+        slug: 'feather-ultrabook-13',
+        price: 999,
+        seller_id: VENDOR,
+        category_id: ULTRABOOKS,
+        created_at: '2026-10-11T00:00:00.000Z',
+      }),
+    );
+
+    const byParent = await catalog.fetchProducts({ category: 'laptops' });
+    expect(byParent.items.map((item) => item.slug)).toEqual(['feather-ultrabook-13', 'studio-laptop-14']);
+
+    // A subcategory slug still resolves to just its own shelf.
+    const byChild = await catalog.fetchProducts({ category: 'ultrabooks' });
+    expect(byChild.items.map((item) => item.slug)).toEqual(['feather-ultrabook-13']);
   });
 
   it('returns an empty page for an unknown category slug instead of the whole catalogue', async () => {
@@ -303,6 +338,15 @@ describe('fetchCategories', () => {
     expect(categories.find((category) => category.slug === 'cameras')).toMatchObject({ commissionRateOverride: 0.08 });
     expect(categories[0].commissionRateOverride).toBeUndefined();
     expect(categories[0].icon).toBeUndefined();
+  });
+
+  it('maps parent_id so callers can split roots from subcategories', async () => {
+    supabaseDouble.seedCategory(categoryRow({ id: '00000000-0000-4000-8000-000000000009', name: 'Ultrabooks', slug: 'ultrabooks', parent_id: LAPTOPS }));
+
+    const { categories } = await catalog.fetchCategories();
+
+    expect(categories.find((category) => category.slug === 'laptops')).toMatchObject({ parentId: null });
+    expect(categories.find((category) => category.slug === 'ultrabooks')).toMatchObject({ parentId: LAPTOPS });
   });
 
   it('surfaces a read failure', async () => {

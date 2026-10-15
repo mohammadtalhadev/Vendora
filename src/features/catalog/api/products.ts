@@ -58,10 +58,20 @@ const SORTS: Record<string, Array<{ column: string; ascending: boolean }>> = {
 
 /** Storefront filters take a category id or slug; an unknown slug must yield no products. */
 async function resolveCategoryIds(category: string): Promise<string[]> {
-  if (UUID.test(category)) return [category];
+  // A category view includes everything filed under its subcategories, so
+  // resolving a category always returns its own id plus its children's ids.
+  const withChildren = async (ids: string[]): Promise<string[]> => {
+    if (ids.length === 0) return ids;
+    const { data, error } = await supabase.from('categories').select('id').in('parent_id', ids);
+    if (error) throw new Error(`Could not resolve category "${category}": ${error.message}`);
+    const childIds = (data ?? []).map((row) => row.id);
+    return [...new Set([...ids, ...childIds])];
+  };
+
+  if (UUID.test(category)) return withChildren([category]);
   const { data, error } = await supabase.from('categories').select('id').eq('slug', category);
   if (error) throw new Error(`Could not resolve category "${category}": ${error.message}`);
-  return (data ?? []).map((row) => row.id);
+  return withChildren((data ?? []).map((row) => row.id));
 }
 
 async function resolveSellerIds(seller: 'platform' | 'vendor'): Promise<string[]> {
@@ -196,7 +206,7 @@ export async function fetchProductDetail(idOrSlug: string, signal?: AbortSignal)
 export async function fetchCategories(signal?: AbortSignal): Promise<{ categories: Category[] }> {
   let query = supabase
     .from('categories')
-    .select('id, name, slug, icon, image, commission_rate_override')
+    .select('id, name, slug, icon, image, commission_rate_override, parent_id')
     .order('name', { ascending: true });
 
   if (signal) query = query.abortSignal(signal);
@@ -210,6 +220,7 @@ export async function fetchCategories(signal?: AbortSignal): Promise<{ categorie
       slug: row.slug,
       icon: row.icon ?? undefined,
       image: row.image ?? undefined,
+      parentId: row.parent_id ?? null,
       commissionRateOverride:
         row.commission_rate_override === null ? undefined : Number(row.commission_rate_override),
     })),

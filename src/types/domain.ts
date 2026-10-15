@@ -84,6 +84,8 @@ export interface Category {
   icon?: string;
   image?: string;
   commissionRateOverride?: number;
+  /** The parent category's id for a subcategory; null/absent for a root. */
+  parentId?: string | null;
 }
 
 export interface VendorProfile {
