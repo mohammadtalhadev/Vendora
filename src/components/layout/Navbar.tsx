@@ -917,10 +917,22 @@ export const Navbar: React.FC = () => {
         <div
           data-testid="header-strip-collapse"
           className={`grid transition-all duration-300 ease-out ${
-            isStripCollapsed ? 'grid-rows-[0fr] pt-0 opacity-0' : 'grid-rows-[1fr] pt-2 opacity-100'
+            isStripCollapsed && !isAllCategoriesOpen
+              ? 'grid-rows-[0fr] pt-0 opacity-0'
+              : 'grid-rows-[1fr] pt-2 opacity-100'
           }`}
         >
-          <div className="min-h-0 overflow-hidden">
+          {/* Batch 116: this clip box exists only for the collapse
+              animation. While the MegaMenu is open it must NOT clip —
+              the menu hangs below the pill (absolute, top-full), and
+              with overflow-hidden it mounted but was cut off entirely
+              (owner: "menu nahi chal raha" — the trigger lit up, no pane
+              ever appeared). Opening the menu flips it to visible in the
+              same render the menu mounts in. */}
+          <div
+            data-testid="header-strip-clip"
+            className={`min-h-0 ${isAllCategoriesOpen ? 'overflow-visible' : 'overflow-hidden'}`}
+          >
             <div
               data-testid="header-strip-pill"
               className={`header-pill-nav header-pill-enter header-pill-enter-delayed flex w-full items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 ${

@@ -48,7 +48,7 @@ const seedCategories = (names: string[]) => {
   });
 };
 
-describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smart sticky)', () => {
+describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smart sticky, Batch 116 menu clip fix)', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     localStorage.clear();
@@ -214,6 +214,27 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smar
       expect(screen.getByTestId('header-strip-collapse').className).toContain('grid-rows-[1fr]'),
     );
     scrollTo(0);
+  });
+
+  it('never clips the MegaMenu: opening All Categories un-clips the strip wrapper (Batch 116)', async () => {
+    seedCategories(['Audio']);
+    renderNavbar();
+
+    // At rest the collapse animation's clip box is on.
+    expect(screen.getByTestId('header-strip-clip').className).toContain('overflow-hidden');
+
+    fireEvent.click(screen.getByRole('button', { name: /All Categories/ }));
+    await waitFor(() =>
+      expect(document.getElementById('all-categories-menu')).toBeInTheDocument(),
+    );
+
+    // The pane hangs below the pill, so while it is open the wrapper must
+    // be fully visible and expanded — Batch 111's overflow-hidden cut the
+    // mounted menu off completely, which read as "menu nahi chal raha".
+    const clip = screen.getByTestId('header-strip-clip');
+    expect(clip.className).toContain('overflow-visible');
+    expect(clip.className).not.toContain('overflow-hidden');
+    expect(screen.getByTestId('header-strip-collapse').className).toContain('grid-rows-[1fr]');
   });
 
   it('keeps the search pill recipe: tinted surface, visible border, orange focus state', () => {
