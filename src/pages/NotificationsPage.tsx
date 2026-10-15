@@ -64,7 +64,8 @@ interface KindDetails {
   label: string;
   badgeClass: string;
   iconBgClass: string;
-  actionLabel: string;
+  /** Optional: a kind with no actionLabel renders no action button. */
+  actionLabel?: string;
 }
 
 /** Every label of `public.notification_type`, which is what the column can actually hold. */
@@ -95,7 +96,9 @@ const KIND_DETAILS: Record<NotificationKind, KindDetails> = {
     label: 'Special Deal',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/60',
     iconBgClass: 'bg-amber-100 text-amber-700',
-    actionLabel: 'View Deal',
+    // No action button: the owner removed the deal CTA site-wide
+    // (Batch 121). Clicking the notification itself still follows
+    // notice.href, so nothing is lost.
   },
   review: {
     icon: Star,
@@ -596,7 +599,7 @@ export const NotificationsPage: React.FC = () => {
                     </button>
 
                     <div className="mt-3.5 flex flex-wrap items-center gap-2.5 pt-2 border-t border-slate-100/80">
-                      {notice.href && (
+                      {notice.href && actionLabel && (
                         <Link
                           to={notice.href}
                           onClick={() => {

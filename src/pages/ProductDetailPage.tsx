@@ -46,7 +46,8 @@ import { ProductDossierSection } from '../features/products/components/ProductDo
 import { useReveal } from '../hooks/useReveal';
 import { CustomerReviewsShowcase } from '../features/products/components/CustomerReviewsShowcase';
 import { useProductReviews } from '../features/reviews/hooks/useReviews';
-import { CustomersAlsoViewedGrid } from '../features/products/components/CustomersAlsoViewedGrid';
+import { ProductsYouMayLikeGrid } from '../features/products/components/ProductsYouMayLikeGrid';
+import type { ProductItem } from '../features/products/components/ProductCard';
 
 /**
  * The attribute map of one listed variant. Current rows carry `attributes`;
@@ -189,6 +190,51 @@ export const ProductDetailPage: React.FC = () => {
     setAddedAnimation(true);
     setTimeout(() => setAddedAnimation(false), 2000);
     if (openDrawer) openCartDrawer();
+  };
+
+  // Card handlers for the "Products You May Like" rail — the same wiring
+  // HomePage gives the shared ProductCard: cart lines carry the card item's
+  // own seller/price, wishlist toggles carry a full product shape.
+  const handleCardAddToCart = (item: ProductItem) => {
+    addItem({
+      id: item.id,
+      productId: item.id,
+      title: item.title,
+      price: item.price,
+      maxStock: item.maxStock,
+      image: item.image,
+      sellerId: item.sellerId,
+      sellerName: item.sellerName,
+      sellerType: item.sellerType,
+      type: item.type,
+    });
+    showToast(`Added ${item.title} to cart`);
+  };
+
+  const handleCardToggleWishlist = (item: ProductItem) => {
+    const wasWishlisted = isInWishlist(item.id);
+    toggleWishlist({
+      id: item.id,
+      title: item.title,
+      slug: item.id,
+      description: item.title,
+      price: item.price,
+      compareAtPrice: item.compareAtPrice,
+      images: [item.image],
+      category: item.category,
+      brand: 'Vendora',
+      sellerId: item.sellerId,
+      sellerName: item.sellerName,
+      sellerType: item.sellerType,
+      type: item.type,
+      stock: item.stock,
+      rating: item.rating,
+      reviewCount: item.reviewCount,
+      variants: [],
+      status: 'approved',
+      createdAt: new Date().toISOString(),
+    });
+    showToast(wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
   };
 
   /**
@@ -932,9 +978,15 @@ export const ProductDetailPage: React.FC = () => {
             />
 
             {/* ========================================================= */}
-            {/* CUSTOMERS ALSO VIEWED                                     */}
+            {/* PRODUCTS YOU MAY LIKE                                     */}
             {/* ========================================================= */}
-            <CustomersAlsoViewedGrid excludeId={product.id} />
+            <ProductsYouMayLikeGrid
+              excludeId={product.id}
+              category={product.category}
+              onAddToCart={handleCardAddToCart}
+              onToggleWishlist={handleCardToggleWishlist}
+              isInWishlist={isInWishlist}
+            />
 
             {/* Spacer so the mobile sticky bar never covers page content */}
             <div className="h-24 lg:hidden" aria-hidden="true" />

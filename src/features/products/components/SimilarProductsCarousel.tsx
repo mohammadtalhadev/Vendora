@@ -59,7 +59,7 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-sun-orange">
             <ArrowUpRight className="h-4 w-4" />
           </div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
@@ -134,7 +134,7 @@ export const SimilarProductsCarousel: React.FC<SimilarProductsCarouselProps> = (
                     </div>
 
                     <Link to={`/products/${item.id}`} className="mt-1 block">
-                      <h3 className="font-outfit line-clamp-2 text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                      <h3 className="font-outfit line-clamp-2 text-xs font-bold text-slate-800 group-hover:text-sun-orange transition-colors">
                         {item.title}
                       </h3>
                     </Link>
