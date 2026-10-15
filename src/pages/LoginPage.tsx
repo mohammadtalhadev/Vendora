@@ -13,7 +13,6 @@ import {
   Store,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import { safeRedirect } from '../lib/safe-redirect';
 import { requestPasswordReset } from '../features/auth/api/session';
 import {
   landingPath,
