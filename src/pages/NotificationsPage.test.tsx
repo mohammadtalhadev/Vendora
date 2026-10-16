@@ -105,6 +105,15 @@ describe('NotificationsPage', () => {
     expect(kept({ user_id: COLLEAGUE, type: 'order_status', read_at: null })).toBe(false);
   });
 
+  it('renders the notice action as a light button with a readable label, never a dark pill', async () => {
+    notice('mine-1');
+    renderPage();
+    const action = await screen.findByRole('link', { name: /View Order/ });
+    expect(action.className).toContain('bg-white');
+    expect(action.className).not.toContain('bg-slate-900');
+    expect(action.className).not.toContain('text-white');
+  });
+
   it('asks the database for a kind instead of slicing the page it already has', async () => {
     notice('order-1');
     notice('dispute-1', {
