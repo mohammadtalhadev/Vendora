@@ -133,6 +133,11 @@ describe('ProductQuickAddPill', () => {
     expect(pill.className).toContain('rounded-full');
   });
 
+  it('renders through a portal on document.body so fixed positioning is the viewport’s', () => {
+    render(<ProductQuickAddPill {...baseProps} />);
+    expect(screen.getByTestId('pdp-quick-add-pill').parentElement).toBe(document.body);
+  });
+
   it('hidden state stays mounted but inert (slide/fade)', () => {
     render(<ProductQuickAddPill {...baseProps} visible={false} />);
     const pill = screen.getByTestId('pdp-quick-add-pill');

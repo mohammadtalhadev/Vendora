@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ClipboardList,
   FileText,
@@ -121,52 +122,61 @@ export const ProductSectionNav: React.FC = () => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const navElement = (
+    <nav
+      ref={navRef}
+      data-testid="pdp-section-nav"
+      data-stuck={stuck ? 'true' : 'false'}
+      aria-label="Product sections"
+      className={`flex items-center gap-2 rounded-full border border-slate-900/5 bg-white p-2 shadow-[0_10px_36px_rgba(15,23,42,0.10)] transition-all duration-300 ease-in-out dark:border-white/10 dark:bg-slate-900 ${
+        stuck && hidden
+          ? '-translate-y-[160%] opacity-0 pointer-events-none'
+          : 'translate-y-0 opacity-100 pointer-events-auto'
+      }`}
+    >
+      {PDP_SECTION_LINKS.map((link) => {
+        const Icon = link.icon;
+        const isActive = activeId === link.id;
+        return (
+          <button
+            key={link.id}
+            type="button"
+            onClick={() => handleClick(link.id)}
+            aria-current={isActive ? 'true' : undefined}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:px-5 sm:text-sm transition-all duration-300 active:scale-95 cursor-pointer ${
+              isActive
+                ? 'bg-sun-orange font-bold text-white shadow-md shadow-orange-500/25 hover:bg-sun-orange hover:text-white'
+                : 'bg-[#f0f0f0] font-medium text-[#464646]/75 hover:bg-[#e4e4e4] hover:text-[#464646] dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15 dark:hover:text-white'
+            }`}
+          >
+            <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+            <span>{link.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <div
       ref={anchorRef}
       className="relative z-30 mt-8 flex justify-center"
       style={stuck && navHeight ? { height: navHeight } : undefined}
     >
-      <div
-        className={
-          stuck
-            ? 'fixed inset-x-0 top-4 z-40 flex justify-center px-4 pointer-events-none'
-            : 'flex justify-center'
-        }
-      >
-        <nav
-          ref={navRef}
-          data-testid="pdp-section-nav"
-          data-stuck={stuck ? 'true' : 'false'}
-          aria-label="Product sections"
-          className={`flex items-center gap-2 rounded-full border border-slate-900/5 bg-white p-2 shadow-[0_10px_36px_rgba(15,23,42,0.10)] transition-all duration-300 ease-in-out dark:border-white/10 dark:bg-slate-900 ${
-            stuck && hidden
-              ? '-translate-y-[160%] opacity-0 pointer-events-none'
-              : 'translate-y-0 opacity-100 pointer-events-auto'
-          }`}
-        >
-          {PDP_SECTION_LINKS.map((link) => {
-            const Icon = link.icon;
-            const isActive = activeId === link.id;
-            return (
-              <button
-                key={link.id}
-                type="button"
-                onClick={() => handleClick(link.id)}
-                aria-current={isActive ? 'true' : undefined}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:px-5 sm:text-sm transition-all duration-300 active:scale-95 cursor-pointer ${
-                  isActive
-                    ? 'bg-sun-orange font-bold text-white shadow-md shadow-orange-500/25 hover:bg-sun-orange hover:text-white'
-                    : 'bg-[#f0f0f0] font-medium text-[#464646]/75 hover:bg-[#e4e4e4] hover:text-[#464646] dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15 dark:hover:text-white'
-                }`}
-              >
-                <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-                <span>{link.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      {/* The stuck state renders through a portal to document.body: an
+          ancestor containing block captures fixed positioning inside
+          the page subtree (the same failure the portaled back-to-top
+          button and PDP overlays hit), which left the fixed pill
+          painted against the page box instead of the viewport. The
+          in-flow state stays in place; the anchor holds its height. */}
+      {stuck
+        ? createPortal(
+            <div className="fixed inset-x-0 top-4 z-40 flex justify-center px-4 pointer-events-none">
+              {navElement}
+            </div>,
+            document.body,
+          )
+        : navElement}
     </div>
   );
 };
@@ -267,7 +277,12 @@ export const ProductQuickAddPill: React.FC<ProductQuickAddPillProps> = ({
   onAdd,
   visible = true,
 }) => {
-  return (
+  // Portaled to document.body for the same reason as the stuck
+  // section nav above: inside the page subtree an ancestor containing
+  // block captures the fixed positioning, so the pill painted against
+  // the page box (only entering view near the page end) instead of
+  // riding the viewport's bottom edge.
+  return createPortal(
     <div
       data-testid="pdp-quick-add-pill"
       data-visible={visible ? 'true' : 'false'}
@@ -324,6 +339,7 @@ export const ProductQuickAddPill: React.FC<ProductQuickAddPillProps> = ({
           </>
         )}
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 };
