@@ -42,7 +42,7 @@ export const Footer: React.FC = () => {
   const isSubscribed = newsletterState.kind === 'subscribed';
 
   return (
-    <footer className="relative mt-0 overflow-hidden backdrop-blur-2xl bg-white/80 dark:bg-slate-900/85 border-t border-slate-200/70 dark:border-white/10 shadow-[0_-20px_50px_rgba(15,23,42,0.03)] text-slate-700 dark:text-slate-300 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
+    <footer className="relative mt-0 overflow-hidden pb-16 md:pb-0 backdrop-blur-2xl bg-white/80 dark:bg-slate-900/85 border-t border-slate-200/70 dark:border-white/10 shadow-[0_-20px_50px_rgba(15,23,42,0.03)] text-slate-700 dark:text-slate-300 font-sans selection:bg-sun-orange/20 selection:text-sun-orange">
       {/* Ethereal Ambient Glowing Orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
         <div className="absolute -top-36 -left-20 w-80 h-80 rounded-full bg-gradient-to-tr from-sun-orange-200/35 via-sun-orange-100/40 to-transparent blur-[110px] dark:from-sun-orange/10 pointer-events-none" />

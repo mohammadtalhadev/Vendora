@@ -65,6 +65,9 @@ export const ProductSectionNav: React.FC = () => {
   const navRef = useRef<HTMLElement>(null);
 
   // Scroll-spy: highlight the tab whose section crosses mid-viewport.
+  // The intersecting set is tracked explicitly and the deepest section
+  // in document order wins, so a batch reporting two sections in the
+  // band at once can never leave the highlight on an earlier tab.
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
     const targets = PDP_SECTION_LINKS.map((link) => document.getElementById(link.id)).filter(
@@ -72,11 +75,17 @@ export const ProductSectionNav: React.FC = () => {
     );
     if (targets.length === 0) return;
 
+    const intersecting = new Set<string>();
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) setActiveId(entry.target.id);
+          if (entry.isIntersecting) intersecting.add(entry.target.id);
+          else intersecting.delete(entry.target.id);
         }
+        const ordered = PDP_SECTION_LINKS.map((link) => link.id).filter((id) =>
+          intersecting.has(id),
+        );
+        if (ordered.length > 0) setActiveId(ordered[ordered.length - 1]);
       },
       { rootMargin: '-45% 0px -50% 0px' },
     );
@@ -128,7 +137,7 @@ export const ProductSectionNav: React.FC = () => {
       data-testid="pdp-section-nav"
       data-stuck={stuck ? 'true' : 'false'}
       aria-label="Product sections"
-      className={`flex items-center gap-2 rounded-full border border-slate-900/5 bg-white p-2 shadow-[0_10px_36px_rgba(15,23,42,0.10)] transition-all duration-300 ease-in-out dark:border-white/10 dark:bg-slate-900 ${
+      className={`flex items-center gap-1 p-1.5 sm:gap-2 sm:p-2 rounded-full border border-slate-900/5 bg-white shadow-[0_10px_36px_rgba(15,23,42,0.10)] transition-all duration-300 ease-in-out dark:border-white/10 dark:bg-slate-900 ${
         stuck && hidden
           ? '-translate-y-[160%] opacity-0 pointer-events-none'
           : 'translate-y-0 opacity-100 pointer-events-auto'
@@ -143,13 +152,13 @@ export const ProductSectionNav: React.FC = () => {
             type="button"
             onClick={() => handleClick(link.id)}
             aria-current={isActive ? 'true' : undefined}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:px-5 sm:text-sm transition-all duration-300 active:scale-95 cursor-pointer ${
+            className={`flex items-center gap-1 rounded-full px-2 py-1.5 text-[11px] sm:gap-1.5 sm:px-5 sm:text-sm transition-all duration-300 active:scale-95 cursor-pointer ${
               isActive
                 ? 'bg-sun-orange font-bold text-white shadow-md shadow-orange-500/25 hover:bg-sun-orange hover:text-white'
                 : 'bg-[#f0f0f0] font-medium text-[#464646]/75 hover:bg-[#e4e4e4] hover:text-[#464646] dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15 dark:hover:text-white'
             }`}
           >
-            <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+            <Icon className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]" />
             <span>{link.label}</span>
           </button>
         );

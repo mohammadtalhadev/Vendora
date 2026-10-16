@@ -1125,9 +1125,22 @@ export const ProductDetailPage: React.FC = () => {
             {/* ========================================================= */}
             {/* MOBILE STICKY BUY BAR (< lg) — mirrors the buy box: same
                 variant, same quantity, same actions. Sits above the
-                BottomNav on small phones, flush on md screens.          */}
+                BottomNav on small phones, flush on md screens.
+                Portaled to document.body like the desktop pills (an
+                ancestor containing block otherwise captures its fixed
+                positioning), and it retreats as the footer approaches —
+                the same rule as the desktop quick-add pill — so the
+                bar + bottom nav stack never covers the footer.        */}
             {/* ========================================================= */}
-            <div className="fixed inset-x-0 bottom-[76px] md:bottom-0 z-40 lg:hidden border-t border-slate-200/80 bg-white/92 px-4 py-3 shadow-[0_-8px_30px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+            {createPortal(
+              <div
+                className={`fixed inset-x-0 bottom-[76px] md:bottom-0 z-40 lg:hidden border-t border-slate-200/80 bg-white/92 px-4 py-3 shadow-[0_-8px_30px_rgba(15,23,42,0.10)] backdrop-blur-xl transition-all duration-300 ${
+                  footerNear
+                    ? 'pointer-events-none translate-y-[140%] opacity-0'
+                    : 'translate-y-0 opacity-100'
+                }`}
+                aria-hidden={footerNear}
+              >
               <div className="flex items-center gap-3">
                 <div className="min-w-0 shrink-0">
                   <div className="font-outfit text-base font-black leading-tight text-slate-900">
@@ -1141,6 +1154,7 @@ export const ProductDetailPage: React.FC = () => {
                   type="button"
                   onClick={() => handleAddToCart()}
                   disabled={effectiveStock <= 0}
+                  tabIndex={footerNear ? -1 : 0}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-bold text-white shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
                     addedAnimation && effectiveStock > 0
                       ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25'
@@ -1163,12 +1177,15 @@ export const ProductDetailPage: React.FC = () => {
                   type="button"
                   onClick={handleBuyNow}
                   disabled={effectiveStock <= 0}
+                  tabIndex={footerNear ? -1 : 0}
                   className="shrink-0 cursor-pointer rounded-full bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Buy Now
                 </button>
               </div>
-            </div>
+              </div>,
+              document.body,
+            )}
 
             {/* ========================================================= */}
             {/* INTERACTIVE MODALS                                        */}

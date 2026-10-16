@@ -40,7 +40,7 @@ import { NotificationDropdown } from '../common/NotificationDropdown';
  * default inside NotificationDropdown); there are no exceptions now.
  */
 const NAV_ICON_BUTTON_CLASS =
-  'relative h-10 w-10 items-center justify-center rounded-full text-slate-700 dark:text-slate-200 transition-all group shrink-0 cursor-pointer hover:bg-white dark:hover:bg-white/10 hover:shadow-lg hover:shadow-orange-500/20 dark:hover:shadow-black/30 hover:ring-2 hover:ring-sun-orange hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
+  'relative h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full text-slate-700 dark:text-slate-200 transition-all group shrink-0 cursor-pointer hover:bg-white dark:hover:bg-white/10 hover:shadow-lg hover:shadow-orange-500/20 dark:hover:shadow-black/30 hover:ring-2 hover:ring-sun-orange hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
 
 /**
  * The category strip's text-link recipe: the quick category links
@@ -419,7 +419,7 @@ export const Navbar: React.FC = () => {
       <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6 lg:px-8">
         <div
           data-testid="header-main-pill"
-          className={`header-pill-shell header-pill-enter relative z-50 flex w-full items-center justify-between gap-2 rounded-full px-3 py-2 sm:gap-4 sm:px-5 sm:py-2.5 ${
+          className={`header-pill-shell header-pill-enter relative z-50 flex w-full items-center justify-between gap-2 rounded-full px-2 py-2 sm:gap-4 sm:px-5 sm:py-2.5 ${
             isScrolled ? 'is-scrolled' : ''
           }`}
         >
@@ -437,7 +437,7 @@ export const Navbar: React.FC = () => {
 
               {/* Logo: "Vendora" in bold navy with interactive dot */}
               <Link to="/" className="flex items-center group pl-1 sm:pl-2">
-                <span className="font-outfit text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-sun-orange transition-colors">
+                <span className="font-outfit text-xl sm:text-[26px] font-black tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-sun-orange transition-colors">
                   Vendora<span className="inline-block h-2 w-2 rounded-full bg-sun-orange group-hover:bg-slate-900 dark:group-hover:bg-white ml-0.5 transition-colors" />
                 </span>
               </Link>
@@ -577,12 +577,12 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Right Action Items: Mobile Search, Theme, Wishlist, Exchange, Account, Cart */}
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-0.5 sm:gap-2 shrink-0">
               {/* Mobile search toggle — opens the search overlay below the bar */}
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen((v) => !v)}
-                className={`sm:hidden flex h-10 w-10 items-center justify-center rounded-full transition-all shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
+                className={`sm:hidden flex h-9 w-9 items-center justify-center rounded-full transition-all shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60 ${
                   isMobileSearchOpen
                     ? 'bg-orange-50 dark:bg-white/10 text-sun-orange shadow-xs'
                     : 'text-slate-700 dark:text-slate-200 hover:bg-white/80 dark:hover:bg-white/10 hover:shadow-sm hover:text-sun-orange'
