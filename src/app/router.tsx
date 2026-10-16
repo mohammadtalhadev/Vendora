@@ -59,9 +59,6 @@ const GiftCardsPage = lazyWithRetry(() =>
 const AppComingSoonPage = lazyWithRetry(() =>
   import('../pages/AppComingSoonPage').then((m) => ({ default: m.AppComingSoonPage })),
 );
-const RecentlyViewedPage = lazyWithRetry(() =>
-  import('../pages/RecentlyViewedPage').then((m) => ({ default: m.RecentlyViewedPage })),
-);
 const AccountSupportPage = lazyWithRetry(() =>
   import('../pages/AccountSupportPage').then((m) => ({ default: m.AccountSupportPage })),
 );
@@ -540,10 +537,6 @@ export const router = createBrowserRouter([
       {
         path: 'app-coming-soon',
         element: lazyWrap(<AppComingSoonPage />),
-      },
-      {
-        path: 'recently-viewed',
-        element: lazyWrap(<RecentlyViewedPage />),
       },
       {
         path: 'order-confirmation/:orderId',

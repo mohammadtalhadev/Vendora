@@ -21,7 +21,6 @@ import {
   ArrowLeftRight,
 } from 'lucide-react';
 import { useProductDetail } from '../features/catalog/hooks/useProducts';
-import { recordRecentlyViewed } from '../features/catalog/recently-viewed';
 import { variantPrice as resolveVariantPrice } from '../features/catalog/api/product-row';
 import { useCartStore } from '../store/cart-store';
 import { useWishlistStore } from '../store/wishlist-store';
@@ -68,11 +67,6 @@ export const ProductDetailPage: React.FC = () => {
   useReveal();
   const navigate = useNavigate();
   const { data: product, isLoading, isError, error, refetch } = useProductDetail(productId || '');
-
-  // Recently Viewed: snapshot this product into the browser-local history.
-  useEffect(() => {
-    if (product) recordRecentlyViewed(product);
-  }, [product]);
 
   const { addItem } = useCartStore();
   const { isInWishlist, toggleWishlist } = useWishlistStore();

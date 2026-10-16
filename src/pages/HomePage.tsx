@@ -752,13 +752,7 @@ export const HomePage: React.FC = () => {
           </div>
         )}
 
-        {/* =========================================================================
-            3D-2. Recommended For You Shelf
-            (Recently Viewed is NOT a homepage section — owner's order,
-            personal browsing history belongs in the shopping
-            context, so the rail lives on /products and the full history
-            on /recently-viewed.)
-            ========================================================================= */}
+        {/* 3D-2. Recommended For You Shelf */}
         <RecommendedShelf
           onAddToCart={handleAddToCart}
           onToggleWishlist={handleToggleWishlist}

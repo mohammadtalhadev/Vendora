@@ -24,7 +24,7 @@ describe('ViewAllLink', () => {
   });
 
   it('renders custom children instead of the default label', () => {
-    renderLink({ to: '/recently-viewed', children: 'See everything' });
+    renderLink({ to: '/products', children: 'See everything' });
     expect(screen.getByRole('link', { name: /See everything/ })).toBeInTheDocument();
   });
 

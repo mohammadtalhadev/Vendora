@@ -16,7 +16,7 @@ export interface RecommendedShelfProps {
  * including a "Recently Viewed" tab populated with products the visitor had
  * never seen, which no real tracking backed (QA frontend-Critical-2). The
  * shelf now shows the catalogue's top-rated real products; the fabricated
- * recently-viewed tab is gone until genuine view tracking exists.
+ * recently-viewed tab is gone.
  */
 export const RecommendedShelf: React.FC<RecommendedShelfProps> = ({
   onAddToCart,
