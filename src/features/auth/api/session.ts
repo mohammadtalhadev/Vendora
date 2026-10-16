@@ -142,7 +142,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
 /**
  * Verifies the email code (OTP) a new account was sent at sign-up — the
- * typed-code alternative to clicking the confirmation link (Batch 36). The
+ * typed-code alternative to clicking the confirmation link. The
  * code only exists when the project's "Confirm signup" template carries
  * `{{ .Token }}`; on success Supabase returns a live session and the caller
  * lands the user exactly where an instantly-confirmed sign-up would.
@@ -277,7 +277,7 @@ export async function signInWithOAuth(provider: 'google' | 'apple'): Promise<voi
  * Subscribes to auth changes and resolves the profile for each one.
  *
  * The listener contract keeps three outcomes apart, because collapsing them
- * is what used to kick signed-in staff out mid-session (Batch 59):
+ * is what used to kick signed-in staff out mid-session:
  * - (user, session): the profile the backend authorized.
  * - (null, null): there is no session — a definitive sign-out.
  * - (null, session): a session EXISTS but its profile read failed (a

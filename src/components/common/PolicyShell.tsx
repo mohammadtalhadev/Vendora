@@ -2,14 +2,14 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * The one shell for every policy / info page (Batch 55).
+ * The one shell for every policy / info page.
  *
  * Before this component the policy pages had grown at least four different
- * layouts: the honest B45 family (white hero band + numbered white cards on
+ * layouts: the honest family (white hero band + numbered white cards on
  * slate-50), a frosted-glass family with ambient glows, a narrow centred
  * column, and several one-off widths — so /cookie-policy, /privacy, /terms,
  * /refund-policy, /shipping, /affiliates, /seller-fees, /seller-policy and
- * /about all looked like different websites. PolicyShell pins the B45 family
+ * /about all looked like different websites. PolicyShell pins the family
  * as the canon: the site container, a white hero band carrying the eyebrow +
  * one h1 + intro, and a body stack of white section cards with numbered
  * outfit headings. Every policy page renders through it; a page's own

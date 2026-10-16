@@ -164,7 +164,7 @@ describe('friendlyError — status and message backstops', () => {
   });
 });
 
-describe('friendlyError — MFA factor conflicts (Batch 88)', () => {
+describe('friendlyError — MFA factor conflicts', () => {
   it('maps a factor conflict that arrives by code to the authenticator sentence', () => {
     const result = friendlyError({
       code: 'mfa_factor_name_conflict',

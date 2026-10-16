@@ -203,7 +203,7 @@ export const AccountSettingsPage: React.FC = () => {
         </form>
       </section>
 
-      {/* Two-factor authentication (Batch 64). The support console has no
+      {/* Two-factor authentication. The support console has no
           profile page of its own, so this shared settings surface is where
           support staff manage their authenticator too. */}
       <MfaSettingsCard className="space-y-4 rounded-3xl border border-white/80 bg-white/80 p-6 text-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80" />

@@ -114,7 +114,7 @@ describe('RegisterPage Component (Vendora Dual-Role Customer & Seller Portal)', 
     fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
     fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
 
-    // Terms start unticked (Batch 45): the box is clear, the submit is
+    // Terms start unticked: the box is clear, the submit is
     // disabled, and a forced submit still fails on the agreement check.
     const termsCheckbox = screen.getByRole('checkbox');
     expect(termsCheckbox).not.toBeChecked();

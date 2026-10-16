@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { asRows, rpcFailed, text } from './rider-client';
 
 /**
- * Live rider location (Batch 42).
+ * Live rider location.
  *
  * Writes go through `update_rider_location`, which resolves the rider from the
  * session and refuses a delivery that is not theirs or not on the road. Reads
@@ -130,7 +130,7 @@ export function freshnessLabel(iso: string | null, now = new Date()): string {
 }
 
 /**
- * Photo proof (Batch 42): the file lands in the private `delivery-proofs`
+ * Photo proof: the file lands in the private `delivery-proofs`
  * bucket under the delivery's own folder - the storage policy checks that
  * folder against the caller's assigned deliveries - and the row is stamped
  * through `set_delivery_proof_photo`, never a direct table write.

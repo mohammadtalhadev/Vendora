@@ -182,7 +182,7 @@ export const VendorDashboardPage: React.FC = () => {
   const shipping = useShippingSettings();
   const tiles = dashboard.data;
 
-  // Shared toast (Batch 47) — this page's private pill is gone; the hook owns
+  // Shared toast — this page's private pill is gone; the hook owns
   // the timer and unmount cleanup the hand-rolled version used to carry.
   const { toast, showToast: showSharedToast, hideToast } = useToast(3500);
 
@@ -268,7 +268,7 @@ export const VendorDashboardPage: React.FC = () => {
   const trend = (value: number | null) =>
     value === null ? null : `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}%`;
 
-  // Recharts rows for the three dashboard charts (Batch 49 — the hand-plotted
+  // Recharts rows for the three dashboard charts (the hand-plotted
   // SVG polylines are gone; Recharts scales the same `vendor_earnings` series
   // and gives it real axes and tooltips). With nothing settled the series is
   // empty and each chart prints its own "nothing settled" state.
@@ -696,7 +696,7 @@ export const VendorDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Shared toast (Batch 47) — replaces the Floating Toast Notification pill. */}
+        {/* Shared toast — replaces the Floating Toast Notification pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
 
         {/* =====================================================================

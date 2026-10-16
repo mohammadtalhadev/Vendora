@@ -121,7 +121,7 @@ describe('fetchLogisticsBoard', () => {
   });
 });
 
-describe('rider applications (Batch 77)', () => {
+describe('rider applications', () => {
   const APPLICANT = 'applicant-1';
   const PROFILE = '00000000-0000-4000-8000-000000001601';
 

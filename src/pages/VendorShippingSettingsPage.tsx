@@ -14,7 +14,7 @@ import { VendorNav } from '../features/vendor/components/VendorNav';
 import { FormField } from '../components/ui/form-field';
 import { Input } from '../components/ui/input';
 
-/** Panel-density geometry for the ui Input capsule, as on Vendor Settings (Batch 48). */
+/** Panel-density geometry for the ui Input capsule, as on Vendor Settings. */
 const PANEL_INPUT = 'h-9 rounded-lg px-3 text-xs';
 import {
   useSaveShippingSettings,

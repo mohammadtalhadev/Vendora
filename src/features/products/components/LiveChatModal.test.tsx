@@ -6,13 +6,13 @@ import { useAuthStore } from '../../../store/auth-store';
 import type { User } from '../../../types/domain';
 
 /**
- * Batch 127 (owner report + live guest repro): clicking "Live chat" on the
+ * (owner report + live guest repro): clicking "Live chat" on the
  * product page opened the seller chat pinned to the BOTTOM of the page,
  * clipped, as a full 520px shell whose only content for a guest was one
  * sign-in line above a sea of empty space, with the quick prompts, the
  * textbox and the send button all disabled. Two pins:
  *   - the overlay renders through a portal to document.body, so no page
- *     ancestor can capture its fixed positioning again (the Batch 114
+ * ancestor can capture its fixed positioning again (the
  *     BackToTopButton lesson);
  *   - when no chat can happen (guest / first-party listing) the panel is
  *     the compact notice with a real sign-in call to action — the composer
@@ -56,7 +56,7 @@ const renderModal = (props: Partial<React.ComponentProps<typeof LiveChatModal>> 
   return utils;
 };
 
-describe('LiveChatModal (Batch 127)', () => {
+describe('LiveChatModal', () => {
   beforeEach(() => {
     useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
   });

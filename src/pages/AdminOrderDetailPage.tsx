@@ -73,18 +73,18 @@ export const AdminOrderDetailPage: React.FC = () => {
   const { data: order, isLoading, isError, error, refetch } = useAdminOrderDetail(id ?? '');
   const board = useLogisticsBoard();
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  // Force Refund / Administrative Cancel confirm before firing (Batch 47).
+  // Force Refund / Administrative Cancel confirm before firing.
   const [adminConfirm, setAdminConfirm] = useState<'refund' | 'cancel' | null>(null);
   const [adminActionMsg, setAdminActionMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Delivery-address correction (Batch 50): the draft is the form's working copy;
+  // Delivery-address correction: the draft is the form's working copy;
   // nothing is written until the confirm step runs the audited RPC.
   const [addressDraft, setAddressDraft] = useState<AdminOrderAddress | null>(null);
   const [addressConfirming, setAddressConfirming] = useState(false);
   const [addressFormError, setAddressFormError] = useState<string | null>(null);
 
-  // Payment-status correction (Batch 50): only ever offered while the order is
+  // Payment-status correction: only ever offered while the order is
   // `pending`; the reason is required because the audit row carries it.
   const [paymentChoice, setPaymentChoice] = useState<'succeeded' | 'failed' | ''>('');
   const [paymentReason, setPaymentReason] = useState('');
@@ -714,7 +714,7 @@ export const AdminOrderDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Force Refund / Administrative Cancel confirmation (Batch 47) */}
+            {/* Force Refund / Administrative Cancel confirmation */}
             <ConfirmDialog
               open={adminConfirm !== null}
               onOpenChange={(open) => !open && setAdminConfirm(null)}

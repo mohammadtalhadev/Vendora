@@ -82,7 +82,7 @@ export const AdminDisputesPage: React.FC = () => {
 
   const actions = useAdminActions();
   // Issuing a refund moves money, so its confirm hands the mutation to
-  // requireStepUp (Batch 64): fresh two-factor proof runs it at once, a
+  // requireStepUp: fresh two-factor proof runs it at once, a
   // stale one parks it behind a fresh code. A denial moves no money and is
   // not gated.
   const { requireStepUp, stepUpDialog } = useStepUp();
@@ -217,7 +217,7 @@ export const AdminDisputesPage: React.FC = () => {
       sidebar={<AdminNav />}
     >
       <div className="space-y-6">
-        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        {/* Shared toast — replaces this page's private pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -33,10 +33,10 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
 
   const factsToRender = keyFacts && keyFacts.length > 0 ? keyFacts : defaultKeyFacts;
 
-  // Batch 133 — long seller descriptions collapse behind a Read more
-  // toggle so the dossier no longer reads as a wall of text (owner:
-  // "text bht overload ha"). Nothing is removed: the full text is one
-  // click away, and short descriptions render whole as before.
+  // Long seller descriptions collapse behind a Read more toggle so
+  // the dossier does not read as a wall of text. Nothing is removed:
+  // the full text is one click away, and short descriptions render
+  // whole as before.
   const [descExpanded, setDescExpanded] = useState(false);
   const isLongDescription = mechanismText.length > 480;
 

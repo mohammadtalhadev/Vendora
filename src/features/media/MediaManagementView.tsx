@@ -103,7 +103,7 @@ interface FolderEntry {
 }
 
 /**
- * One node of the sidebar tree (Batch 80): an owner - the platform or one
+ * One node of the sidebar tree: an owner - the platform or one
  * store - with its subfolders under it. Groups are only ever built from the
  * folder entries the library actually holds, so an owner with no folders and
  * no files never appears, and no section is invented for an owner who has
@@ -119,7 +119,7 @@ interface FolderGroup {
 
 /**
  * The owner segment of an admin folder key for a platform-owned folder
- * (Batch 72): a NULL vendor_id cannot ride in the key, so the platform's own
+ *: a NULL vendor_id cannot ride in the key, so the platform's own
  * folders key as `platform::<name>` - the same word its storage paths use.
  */
 const PLATFORM_OWNER_KEY = 'platform';
@@ -147,12 +147,12 @@ const FIELD =
  * the store the signed-in account owns: reads, uploads, renames, moves and deletes all
  * go through `src/features/vendor/api/media.ts`. Admin mode reads every store's rows
  * through `src/features/admin/api/media.ts` - the select policy admits staff - and
- * (Batch 61) holds the full management set over them too: rename, move (dialog or
+ * holds the full management set over them too: rename, move (dialog or
  * drag-and-drop onto a folder), delete through the audited `admin_delete_media` RPC,
  * and folder create/rename/delete over the `media_folders` rows - plus the moderation
- * verdict vendor mode never offers. Batch 72 adds the platform itself as an owner:
+ * verdict vendor mode never offers. adds the platform itself as an owner:
  * admin mode can hold platform folders (a NULL `vendor_id`) and staff can upload
- * their own files, to the platform library or a store's. Batch 80 presents the
+ * their own files, to the platform library or a store's. presents the
  * sidebar as the hierarchy the library actually is - each owner (the platform,
  * then one parent node per store) over its kind subfolders (Product Images,
  * Storefront Banners, Profile Images, then the owner's own folders) - and an
@@ -182,7 +182,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const deleteFolderMutation = useDeleteAdminMediaFolder();
 
   // One write surface over both modes: each helper dispatches to the vendor API
-  // in vendor mode and to the Batch 61 admin API in admin mode, so the dialogs
+  // in vendor mode and to the admin API in admin mode, so the dialogs
   // and drag-and-drop below never branch on mode again.
   const renamePending = isAdmin ? adminRename.isPending : vendorRename.isPending;
   const movePending = isAdmin ? adminMove.isPending : vendorMove.isPending;
@@ -221,7 +221,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<File[]>([]);
   const [uploadFolder, setUploadFolder] = useState(MEDIA_FOLDER_PRODUCTS);
-  /** Admin upload destination (Batch 72): an owner key - 'platform' or a store id. */
+  /** Admin upload destination: an owner key - 'platform' or a store id. */
   const [uploadOwner, setUploadOwner] = useState(PLATFORM_OWNER_KEY);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -237,9 +237,9 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
 
-  // Batch 61 folder management + drag-and-drop (admin). A folder entry is keyed
+  // folder management + drag-and-drop (admin). A folder entry is keyed
   // `${vendorId}::${name}` in admin mode because the same folder name can exist
-  // under several stores; a platform folder (Batch 72) keys as `platform::name`.
+  // under several stores; a platform folder keys as `platform::name`.
   // Vendor entries keep the plain folder name as key.
   const [folderCreateOpen, setFolderCreateOpen] = useState(false);
   const [folderCreateStore, setFolderCreateStore] = useState('');
@@ -315,7 +315,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     }
     const adminItems = items as AdminMediaItem[];
     const storeLabelOf = (vendorId: string | null): string => {
-      // The platform's own folders carry their label directly (Batch 72).
+      // The platform's own folders carry their label directly.
       if (vendorId === null) return 'Platform';
       const owner = adminItems.find((item) => item.vendorId === vendorId);
       return owner ? owner.storeName || owner.storeSlug || 'Unnamed store' : 'Unnamed store';
@@ -345,7 +345,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   }, [isAdmin, folders, folderCounts, items, adminFoldersQuery.data]);
 
   /**
-   * The sidebar tree (Batch 80): folder entries grouped under their owner -
+   * The sidebar tree: folder entries grouped under their owner -
    * the platform first, then one parent node per store - with each owner's
    * subfolders in library order (canonical sections first, then A-Z).
    * Vendor mode has a single implicit owner (the signed-in store), so its
@@ -388,7 +388,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   );
 
   /**
-   * The New Folder dialog's store picker. Batch 66: this reads the platform's
+   * The New Folder dialog's store picker. this reads the platform's
    * full store list (`useAdminMediaStores`), NOT the stores that happen to own
    * files in the loaded library - deriving it from library items left the
    * picker empty and the New Folder button disabled exactly when the library
@@ -418,7 +418,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
         if (isAdmin) {
           // Admin folder keys are `${owner}::${name}`: the same folder name
           // under another owner is a different folder. The platform owner's
-          // segment is the literal `platform` (Batch 72) and maps back to a
+          // segment is the literal `platform` and maps back to a
           // NULL vendor_id.
           const separator = folderFilter.indexOf('::');
           const ownerSegment = separator >= 0 ? folderFilter.slice(0, separator) : '';
@@ -476,7 +476,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const moveFolderOptions = useMemo(() => {
     if (!isAdmin) return folders;
     if (selected.length === 0) return folders;
-    // The owner may be the platform (a NULL vendorId, Batch 72): its folders
+    // The owner may be the platform (a NULL vendorId,): its folders
     // are the entries whose vendorId is equally null, so they match directly.
     const ownerId = (selected[0] as AdminMediaItem).vendorId;
     return [
@@ -520,7 +520,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   };
 
   /**
-   * Uploads file into the folder the user is standing in (Batch 80): the
+   * Uploads file into the folder the user is standing in: the
    * dialog opens aimed at the active sidebar folder - and, in admin mode, at
    * that folder's owner - instead of always restarting at Product Images.
    * With no folder selected, the default is Product Images.
@@ -559,7 +559,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     let reason: string | null = null;
     // One file at a time, so a rejected write is reported as the file that actually failed
     // rather than as a batch that never happened. Vendor mode uploads to the
-    // signed-in store; admin mode (Batch 72) uploads to the chosen owner -
+    // signed-in store; admin mode uploads to the chosen owner -
     // the platform itself ('platform') or a store, through the guarded RPC.
     for (const file of uploadQueue) {
       try {
@@ -707,7 +707,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   const submitCreateFolder = async (event: React.FormEvent) => {
     event.preventDefault();
     // The owner is the platform itself ('platform') or a chosen store
-    // (Batch 72); every non-empty key is a valid choice.
+    //; every non-empty key is a valid choice.
     if (!folderCreateStore) {
       setFolderCreateError('Choose who this folder belongs to.');
       return;
@@ -736,7 +736,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
   const submitFolderRename = async (event: React.FormEvent) => {
     event.preventDefault();
-    // A platform folder's vendorId is null (Batch 72) - the target itself is
+    // A platform folder's vendorId is null - the target itself is
     // the only thing that must exist.
     if (!folderRenameTarget) return;
     setFolderRenameError(null);
@@ -823,7 +823,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
     }
   };
 
-  // The standard ellipsis page window (Batch 49) — the same helper the
+  // The standard ellipsis page window — the same helper the
   // storefront catalogue uses, so every pager in the app reads identically.
   const pageNumbers = useMemo(
     () => buildPageWindow(currentPage, pageCount),
@@ -831,7 +831,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
   );
 
   /**
-   * One folder row of the sidebar tree (Batch 80), rendered identically under
+   * One folder row of the sidebar tree, rendered identically under
    * whichever owner group claims it: a canonical section shows its label
    * ("Product Images") with the folder name beneath it; a custom folder shows
    * its own name. Rename/delete stay admin-only, as before.
@@ -1195,7 +1195,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
 
       {/* ── Main two-column layout ──────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-        {/* Folder tree (Batch 80): owners (admin) over their kind subfolders */}
+        {/* Folder tree: owners (admin) over their kind subfolders */}
         <div className="lg:col-span-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <h3 className="font-extrabold text-slate-900 text-xs">
@@ -1211,7 +1211,7 @@ export const MediaManagementView: React.FC<MediaManagementViewProps> = ({ mode }
               type="button"
               onClick={() => {
                 setFolderCreateError(null);
-                // The platform itself is the default owner (Batch 72): an
+                // The platform itself is the default owner: an
                 // admin's own folder needs no store to exist first.
                 setFolderCreateStore(PLATFORM_OWNER_KEY);
                 setFolderCreateName('');

@@ -30,7 +30,7 @@ interface ProtectedRouteProps {
   /** Show loading while checking auth */
   showLoading?: boolean;
   /**
-   * Staff consoles only (Batch 64): the session must ALSO have verified a
+   * Staff consoles only: the session must ALSO have verified a
    * TOTP factor (aal2). A staff session still at aal1 — whether it holds a
    * factor it has not challenged yet, or has no factor and must enrol one —
    * is sent to the staff portal with ?stepup=1, where the challenge or the
@@ -92,13 +92,13 @@ export function ProtectedRoute({
 
   // If vendor workspace is requested and role is vendor, verify seller is
   // approved. A pending/rejected/suspended seller lands on the dedicated
-  // status page (Batch 63) — not the marketing/apply page, which reads as
+  // status page — not the marketing/apply page, which reads as
   // "apply again" to someone whose application is already in flight.
   if (allowedRoles.includes('vendor') && user.roles.includes('vendor') && user.vendorStatus !== 'approved') {
     return <Navigate to="/seller-status" replace />;
   }
 
-  // Staff two-factor gate (Batch 64): the role check above has passed, so
+  // Staff two-factor gate: the role check above has passed, so
   // this account IS staff — but a password-only (aal1) session does not open
   // a staff console. While the factor picture is still loading, wait rather
   // than bounce (the same no-flash rule as the auth loading state); once it
@@ -116,7 +116,7 @@ export function ProtectedRoute({
         </div>
       ) : null;
     }
-    // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+    // TEMPORARY testing exemption — remove with the mfa_exemptions
     // table: an exempt staff account passes this gate at aal1, the way an
     // aal2 session does. The flag fails closed (see api/mfa), so without an
     // exemption row nothing changes.

@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Guard contracts (Batch 24): the default unauthenticated redirect stays the
+ * Guard contracts: the default unauthenticated redirect stays the
  * customer /login, while a route that names its own loginPath/deniedPath —
  * the admin workspace with /admin/login — uses those instead.
  */
@@ -14,13 +14,13 @@ const auth = vi.hoisted(() => ({
     vendorStatus?: string;
     accountStatus?: string;
   },
-  // Batch 64 two-factor picture. Defaults describe a fully proven staff
-  // session so the Batch 24/63 pins below keep testing what they pinned;
+  // two-factor picture. Defaults describe a fully proven staff
+  // session so the pins below keep testing what they pinned;
   // the MFA describe overrides them per case.
   aal: 'aal2' as 'aal1' | 'aal2',
   hasVerifiedTotp: true,
   mfaLoaded: true,
-  // TEMPORARY testing exemption (Batch 86): default not exempt, so the gate
+  // TEMPORARY testing exemption: default not exempt, so the gate
   // pins below keep exercising the plain aal rule.
   mfaExempt: false,
 }));
@@ -117,7 +117,7 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('SECRET')).toBeInTheDocument();
   });
 
-  it('Batch 63: the redirect carries the FULL path — query and hash included', () => {
+  it('the redirect carries the FULL path — query and hash included', () => {
     renderGuarded('default', '/secret?tab=2#frag');
 
     expect(
@@ -125,7 +125,7 @@ describe('ProtectedRoute', () => {
     ).toBeInTheDocument();
   });
 
-  it('Batch 63: a suspended account is sent to the blocked page, not the workspace', () => {
+  it('a suspended account is sent to the blocked page, not the workspace', () => {
     auth.user = { id: 'u3', roles: ['admin'], accountStatus: 'suspended' };
     renderGuarded('staff');
 
@@ -133,7 +133,7 @@ describe('ProtectedRoute', () => {
     expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
   });
 
-  it('Batch 63: a pending vendor lands on the seller status page, not the marketing page', () => {
+  it('a pending vendor lands on the seller status page, not the marketing page', () => {
     auth.user = { id: 'u4', roles: ['customer', 'vendor'], vendorStatus: 'pending' };
     renderGuarded('vendor');
 
@@ -141,7 +141,7 @@ describe('ProtectedRoute', () => {
     expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
   });
 
-  it('Batch 63: an approved vendor passes the status check', () => {
+  it('an approved vendor passes the status check', () => {
     auth.user = { id: 'u5', roles: ['customer', 'vendor'], vendorStatus: 'approved' };
     renderGuarded('vendor');
 
@@ -150,12 +150,12 @@ describe('ProtectedRoute', () => {
 });
 
 /**
- * Batch 64: the staff wrappers carry the AAL2 gate. A staff role alone no
+ * the staff wrappers carry the AAL2 gate. A staff role alone no
  * longer opens a console — a password-only (aal1) session is sent to the
  * staff portal's step-up with the full path it wanted, and only a proven
  * (aal2) session renders. Non-staff routes never consult the gate.
  */
-describe('ProtectedRoute staff MFA gate (Batch 64)', () => {
+describe('ProtectedRoute staff MFA gate', () => {
   beforeEach(() => {
     auth.user = null;
     auth.aal = 'aal2';
@@ -240,7 +240,7 @@ describe('ProtectedRoute staff MFA gate (Batch 64)', () => {
     expect(screen.queryByText('SECRET')).not.toBeInTheDocument();
   });
 
-  it('Batch 86: exempt staff at aal1 renders under the admin gate — the exemption stands in for aal2', () => {
+  it('exempt staff at aal1 renders under the admin gate — the exemption stands in for aal2', () => {
     auth.user = { id: 'u-admin', roles: ['admin'] };
     auth.aal = 'aal1';
     auth.mfaExempt = true;
@@ -249,7 +249,7 @@ describe('ProtectedRoute staff MFA gate (Batch 64)', () => {
     expect(screen.getByText('SECRET')).toBeInTheDocument();
   });
 
-  it('Batch 86: exempt staff at aal1 renders under the support gate too', () => {
+  it('exempt staff at aal1 renders under the support gate too', () => {
     auth.user = { id: 'u-support', roles: ['support'] };
     auth.aal = 'aal1';
     auth.mfaExempt = true;

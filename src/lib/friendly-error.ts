@@ -1,7 +1,7 @@
 import { captureException } from './error-reporter';
 
 /**
- * The one error-mapping layer for the whole app (Batch 54).
+ * The one error-mapping layer for the whole app.
  *
  * Before this module existed, Supabase errors travelled verbatim to the
  * screen: `session.ts` rethrew `error.message` raw and every page rendered
@@ -73,7 +73,7 @@ export function markRpcError(error: Error, operation: string): Error {
 }
 
 /**
- * The MFA factor-conflict sentence (Batch 88). Supabase refuses a second
+ * The MFA factor-conflict sentence. Supabase refuses a second
  * enrollment under a friendly name the account already uses, and that
  * refusal must never be rendered with the sign-up "email already exists"
  * copy it superficially resembles: the person is already signed in, and
@@ -138,7 +138,7 @@ function byCode(code: string): FriendlyError | null {
       };
     case 'mfa_factor_name_conflict':
       // An MFA enrollment refused because the account already holds a
-      // factor under that friendly name (Batch 88): the MFA sentence,
+      // factor under that friendly name: the MFA sentence,
       // never the sign-up one above.
       return { message: MFA_FACTOR_CONFLICT_TEXT, kind: 'conflict', retryable: false, report: false };
     case 'weak_password':
@@ -229,7 +229,7 @@ function byMessage(message: string): FriendlyError | null {
       report: false,
     };
   }
-  // An MFA factor conflict that arrived without its code (Batch 88): it
+  // An MFA factor conflict that arrived without its code: it
   // outranks the sign-up "already exists" rule directly below, which its
   // wording otherwise resembles.
   if (/factor.*already exists|already exists.*factor/.test(text)) {

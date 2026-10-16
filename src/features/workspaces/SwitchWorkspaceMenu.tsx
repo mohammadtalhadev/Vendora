@@ -19,7 +19,7 @@ const ICONS: Record<WorkspaceId, React.ReactNode> = {
 
 /**
  * SwitchWorkspaceMenu — the header menu every workspace shell carries
- * (Batch 63). It lists the OTHER workspaces the signed-in account's roles
+ *. It lists the OTHER workspaces the signed-in account's roles
  * allow — computed by the same destinations helper as the login flow — and
  * switches with a plain navigation: the session is shared, so switching
  * never asks for a password again. Single-destination accounts never see

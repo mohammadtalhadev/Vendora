@@ -6,7 +6,7 @@ import { AffiliatePage } from './AffiliatePage';
 /**
  * The affiliate page used to present a fictional program: invented payout
  * totals, a fake earnings dashboard, invented commission rates and a
- * toast-only application form (Batch 5, Pro-0). Batch 39 built the real
+ * toast-only application form (Pro-0). built the real
  * referral backend (referral codes, loyalty points, coupon conversion),
  * so the page now presents that live program — and only its real rules.
  * These tests pin the launched behaviour and that none of the fabricated

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TrustStrip } from './TrustStrip';
 
-describe('TrustStrip (canonical trust badges, Batch 22H)', () => {
+describe('TrustStrip (canonical trust badges,)', () => {
   it('renders exactly the four canonical assurances', () => {
     render(<TrustStrip />);
     expect(screen.getByText('Fast & Free Shipping')).toBeInTheDocument();

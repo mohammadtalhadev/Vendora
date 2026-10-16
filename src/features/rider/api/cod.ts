@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { asRecord, num, rpcFailed } from './rider-client';
 
 /**
- * The COD cash trail (Batch 42). Cash moves through three stamps on the
+ * The COD cash trail. Cash moves through three stamps on the
  * delivery row and nothing else: the rider records what they collected at the
  * door (`mark_cod_collected`), an admin confirms the desk received it
  * (`confirm_cod_handover`, admin side), and `rider_cod_summary` totals what

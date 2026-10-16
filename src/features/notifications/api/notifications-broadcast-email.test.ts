@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Hand-rolled rpc stub: the shared supabase double only implements the RPCs
-// that existed when it was written, and broadcast_email is Batch 43's.
+// that existed when it was written; broadcast_email came later.
 const stub = vi.hoisted(() => ({ rpc: vi.fn() }));
 
 vi.mock('../../../lib/supabase', () => ({

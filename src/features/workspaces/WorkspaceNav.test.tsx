@@ -112,7 +112,7 @@ describe('Workspace Navigation & Layout Shell', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('slides the drawer out on close before unmounting (Batch 82)', async () => {
+    it('slides the drawer out on close before unmounting', async () => {
       render(
         <MemoryRouter>
           <WorkspaceLayout
@@ -140,7 +140,7 @@ describe('Workspace Navigation & Layout Shell', () => {
       );
     });
 
-    it('closes the drawer instantly when the user prefers reduced motion (Batch 82)', () => {
+    it('closes the drawer instantly when the user prefers reduced motion', () => {
       const originalMatchMedia = window.matchMedia;
       Object.defineProperty(window, 'matchMedia', {
         configurable: true,

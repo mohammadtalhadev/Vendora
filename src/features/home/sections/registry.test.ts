@@ -18,7 +18,7 @@ const section = (type: string, key = type): SiteSection => ({
   items: [],
 });
 
-describe('section registry (Batch 85)', () => {
+describe('section registry', () => {
   it('has unique type names', () => {
     const types = SECTION_TYPE_REGISTRY.map((def) => def.type);
     expect(new Set(types).size).toBe(types.length);

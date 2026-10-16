@@ -23,7 +23,7 @@ export const WishlistPage: React.FC = () => {
   const { items, toggleWishlist, clearWishlist } = useWishlistStore();
   const { addItem } = useCartStore();
   const { formatPrice } = useCurrency();
-  // Shared toast (Batch 47) — this page used to run its own private banner.
+  // Shared toast — this page used to run its own private banner.
   const { toast, showToast, hideToast } = useToast(3000);
   const [clearOpen, setClearOpen] = useState(false);
 
@@ -194,7 +194,7 @@ export const WishlistPage: React.FC = () => {
         }}
       />
 
-      {/* Shared toast (Batch 47) — replaces this page's private banner. */}
+      {/* Shared toast — replaces this page's private banner. */}
       <Toast toast={toast} onDismiss={hideToast} />
 
       {/* Responsive Product Grid */}

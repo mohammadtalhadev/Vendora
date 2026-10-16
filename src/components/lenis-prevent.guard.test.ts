@@ -1,5 +1,5 @@
 /**
- * Lenis nested-scroll guard (Batch 118).
+ * Lenis nested-scroll guard.
  *
  * The window Lenis smooths page scroll; any OVERLAY surface with its own
  * scrollable area must carry `data-lenis-prevent`, or wheel events over

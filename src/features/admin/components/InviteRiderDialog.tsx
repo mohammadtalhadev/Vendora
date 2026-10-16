@@ -25,7 +25,7 @@ import {
 } from '../api/logistics';
 
 /**
- * Invite Rider (Batch 65). The desk supplies only who the rider is and
+ * Invite Rider. The desk supplies only who the rider is and
  * how to reach them — the invite itself is sent by the `invite-rider`
  * Edge Function, and the rider sets their own password from the email
  * link. There is deliberately no password field here: a password an

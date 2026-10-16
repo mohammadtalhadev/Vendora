@@ -3,11 +3,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * The staff door at /admin/login (Batch 24): staff roles get in, everyone
+ * The staff door at /admin/login: staff roles get in, everyone
  * else is signed back out with a plain denial — never silently landed in a
  * buyer session.
  *
- * Batch 64 rewrite note: the pins that once read "sign-in continues to the
+ * rewrite note: the pins that once read "sign-in continues to the
  * console" now stop at the two-factor step first, because a fresh password
  * sign-in is an aal1 session and the console requires aal2. Each rewritten
  * pin drives the code step and then asserts the same destination it always
@@ -23,7 +23,7 @@ const auth = vi.hoisted(() => ({
   aal: 'aal2' as 'aal1' | 'aal2',
   mfaLoaded: true,
   refreshAal: vi.fn(async () => {}),
-  // TEMPORARY testing exemption (Batch 86): defaults to not exempt, so every
+  // TEMPORARY testing exemption: defaults to not exempt, so every
   // pre-existing pin exercises the normal second-factor path unchanged.
   mfaExempt: false,
 }));
@@ -55,7 +55,7 @@ vi.mock('../features/auth/api/mfa', () => ({
   verifyTotp: mfaApi.verifyTotp,
   markStepUpVerified: mfaApi.markStepUpVerified,
   isMfaExempt: mfaApi.isMfaExempt,
-  // Batch 88: the branch guard the enroll form consults, faithful to the
+  // the branch guard the enroll form consults, faithful to the
   // real one — it recognises the typed error by its stable code.
   isMfaAlreadyEnrolledError: (cause: unknown) =>
     Boolean(
@@ -182,7 +182,7 @@ describe('AdminLoginPage', () => {
     expect(auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('Batch 64: a staff account with no factor is walked through enrollment — never locked out', async () => {
+  it('a staff account with no factor is walked through enrollment — never locked out', async () => {
     auth.signIn.mockResolvedValue(adminUser);
     mfaApi.listTotpFactors.mockResolvedValue({ verified: [], unverified: [] });
     renderPage();
@@ -202,7 +202,7 @@ describe('AdminLoginPage', () => {
     expect(mfaApi.verifyTotp).toHaveBeenCalledWith('factor-new', '123456');
   });
 
-  it('Batch 88: enrollment that finds an authenticator already set up moves to the code step, not a dead end', async () => {
+  it('enrollment that finds an authenticator already set up moves to the code step, not a dead end', async () => {
     auth.signIn.mockResolvedValue(adminUser);
     // The page's deciding read says "no factor yet" and opens enrollment;
     // every later read (the enroll form's self-heal re-check, then the
@@ -235,7 +235,7 @@ describe('AdminLoginPage', () => {
     expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
   });
 
-  it('Batch 64: a wrong code stays on the challenge step with a clear message; the right code continues', async () => {
+  it('a wrong code stays on the challenge step with a clear message; the right code continues', async () => {
     auth.signIn.mockResolvedValue(adminUser);
     mfaApi.verifyTotp.mockRejectedValueOnce(new Error('That code was not accepted. Check the code in your authenticator app and try again.'));
     renderPage();
@@ -282,7 +282,7 @@ describe('AdminLoginPage', () => {
     expect(mfaApi.listTotpFactors).not.toHaveBeenCalled();
   });
 
-  it('Batch 64: an already-signed-in admin at aal1 (the ?stepup=1 bounce) gets the challenge, then the deep link', async () => {
+  it('an already-signed-in admin at aal1 (the ?stepup=1 bounce) gets the challenge, then the deep link', async () => {
     auth.user = adminUser;
     auth.aal = 'aal1';
     renderPage(`/admin/login?redirect=${encodeURIComponent('/admin/orders')}&stepup=1`);
@@ -299,7 +299,7 @@ describe('AdminLoginPage', () => {
     expect(screen.getByText(/no staff access/i)).toBeInTheDocument();
   });
 
-  it('Batch 63: a hostile redirect target falls back to the admin console', async () => {
+  it('a hostile redirect target falls back to the admin console', async () => {
     auth.signIn.mockResolvedValue(adminUser);
     renderPage(`/admin/login?redirect=${encodeURIComponent('//evil.com')}`);
 
@@ -309,7 +309,7 @@ describe('AdminLoginPage', () => {
     expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
   });
 
-  it('Batch 63: a redirect back to the login page itself falls back instead of looping', async () => {
+  it('a redirect back to the login page itself falls back instead of looping', async () => {
     auth.signIn.mockResolvedValue(adminUser);
     renderPage(`/admin/login?redirect=${encodeURIComponent('/admin/login')}`);
 
@@ -319,7 +319,7 @@ describe('AdminLoginPage', () => {
     expect(await screen.findByText('ADMIN HOME')).toBeInTheDocument();
   });
 
-  it('Batch 63: an admin deep link with a query string is honoured whole', async () => {
+  it('an admin deep link with a query string is honoured whole', async () => {
     auth.signIn.mockResolvedValue(adminUser);
     renderPage(`/admin/login?redirect=${encodeURIComponent('/admin/orders?status=open')}`);
 
@@ -329,7 +329,7 @@ describe('AdminLoginPage', () => {
     expect(await screen.findByText('ADMIN ORDERS')).toBeInTheDocument();
   });
 
-  it('Batch 86: an exempt staff sign-in skips the second factor entirely and lands on the console', async () => {
+  it('an exempt staff sign-in skips the second factor entirely and lands on the console', async () => {
     auth.signIn.mockResolvedValue(adminUser);
     mfaApi.isMfaExempt.mockResolvedValue(true);
     renderPage();
@@ -342,7 +342,7 @@ describe('AdminLoginPage', () => {
     expect(auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('Batch 86: an already-signed-in exempt admin at aal1 is continued without a challenge', async () => {
+  it('an already-signed-in exempt admin at aal1 is continued without a challenge', async () => {
     auth.user = adminUser;
     auth.aal = 'aal1';
     auth.mfaExempt = true;
@@ -353,7 +353,7 @@ describe('AdminLoginPage', () => {
     expect(auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('Batch 86: a light stored preference renders the portal on light surfaces', () => {
+  it('a light stored preference renders the portal on light surfaces', () => {
     window.localStorage.setItem('vd_theme', 'light');
     const { container } = renderPage();
 
@@ -365,7 +365,7 @@ describe('AdminLoginPage', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(false);
   });
 
-  it('Batch 86: a dark stored preference applies the dark class so dark: variants render', async () => {
+  it('a dark stored preference applies the dark class so dark: variants render', async () => {
     window.localStorage.setItem('vd_theme', 'dark');
     const { container } = renderPage();
 

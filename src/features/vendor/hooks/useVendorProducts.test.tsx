@@ -15,7 +15,7 @@ import type { Product } from '../../../types/domain';
 
 const PRODUCT_ID = productRow().id;
 
-describe('useUpdateVendorProduct cache behaviour (Batch 57)', () => {
+describe('useUpdateVendorProduct cache behaviour', () => {
   let queryClient: QueryClient;
 
   const wrapper = ({ children }: { children: ReactNode }) => (

@@ -1,8 +1,8 @@
 /**
- * Popular-categories WebP guard (Batch 109 thumbs, kept by Batch 112 SPEED).
+ * Popular-categories WebP guard (thumbs, kept by SPEED).
  *
  * The category tiles render at 80–112px circles; the original 1024px PNGs
- * cost 243–646 KB each (12 tiles ≈ 5.7 MB on the homepage). Batch 109 ships
+ * cost 243–646 KB each (12 tiles ≈ 5.7 MB on the homepage). ships
  * 256px WebP thumbs and POPULAR_CATEGORIES (the built-in fallback for the
  * category-tiles section) must point at them — a tile that falls back to a
  * .png silently brings the heavy file back. The CMS rows move to the same
@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const homePageSource = readFileSync(resolve(HERE, 'HomePage.tsx'), 'utf8');
 
-describe('POPULAR_CATEGORIES image URLs (Batch 109/112)', () => {
+describe('POPULAR_CATEGORIES image URLs', () => {
   it('points every fallback category tile at its .webp version', () => {
     const block = homePageSource.match(/const POPULAR_CATEGORIES = \[([\s\S]*?)\];/);
     expect(block, 'POPULAR_CATEGORIES block not found in HomePage.tsx').not.toBeNull();

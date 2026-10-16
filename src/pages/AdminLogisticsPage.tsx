@@ -44,7 +44,7 @@ const formatDate = (value: string | null): string => {
  * Tone overrides for the dispatch queue's status cell. The board renders its
  * statuses in -100 tints with no border, while the shared map's treatments
  * for delivered/shipped were harvested from the orders console — so the
- * dissenting tokens are overridden at this call site (the Batch 7 pattern),
+ * dissenting tokens are overridden at this call site (the pattern),
  * with the label kept as this page's Title-Case rendering. `in_transit`
  * needs no override: the shared map now carries this page's own treatment.
  * Any other token falls back to this page's slate fallback, not the map's.
@@ -128,7 +128,7 @@ export const AdminLogisticsPage: React.FC = () => {
 
   const riderName = new Map(board.fleet.map((rider) => [rider.id, rider.name] as const));
   const { counts } = board;
-  // A 'pending' row is an application, not a courier (Batch 77): it is
+  // A 'pending' row is an application, not a courier: it is
   // reviewed in the applications section below, not counted as fleet.
   const roster = board.fleet.filter((rider) => rider.status !== 'pending');
 
@@ -262,7 +262,7 @@ export const AdminLogisticsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Rider applications (Batch 77): self-serve applicants the desk decides on. */}
+        {/* Rider applications: self-serve applicants the desk decides on. */}
         <RiderApplicationsSection />
 
         {/* Fleet roster — only the columns the board returns. */}
@@ -311,7 +311,7 @@ export const AdminLogisticsPage: React.FC = () => {
           )}
         </div>
 
-        {/* COD cash settlements (Batch 42): rider-collected cash and its desk handover. */}
+        {/* COD cash settlements: rider-collected cash and its desk handover. */}
         <CodSettlementSection />
       </div>
     </WorkspaceLayout>
@@ -319,7 +319,7 @@ export const AdminLogisticsPage: React.FC = () => {
 };
 
 /**
- * Rider applications (Batch 77): accounts that applied to ride from their own
+ * Rider applications: accounts that applied to ride from their own
  * workspace, waiting on this desk. Approving promotes the rider to
  * 'available' on the roster above; rejecting removes the application (the
  * applicant can apply again). Before the onboarding migration reaches a

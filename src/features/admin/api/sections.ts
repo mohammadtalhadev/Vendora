@@ -3,7 +3,7 @@ import type { Database } from '../../../types/database';
 import { asRecord, json, rpcFailed, text, bool, num } from './admin-client';
 
 /**
- * Homepage sections (Batch 85): the console's read/write of `site_sections`
+ * Homepage sections: the console's read/write of `site_sections`
  * and `site_section_items`. Unlike the storefront read (features/home),
  * this one returns EVERYTHING - disabled sections and inactive items
  * included - because managing the hidden rows is the console's job. RLS

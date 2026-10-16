@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isSafeRedirect, safeRedirect } from './safe-redirect';
 
 /**
- * The shared redirect judge (Batch 63): only plain in-app paths survive.
+ * The shared redirect judge: only plain in-app paths survive.
  * Everything else — the classic open-redirect shapes included — falls back.
  */
 describe('safeRedirect', () => {
@@ -38,7 +38,7 @@ describe('safeRedirect', () => {
 });
 
 /**
- * Parallel-line pins (Batch 65, main line) — kept verbatim so both lines'
+ * Parallel-line pins (main line) — kept verbatim so both lines'
  * assertions guard the merged implementation.
  */
 describe('safeRedirect (parallel-line pins)', () => {

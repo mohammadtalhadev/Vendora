@@ -113,7 +113,7 @@ const LOOKBOOK_ITEMS: LookbookCard[] = [
 ];
 
 export interface InspirationMosaicProps {
-  /** The lookbook cards; defaults to the built-in set below. Batch 85's
+  /** The lookbook cards; defaults to the built-in set below. The
    * section renderer feeds CMS items through this prop. */
   cards?: LookbookCard[];
   title?: string;

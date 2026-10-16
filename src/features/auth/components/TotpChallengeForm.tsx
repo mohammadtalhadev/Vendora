@@ -5,7 +5,7 @@ import { listTotpFactors, verifyTotp } from '../api/mfa';
 
 /**
  * TotpChallengeForm — the "enter the code from your authenticator app" step
- * (Batch 64). Shared by the staff portal's post-password step and the in-app
+ *. Shared by the staff portal's post-password step and the in-app
  * step-up dialog: it finds the account's verified factor itself, runs the
  * challenge + verify, and reports success through `onVerified`. A wrong code
  * is shown in place and the step simply waits for the next code — the user

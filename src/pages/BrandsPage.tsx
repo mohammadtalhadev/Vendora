@@ -20,7 +20,7 @@ export const BrandsPage: React.FC = () => {
     queryFn: ({ signal }) => fetchStoreDirectory(signal),
   });
 
-  // Delivered-order counts for every active store, one query (Batch 74's
+  // Delivered-order counts for every active store, one query (the
   // public store_order_stats view, shared cache with the homepage rail).
   // fetchStoreOrderStats never rejects — before the migration runs on the
   // hosted database the map is simply empty and no card shows a count.

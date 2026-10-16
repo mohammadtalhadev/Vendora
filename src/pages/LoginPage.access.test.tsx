@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * The Batch 63 access matrix at page level: role × entry → landing, driven
+ * The access matrix at page level: role × entry → landing, driven
  * through the real LoginPage and the real landing pages (chooser,
  * no-access, seller status, blocked). The unit half of the matrix lives in
  * features/auth/api/destinations.test.ts; the guard half in
@@ -106,7 +106,7 @@ beforeEach(() => {
   });
 });
 
-describe('LoginPage access matrix (Batch 63)', () => {
+describe('LoginPage access matrix', () => {
   it('customer + storefront deep link → returns to the full path, query and hash intact', async () => {
     state.signInUser = customer;
     renderApp(`/login?redirect=${enc('/account/orders?status=packed#row-5')}`);

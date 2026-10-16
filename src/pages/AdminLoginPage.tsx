@@ -22,7 +22,7 @@ import { Button } from '../components/ui/button';
  * signed straight back out and told, in plain language, that it has no staff
  * access; it never silently becomes a buyer session inside the staff door.
  *
- * Batch 64 adds the second factor to that boundary. Passing the password is
+ * adds the second factor to that boundary. Passing the password is
  * only step one: before any destination is navigated to, a staff session must
  * also prove a TOTP factor. A verified factor is challenged; an account with
  * no factor is walked through enrollment right here — forced, but never a
@@ -40,7 +40,7 @@ function staffHome(roles: string[]): '/admin' | '/support' | null {
 /**
  * Only ever continue to an /admin path the guard named — never back to this
  * page, and never to an arbitrary URL. The target first passes the shared
- * safeRedirect (Batch 63): anything that is not a plain in-app path is
+ * safeRedirect: anything that is not a plain in-app path is
  * discarded before the /admin prefix rule is even consulted.
  */
 function adminDestinationFor(redirectTarget: string | null): string {
@@ -67,7 +67,7 @@ export const AdminLoginPage: React.FC = () => {
   // This page lives outside the workspace shell, so nothing else applies
   // the user's stored colour-scheme preference for it: resolve (and apply)
   // it here, and hand the same answer to the two-factor steps, whose
-  // `variant` styling keys off the surface they sit on (Batch 86).
+  // `variant` styling keys off the surface they sit on.
   const theme = useThemePreference();
 
   const [email, setEmail] = useState('');
@@ -96,7 +96,7 @@ export const AdminLoginPage: React.FC = () => {
   }, []);
 
   /**
-   * Batch 88: enrollment discovered an authenticator already on the
+   * enrollment discovered an authenticator already on the
    * account (set up on another device, or an earlier attempt that landed)
    * — the code step is the way forward, not a fresh setup.
    */
@@ -134,7 +134,7 @@ export const AdminLoginPage: React.FC = () => {
     // could enrol a duplicate.
     if (!mfaLoaded) return;
     handledUserRef.current = user.id;
-    // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+    // TEMPORARY testing exemption — remove with the mfa_exemptions
     // table: an exempt account skips the second-factor step entirely and
     // lands the way an aal2 session does.
     if (aal === 'aal2' || mfaExempt) {
@@ -184,7 +184,7 @@ export const AdminLoginPage: React.FC = () => {
       }
       // Staff, password proven — the second factor comes before any console.
       handledUserRef.current = signedInUser.id;
-      // TEMPORARY testing exemption (Batch 86) — remove with the
+      // TEMPORARY testing exemption — remove with the
       // mfa_exemptions table. Read fresh from the RPC here: the context's
       // copy is loaded with the sign-in's session application and may not
       // have landed in state yet. An exempt account lands directly, with

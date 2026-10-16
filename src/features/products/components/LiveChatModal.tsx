@@ -40,8 +40,8 @@ const toFeedMessage = (m: ChatMessage): FeedMessage => ({
  * modal never fabricates a seller reply, which the previous version did locally
  * and then persisted as if the seller had written it.
  *
- * Batch 127: the overlay renders through a portal to document.body (the
- * BackToTopButton Batch 114 pattern). Rendered inline inside the routed page
+ * the overlay renders through a portal to document.body (the
+ * BackToTopButton pattern). Rendered inline inside the routed page
  * subtree, the fixed overlay was captured by an ancestor containing block and
  * landed pinned to the bottom of the page, clipped, instead of centred in the
  * viewport — the owner's screenshot and a live guest repro both showed it
@@ -212,7 +212,7 @@ export const LiveChatModal: React.FC<LiveChatModalProps> = ({
 
         {/* Quick Prompts — only when a chat can actually happen; a guest or a
             first-party listing gets the compact notice above, not a row of
-            permanently disabled chips (Batch 127). */}
+            permanently disabled chips. */}
         {canChat && (
         <>
         <div className="flex gap-1.5 overflow-x-auto border-t border-slate-100 bg-slate-50/50 px-3 py-2" data-lenis-prevent>

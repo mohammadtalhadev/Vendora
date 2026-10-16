@@ -252,7 +252,7 @@ const DropCard: React.FC<DropCardProps> = ({
           </div>
         )}
 
-        {/* Live location (Batch 42): the rider's own opt-in share for this parcel. */}
+        {/* Live location: the rider's own opt-in share for this parcel. */}
         <LocationShareControl deliveryId={drop.id} status={drop.status} />
 
         {drop.status === 'out_for_delivery' && !drop.needsHandoverCode && (
@@ -405,7 +405,7 @@ const BoardError: React.FC<{ message: string; retrying: boolean; onRetry: () => 
 );
 
 /**
- * The honest dead end (Batch 59) became a front door (Batch 77): the account
+ * The honest dead end became a front door: the account
  * signed in, but dispatch has no approved rider profile for it, so there is
  * no route to show. The panel reads the caller's own rider row to decide what
  * to offer — an applicant whose application is 'pending' sees it under
@@ -617,7 +617,7 @@ export const RiderDashboardPage: React.FC = () => {
   const [handoverId, setHandoverId] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
   /**
-   * Batch 42: a verified drop leaves the board on the next read, which would unmount the
+   * a verified drop leaves the board on the next read, which would unmount the
    * handover modal before its photo-proof step can render. The drop is therefore snapshotted
    * at the moment the code matches, and the modal lives on the snapshot until it is closed.
    */

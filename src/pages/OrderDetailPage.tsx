@@ -118,8 +118,8 @@ export const OrderDetailPage: React.FC = () => {
 
   // Financial calculations. Headline figures cover the packages that are
   // still part of the order: a cancelled package's money left the order when
-  // it was cancelled (Batch 56 restocks and refunds/voids it), so leaving it
-  // in the total showed a figure the customer no longer owed (Batch 59). The
+  // it was cancelled (restocks and refunds/voids it), so leaving it
+  // in the total showed a figure the customer no longer owed. The
   // cancelled value is still displayed — separately, in the summary below.
   const { formatPrice } = useCurrency();
   const activeSubOrders = subOrders.filter((so) => so.status !== 'cancelled');
@@ -132,7 +132,7 @@ export const OrderDetailPage: React.FC = () => {
     0,
   );
 
-  // Print Invoice goes to the dedicated invoice page (Batch 59): printing
+  // Print Invoice goes to the dedicated invoice page: printing
   // this detail page produced a screenshot of the tracking UI, not an
   // invoice, and the invoice route already exists for exactly this.
   const handlePrintInvoice = () => {
@@ -445,7 +445,7 @@ export const OrderDetailPage: React.FC = () => {
               giftCardAmount={orderGroup.giftCardAmount}
             />
 
-            {/* Live rider position + photo proof (Batch 42): renders only when the
+            {/* Live rider position + photo proof: renders only when the
                 rider is actually sharing or a proof photo exists on this order. */}
             <LiveDeliveryTrackingCard orderId={orderGroup.id} />
 

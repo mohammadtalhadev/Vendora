@@ -9,7 +9,7 @@ import { markCodCollected } from './cod';
 import { supabaseDouble } from '../../../test/supabase-double';
 
 /**
- * The test double does not emulate the Batch 42 COD RPCs, so these tests pin
+ * The test double does not emulate the COD RPCs, so these tests pin
  * the client's contract instead: the exact RPC name and arguments the
  * migration defines, and that a database refusal reaches the rider verbatim
  * rather than being swallowed as a success.

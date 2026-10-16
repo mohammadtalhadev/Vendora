@@ -130,7 +130,7 @@ describe('AdminNotificationsPage', () => {
 
     fillComposer();
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
-    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    // the send confirms first — the dialog's own Send button performs it.
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
     );
@@ -157,7 +157,7 @@ describe('AdminNotificationsPage', () => {
 
     fillComposer();
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
-    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    // the send confirms first — the dialog's own Send button performs it.
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
     );
@@ -210,7 +210,7 @@ describe('AdminNotificationsPage', () => {
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Maintenance window' } });
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Read-only from 02:00.' } });
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
-    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    // the send confirms first — the dialog's own Send button performs it.
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
     );

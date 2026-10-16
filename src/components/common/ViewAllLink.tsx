@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 /**
- * The one View All link (Batch 92, owner points).
+ * The one View All link (owner points).
  *
  * Section headers used to grow two recipes side by side: the product
  * carousels and the mega menu filled solid sun-orange on hover, while the

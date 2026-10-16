@@ -10,7 +10,7 @@ import {
 } from '../api/mfa';
 
 /**
- * TotpEnrollForm — first-time authenticator setup (Batch 64): starts the
+ * TotpEnrollForm — first-time authenticator setup: starts the
  * enrollment, shows the QR code (plus the manual secret for apps that cannot
  * scan), and activates the factor by verifying the first code the app
  * produces. Used by the staff portal's forced-enrollment step — where it is
@@ -21,7 +21,7 @@ interface TotpEnrollFormProps {
   onEnrolled: () => void;
   /**
    * The account turned out to already hold a verified authenticator
-   * (Batch 88): the host takes over — the staff portal switches to the
+   *: the host takes over — the staff portal switches to the
    * code step, the settings card reloads into its set-up state.
    */
   onAlreadyEnrolled?: () => void;

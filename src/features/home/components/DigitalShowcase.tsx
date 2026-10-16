@@ -16,7 +16,7 @@ export interface DigitalShowcaseProps {
 }
 
 /**
- * Digital Goods & Software Vault (Batch 51, owner points).
+ * Digital Goods & Software Vault (owner points).
  *
  * The section used to render its own frosted-glass card design — gradient
  * icon tiles, licence chips, an "Instant Access" button — that existed

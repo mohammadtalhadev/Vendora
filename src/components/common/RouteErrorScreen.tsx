@@ -20,7 +20,7 @@ export const RouteErrorScreen: React.FC = () => {
   const chunkError = isChunkLoadError(error);
   const status = isRouteErrorResponse(error) ? error.status : null;
 
-  // The raw error is never rendered (Batch 54) — it can carry service
+  // The raw error is never rendered — it can carry service
   // internals. Instead the failure is reported and the user gets a short
   // reference they can quote to support. Chunk errors self-heal by reload
   // and plain 404s are navigation, not faults, so neither is reported.

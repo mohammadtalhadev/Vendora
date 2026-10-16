@@ -17,7 +17,7 @@ const AMOUNT_PRESETS = [500, 1000, 2500, 5000, 10000];
  * the raw code is returned once, here, and never stored or shown again —
  * only the last four digits are kept. Payment is booked under the project's
  * existing simulated-card model because a real gateway is deferred; since
- * Batch 56 the purchase records that simulated payment as its own row and
+ * the purchase records that simulated payment as its own row and
  * the RPC will not mint a card without the card evidence below.
  */
 export const GiftCardsPage: React.FC = () => {

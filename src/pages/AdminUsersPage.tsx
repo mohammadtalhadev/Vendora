@@ -84,7 +84,7 @@ export const AdminUsersPage: React.FC = () => {
   const [status, setStatus] = useState('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkStatus, setBulkStatus] = useState<'active' | 'suspended' | null>(null);
-  /** The row whose Suspend/Activate waits for confirmation (Batch 59). */
+  /** The row whose Suspend/Activate waits for confirmation. */
   const [pendingRowToggle, setPendingRowToggle] = useState<AdminUserRow | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkSummary, setBulkSummary] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export const AdminUsersPage: React.FC = () => {
 
   const actions = useAdminActions();
   // Suspending or reactivating an account is a sensitive staff action
-  // (Batch 64): the confirm dialogs hand their fire decision to requireStepUp,
+  //: the confirm dialogs hand their fire decision to requireStepUp,
   // so a stale two-factor proof parks the change behind a fresh code first.
   const { requireStepUp, stepUpDialog } = useStepUp();
   // Server-side queue read: debounce the search term so typing does not fire a
@@ -600,7 +600,7 @@ export const AdminUsersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Row status confirmation (Batch 59) — the per-row Suspend used to
+      {/* Row status confirmation — the per-row Suspend used to
           fire on a single click while the bulk action confirmed first;
           locking one account out deserves the same pause. */}
       <Dialog

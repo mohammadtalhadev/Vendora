@@ -1,7 +1,8 @@
 import { supabase } from '../../../lib/supabase';
 
 /**
- * Gift cards, loyalty points and referrals — the client half of Batch 39.
+ * Gift cards, loyalty points and referrals — the client half of the
+ * rewards system.
  * Every write goes through a SECURITY DEFINER RPC in
  * `20261015000000_vendora_rewards_giftcards.sql`; there are no direct table
  * writes from here, because balances and ledgers are the database's job.
@@ -90,7 +91,7 @@ const str = (value: unknown): string => (value === null || value === undefined ?
 
 /**
  * Buys a gift card. The raw code comes back exactly once, in this response;
- * the database keeps only its hash and last four digits. Since Batch 56 the
+ * the database keeps only its hash and last four digits. Since the
  * purchase stands on a recorded simulated-card payment: the caller supplies
  * the card's brand and last four (never the number), exactly as checkout
  * does, and the RPC refuses to mint without them.

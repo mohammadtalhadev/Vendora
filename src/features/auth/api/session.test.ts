@@ -191,7 +191,7 @@ describe('session.onAuthStateChange', () => {
     const liveSession = { access_token: 't', user: { id: 'user-1', email: 'buyer@demo.test' } };
     supabaseDouble.emit('SIGNED_IN', liveSession);
 
-    // Batch 59: (null, session) means "signed in, profile unresolved". The old
+    // (null, session) means "signed in, profile unresolved". The old
     // (null, null) here is what logged staff out on any transient read failure.
     await vi.waitFor(() => expect(listener).toHaveBeenLastCalledWith(null, liveSession));
   });

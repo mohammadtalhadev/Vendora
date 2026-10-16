@@ -25,7 +25,7 @@ export interface RiderHistoryRow {
   gross: number;
   storeName: string;
   city: string;
-  /** COD cash stamps (Batch 42): what the rider recorded at the door, and when. */
+  /** COD cash stamps: what the rider recorded at the door, and when. */
   codCollectedAmount: number | null;
   codCollectedAt: string | null;
   /** Set once an admin confirms the desk received the cash; the figure is then frozen. */

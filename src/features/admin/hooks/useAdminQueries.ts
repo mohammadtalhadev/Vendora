@@ -49,7 +49,7 @@ export function useAdminDashboard(days = 30) {
   });
 }
 
-/** Cross-seller stock of record (Batch 79): the whole physical catalog, live-polled like the other boards. */
+/** Cross-seller stock of record: the whole physical catalog, live-polled like the other boards. */
 export function useAdminInventory() {
   const userId = useAdminScope();
   return useQuery({
@@ -229,7 +229,7 @@ export function useLogisticsBoard() {
   });
 }
 
-/** Rider applications waiting on the desk's decision (Batch 77). */
+/** Rider applications waiting on the desk's decision. */
 export function usePendingRiderApplications() {
   const userId = useAdminScope();
   return useQuery({
@@ -240,7 +240,7 @@ export function usePendingRiderApplications() {
   });
 }
 
-/** COD cash awaiting a desk handover, plus the confirmed history (Batch 42). */
+/** COD cash awaiting a desk handover, plus the confirmed history. */
 export function useCodSettlements() {
   const userId = useAdminScope();
   return useQuery({

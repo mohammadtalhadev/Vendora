@@ -12,7 +12,7 @@ export interface RiderLocationSharing {
 }
 
 /**
- * The rider's live share for one delivery (Batch 42).
+ * The rider's live share for one delivery.
  *
  * Nothing starts on its own: the rider taps Share, the browser asks for
  * permission, and only then does `watchPosition` run. Fixes pass through the

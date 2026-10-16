@@ -97,7 +97,7 @@ const loadPage = async () => {
   await screen.findByText(`Master Order #${GROUP}`);
 };
 
-describe('AdminOrderDetailPage package actions (Batch 50)', () => {
+describe('AdminOrderDetailPage package actions', () => {
   it('advances a package through the shared advance wrapper', async () => {
     await loadPage();
 
@@ -204,7 +204,7 @@ describe('AdminOrderDetailPage package actions (Batch 50)', () => {
   });
 });
 
-describe('AdminOrderDetailPage order corrections (Batch 50)', () => {
+describe('AdminOrderDetailPage order corrections', () => {
   it('edits the delivery address through the audited RPC, behind a confirm step', async () => {
     await loadPage();
 

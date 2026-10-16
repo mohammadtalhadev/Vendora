@@ -64,7 +64,7 @@ const POPULAR_CATEGORIES = [
 ];
 
 /**
- * The built-in category tiles as a section (Batch 85): the tiles row is a
+ * The built-in category tiles as a section: the tiles row is a
  * console-managed `category-tiles` section, and this synthetic section -
  * the original hard-coded list, unchanged - is what renders until the
  * sections read lands (and whenever it is unavailable).
@@ -130,7 +130,7 @@ const SALE_CATEGORY_DEFS: SaleCategoryDef[] = [
 ];
 
 /** Page-shaped placeholder for a product rail whose query is still in flight
- * (Batch 47): a heading bar over a card grid, so the section holds its space
+ *: a heading bar over a card grid, so the section holds its space
  * instead of popping in when the data lands. */
 const HomeRailSkeleton: React.FC = () => (
   <div className="mb-14" role="status" aria-label="Loading products">
@@ -148,7 +148,7 @@ export const HomePage: React.FC = () => {
   useReveal();
 
 
-  // Shared toast (Batch 47) — this page used to run its own private pill.
+  // Shared toast — this page used to run its own private pill.
   const { toast, showToast, hideToast } = useToast(3200);
 
   // Hero Section Carousel state. The slide list can change length when the CMS
@@ -166,7 +166,7 @@ export const HomePage: React.FC = () => {
   // to genuine discounts (compare-at price above price). Only parent
   // categories that actually have products on sale become pills — the ~115
   // hard-coded products this page used to render are gone (QA
-  // frontend-Critical-2). Batch 92 (owner point): the pills are the
+  // frontend-Critical-2). (owner point): the pills are the
   // TRENDING parents only — the five categories with the most products on
   // sale, busiest first; ties keep the SALE_CATEGORY_DEFS order.
   const { data: campaignPoolData } = useProducts({ sort: 'featured', page: 1, limit: 100 });
@@ -242,7 +242,7 @@ export const HomePage: React.FC = () => {
 
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
 
-  // One clock for the whole hero (Batch 96): a single interval advances the
+  // One clock for the whole hero: a single interval advances the
   // main carousel and the portrait rail in the same tick, so the two always
   // switch together, and the shared hover pause stops both. (Two private
   // intervals used to restart at different moments — whenever their own
@@ -314,22 +314,22 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="w-full text-[#1F2937] dark:text-slate-100">
-      {/* The page's one h1 (Batch 47). The hero is image-only by the owner's
-          decision (Batch 29), so the h1 is visually hidden rather than
+      {/* The page's one h1. The hero is image-only by the owner's
+          decision, so the h1 is visually hidden rather than
           painted over the banners — but the page now has the standard
           single-h1 outline every other storefront page carries. */}
       <h1 className="sr-only">Vendora — Electronics, Beauty, Home &amp; More</h1>
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6">
         {/* =========================================================================
-            1. Hero Featured Carousel & Portrait Rail (Batch 87: back to the
+            1. Hero Featured Carousel & Portrait Rail (back to the
             two planned parts — the slides carousel plus the 9:16 portrait
-            carousel. The Batch 85 left-promo column that briefly lived in
+            carousel. The left-promo column that briefly lived in
             this row is gone; that placement now feeds the left picture of
             the New Arrivals / Best Seller / Best Offers section below.)
             ========================================================================= */}
         <section className="mb-10">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            {/* Batch 115: no solid background fill on either hero banner.
+            {/* no solid background fill on either hero banner.
                 The old navy fill bled through as a hard 1px line along the
                 banners' bottom edge (the grid-stretched height is fractional,
                 so the image paints a hair short of the edge and the fill
@@ -381,9 +381,9 @@ export const HomePage: React.FC = () => {
 
             {/* Right rail: the portrait banners — their own CMS placement
                 (homepage_hero_portrait) with a built-in campaign fallback.
-                Batch 85: every published banner joins the rail and it
+                every published banner joins the rail and it
                 rotates like the main carousel; a single banner is static.
-                Batch 96: the rail's strict 9:16 box is the hero row's height
+                the rail's strict 9:16 box is the hero row's height
                 driver — neither column self-starts, so on desktop the grid
                 stretches the main carousel to the same height while the
                 portrait creatives keep their designed ratio. Stacked under
@@ -458,7 +458,7 @@ export const HomePage: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            1B. Trust Strip — the canonical placement (Batch 22H): the four
+            1B. Trust Strip — the canonical placement: the four
             assurance cards live on the homepage, nowhere else.
             ========================================================================= */}
         <section className="reveal mb-14" aria-label="Why shop with Vendora">
@@ -467,7 +467,7 @@ export const HomePage: React.FC = () => {
 
         {/* =========================================================================
             2. Explore Popular Categories - a console-managed section
-            (Batch 85): the tiles render from the `category-tiles` section
+: the tiles render from the `category-tiles` section
             the admin owns; the built-in list above is the fallback while
             the sections read is unavailable.
             ========================================================================= */}
@@ -755,7 +755,7 @@ export const HomePage: React.FC = () => {
         {/* =========================================================================
             3D-2. Recommended For You Shelf
             (Recently Viewed is NOT a homepage section — owner's order,
-            Batch 122: personal browsing history belongs in the shopping
+            personal browsing history belongs in the shopping
             context, so the rail lives on /products and the full history
             on /recently-viewed.)
             ========================================================================= */}
@@ -887,7 +887,7 @@ export const HomePage: React.FC = () => {
 
 
         {/* =========================================================================
-            3G. Inspiration Mosaic - a console-managed section (Batch 85).
+            3G. Inspiration Mosaic - a console-managed section.
             It renders only when an enabled mosaic section exists; the
             seeded one starts disabled, so the page is unchanged until an
             admin turns it on.
@@ -912,7 +912,7 @@ export const HomePage: React.FC = () => {
 
         {/* =========================================================================
             7. Mobile App Promo Banner - a console-managed section
-            (Batch 85): the promo panel's copy lives in the `promo-banner`
+: the promo panel's copy lives in the `promo-banner`
             section's settings; the built-in panel is the fallback while
             the sections read is unavailable.
             ========================================================================= */}
@@ -922,7 +922,7 @@ export const HomePage: React.FC = () => {
       {/* Floating Back-To-Top Button */}
       <BackToTopButton />
 
-      {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+      {/* Shared toast — replaces this page's private pill. */}
       <Toast toast={toast} onDismiss={hideToast} />
     </div>
   );

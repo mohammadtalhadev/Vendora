@@ -8,7 +8,7 @@ const RING_CIRCUMFERENCE = 125.6;
 /**
  * Back-to-top floating button with a scroll-progress ring.
  *
- * Performance contract (Batch 107): Lenis animates the window scroll on
+ * Performance contract: Lenis animates the window scroll on
  * every animation frame, so a scroll listener that calls setState per
  * event re-renders React for the whole glide and reads
  * `documentElement.scrollHeight` (a layout read) per event — the main
@@ -88,7 +88,7 @@ export const BackToTopButton: React.FC = () => {
 
   if (!isVisible) return null;
 
-  // Batch 114: rendered through a portal to <body> on purpose. The button
+  // rendered through a portal to <body> on purpose. The button
   // is mounted deep inside the routed page subtree (under the keyed
   // .page-enter entrance-animation wrapper in RootLayout); a transform
   // animation on an ancestor makes that ancestor the containing block for

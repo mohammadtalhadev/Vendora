@@ -55,7 +55,7 @@ const UNIQUE_KEYS: Record<string, string[]> = {
   // The public form inboxes (migration 20261015000000): one row per email.
   newsletter_subscribers: ['email'],
   commission_config: ['id'],
-  // Batch 61: one folder row per (store, name), as `media_folders` declares.
+  // one folder row per (store, name), as `media_folders` declares.
   media_folders: ['vendor_id', 'name'],
 };
 
@@ -279,13 +279,13 @@ export function createSupabaseDouble() {
     // CMS blocks: hero banners are the `homepage_hero` placement, read by both the
     // admin console (all rows) and the storefront (published rows only).
     content_blocks: [],
-    // Homepage sections (Batch 85): the console manages every row, the
+    // Homepage sections: the console manages every row, the
     // storefront reads enabled sections + active items only.
     site_sections: [],
     site_section_items: [],
     media_items: [],
     media_folders: [],
-    // TEMPORARY testing exemptions (Batch 86, migration 20261017040000):
+    // TEMPORARY testing exemptions (migration 20261017040000):
     // rows only SQL/service role can write in production; the is_mfa_exempt
     // RPC below is the only reader, and it answers only about the caller.
     mfa_exemptions: [],
@@ -322,7 +322,7 @@ export function createSupabaseDouble() {
     /** When true, signUp returns a user but no session, like an email-confirmation project. */
     confirmEmail: false,
     /**
-     * MFA state (Batch 64), mirroring GoTrue's TOTP surface: factors belong
+     * MFA state, mirroring GoTrue's TOTP surface: factors belong
      * to the account, a verified challenge raises THIS session to aal2, and
      * the one code the double accepts is '123456' — any other code is the
      * wrong-code refusal a real authenticator mismatch produces.
@@ -339,7 +339,7 @@ export function createSupabaseDouble() {
     mfaError: null as DoubleError | null,
   };
   /**
-   * Edge Function invocations (Batch 65): tests set the next invoke's
+   * Edge Function invocations: tests set the next invoke's
    * outcome here; every call is recorded with its function name and body.
    * The default outcome is an honest "not deployed" refusal, like a
    * project where the function was never deployed.
@@ -356,7 +356,7 @@ export function createSupabaseDouble() {
   const verifyOtpCalls: Array<Record<string, unknown>> = [];
   /** Every storage upload the client attempted, with the bucket and object path it chose. */
   const storageUploads: Array<{ bucket: string; path: string; file: unknown }> = [];
-  /** Every storage move / removal the client attempted (Batch 61 admin media). */
+  /** Every storage move / removal the client attempted (admin media). */
   const storageMoves: Array<{ bucket: string; from: string; to: string }> = [];
   const storageRemovals: Array<{ bucket: string; paths: string[] }> = [];
   let storageUploadError: DoubleError | null = null;
@@ -2127,7 +2127,7 @@ export function createSupabaseDouble() {
     if (fn === 'rider_delivery_board') {
       const rider = tables.rider_profiles.find((row) => row.user_id === sessionUserId());
       if (!rider) return { data: null, error: { message: 'Not a rider' } };
-      // Batch 77: a 'pending' row is an application, not a courier — the
+      // a 'pending' row is an application, not a courier — the
       // board refuses it with the same refusal as no row at all.
       if (rider.status === 'pending') {
         return { data: null, error: { message: 'Not a rider', code: '42501' } };
@@ -2180,7 +2180,7 @@ export function createSupabaseDouble() {
     }
 
     /**
-     * `apply_as_rider()` (Batch 77): files the caller's own application as
+     * `apply_as_rider()`: files the caller's own application as
      * 'pending' and grants the rider role; while pending it corrects the
      * details, once the rider is active it changes nothing.
      */
@@ -2231,7 +2231,7 @@ export function createSupabaseDouble() {
     }
 
     /**
-     * `admin_set_rider_approval()` (Batch 77): the desk's decision on a
+     * `admin_set_rider_approval()`: the desk's decision on a
      * pending application — approve promotes to 'available', reject removes
      * the row so the applicant can apply again. Admin-guarded, audited.
      */
@@ -2608,7 +2608,7 @@ export function createSupabaseDouble() {
       if (args.p_parent_id !== null && args.p_parent_id !== undefined) category.parent_id = args.p_parent_id;
       if (args.p_is_active !== null && args.p_is_active !== undefined) category.is_active = args.p_is_active;
       if (args.p_icon !== null && args.p_icon !== undefined) category.icon = args.p_icon;
-      // Batch 75: the explicit clear flag nulls the banner; a null argument
+      // the explicit clear flag nulls the banner; a null argument
       // without it keeps the stored image, exactly as the RPC's CASE reads.
       if (args.p_clear_image) category.image = null;
       else if (args.p_image !== null && args.p_image !== undefined) category.image = args.p_image;
@@ -2635,7 +2635,7 @@ export function createSupabaseDouble() {
       };
     }
     if (fn === 'admin_upload_media') {
-      // Batch 72: mirrors migration 20261017020000 - guarded, audited, and the
+      // mirrors migration 20261017020000 - guarded, audited, and the
       // row is born 'approved' for a store destination or the platform (null).
       const denied = refuse('upload a media asset');
       if (denied) return denied;
@@ -2979,7 +2979,7 @@ export function createSupabaseDouble() {
       rpcCalls.push({ fn, args });
       if (rpcError) return { data: null, error: rpcError };
       if (fn === 'is_mfa_exempt') {
-        // Batch 86: mirrors migration 20261017040000 — the definer RPC
+        // mirrors migration 20261017040000 — the definer RPC
         // answers only about the caller (auth.uid()), never about a named
         // account, so the double checks the session user against the table.
         const uid = sessionUserId();
@@ -3189,7 +3189,7 @@ export function createSupabaseDouble() {
         return { error: null };
       }),
       /**
-       * The TOTP MFA surface (Batch 64). Shapes follow supabase-js v2:
+       * The TOTP MFA surface. Shapes follow supabase-js v2:
        * enroll returns the QR/secret payload, verify answers with a fresh
        * session on success, and getAuthenticatorAssuranceLevel reports the
        * level THIS session has reached plus the level it could reach.
@@ -3337,7 +3337,7 @@ export function createSupabaseDouble() {
       storageUploadError = message ? { message } : null;
     },
     /**
-     * Gives the double's account a TOTP factor in the given state (Batch 64),
+     * Gives the double's account a TOTP factor in the given state,
      * the way a completed (or abandoned) authenticator enrollment would.
      */
     seedMfaFactor(status: 'verified' | 'unverified' = 'verified') {
@@ -3353,14 +3353,14 @@ export function createSupabaseDouble() {
       return factor;
     },
     /**
-     * TEMPORARY testing exemption (Batch 86): records the exemption row the
+     * TEMPORARY testing exemption: records the exemption row the
      * SQL editor would insert in production, so is_mfa_exempt answers true
      * for exactly this account.
      */
     seedMfaExemption(userId: string) {
       const row: Row = {
         user_id: userId,
-        note: 'Batch 86 test exemption',
+        note: 'Test exemption',
         created_at: new Date().toISOString(),
       };
       tables.mfa_exemptions.push(row);
@@ -4019,7 +4019,7 @@ export function questionRow(overrides: Partial<Row> = {}): Row {
   };
 }
 
-/** A `media_folders` row (Batch 61): one folder per (store, name). */
+/** A `media_folders` row: one folder per (store, name). */
 export function mediaFolderRow(overrides: Partial<Row> = {}): Row {
   return {
     id: '00000000-0000-4000-8000-000000000802',
@@ -4075,7 +4075,7 @@ export function contentBlockRow(overrides: Partial<Row> = {}): Row {
   };
 }
 
-/** A `site_sections` row (Batch 85): one homepage section instance. */
+/** A `site_sections` row: one homepage section instance. */
 export function siteSectionRow(overrides: Partial<Row> = {}): Row {
   return {
     id: '00000000-0000-4000-8000-000000001101',
@@ -4091,7 +4091,7 @@ export function siteSectionRow(overrides: Partial<Row> = {}): Row {
   };
 }
 
-/** A `site_section_items` row (Batch 85): one tile/card inside a section. */
+/** A `site_section_items` row: one tile/card inside a section. */
 export function siteSectionItemRow(overrides: Partial<Row> = {}): Row {
   return {
     id: '00000000-0000-4000-8000-000000001201',

@@ -22,7 +22,7 @@ const ICONS: Record<WorkspaceId, React.ReactNode> = {
 
 /**
  * ChooseWorkspacePage — where a multi-destination account picks where it
- * is going (Batch 63). Only the destinations the profile's roles allow are
+ * is going. Only the destinations the profile's roles allow are
  * rendered — staff consoles appear solely for admin/support role holders.
  *
  * The profile is re-read on arrival (refreshUser) so a seller approved

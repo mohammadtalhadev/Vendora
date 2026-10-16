@@ -314,7 +314,7 @@ export const AdminCategoriesPage: React.FC = () => {
   };
 
   // Removing a banner is its own save, not a form state: the RPC only clears
-  // the image when the explicit clear flag is sent (Batch 75), so confirming
+  // the image when the explicit clear flag is sent, so confirming
   // here fires that update on its own and empties the field + preview once
   // the database has actually dropped it.
   const removeBanner = () => {
@@ -1129,7 +1129,7 @@ export const AdminCategoriesPage: React.FC = () => {
         </Dialog>
 
         {/* Floating toast */}
-        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        {/* Shared toast — replaces this page's private pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>

@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { asRecord, asRows, num, rpcFailed, text } from './support-client';
 
 /**
- * General support tickets (Batch 38): the desk's second queue beside disputes.
+ * General support tickets: the desk's second queue beside disputes.
  * A ticket is any problem that is not a dispute - account, order help, a
  * technical fault - with a human number (VD-000123), a thread, an owner and a
  * status. Every read and write here goes through the ticket RPCs or the

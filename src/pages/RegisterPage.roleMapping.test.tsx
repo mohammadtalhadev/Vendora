@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 /**
- * Pins the register account-type cards' semantics (Batch 24 audit): the
+ * Pins the register account-type cards' semantics (audit): the
  * Customer card submits a plain customer sign-up (no vendor application),
  * and the Seller card submits a sign-up PLUS a vendor application. If the
  * two ever swap, this file fails.
@@ -67,7 +67,7 @@ describe('RegisterPage account-type mapping', () => {
       target: { value: '3001234567' },
     });
     fillPasswords();
-    // Terms start unticked (Batch 45) and the submit stays disabled until agreed.
+    // Terms start unticked and the submit stays disabled until agreed.
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /Create Customer Account/i }));
 
@@ -99,7 +99,7 @@ describe('RegisterPage account-type mapping', () => {
       target: { value: '3219876543' },
     });
     fillPasswords();
-    // Terms start unticked (Batch 45) and the submit stays disabled until agreed.
+    // Terms start unticked and the submit stays disabled until agreed.
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /Submit Merchant Application/i }));
 

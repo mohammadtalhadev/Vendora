@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { asRecord, bool, num, rpcFailed, text } from './admin-client';
 
 /**
- * The brand registry (Batch 62, migration 20261017010000): `brands` is a real
+ * The brand registry (migration 20261017010000): `brands` is a real
  * table now, written only through the `admin_*_brand` RPCs. It is a registry,
  * not a gate - `products.brand` stays free text, the add-product forms keep
  * their text inputs, and the catalog brand filter keeps matching the product

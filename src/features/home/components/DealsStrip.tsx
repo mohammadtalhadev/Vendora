@@ -18,11 +18,11 @@ export interface DealsStripProps {
  * discounts (compare-at price above price), all priced in canonical PKR
  * through the shared card formatter.
  *
- * Batch 93 (owner points): the tabs are the shared CategoryPill, the
+ * (owner points): the tabs are the shared CategoryPill, the
  * left promo column (CMS banner / built-in Tech Fest card) is gone so the
  * products own the full width, and each tab shows a single row of six.
  *
- * Batch 102 (owner point): the stock-urgency line ("Only X left" /
+ * (owner point): the stock-urgency line ("Only X left" /
  * "Selling fast") renders on the Best Seller tab only — New Arrivals and
  * Best Offers cards stay plain, like every other surface except the
  * homepage Limited Campaign.
@@ -77,9 +77,9 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
       : bestOffers;
 
   // Until the active tab's query lands, the grid shows the same card
-  // skeletons the other home rails use (Batch 47 standard) instead of
+  // skeletons the other home rails use (standard) instead of
   // flashing the "no deals" copy at a catalogue that simply has not
-  // answered yet (Batch 48).
+  // answered yet.
   const activeLoading =
     activeTab === 'best-sellers'
       ? bestSellersLoading
@@ -89,7 +89,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
 
   return (
     <section className="reveal mb-14">
-      {/* Section Tabs: the shared CategoryPill (Batch 93) */}
+      {/* Section Tabs: the shared CategoryPill */}
       <div className="mb-7 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
         <CategoryPill
           selected={activeTab === 'new-arrivals'}
@@ -111,7 +111,7 @@ export const DealsStrip: React.FC<DealsStripProps> = ({
         </CategoryPill>
       </div>
 
-      {/* Products: one row of six, full width (Batch 93, widened Batch 100) */}
+      {/* Products: one row of six, full width (widened) */}
       {activeLoading ? (
         <GridSkeleton count={6} />
       ) : products.length > 0 ? (

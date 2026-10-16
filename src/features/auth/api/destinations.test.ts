@@ -12,7 +12,7 @@ import {
 } from './destinations';
 
 /**
- * The access matrix at unit level (Batch 63): role × entry → landing.
+ * The access matrix at unit level: role × entry → landing.
  * The page-level halves of the same matrix live in
  * LoginPage.access.test.tsx and ProtectedRoute.test.tsx.
  */
@@ -85,8 +85,8 @@ describe('resolvePostLoginLanding — role × entry matrix', () => {
     ['customer, direct', customer, {}, { kind: 'path', path: '/' }],
     ['approved vendor, direct (multi-destination)', vendor, {}, { kind: 'chooser' }],
     ['pending vendor, direct', pendingVendor, {}, { kind: 'path', path: '/' }],
-    ['rider, direct (Batch 59 auto-land)', rider, {}, { kind: 'path', path: '/rider' }],
-    ['support, direct (Batch 59 auto-land)', supportCustomer, {}, { kind: 'path', path: '/support' }],
+    ['rider, direct (auto-land)', rider, {}, { kind: 'path', path: '/rider' }],
+    ['support, direct (auto-land)', supportCustomer, {}, { kind: 'path', path: '/support' }],
     ['support only, direct', support, {}, { kind: 'path', path: '/support' }],
     ['admin, direct (multi-destination)', admin, {}, { kind: 'chooser' }],
     ['multi-role, direct', multiRole, {}, { kind: 'chooser' }],

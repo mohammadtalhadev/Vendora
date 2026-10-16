@@ -9,7 +9,7 @@ const baseProps = {
   onVerify: vi.fn(async () => {}),
 };
 
-describe('HandoverVerificationModal photo proof step (Batch 42)', () => {
+describe('HandoverVerificationModal photo proof step', () => {
   it('closes on success when no proof handler is wired (the original flow)', () => {
     const onClose = vi.fn();
     const { rerender } = render(

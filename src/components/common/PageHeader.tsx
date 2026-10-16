@@ -14,7 +14,7 @@ export interface PageHeaderProps {
 }
 
 /**
- * The one storefront page header (Batch 47). Before this component every
+ * The one storefront page header. Before this component every
  * page hand-rolled its title block — Home had no <h1> at all while Checkout
  * carried three — at slightly different sizes and weights. PageHeader pins
  * the standard: one h1 on the shared page scale, one eyebrow style, one

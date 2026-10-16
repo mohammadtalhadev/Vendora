@@ -3,7 +3,7 @@ import type { SiteSection } from '../../api/sections';
 import { AppPromoSection, type AppPromoContent } from '../../components/AppPromoSection';
 
 /**
- * The promo banner as a section renderer (Batch 85). The panel carries
+ * The promo banner as a section renderer. The panel carries
  * copy only, so its content is read from the section settings the console
  * edits (eyebrow, heading lines, subtext, one bullet per entry); anything
  * a row leaves empty falls back to AppPromoSection's built-in words.

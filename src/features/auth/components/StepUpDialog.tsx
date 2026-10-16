@@ -11,7 +11,7 @@ import { useMfaExempt } from '../../../lib/auth-context';
 import { TotpChallengeForm } from './TotpChallengeForm';
 
 /**
- * StepUpDialog + useStepUp (Batch 64) — the in-console re-proof for
+ * StepUpDialog + useStepUp — the in-console re-proof for
  * sensitive staff actions. Entering the console proves the second factor
  * once; suspending an account, moving a commission rate or issuing a refund
  * asks for a fresh code when the last proof is older than the freshness
@@ -60,7 +60,7 @@ export const StepUpDialog: React.FC<StepUpDialogProps> = ({
 
 export function useStepUp() {
   const [pending, setPending] = useState<(() => void) | null>(null);
-  // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+  // TEMPORARY testing exemption — remove with the mfa_exemptions
   // table. The hook reads the context directly (never assuming a provider),
   // so outside one — the unit-tested-bare case — the answer is the
   // fail-closed false and the dialog behaves exactly as before.
@@ -68,7 +68,7 @@ export function useStepUp() {
 
   /** Runs `action` now when the proof is fresh; otherwise parks it behind the dialog. */
   const requireStepUp = (action: () => void) => {
-    // TEMPORARY testing exemption (Batch 86): an exempt account is treated
+    // TEMPORARY testing exemption: an exempt account is treated
     // as freshly verified, so the action runs without the dialog.
     if (mfaExempt || !needsStepUp()) {
       action();

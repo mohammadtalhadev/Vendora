@@ -78,7 +78,7 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
     const moveToCartBtn = screen.getByRole('button', { name: /Move to Cart/i });
     fireEvent.click(moveToCartBtn);
 
-    // Batch 57: the move AWAITS both persisted writes before it reports, so
+    // the move AWAITS both persisted writes before it reports, so
     // the outcome settles asynchronously even for a guest's local writes.
     await waitFor(() => {
       expect(useCartStore.getState().items).toHaveLength(1);
@@ -135,7 +135,7 @@ describe('WishlistPage component', { timeout: 15000 }, () => {
 
     const clearAllBtn = screen.getByRole('button', { name: /Clear All/i });
     fireEvent.click(clearAllBtn);
-    // Batch 47: clearing confirms first — the dialog's Clear Wishlist button performs it.
+    // clearing confirms first — the dialog's Clear Wishlist button performs it.
     fireEvent.click(screen.getByRole('button', { name: /clear wishlist/i }));
 
     await waitFor(() => expect(useWishlistStore.getState().items).toHaveLength(0));

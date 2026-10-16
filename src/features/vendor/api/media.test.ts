@@ -24,7 +24,7 @@ beforeEach(() => {
   );
 });
 
-describe('Batch 80: uploads file into the store’s kind subfolders', () => {
+describe('uploads file into the store’s kind subfolders', () => {
   it('files an upload under the folder it was given, as a path segment and a label', async () => {
     const item = await uploadMedia(imageFile('banner.png'), 'storefront');
 
@@ -49,7 +49,7 @@ describe('Batch 80: uploads file into the store’s kind subfolders', () => {
   });
 });
 
-describe('Batch 80: recordProfileImage files the profile photo', () => {
+describe('recordProfileImage files the profile photo', () => {
   it('records the photo in Profile Images, replacing the previous photo’s row only', async () => {
     supabaseDouble.seedMediaItem(
       mediaItemRow({

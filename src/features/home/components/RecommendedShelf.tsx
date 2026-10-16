@@ -32,7 +32,7 @@ export const RecommendedShelf: React.FC<RecommendedShelfProps> = ({
   );
 
   if (items.length === 0) {
-    // Page-shaped skeleton while loading (Batch 47); a genuinely empty
+    // Page-shaped skeleton while loading; a genuinely empty
     // result still renders nothing, as before.
     if (!isLoading) return null;
     return (

@@ -31,7 +31,7 @@ import { friendlyError } from '../lib/friendly-error';
 import { formatPrice } from '../store/currency-store';
 
 /**
- * The brand registry (Batch 62): `brands` is a real table, managed through the
+ * The brand registry: `brands` is a real table, managed through the
  * `admin_*_brand` RPCs, and this page is its console. The directory merges the
  * registry with the catalog: a registered brand shows even with no listings,
  * and a brand string sellers typed into the free-text `products.brand` field

@@ -97,7 +97,7 @@ const KIND_DETAILS: Record<NotificationKind, KindDetails> = {
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/60',
     iconBgClass: 'bg-amber-100 text-amber-700',
     // No action button: the owner removed the deal CTA site-wide
-    // (Batch 121). Clicking the notification itself still follows
+    //. Clicking the notification itself still follows
     // notice.href, so nothing is lost.
   },
   review: {

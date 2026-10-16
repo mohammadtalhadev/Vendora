@@ -127,7 +127,7 @@ describe('setMediaStatus', () => {
   });
 });
 
-describe('Batch 61: admin media management', () => {
+describe('admin media management', () => {
   const storedItem = {
     id: 'm-file',
     vendor_id: STORE_A,
@@ -219,7 +219,7 @@ describe('Batch 61: admin media management', () => {
   });
 });
 
-describe('Batch 66: listAdminMediaStores (New Folder picker)', () => {
+describe('listAdminMediaStores (New Folder picker)', () => {
   it('returns every store even when the library is completely empty', async () => {
     signInAsAdmin();
     seedStores();
@@ -277,7 +277,7 @@ describe('Batch 66: listAdminMediaStores (New Folder picker)', () => {
   });
 });
 
-describe('Batch 72: platform media - the admin’s own folders and uploads', () => {
+describe('platform media - the admin’s own folders and uploads', () => {
   const bannerFile = () =>
     new File([new Uint8Array([1, 2, 3])], 'hero banner.png', { type: 'image/png' });
 

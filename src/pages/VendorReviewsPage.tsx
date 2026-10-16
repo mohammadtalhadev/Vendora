@@ -796,7 +796,7 @@ export const VendorReviewsPage: React.FC = () => {
         </Dialog>
 
         {/* ── Floating Toast Notification ───────────────────────────── */}
-        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        {/* Shared toast — replaces this page's private pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>

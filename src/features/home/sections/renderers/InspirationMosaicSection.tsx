@@ -7,7 +7,7 @@ import {
 } from '../../components/InspirationMosaic';
 
 /**
- * The inspiration mosaic as a section renderer (Batch 85). Cards come from
+ * The inspiration mosaic as a section renderer. Cards come from
  * the section's items: image, heading (card title), subtext and the tag
  * chip carried in the item label. The card spans follow the built-in
  * mosaic's 8/4/6/6 rhythm by position. The shop-the-look pins are

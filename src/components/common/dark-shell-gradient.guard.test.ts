@@ -1,18 +1,18 @@
 /**
- * Dark-shell gradient guard (Batch 106).
+ * Dark-shell gradient guard.
  *
  * The storefront shells paint the ambient page canvas as a LIGHT gradient
  * (`bg-gradient-to-br from-slate-50 via-[#f8fafc] to-[#eef2f6]`). A
  * `dark:bg-*` token only sets background-COLOR — the gradient is a
  * background-IMAGE and paints OVER the colour, so a shell that forgets
  * `dark:bg-none` keeps the whole page light in dark mode while the
- * Batch 81 adaptation layer has already flipped its headings to white:
- * white-on-white section titles and a half-dark page (the failure the
- * owner screenshotted on the homepage, 2026-10-15). WorkspaceLayout
+ * adaptation layer has already flipped its headings to white:
+ * white-on-white section titles and a half-dark page (the failure
+ * first seen on the homepage). WorkspaceLayout
  * (panels) always carried `dark:bg-none`; the storefront shells did not.
  *
  * Same family: the ambient orbs' hex gradient stops are NOT remapped by
- * the Batch 81 palette layer (only palette stops are), so a light hex
+ * the palette layer (only palette stops are), so a light hex
  * stop (`via-[#F1F5F9]`, `to-[#F1F5F9]`) survives into dark mode as a
  * bright blob unless the literal neutralises it in dark.
  *

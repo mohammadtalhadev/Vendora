@@ -57,7 +57,7 @@ describe('AdminNotificationsPage email copy', () => {
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Maintenance window' } });
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Read-only from 02:00.' } });
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
-    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    // the send confirms first — the dialog's own Send button performs it.
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
     );
@@ -79,7 +79,7 @@ describe('AdminNotificationsPage email copy', () => {
     });
     fireEvent.click(screen.getByLabelText(/also send as email/i));
     fireEvent.click(screen.getByRole('button', { name: /send announcement/i }));
-    // Batch 47: the send confirms first — the dialog's own Send button performs it.
+    // the send confirms first — the dialog's own Send button performs it.
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: /send announcement/i }),
     );

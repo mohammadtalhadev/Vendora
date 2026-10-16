@@ -23,7 +23,7 @@ import {
 import { formatPrice } from '../store/currency-store';
 
 /**
- * Inventory & Stock (Batch 79) — the platform's stock console. Sellers have
+ * Inventory & Stock — the platform's stock console. Sellers have
  * always had their own inventory page; staff had none, so a sold-out or
  * nearly-out listing was invisible from the admin panel. This page reads the
  * same `products.stock` column of record across every store: what is tracked,

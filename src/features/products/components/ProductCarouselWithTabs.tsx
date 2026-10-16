@@ -66,7 +66,7 @@ export const ProductCarouselWithTabs: React.FC<ProductCarouselWithTabsProps> = (
 
   // Filter out any "all" tab defensively if passed accidentally, strictly
   // limit to 4 tabs, and drop tabs whose sub-category has no products in this
-  // rail — a tab that can only show an empty track is a dead end (Batch 22J).
+  // rail — a tab that can only show an empty track is a dead end.
   const sanitizedTabs = useMemo(() => {
     return tabs
       .filter((t) => t.id.toLowerCase() !== 'all' && t.name.toLowerCase() !== 'all products')

@@ -203,7 +203,7 @@ describe('VendorProductsPage and the listing form', () => {
     });
     fireEvent.change(within(dialog).getByRole('combobox'), { target: { value: 'cat-audio' } });
 
-    // Quick add (Batch 48): price and stock sit on the single form, no tabs.
+    // Quick add: price and stock sit on the single form, no tabs.
     fireEvent.change(within(dialog).getByLabelText(/^Price/), { target: { value: '189' } });
     fireEvent.change(within(dialog).getByLabelText(/Opening Stock/), { target: { value: '40' } });
 
@@ -270,7 +270,7 @@ describe('ProductFormModal (quick add)', () => {
     expect(within(dialog).getByLabelText(/^Price/)).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/Opening Stock/)).toBeInTheDocument();
 
-    // No second full form hides in the modal (Batch 48): variants, digital
+    // No second full form hides in the modal: variants, digital
     // delivery and shipping settings belong to the full form alone.
     expect(within(dialog).queryByText(/Variant Generator/i)).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/Pricing & Delivery/i)).not.toBeInTheDocument();

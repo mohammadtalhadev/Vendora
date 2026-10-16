@@ -11,7 +11,7 @@ import {
 } from '../api/location';
 
 /**
- * Customer-side live tracking + photo proof for one order (Batch 42).
+ * Customer-side live tracking + photo proof for one order.
  *
  * Everything here comes from `get_order_delivery_live`: the order's own
  * deliveries, the rider's shared position while a parcel is on the road, and

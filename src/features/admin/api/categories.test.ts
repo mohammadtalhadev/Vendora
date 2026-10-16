@@ -159,7 +159,7 @@ describe('updateCategory', () => {
     expect((await categories.fetchCategoryTree()).roots.find((root) => root.id === AUDIO)?.isActive).toBe(false);
   });
 
-  it('removes a banner only when the explicit clear flag is sent (Batch 75)', async () => {
+  it('removes a banner only when the explicit clear flag is sent', async () => {
     const row = () => supabaseDouble.tables.categories.find((category) => category.id === AUDIO);
 
     await categories.updateCategory({ categoryId: AUDIO, image: 'https://example.test/banner.png' });

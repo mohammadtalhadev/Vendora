@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
 
 /**
- * Homepage sections (Batch 85): the image blocks of the homepage live in
+ * Homepage sections: the image blocks of the homepage live in
  * `site_sections` + `site_section_items`, managed from the admin console's
  * Homepage Sections page. This module is the storefront's read of them.
  *

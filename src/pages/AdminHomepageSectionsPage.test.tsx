@@ -36,7 +36,7 @@ beforeEach(() => {
 const renderPage = () =>
   renderWorkspace(<AdminHomepageSectionsPage />, ['/admin/homepage-sections']);
 
-describe('AdminHomepageSectionsPage (Batch 85)', () => {
+describe('AdminHomepageSectionsPage', () => {
   it('lists the sections the database holds, with their type labels', async () => {
     supabaseDouble.seedSiteSection(siteSectionRow({ id: 's-1' }));
     supabaseDouble.seedSiteSection(

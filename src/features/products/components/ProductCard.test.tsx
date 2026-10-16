@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ProductCard, type ProductCardProps, type ProductItem } from './ProductCard';
 
 /**
- * Batch 102 (owner point): the stock-urgency line ("Only X left" /
+ * (owner point): the stock-urgency line ("Only X left" /
  * "Selling fast") belongs ONLY on the selling-pressure surfaces — the
  * DealsStrip Best Seller tab and the homepage Limited Campaign, which
  * pass `showStockUrgency`. Every other card stays plain. The numbers
@@ -46,7 +46,7 @@ const renderCard = (
     </MemoryRouter>,
   );
 
-describe('ProductCard stock line (Batch 102)', () => {
+describe('ProductCard stock line', () => {
   it('plain card: no stock line at all, however low the stock', () => {
     const { container } = renderCard({ stock: 3 });
     expect(container.textContent).not.toContain('Only');

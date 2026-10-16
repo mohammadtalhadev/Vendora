@@ -40,7 +40,7 @@ export interface ProductCardProps {
   solidAddToCart?: boolean;
   expressBadge?: string;
   /**
-   * Stock-urgency line ("Only X left" / "Selling fast") — Batch 102, owner
+   * Stock-urgency line ("Only X left" / "Selling fast") — owner
    * rule: this inventory display belongs ONLY on the selling-pressure
    * surfaces (the DealsStrip Best Seller tab and the homepage Limited
    * Campaign). Every other surface renders the plain card, with no stock
@@ -232,7 +232,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         </div>
       </div>
 
-      {/* Stock line — Batch 102: the urgency line ("Only X left" /
+      {/* Stock line — the urgency line ("Only X left" /
           "Selling fast") renders ONLY where the surface passes
           showStockUrgency (Best Sellers, Limited Campaign); everywhere
           else the card is plain. An out-of-stock product still says so on

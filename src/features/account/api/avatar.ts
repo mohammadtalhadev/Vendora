@@ -77,7 +77,7 @@ export async function uploadAvatar(file: File): Promise<string> {
   }
 
   // A seller's photo also files into their store library's Profile Images
-  // folder (Batch 80). Best-effort: accounts without a store have no library,
+  // folder. Best-effort: accounts without a store have no library,
   // and the helper never throws - the photo change has already landed.
   await recordProfileImage({
     name: file.name,

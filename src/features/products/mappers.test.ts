@@ -3,7 +3,7 @@ import { domainProductToCardItem } from './mappers';
 import type { Product } from '../../types/domain';
 
 /**
- * Batch 102: the card item carries GENUINE stock values only. The old
+ * the card item carries GENUINE stock values only. The old
  * mapper invented both the numerator (`stock ?? 20`) and the cart cap /
  * progress-bar denominator (`Math.max(stock, 50)`).
  */
@@ -29,7 +29,7 @@ const productWithStock = (stock: number | null | undefined): Product => ({
   createdAt: '2026-01-01T00:00:00.000Z',
 });
 
-describe('domainProductToCardItem stock values (Batch 102)', () => {
+describe('domainProductToCardItem stock values', () => {
   it('carries the real stock, and the cart cap is that same stock — not a floor of 50', () => {
     const item = domainProductToCardItem(productWithStock(18));
     expect(item.stock).toBe(18);

@@ -8,7 +8,7 @@ import { captureException } from './error-reporter';
  * shared browser (FE-SEC F3).
  */
 export const queryClient = new QueryClient({
-  // Handled failures are reported too (Batch 54): until now only uncaught
+  // Handled failures are reported too: until now only uncaught
   // errors reached error_logs, so the failures pages caught and displayed —
   // including auth 500s — left no trace. Reporting only; pages keep display
   // duty, and captureException dedupes an error object reported twice.

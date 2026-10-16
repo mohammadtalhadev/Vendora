@@ -325,7 +325,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileDrawerRef = useRef<HTMLDivElement>(null);
-  // Batch 82: the drawer stays mounted for one exit animation after `mobileMenuOpen` flips
+  // the drawer stays mounted for one exit animation after `mobileMenuOpen` flips
   // false, so it slides out instead of vanishing. Opening still mounts in the same commit as
   // before, so `useDisclosure`'s focus-on-open is untouched; every close path (X, backdrop,
   // Esc, nav click, hamburger toggle) funnels through `setMobileMenuOpen(false)`, so the
@@ -847,7 +847,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
           {/* Right section: Date range + Context action + Urgency badge + Create dropdown + Help + Theme + Notifications + User Avatar */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Switch workspace (Batch 63): every shell carries it, so a
+            {/* Switch workspace: every shell carries it, so a
                 multi-role account moves between consoles without a new
                 sign-in. It renders nothing for single-workspace accounts. */}
             <SwitchWorkspaceMenu />
@@ -1446,7 +1446,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 )}
               </div>
             )}
-            {/* Route entrance (Batch 82): same .page-enter treatment as
+            {/* Route entrance: same .page-enter treatment as
                 the storefront shell, keyed by pathname so panel pages
                 fade/rise once per navigation. It sits inside the Lenis
                 content wrapper, so the scroller's measurements are

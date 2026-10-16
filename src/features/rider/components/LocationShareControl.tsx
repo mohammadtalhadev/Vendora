@@ -6,7 +6,7 @@ import { freshnessLabel } from '../api/location';
 const SHARABLE_STATUSES = ['picked_up', 'in_transit', 'out_for_delivery'];
 
 /**
- * The rider's live-location toggle for one parcel (Batch 42). Rendered only
+ * The rider's live-location toggle for one parcel. Rendered only
  * while the parcel is on the road; sharing is always the rider's tap, never
  * automatic, and the line under the button says what last reached Postgres -
  * a share that is sending nothing shows its error instead of a green dot.

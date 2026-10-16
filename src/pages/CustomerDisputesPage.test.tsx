@@ -41,7 +41,7 @@ const renderAt = (path: string) =>
     [path],
   );
 
-describe('CustomerDisputesPage deep links (Batch 57)', () => {
+describe('CustomerDisputesPage deep links', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.fetchMyDisputes.mockResolvedValue([REAL_DISPUTE]);

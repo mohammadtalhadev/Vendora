@@ -15,7 +15,7 @@ import { StepUpDialog } from './StepUpDialog';
 import { TotpEnrollForm } from './TotpEnrollForm';
 
 /**
- * MfaSettingsCard — the account's two-factor status and controls (Batch 64):
+ * MfaSettingsCard — the account's two-factor status and controls:
  * set up an authenticator, or remove it. Removal is itself a sensitive
  * action, so it requires an aal2 session with a fresh code proof (the
  * step-up dialog opens first when either is missing) — a hijacked aal1
@@ -42,13 +42,13 @@ export const MfaSettingsCard: React.FC<MfaSettingsCardProps> = ({ className }) =
   const [error, setError] = useState<string | null>(null);
   const [removeArmed, setRemoveArmed] = useState(false);
   const [removing, setRemoving] = useState(false);
-  // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+  // TEMPORARY testing exemption — remove with the mfa_exemptions
   // table. Read directly from the MFA API in load() (this card deliberately
   // never touches the auth context) and surfaced as a plain notice below.
   const [exempt, setExempt] = useState(false);
   const mountedRef = useRef(true);
   // The enrol form's styling keys off the surface theme the way the staff
-  // portal's does (Batch 86).
+  // portal's does.
   const theme = useThemePreference();
 
   const load = useCallback(async () => {
@@ -194,7 +194,7 @@ export const MfaSettingsCard: React.FC<MfaSettingsCardProps> = ({ className }) =
               void load();
             }}
             onAlreadyEnrolled={() => {
-              // Batch 88: setup found an authenticator already on the
+              // setup found an authenticator already on the
               // account (this card's factor read was stale). Close the
               // form and reload into the set-up state above, where the
               // remove action — the deliberate way to start over — lives.

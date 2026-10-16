@@ -7,7 +7,7 @@ import {
   MEDIA_FOLDER_SECTIONS,
 } from './mediaData';
 
-describe('Batch 80: canonical media folder sections', () => {
+describe('canonical media folder sections', () => {
   it('names the three kind subfolders the upload flows file into', () => {
     expect(MEDIA_FOLDER_SECTIONS).toEqual([
       { folder: 'products', label: 'Product Images' },

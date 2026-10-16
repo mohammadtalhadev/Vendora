@@ -195,7 +195,7 @@ export async function quoteCheckout(
 }
 
 /**
- * Idempotency for one checkout attempt (Batch 44). Generated lazily on the
+ * Idempotency for one checkout attempt. Generated lazily on the
  * first try and REUSED by every retry, double-click and resubmit of that
  * attempt, so `place_order` can recognise a repeat and hand back the order
  * it already booked instead of booking a second one. Cleared only after a

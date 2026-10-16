@@ -18,7 +18,7 @@ export interface DataTableColumn<T> {
   /** Extra classes for the header cell (merged over the standard `py-3 px-4`). */
   headerClassName?: string;
   /**
-   * Opt-in sorting (Batch 48): when provided, the header becomes a sort
+   * Opt-in sorting: when provided, the header becomes a sort
    * button and clicking it sorts the rendered rows by this value, toggling
    * ascending/descending. Sorting is client-side over the rows the page
    * handed in — a paginated page sorts the page it rendered, it does not
@@ -122,7 +122,7 @@ const alignClass = (align: DataTableColumn<unknown>['align']): string =>
  * Styling reproduces the admin console's hand-rolled tables exactly
  * (slate header band, `py-3 px-4` cells, row hairlines, hover wash), so a
  * page can swap its local `<table>` for DataTable without a visual change.
- * Sorting is opt-in per column via `sortValue` (Batch 48): the sort state
+ * Sorting is opt-in per column via `sortValue`: the sort state
  * lives here, uncontrolled, because every current page wants the same
  * click-to-toggle behaviour over the rows it rendered. Pagination composes
  * the existing TablePagination rather than replacing it.
@@ -312,7 +312,7 @@ export function DataTable<T>({
               })}
             </tr>
           </thead>
-          {/* data-table-rows (Batch 82): body rows fade in on mount with
+          {/* data-table-rows: body rows fade in on mount with
               the capped stagger defined in base.css; opacity-only, so
               row hover/selection rendering is untouched. */}
           <tbody className="divide-y divide-slate-100 data-table-rows">

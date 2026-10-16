@@ -6,7 +6,7 @@ import {
   BEAUTY_BRAND_LOGOS,
 } from './BrandLogoMarquee';
 
-describe('BrandLogoMarquee (Batch 94)', () => {
+describe('BrandLogoMarquee', () => {
   it('renders every logo twice for the seamless loop; the duplicate pass is decorative', () => {
     const logos = [
       { src: '/images/brands/electronics/apple.webp', alt: 'Apple' },

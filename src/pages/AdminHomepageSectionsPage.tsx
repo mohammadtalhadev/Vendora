@@ -34,7 +34,7 @@ import {
 import { Button } from '../components/ui/button';
 
 /**
- * Homepage Sections (Batch 85): the console for `site_sections`. Every
+ * Homepage Sections: the console for `site_sections`. Every
  * image block of the homepage that the section registry renders is created,
  * edited, reordered, enabled/disabled and deleted here - no deploy. The
  * type picker comes from the same registry the storefront renders from,
@@ -107,7 +107,7 @@ const ItemForm: React.FC<{
     setUploading(true);
     setUploadError(null);
     try {
-      // Platform-owned, into the media library's `cms` folder (Batch 72);
+      // Platform-owned, into the media library's `cms` folder;
       // the recorded row's public URL is what the section item points at.
       const uploaded = await uploadAdminMedia(file, { vendorId: null, folder: 'cms' });
       set({ imageUrl: uploaded.cdnUrl });

@@ -6,11 +6,11 @@ import { RecentlyViewedRail } from '../features/catalog/components/RecentlyViewe
 /**
  * All Products (/products, /search): the shared catalogue browser with its
  * default identity. The browser lives in features/catalog — /products,
- * /new-arrivals and /deals are one implementation (Batch 52), so a facet or
+ * /new-arrivals and /deals are one implementation, so a facet or
  * card fix lands on all three at once.
  *
  * The Recently Viewed rail leads the catalogue on /products only
- * (Batch 122): browsing history belongs in the shopping context, not on
+ *: browsing history belongs in the shopping context, not on
  * the homepage (owner's order) and not above search results, where the
  * shopper has already said what they are looking for. The rail renders
  * nothing when this device has no history.

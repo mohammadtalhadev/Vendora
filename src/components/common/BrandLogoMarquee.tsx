@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * The ONE brand-logo marquee (Batch 94). Every logo strip on the site used
+ * The ONE brand-logo marquee. Every logo strip on the site used
  * to be a single combined PNG with all the brands baked into one image —
  * frozen, uneditable, and impossible to restyle per brand. This component
  * renders each brand as its own PNG on a continuously scrolling track

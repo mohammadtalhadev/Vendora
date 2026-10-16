@@ -45,8 +45,8 @@ interface FaqEntry {
  * no accordion), full width, with a faded Load-more tail.
  *
  * Every answer describes behaviour the storefront actually has (checkout
- * payment methods, the 30-day returns flow, the dispute flow, the Batch 23
- * email rules, the Batch 10 card-storage rules). The invented escrow vault,
+ * payment methods, the 30-day returns flow, the dispute flow, the
+ * email rules, the card-storage rules). The invented escrow vault,
  * courier-partner claims, SLA vouchers, payout cycles and helpful-vote
  * counts that an earlier version of this page carried are gone for good.
  */

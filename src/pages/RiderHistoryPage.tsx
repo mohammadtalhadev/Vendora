@@ -23,7 +23,7 @@ const stamp = (iso: string | null): string => {
  * never appears at all.
  */
 /**
- * The COD block on a closed parcel (Batch 42). The order's payment method
+ * The COD block on a closed parcel. The order's payment method
  * comes from the delivered ledger (orders holds it, and no rider policy opens
  * that table); the cash state comes from the delivery row's own stamps. The
  * amount offered is the parcel's booked gross - the order total the buyer was

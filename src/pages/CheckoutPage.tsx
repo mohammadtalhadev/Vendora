@@ -92,7 +92,7 @@ export const CheckoutPage: React.FC = () => {
   const quote = totals.data;
 
   // Each package's delivery estimate comes from its seller's published
-  // times for the buyer's region (Batch 91); a seller who set none — or a
+  // times for the buyer's region; a seller who set none — or a
   // database without the times view yet — quotes the standard window.
   const sellerTimesQuery = useSellerDeliveryTimes(quote?.groups.map((g) => g.sellerId) ?? []);
 
@@ -391,7 +391,7 @@ export const CheckoutPage: React.FC = () => {
           <span className="text-slate-900 dark:text-white font-semibold">Checkout</span>
         </nav>
 
-        {/* Top Header Title — shared PageHeader (Batch 47): the page's one h1
+        {/* Top Header Title — shared PageHeader: the page's one h1
             in this state; the sign-in gate and empty-cart states above carry
             their own single h1 and never render together with this one. */}
         <PageHeader title="Your Cart & Secure Checkout" />

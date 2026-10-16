@@ -27,7 +27,7 @@ import { StatusBadge } from '../components/ui/status-badge';
 import { DataTable, type DataTableColumn } from '../components/patterns/data-table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
-/** Form-density trigger for dialog selects (panel standard, Batch 57). */
+/** Form-density trigger for dialog selects (panel standard,). */
 const FORM_SELECT_TRIGGER = 'h-10 w-full rounded-lg px-3 text-xs';
 
 const REJECT_REASON_OPTIONS = [
@@ -188,7 +188,7 @@ export const AdminProductsPage: React.FC = () => {
     // Every figure on this row comes from the queue read's desk-wide counts.
     // `total` is the FILTERED pool's size (the pending queue can be a single
     // listing while the counts span the whole catalogue), so dividing global
-    // counts by it produced an "approval rate" of 11200.0% (Batch 59). The
+    // counts by it produced an "approval rate" of 11200.0%. The
     // approval rate is the share of DECIDED submissions that were approved.
     const totalSubmissions =
       counts.pendingReview + counts.approved + counts.rejected + counts.draft + counts.archived;
@@ -757,7 +757,7 @@ export const AdminProductsPage: React.FC = () => {
         </ModalWrapper>
 
         {/* Floating Toast Notification */}
-        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        {/* Shared toast — replaces this page's private pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>

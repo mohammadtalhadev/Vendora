@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 /**
- * Ronin-style PDP sticky bars (Batch 121, rebuilt Batch 133).
+ * Ronin-style PDP sticky bars (rebuilt).
  *
  * Two floating aids modelled on the Ronin product page, built only from
  * what this page already knows (real section ids, the real selected
@@ -24,10 +24,10 @@ import {
  *    opacity/translate fade — which also hands the top slot back to
  *    Vendora's smart header, which returns on scroll-up). Clicks
  *    smooth-scroll to the section; a scroll-spy highlights the tab of
- *    the section in view. Batch 133 adds the FAQ's tab now that the PDP
- *    has a real FAQ section (Batch 121 shipped without one because no
- *    FAQ section existed and unverified FAQ claims were not an option).
- *    The Batch 121 implementation used `position: sticky`, which never
+ *    the section in view. The FAQ's tab is included because the PDP
+ *    now has a real FAQ section — it was left out while no FAQ
+ *    section existed, rather than filled with unverified claims.
+ *    An earlier version used `position: sticky`, which never
  *    engaged: the PDP root carries `overflow-hidden`, and an
  *    overflow-hidden ancestor silently disables sticky descendants.
  *
@@ -178,7 +178,7 @@ export const ProductSectionNav: React.FC = () => {
  * staggered fade — ~650ms total, keyframes in styles/base.css
  * (vendora-burst-*). Monochrome currentColor so it sits on the emerald
  * added-state buttons; under prefers-reduced-motion the rays stay
- * hidden and the check sits static (base.css opt-out + the Batch 82
+ * hidden and the check sits static (base.css opt-out + the
  * global kill-switch).
  */
 const BURST_RAYS: Array<{ x1: number; y1: number; x2: number; y2: number }> = [
@@ -249,7 +249,7 @@ export interface ProductQuickAddPillProps {
   added: boolean;
   onAdd: () => void;
   /**
-   * Batch 133 — the pill stays mounted and animates between shown and
+   * the pill stays mounted and animates between shown and
    * hidden (Ronin's slide/fade), instead of popping in and out of the
    * DOM. The page drives this from the buy-box and footer observers.
    */

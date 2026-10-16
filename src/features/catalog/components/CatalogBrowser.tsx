@@ -46,7 +46,7 @@ const RATING_OPTIONS: Array<{ label: string; value: string }> = [
 interface FacetSectionsProps {
   categories: Category[];
   /**
-   * Batch 132 (owner's call): the category facet is contextual. With no
+   * (owner's call): the category facet is contextual. With no
    * category selected `categories` carries the ROOT categories only and this
    * is null; once a category is selected the caller passes only that root's
    * subcategories and the root itself here, so the rail shows an
@@ -272,16 +272,16 @@ export interface CatalogBrowserProps {
   /**
    * The page IS the sale shelf (Deals): every query is forced on-sale and the
    * sale facet is not offered as a toggle. Facet behaviour is otherwise the
-   * exact B46 system — one implementation for /products, /new-arrivals, /deals.
+   * exact system — one implementation for /products, /new-arrivals, /deals.
    */
   lockedOnSale?: boolean;
 }
 
 /**
- * The one catalogue browser (Batch 52, extracted from ProductsPage): URL-driven
+ * The one catalogue browser (extracted from ProductsPage): URL-driven
  * server-side facets (category / brand / rating / availability / price), sort,
  * grid/list, pagination and the category banner. /products, /new-arrivals and
- * /deals are this component with different page identities — before Batch 52
+ * /deals are this component with different page identities — before
  * New Arrivals had no filters at all and Deals ran a separate hand-rolled
  * layout with client-side buckets, which is why the three pages felt unrelated.
  *
@@ -380,7 +380,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
   // the page mid-typing and ate characters (QA C-3: "100000" became
   // "10000"), so typing edits the draft only; the draft commits on blur /
   // Apply. In PKR the rate is 1 and every step below is the identity, so
-  // PKR behaviour is exactly what Batch 3 shipped.
+  // PKR behaviour is exactly what shipped.
   const toDisplayDraft = (pkr: number | undefined): string => {
     if (pkr === undefined) return '';
     const display = convertPrice(pkr);
@@ -454,7 +454,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
     : categoriesData?.categories.find((c) => c.slug === categoryParam || c.id === categoryParam) ?? null;
   const heading = activeCategory?.name ?? (q ? `Results for “${q}”` : fallbackHeading);
 
-  // Batch 132 (owner's call): the sidebar category facet drills down instead
+  // (owner's call): the sidebar category facet drills down instead
   // of listing the whole taxonomy flat. No selection → root categories only.
   // A selection → the family root (the active category itself, or its parent
   // when a subcategory is active) plus that root's subcategories ONLY;

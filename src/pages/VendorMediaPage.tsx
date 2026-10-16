@@ -98,7 +98,7 @@ export const VendorMediaPage: React.FC = () => {
 
   const items = useMemo(() => library.data ?? [], [library.data]);
   const folders = useMemo(() => foldersOf(items), [items]);
-  // Library order (Batch 80): the kind subfolders first - Product Images,
+  // Library order: the kind subfolders first - Product Images,
   // Storefront Banners, Profile Images - then the store's own folders A-Z.
   const sectionFolders = useMemo(
     () => folders.filter((name) => folderSectionLabel(name)).sort(compareFolderNames),

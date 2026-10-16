@@ -188,7 +188,7 @@ describe('fetchProducts', () => {
     expect(digital.items).toEqual([]);
   });
 
-  it('narrows by brand, minimum rating, stock and sale (Batch 46 facets)', async () => {
+  it('narrows by brand, minimum rating, stock and sale (facets)', async () => {
     supabaseDouble.seedProduct(
       productRow({
         id: '00000000-0000-4000-8000-000000000110',

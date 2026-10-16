@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mapProduct, PRODUCT_SELECT, type ProductWithRefs } from './product-row';
 
 /**
- * Batch 123 — the seller rollup rides the product read: vendor_profiles
+ * the seller rollup rides the product read: vendor_profiles
  * carries real `rating` / `review_count` columns, and the PDP seller card
  * renders them as the SELLER's rating (distinct from the product's own
  * review aggregate). A seller embed that is missing — or whose rollup
@@ -51,7 +51,7 @@ const sellerWith = (overrides: Partial<NonNullable<ProductWithRefs['seller']>>) 
   ...overrides,
 });
 
-describe('mapProduct seller rollup (Batch 123)', () => {
+describe('mapProduct seller rollup', () => {
   it('maps the seller rating and review count from the vendor_profiles embed', () => {
     const product = mapProduct(baseRow(sellerWith({})));
     expect(product.sellerRating).toBe(4.3);

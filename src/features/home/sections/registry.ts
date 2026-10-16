@@ -5,7 +5,7 @@ import { InspirationMosaicSection } from './renderers/InspirationMosaicSection';
 import { PromoBannerSection } from './renderers/PromoBannerSection';
 
 /**
- * The homepage section registry (Batch 85).
+ * The homepage section registry.
  *
  * Every homepage block the console can manage is a section TYPE registered
  * here: a renderer component, the page anchor it renders at, and the item

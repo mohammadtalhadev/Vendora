@@ -32,7 +32,7 @@ import { MegaMenu } from './MegaMenu';
 import { NotificationDropdown } from '../common/NotificationDropdown';
 
 /**
- * THE navbar icon-button treatment (Batch 22L). Every icon button in the
+ * THE navbar icon-button treatment. Every icon button in the
  * header — menu, wishlist, notifications, compare, cart — shares this one
  * hover/focus recipe: frosted white wash, soft shadow, sun-orange icon,
  * visible focus ring, and the icon scales via `group`. The notification bell
@@ -43,7 +43,7 @@ const NAV_ICON_BUTTON_CLASS =
   'relative h-10 w-10 items-center justify-center rounded-full text-slate-700 dark:text-slate-200 transition-all group shrink-0 cursor-pointer hover:bg-white dark:hover:bg-white/10 hover:shadow-lg hover:shadow-orange-500/20 dark:hover:shadow-black/30 hover:ring-2 hover:ring-sun-orange hover:text-sun-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-orange/60';
 
 /**
- * The category strip's text-link recipe (Batch 98): the quick category links
+ * The category strip's text-link recipe: the quick category links
  * and the strip's right-aligned utility links share one hover/focus treatment
  * on the solid bar, in both schemes.
  */
@@ -123,7 +123,7 @@ export const Navbar: React.FC = () => {
   // Frosted pill elevation + utility strip collapse on scroll
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Smart sticky behaviour (Batch 111, owner): once the page is scrolled,
+  // Smart sticky behaviour (owner): once the page is scrolled,
   // ONLY the Vendora main pill rides along — the utility strip (existing
   // collapse) and the category strip pill collapse away with animation —
   // and the header itself slides UP out of view on a downward scroll and
@@ -136,7 +136,7 @@ export const Navbar: React.FC = () => {
   const lastScrollYRef = useRef(0);
   const menusOpenRef = useRef(false);
 
-  // Dark mode — the storefront toggle (Batch 98) writes the SAME preference
+  // Dark mode — the storefront toggle writes the SAME preference
   // the workspace header's toggle writes: the `vd_theme` localStorage value
   // plus the `.dark` class on <html> that Tailwind's `dark:` variant keys
   // off (see src/lib/theme.ts). Initializer and persistence mirror
@@ -356,7 +356,7 @@ export const Navbar: React.FC = () => {
             isScrolled ? 'is-collapsed' : ''
           }`}
         >
-          {/* Left links — the marketplace shortcuts (Batch 22K): sell, deals,
+          {/* Left links — the marketplace shortcuts: sell, deals,
               tracking and help, the set big marketplaces put on this strip.
               Every target is a real route in the router. */}
           <div className="flex items-center gap-4 sm:gap-6">
@@ -400,15 +400,15 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          1. Main Pill (Batch 98 + Batch 107) — the header itself is a true
-          floating pill again: Batch 98 turned it into a full-width
+          1. Main Pill () — the header itself is a true
+          floating pill again: turned it into a full-width
           rectangular bar and the capsule shape was lost (owner: "header ha
-          tu sahi pill shape mei nhi ha"). Batch 107 restores the original
+          tu sahi pill shape mei nhi ha"). restores the original
           header-pill-shell (border-radius: var(--radius-pill) = 9999px,
           frosted surface, scroll elevation) inside the page container, so
           the ends are fully rounded capsules — nothing inside changes:
           brand, the floating search pill, and the quick actions keep their
-          Batch 98 recipes, and no element is removed. Batch 111: the
+          recipes, and no element is removed. the
           header's dropdowns (account menu, search suggestions, category
           picker, mobile drawer, notifications) are SOLID white — the old
           bg-white/85–95 glass let the hero show through them once they
@@ -443,7 +443,7 @@ export const Navbar: React.FC = () => {
               </Link>
             </div>
 
-            {/* Center: Floating Search Pill (Batch 98) — the Batch 97 recipe
+            {/* Center: Floating Search Pill — the recipe
                 kept as its core: a tinted surface with a border you can see
                 at rest, and an unmistakable focus-within state (solid white,
                 sun-orange border, soft ring), floating on the solid bar via
@@ -594,7 +594,7 @@ export const Navbar: React.FC = () => {
                 <Search className="h-5 w-5" />
               </button>
 
-              {/* Dark Mode / Theme Toggle (Batch 98) — same vd_theme
+              {/* Dark Mode / Theme Toggle — same vd_theme
                   preference the workspace toggle writes, flipped in place. */}
               <button
                 type="button"
@@ -663,7 +663,7 @@ export const Navbar: React.FC = () => {
                   <div className="hidden xl:flex flex-col text-left leading-tight">
                     {/* While the session is still restoring, the account slot
                         stays neutral: naming the visitor a guest here is the
-                        flash signed-in users saw on every reload (Batch 59). */}
+                        flash signed-in users saw on every reload. */}
                     <span className="text-[10px] text-slate-400 font-normal">
                       {authLoading ? 'Account' : user ? 'Welcome,' : 'Sign In'}
                     </span>
@@ -899,7 +899,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          2. Category Strip Pill (Batch 98 + Batch 107 + Batch 111) — the
+          2. Category Strip Pill () — the
           marketplace second row as its own floating pill (header-pill-nav,
           same 9999px capsule radius as the main pill), sitting under the
           main pill inside the same container: the All Categories trigger
@@ -923,7 +923,7 @@ export const Navbar: React.FC = () => {
               : 'grid-rows-[1fr] pt-2 opacity-100'
           }`}
         >
-          {/* Batch 116: this clip box exists only for the collapse
+          {/* this clip box exists only for the collapse
               animation. While the MegaMenu is open it must NOT clip —
               the menu hangs below the pill (absolute, top-full), and
               with overflow-hidden it mounted but was cut off entirely
@@ -941,7 +941,7 @@ export const Navbar: React.FC = () => {
               }`}
             >
           {/* "All Categories" Button with Full Mega Menu — FROZEN (owner
-              decision, Batch 98): classes and behaviour exactly as the pill
+              decision,): classes and behaviour exactly as the pill
               header had them; only its home moved, into this strip. */}
           <div className="relative hidden md:block" ref={allCategoriesRef}>
             <button

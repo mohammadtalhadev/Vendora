@@ -1,6 +1,6 @@
 /**
  * safe-redirect — the one place a `?redirect=` value is judged before it is
- * navigated to (Batch 63).
+ * navigated to.
  *
  * A redirect target is only ever an in-app path: a string that starts with
  * exactly one '/'. Anything else — a protocol-relative '//evil.com', a

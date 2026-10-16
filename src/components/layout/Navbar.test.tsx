@@ -48,7 +48,7 @@ const seedCategories = (names: string[]) => {
   });
 };
 
-describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smart sticky, Batch 116 menu clip fix)', () => {
+describe('Navbar (header redesign, pill shape, smart sticky, menu clip fix)', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     localStorage.clear();
@@ -144,12 +144,12 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smar
     }
   });
 
-  it('renders the header itself as true pills, not full-width rectangular bars (Batch 107)', () => {
+  it('renders the header itself as true pills, not full-width rectangular bars', () => {
     renderNavbar();
 
     // Main header: the original capsule shell (border-radius var(--radius-pill)
     // = 9999px in tokens.css) plus an explicit rounded-full, floating inside
-    // the page container — Batch 98's w-full border-b rectangle is gone.
+    // the page container — w-full border-b rectangle is gone.
     const mainPill = screen.getByTestId('header-main-pill');
     expect(mainPill.className).toContain('header-pill-shell');
     expect(mainPill.className).toContain('rounded-full');
@@ -167,7 +167,7 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smar
     expect(within(stripPill).getByRole('navigation', { name: 'Top categories' })).toBeInTheDocument();
   });
 
-  it('gives the header dropdowns solid backgrounds so page content cannot bleed through (Batch 111)', () => {
+  it('gives the header dropdowns solid backgrounds so page content cannot bleed through', () => {
     renderNavbar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Account and personas menu' }));
@@ -198,7 +198,7 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smar
     expect(stripTokens).toContain('z-30');
   });
 
-  it('animates the pills in on mount and slides the header up on scroll down, back down on scroll up (Batch 111)', async () => {
+  it('animates the pills in on mount and slides the header up on scroll down, back down on scroll up', async () => {
     renderNavbar();
 
     expect(screen.getByTestId('header-main-pill').className).toContain('header-pill-enter');
@@ -233,7 +233,7 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smar
     scrollTo(0);
   });
 
-  it('never clips the MegaMenu: opening All Categories un-clips the strip wrapper (Batch 116)', async () => {
+  it('never clips the MegaMenu: opening All Categories un-clips the strip wrapper', async () => {
     seedCategories(['Audio']);
     renderNavbar();
 
@@ -246,7 +246,7 @@ describe('Navbar (Batch 98 header redesign, Batch 107 pill shape, Batch 111 smar
     );
 
     // The pane hangs below the pill, so while it is open the wrapper must
-    // be fully visible and expanded — Batch 111's overflow-hidden cut the
+    // be fully visible and expanded — overflow-hidden cut the
     // mounted menu off completely, which read as "menu nahi chal raha".
     const clip = screen.getByTestId('header-strip-clip');
     expect(clip.className).toContain('overflow-visible');

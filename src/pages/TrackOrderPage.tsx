@@ -23,7 +23,7 @@ import type { OrderGroup, SubOrder } from '../types/domain';
 /**
  * Track Your Order (/track-order, /track, /order-tracking).
  *
- * Batch 45 rebuilt this page honestly: the previous version rendered
+ * rebuilt this page honestly: the previous version rendered
  * hard-coded orders with an invented rider, OTP and a live-telemetry timer,
  * and synthesised a parcel for ANY number typed into the box. This version
  * reads only the signed-in customer's own orders (the same fetchOrders the

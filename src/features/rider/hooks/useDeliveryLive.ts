@@ -4,7 +4,7 @@ import { fetchOrderDeliveryLive } from '../api/location';
 const MOVING_STATUSES = ['picked_up', 'in_transit', 'out_for_delivery'];
 
 /**
- * The customer-side live read for one order (Batch 42). While any of the
+ * The customer-side live read for one order. While any of the
  * order's deliveries is on the road the read re-runs every 30 seconds, so the
  * map follows the rider without the buyer refreshing; once every parcel is
  * delivered or failed, polling stops and the last position/proof stays as

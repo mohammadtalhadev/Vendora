@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 /**
- * Error monitoring (Batch 44).
+ * Error monitoring.
  *
  * Every captured error goes to two places, both fire-and-forget:
  *  1. The `error_logs` table in our own database (always on — this is the
@@ -13,7 +13,7 @@ import { supabase } from './supabase';
  *
  * captureException NEVER throws and never returns a promise the caller has
  * to handle: an error reporter that can break the error path is worse than
- * none. It does return the report's event id (Batch 54): the id is stored as
+ * none. It does return the report's event id: the id is stored as
  * the `error_logs` row id, so a "Reference: xxxxxxxx" line shown to a user
  * can be looked up by an admin. Reporting the same error object twice
  * returns the same id without writing a second row — the global handlers,

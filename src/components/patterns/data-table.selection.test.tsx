@@ -14,7 +14,7 @@ const rows: Row[] = [
   { id: 'r2', name: 'Beta' },
 ];
 
-describe('DataTable selection (Batch 40)', () => {
+describe('DataTable selection', () => {
   it('renders no checkbox column when selection props are absent', () => {
     const { container } = render(
       <DataTable columns={columns} rows={rows} getRowKey={(r) => r.id} />,

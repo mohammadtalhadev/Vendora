@@ -53,7 +53,7 @@ const RANGE_MONTHS: Record<'30d' | '90d' | '1y' | 'ytd', number> = {
 /** Money renders through the site's PKR formatter — no local $ strings. */
 const money = (value: number) => formatPrice(value);
 
-/** Compact axis tick (Batch 49 pattern): 12k, not 12,000. Full values live in the tooltip. */
+/** Compact axis tick (pattern): 12k, not 12,000. Full values live in the tooltip. */
 const axisMoney = (value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`);
 
 /** 'YYYY-MM' from the RPC to the month's short name. */
@@ -107,7 +107,7 @@ export const VendorEarningsPage: React.FC = () => {
     [series],
   );
 
-  // Recharts rows (Batch 49 — the hand-plotted SVG polylines are gone;
+  // Recharts rows (the hand-plotted SVG polylines are gone;
   // Recharts scales this same series and adds real axes and tooltips).
   const chartSeries = series.map((m) => ({ ...m, label: monthLabel(m.month) }));
 
@@ -838,7 +838,7 @@ export const VendorEarningsPage: React.FC = () => {
         </Dialog>
 
         {/* ── Toast ─────────────────────────────────────────────── */}
-        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        {/* Shared toast — replaces this page's private pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
       </div>
     </WorkspaceLayout>

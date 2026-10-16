@@ -3,13 +3,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { PdpFaqSection } from './PdpFaqSection';
 
 /**
- * Batch 133 — the PDP FAQ section. Answers must stay grounded in the
+ * the PDP FAQ section. Answers must stay grounded in the
  * platform's real policies (the resolved delivery window handed in by
  * the page, 30-day returns, Visa/Mastercard/COD, the disputes flow,
  * account order tracking) — no invented terms, no warranty promise.
  */
 
-describe('PdpFaqSection (Batch 133)', () => {
+describe('PdpFaqSection', () => {
   it('renders the section anchor the nav pill scrolls to', () => {
     const { container } = render(<PdpFaqSection deliveryWindow="Tue, Oct 20 – Thu, Oct 22" />);
     expect(container.querySelector('#pdp-faqs')).not.toBeNull();

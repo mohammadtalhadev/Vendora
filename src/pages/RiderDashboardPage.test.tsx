@@ -120,7 +120,7 @@ describe('RiderDashboardPage', () => {
 
     render();
 
-    // Batch 59: "no rider profile" is its own honest state, not the generic
+    // "no rider profile" is its own honest state, not the generic
     // read error — retrying can never create the missing profile.
     await waitFor(() => expect(screen.getByTestId('board-not-registered')).toBeInTheDocument());
     expect(screen.getByText(/rider profile isn.t set up yet/i)).toBeInTheDocument();

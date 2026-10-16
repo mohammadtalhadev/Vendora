@@ -49,7 +49,7 @@ export function asRows(value: unknown): Record<string, unknown>[] {
 /**
  * Supabase surfaces an RPC's `raise exception` as an error message. Keeping the
  * database's wording is the point: it was written for the person seeing it.
- * The error is tagged (Batch 54) so the friendly-error mapper can recognise
+ * The error is tagged so the friendly-error mapper can recognise
  * it downstream: staff surfaces keep this wording, customer surfaces keep
  * only the operation.
  */

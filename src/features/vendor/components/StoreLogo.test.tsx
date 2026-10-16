@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { StoreLogo } from './StoreLogo';
 
-describe('StoreLogo (Batch 22O fallback)', () => {
+describe('StoreLogo (fallback)', () => {
   it('renders the logo image when a URL is present', () => {
     render(<StoreLogo name="Nike Flagship Store" logo="https://logo.clearbit.com/nike.com?size=200" />);
     expect(screen.getByRole('img', { name: 'Nike Flagship Store logo' })).toBeInTheDocument();

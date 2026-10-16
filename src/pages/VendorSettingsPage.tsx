@@ -44,7 +44,7 @@ const LABEL = 'mb-1 block font-bold text-slate-700';
 /**
  * The ui Input is a storefront capsule (h-11, rounded-full, text-sm); the
  * settings grid is a dense panel surface, so the primitive is reined back
- * to the panel's own geometry (Batch 48) — same control, same focus/error
+ * to the panel's own geometry — same control, same focus/error
  * treatment, panel density.
  */
 const PANEL_INPUT = 'h-9 rounded-lg px-3 text-xs';
@@ -123,7 +123,7 @@ const TAB_SAVE_LABEL: Record<SettlementTab, string> = {
 
 /**
  * Only the active tab's columns, validated against the column's own constraints.
- * A refusal names the field that caused it (Batch 48) so the form can hang the
+ * A refusal names the field that caused it so the form can hang the
  * error on that field through FormField, not only in the tab-level notice.
  */
 function updatesForTab(

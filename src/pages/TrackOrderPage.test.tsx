@@ -12,7 +12,7 @@ import { useAuthStore } from '../store/auth-store';
 import { orderRow, storeRow, subOrderRow, supabaseDouble } from '../test/supabase-double';
 
 /**
- * Batch 45: tracking is the customer's real orders or an honest state —
+ * tracking is the customer's real orders or an honest state —
  * the hard-coded preset parcels, invented rider and synthesised OTP of the
  * old page must never come back.
  */

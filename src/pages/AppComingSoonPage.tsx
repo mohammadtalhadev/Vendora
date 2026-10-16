@@ -26,7 +26,7 @@ const EXPECTATIONS = [
 
 /**
  * App Coming Soon (/app-coming-soon) — the destination of the home page app
- * promo banner's Start Shopping button (Batch 123). Vendora has no native app
+ * promo banner's Start Shopping button. Vendora has no native app
  * yet, so this page says exactly that, professionally: what the app will do,
  * and the honest alternative that already works today (the mobile browser).
  * No store badges, no release date and no notify signup — nothing here is

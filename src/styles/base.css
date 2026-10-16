@@ -153,7 +153,7 @@
   --shadow-orange-glow: 0 4px 20px 0 color-mix(in srgb, var(--color-sun-orange) 35%, transparent);
   --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
 
-  /* Entrance/exit animations (Batch 47). Until this batch the `animate-in` /
+  /* Entrance/exit animations. Until this batch the `animate-in` /
      `animate-out` classes used across dialogs, menus and toasts generated NO
      CSS at all — the tailwindcss-animate plugin they came with was never
      installed, so every dialog simply appeared. These tokens recreate that
@@ -191,7 +191,7 @@
   }
 }
 
-/* Entrance/exit modifier utilities (Batch 47) — companions to the
+/* Entrance/exit modifier utilities — companions to the
    --animate-in / --animate-out tokens above. Each one only sets the
    --tw-enter-* / --tw-exit-* variable the keyframes read. */
 @utility fade-in {
@@ -250,7 +250,7 @@
   --tw-exit-translate-y: calc(--value([*]) * -1);
 }
 
-/* The one hover recipe (Batch 47, extending the Batch 30 icon standard):
+/* The one hover recipe (extending the icon standard):
    colour shift (supplied by the element's own hover:text-* / hover:bg-*
    classes) + a 2px lift, always 200ms. Tabs, wishlist hearts and View-All
    links use this instead of each hand-rolling scale/ring/translate mixes. */
@@ -345,14 +345,14 @@ pre {
    Each panel can override these to get its own visual identity
    ========================================================================== */
 :root {
-  /* Declare ONLY the active scheme (Batch 99, tightened Batch 103):
+  /* Declare ONLY the active scheme (tightened):
      forced/auto-dark browsers (Android Chrome, Samsung Internet) treat a
      `light dark` declaration as permission to apply their own dark theme
      while the site's light theme is active — the failure mode that flipped
      white labels dark on solid sun-orange buttons. With light active the
      scheme is `light` alone, leaving auto-dark nothing to stand on; the
      html.dark rule below declares `dark` alone when the site's own dark
-     theme (Batch 81) is on. */
+     theme is on. */
   color-scheme: light;
 
   /* Panel-specific theme variables (defaults - overridden by panel CSS) */
@@ -516,7 +516,7 @@ img {
    Dark Mode Support (Base)
    ========================================================================== */
 html.dark {
-  /* Batch 81 dark scheme — neutral zinc, replacing the legacy blue-slate
+  /* dark scheme — neutral zinc, replacing the legacy blue-slate
      shadcn values (#0b1120 family). Canvas #0a0a0b, surface #121214,
      raised #17171a, hairlines ≈ white/10 (opaque approximation in HSL),
      text zinc-100 / zinc-400 / zinc-500, ring = lifted brand orange. */
@@ -556,7 +556,7 @@ html.dark body {
 }
 
 /* ==========================================================================
-   Dark Mode — Palette Remap + Adaptation Layer (Batch 81)
+   Dark Mode — Palette Remap + Adaptation Layer
 
    The UI consumes hardcoded Tailwind palette utilities far more than the
    semantic tokens above (bg-white ≈1,300 uses, text-slate-900 ≈1,400,
@@ -1026,7 +1026,7 @@ html.dark .admin-select {
 }
 
 /*
- * Styled-native treatment (Batch 24) for the selects that must stay native —
+ * Styled-native treatment for the selects that must stay native —
  * test contracts that drive the real element, form fields whose placeholder
  * option is an empty value (Radix forbids those), and dense table toolbars.
  * The OS still draws the OPEN list (that part cannot be styled, anywhere);
@@ -1051,7 +1051,7 @@ html.dark select.native-select {
 }
 
 /*
- * Frosted-glass panel surfaces (restored in Batch 28). Storefront components
+ * Frosted-glass panel surfaces (restored in). Storefront components
  * compose .glass-panel / .glass-panel-elevated expecting the fill and blur to
  * live here, but the definitions were lost in a refactor — every glass panel
  * rendered fully transparent (the dispute dialog showed the blurred page
@@ -1154,7 +1154,7 @@ html.dark .admin-select option {
 }
 
 /* Dark counterpart: focused fields sit on the raised dark field tone,
-   never white (Batch 81). */
+   never white. */
 html.dark .workspace-shell input:focus,
 html.dark .workspace-shell select:focus,
 html.dark .workspace-shell textarea:focus {
@@ -1255,34 +1255,6 @@ html.dark .workspace-shell textarea:focus {
 }
 
 /* ==========================================================================
-   Motion: Hero Entrance (Shared)
-   Transform/opacity only; disabled under prefers-reduced-motion.
-   ========================================================================== */
-@keyframes vendora-hero-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* The active hero slide's copy block mounts when its slide becomes active,
-   so this animation is both the page-load entrance and the slide-change
-   entrance. */
-.hero-copy-in {
-  animation: vendora-hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-copy-in {
-    animation: none !important;
-  }
-}
-
-/* ==========================================================================
    Motion: Scroll Reveal (Shared)
    Elements start lifted/faded; useReveal adds .reveal-visible once when
    they enter the viewport. Transform/opacity only; under
@@ -1310,7 +1282,7 @@ html.dark .workspace-shell textarea:focus {
 }
 
 /* ==========================================================================
-   Motion: Site-Wide System (Batch 82)
+   Motion: Site-Wide System
    One motion language for the storefront and every panel, transform /
    opacity only so nothing repaints layout:
    - .page-enter: route-change entrance, applied by the shells
@@ -1414,7 +1386,7 @@ html.dark .workspace-shell textarea:focus {
 }
 
 /* ==========================================================================
-   Motion: Header Entrance (Batch 111)
+   Motion: Header Entrance
    The sticky header pills drop in once on mount — the main Vendora pill
    first, the category strip pill a beat behind it (header-pill-enter-
    delayed). Transform/opacity only; the end keyframe is `transform: none`
@@ -1447,7 +1419,7 @@ html.dark .workspace-shell textarea:focus {
   }
 }
 /* ==========================================================================
-   Accessibility foundation (Batch 49)
+   Accessibility foundation
    - Global :focus-visible ring: keyboard focus is always visible, mouse
      clicks stay ring-free. More specific component styles (ui/button,
      ui/input focus rings) keep winning where they exist — this is the
@@ -1482,7 +1454,7 @@ html.dark .workspace-shell textarea:focus {
 }
 
 /* ==========================================================================
-   Reduced Motion: Global Kill-Switch (Batch 82)
+   Reduced Motion: Global Kill-Switch
    The per-class rules above switch off individual effects; this is the
    floor under all of them — with reduced motion requested, every
    animation and transition on the site completes effectively instantly,
@@ -1502,7 +1474,7 @@ html.dark .workspace-shell textarea:focus {
 }
 
 /* ==========================================================================
-   Motion: Brand Logo Marquee (Batch 94)
+   Motion: Brand Logo Marquee
    The one brand-logo strip (BrandLogoMarquee): each brand is an individual
    PNG on a track duplicated x2, and this keyframe slides the track -50%
    so the loop is seamless; hovering the rail pauses it. Placed after the
@@ -1526,7 +1498,7 @@ html.dark .workspace-shell textarea:focus {
 
 .brand-logo-marquee-track {
   animation: vendora-logo-marquee 32s linear infinite;
-  /* Batch 107: keep the ever-running marquee on its own compositor layer
+  /* keep the ever-running marquee on its own compositor layer
      so its 32s transform loop never triggers main-thread paint work that
      would fight the Lenis scroll loop. */
   will-change: transform;
@@ -1548,7 +1520,7 @@ html.dark .workspace-shell textarea:focus {
 }
 
 /* ==========================================================================
-   Motion: Added-to-Cart Checkmark Burst (Batch 121)
+   Motion: Added-to-Cart Checkmark Burst
    The Ronin-style micro-animation on the PDP's three Add to Cart
    surfaces (buy box, desktop quick-add pill, mobile sticky bar): the
    AddedBurstIcon's circle draws itself in with a small pop, the check
@@ -1556,7 +1528,7 @@ html.dark .workspace-shell textarea:focus {
    with a 30ms stagger (inline animation-delay per ray) and fade out.
    Whole cycle ~650ms, fill forwards — the button itself reverts when
    the page's 2s added state clears. Transform/opacity/stroke only.
-   Under prefers-reduced-motion the Batch 82 kill-switch above already
+   Under prefers-reduced-motion the kill-switch above already
    collapses every duration; the explicit opt-out below additionally
    parks the icon in its end state (full circle + check, no rays) so
    nothing strobes or lingers half-drawn.

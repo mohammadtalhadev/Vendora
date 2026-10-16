@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 /**
- * Pins the login toggle's label → role contract (Batch 24): the path the
+ * Pins the login toggle's label → role contract: the path the
  * visitor picks on the "Buyer | Verified Seller" toggle is the path they
  * get. The toggle used to be cosmetic while routing followed the account's
  * stored roles, so the two paths read as swapped.
@@ -99,14 +99,14 @@ function pickSellerThenSubmit() {
 }
 
 describe('LoginPage role toggle mapping', () => {
-  // Batch 63 supersedes the Batch 24 pin for this one case: a customer+vendor
+  // supersedes the pin for this one case: a customer+vendor
   // account has TWO destinations, so a Buyer sign-in no longer silently picks
   // the storefront for them — they land on the workspace chooser (or, with a
   // remembered workspace + the "always" preference, straight there; covered
   // in LoginPage.access.test.tsx). The toggle's own contract is unchanged:
   // Verified Seller still means the merchant console, and the seller path
   // still refuses accounts with no vendor role.
-  it('Buyer selected + vendor account → the workspace chooser (Batch 63 multi-destination rule)', async () => {
+  it('Buyer selected + vendor account → the workspace chooser (multi-destination rule)', async () => {
     mocks.signIn.mockResolvedValue(vendorUser);
     renderLogin();
 
@@ -149,7 +149,7 @@ describe('LoginPage role toggle mapping', () => {
     expect(mocks.signOut).not.toHaveBeenCalled();
   });
 
-  it('rider account → the rider board, not the storefront (Batch 59)', async () => {
+  it('rider account → the rider board, not the storefront', async () => {
     mocks.signIn.mockResolvedValue(riderUser);
     renderLogin();
 
@@ -159,7 +159,7 @@ describe('LoginPage role toggle mapping', () => {
     expect(screen.queryByText('STOREFRONT HOME')).not.toBeInTheDocument();
   });
 
-  it('support account → the support console, not the storefront (Batch 59)', async () => {
+  it('support account → the support console, not the storefront', async () => {
     mocks.signIn.mockResolvedValue(supportUser);
     renderLogin();
 

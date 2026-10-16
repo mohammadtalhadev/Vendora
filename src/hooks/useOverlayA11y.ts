@@ -4,7 +4,7 @@ const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Accessibility behaviour for hand-rolled overlays (Batch 49). While open:
+ * Accessibility behaviour for hand-rolled overlays. While open:
  * Escape closes, Tab cycles inside the panel instead of escaping into the
  * page behind it, focus starts on the first focusable element (or the
  * panel itself when it has none), and closing returns focus to whatever

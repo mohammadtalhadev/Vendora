@@ -27,7 +27,7 @@ import { MfaSettingsCard } from '../features/auth/components/MfaSettingsCard';
  * admin's real account: the name and avatar save to the profiles row through
  * the same helpers the customer and vendor profile pages use, the password
  * changes through Supabase Auth, and the roles shown are the account's actual
- * roles. (Batch 45 replaced a mock version that carried an invented phone
+ * roles. (replaced a mock version that carried an invented phone
  * number, job title, session list and audit entries, and saved nothing.)
  */
 
@@ -384,7 +384,7 @@ export const AdminProfilePage: React.FC = () => {
               )}
             </section>
 
-            {/* Two-factor management (Batch 64): staff hold the keys to the
+            {/* Two-factor management: staff hold the keys to the
                 platform, so their authenticator lives beside the password. */}
             <MfaSettingsCard className={CARD} />
           </>

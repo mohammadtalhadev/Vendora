@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { MFA_FACTOR_CONFLICT_TEXT, toFriendlyError } from '../../../lib/friendly-error';
 
 /**
- * mfa — the TOTP two-factor layer (Batch 64).
+ * mfa — the TOTP two-factor layer.
  *
  * Staff accounts prove a second factor at the staff portal before any staff
  * console renders: a session that has only passed the password check sits at
@@ -92,7 +92,7 @@ export async function listTotpFactors(): Promise<TotpFactorLists | null> {
 }
 
 // ---------------------------------------------------------------------------
-// Already-set-up enrollments (Batch 88)
+// Already-set-up enrollments
 //
 // GoTrue refuses to enrol a second factor under a friendly name the account
 // already uses. When that refusal — or a factor list that already holds a
@@ -149,7 +149,7 @@ function isFactorConflictError(error: unknown): boolean {
  * enrolling again can only end in the service's name-conflict refusal, so
  * the typed MfaAlreadyEnrolledError is thrown before any enroll is
  * attempted and the caller moves the person to the code step instead
- * (Batch 88). A stale factor that refuses removal is not fatal either —
+ *. A stale factor that refuses removal is not fatal either —
  * the enroll still runs, and a conflict there becomes the same typed
  * error rather than a misleading sentence about the account's email.
  */
@@ -233,7 +233,7 @@ export async function verifyTotp(factorId: string, code: string): Promise<void> 
 }
 
 // ---------------------------------------------------------------------------
-// TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+// TEMPORARY testing exemption — remove with the mfa_exemptions
 // table. While the owner tests the staff consoles, named accounts may be
 // exempted from the second factor by inserting a row into
 // `public.mfa_exemptions` (SQL editor / service role only — no client can
@@ -266,7 +266,7 @@ export async function unenrollTotp(factorId: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Step-up freshness (Batch 64)
+// Step-up freshness
 //
 // Entering a staff console proves the second factor once (the AAL2 gate).
 // Sensitive actions inside the console — suspending an account, moving a

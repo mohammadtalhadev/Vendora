@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ProductSectionNav, ProductQuickAddPill, PDP_SECTION_LINKS } from './PdpStickyBars';
 
 /**
- * Batch 121 — the Ronin-style PDP sticky bars.
+ * the Ronin-style PDP sticky bars.
  *
  * SectionNav: renders one pill button per real PDP section, and a click
  * smooth-scrolls to that section (the PDP pattern, as in scrollToReviews).
@@ -14,7 +14,7 @@ import { ProductSectionNav, ProductQuickAddPill, PDP_SECTION_LINKS } from './Pdp
 
 const SECTION_IDS = ['pdp-overview', 'pdp-specs', 'pdp-faqs', 'reviews-section'];
 
-describe('ProductSectionNav (Batch 121)', () => {
+describe('ProductSectionNav', () => {
   const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
 
   afterEach(() => {
@@ -44,7 +44,7 @@ describe('ProductSectionNav (Batch 121)', () => {
     expect(screen.getByRole('button', { name: /Reviews/ })).toBeInTheDocument();
   });
 
-  it('ships the four Ronin tabs in order, FAQ included (Batch 133)', () => {
+  it('ships the four Ronin tabs in order, FAQ included', () => {
     expect(PDP_SECTION_LINKS.map((l) => l.id)).toEqual([
       'pdp-overview',
       'pdp-specs',
@@ -53,7 +53,7 @@ describe('ProductSectionNav (Batch 121)', () => {
     ]);
   });
 
-  it('starts unstuck in the page flow (Batch 133 fixed-pill rebuild)', () => {
+  it('starts unstuck in the page flow (fixed-pill rebuild)', () => {
     renderNavWithTargets();
     expect(screen.getByTestId('pdp-section-nav')).toHaveAttribute('data-stuck', 'false');
   });
@@ -80,7 +80,7 @@ describe('ProductSectionNav (Batch 121)', () => {
   });
 });
 
-describe('ProductQuickAddPill (Batch 121)', () => {
+describe('ProductQuickAddPill', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -125,7 +125,7 @@ describe('ProductQuickAddPill (Batch 121)', () => {
     expect(screen.queryByTestId('added-burst-icon')).not.toBeInTheDocument();
   });
 
-  it('wears the Ronin glass finish (Batch 133)', () => {
+  it('wears the Ronin glass finish', () => {
     render(<ProductQuickAddPill {...baseProps} />);
     const pill = screen.getByTestId('pdp-quick-add-pill');
     expect(pill.className).toContain('bg-white/60');
@@ -133,7 +133,7 @@ describe('ProductQuickAddPill (Batch 121)', () => {
     expect(pill.className).toContain('rounded-full');
   });
 
-  it('hidden state stays mounted but inert (Batch 133 slide/fade)', () => {
+  it('hidden state stays mounted but inert (slide/fade)', () => {
     render(<ProductQuickAddPill {...baseProps} visible={false} />);
     const pill = screen.getByTestId('pdp-quick-add-pill');
     expect(pill).toHaveAttribute('data-visible', 'false');

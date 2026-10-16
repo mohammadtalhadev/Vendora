@@ -27,7 +27,7 @@ export interface TrackingTimelineProps {
   /**
    * How the parent order is paid, when the caller knows it. A cancellation
    * notice talks about a refund only when money was actually captured:
-   * for cash on delivery nothing was charged (Batch 59).
+   * for cash on delivery nothing was charged.
    */
   paymentMethod?: 'card' | 'cod';
   className?: string;

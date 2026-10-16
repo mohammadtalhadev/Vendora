@@ -10,7 +10,7 @@ interface StoreLogoProps {
 }
 
 /**
- * A store's logo with a graceful fallback (Batch 22O). Brand logos now come
+ * A store's logo with a graceful fallback. Brand logos now come
  * from an external logo CDN, so a missing URL or a failed load must never
  * surface as a broken image: the tile falls back to the store's initial on
  * the peach treatment. Used by the store directory cards and the storefront

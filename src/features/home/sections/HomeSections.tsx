@@ -3,7 +3,7 @@ import { usePublishedSections } from '../api/sections';
 import { sectionTypeDefinition, sectionsForAnchor, type SectionAnchor } from './registry';
 
 /**
- * A homepage section anchor (Batch 85): the slot in HomePage's composition
+ * A homepage section anchor: the slot in HomePage's composition
  * where console-managed sections of the anchored types render.
  *
  * The fallback contract is the homepage's safety rule: while the sections

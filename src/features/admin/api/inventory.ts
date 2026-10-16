@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { num, rpcFailed, text } from './admin-client';
 
 /**
- * Platform stock console (Batch 79). Until this batch the admin panel had no
+ * Platform stock console. Until this batch the admin panel had no
  * inventory surface at all: a seller could see and edit their own stock on
  * /vendor/inventory, but staff had no cross-seller view of what the platform
  * holds. This module is the read side of that console — it reads the same

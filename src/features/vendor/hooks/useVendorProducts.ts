@@ -22,7 +22,7 @@ export function useVendorProducts() {
     queryFn: ({ signal }) => fetchVendorProducts(signal),
     enabled: Boolean(userId),
     // The Products, Inventory and Import/Export boards watch this list
-    // (Batch 48 freshness standard).
+    // (freshness standard).
     ...liveList,
   });
 }

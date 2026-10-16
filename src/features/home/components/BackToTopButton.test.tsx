@@ -63,7 +63,7 @@ describe('BackToTopButton', () => {
     expect(screen.queryByRole('button', { name: 'Scroll back to top' })).toBeNull();
   });
 
-  it('renders through a portal to <body>, not inside its page subtree (Batch 114 regression)', () => {
+  it('renders through a portal to <body>, not inside its page subtree (regression)', () => {
     const { container } = render(
       <div data-testid="page-subtree">
         <BackToTopButton />

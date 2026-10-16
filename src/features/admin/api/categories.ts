@@ -129,7 +129,7 @@ export async function createCategory(input: {
  * back to the column it already held, so a partial form cannot wipe a category.
  * The one deliberate exception is the banner: `clearImage: true` sends the RPC's
  * explicit `p_clear_image` flag, which nulls the image instead of keeping it —
- * the only way to REMOVE a banner rather than replace it (Batch 75).
+ * the only way to REMOVE a banner rather than replace it.
  */
 export async function updateCategory(input: {
   categoryId: string;

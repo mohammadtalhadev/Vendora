@@ -8,7 +8,7 @@ import {
  * What a buyer surface may know about a seller's delivery times: the tier
  * ranges the seller published and the origin city/state a buyer's address
  * is tiered against. Read from the public `store_delivery_times` view
- * (Batch 91) — the settings row itself stays owner-only, and the view
+ * — the settings row itself stays owner-only, and the view
  * carries none of its rates, street or phone.
  */
 export interface SellerDeliveryProfile {
@@ -25,7 +25,7 @@ const place = (value: unknown): string => (typeof value === 'string' ? value : '
  * Stores that never saved shipping settings have no row in the view and so
  * no entry in the map; callers resolve those to the standard quote.
  *
- * This NEVER rejects. The view exists only once the Batch 91 migration has
+ * This NEVER rejects. The view exists only once the migration has
  * run on the hosted database; until then PostgREST answers with a
  * relation-missing error, and the honest outcome is "no seller times" —
  * every surface quotes the platform standard, exactly as it did before the

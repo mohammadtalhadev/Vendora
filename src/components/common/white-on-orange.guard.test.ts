@@ -1,5 +1,5 @@
 /**
- * White-on-orange guard (Batch 99).
+ * White-on-orange guard.
  *
  * Owner rule, confirmed three times: EVERY element whose background is
  * solid sun-orange — at rest (`bg-sun-orange`, `bg-sun-orange-600`) or in
@@ -24,7 +24,7 @@
  * its reason. A stale allowlist entry (one that no longer matches
  * anything) fails the suite too, so the list cannot silently rot.
  *
- * The same file guards the forced-dark proofing (Batch 99): browsers with
+ * The same file guards the forced-dark proofing: browsers with
  * forced/auto dark mode recolor pages that do not declare their own
  * schemes — the failure that flipped white labels dark on orange buttons.
  * index.html must declare the color-scheme meta and base.css must
@@ -170,7 +170,7 @@ function composingTexts(unit: LiteralUnit): string[] {
   return texts;
 }
 
-describe('white-on-orange guard (Batch 99)', () => {
+describe('white-on-orange guard', () => {
   it('every solid sun-orange background is paired with white text', { timeout: 120_000 }, () => {
     const files: string[] = [];
     collectFiles(SRC_ROOT, files);

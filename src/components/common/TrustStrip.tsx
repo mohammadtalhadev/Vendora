@@ -2,7 +2,7 @@ import React from 'react';
 import { Truck, ShieldCheck, RotateCcw, Headphones } from 'lucide-react';
 
 /**
- * The ONE canonical trust-badge strip (Batch 22H). It used to live only on the
+ * The ONE canonical trust-badge strip. It used to live only on the
  * sign-in page in four different pastel colours while the homepage — the page
  * shoppers actually land on — had none. It now belongs to the homepage in the
  * single muted treatment the homepage sections use (white frosted cards, one

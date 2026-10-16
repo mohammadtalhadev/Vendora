@@ -122,7 +122,7 @@ export async function fetchLogisticsBoard(signal?: AbortSignal): Promise<Logisti
 }
 
 /**
- * COD cash settlements (Batch 42). The cash trail lives on the delivery row:
+ * COD cash settlements. The cash trail lives on the delivery row:
  * the rider stamps what they collected, an admin stamps the handover. Admins
  * read every delivery (`deliveries_write_admin`), so this is a direct table
  * read - the store and rider names are joined client-side from the same rows
@@ -245,7 +245,7 @@ export function validateRiderInvite(input: RiderInviteInput): string | null {
 }
 
 /**
- * Invites a rider through the `invite-rider` Edge Function (Batch 65).
+ * Invites a rider through the `invite-rider` Edge Function.
  * The function — never this client — holds the service role: it sends
  * the Supabase invite email, grants the rider role on the profile and
  * creates the fleet row. The rider follows the email link and sets
@@ -290,7 +290,7 @@ export async function inviteRider(input: RiderInviteInput): Promise<RiderInviteR
   });
 }
 /**
- * Rider applications awaiting the desk's decision (Batch 77). A rider row
+ * Rider applications awaiting the desk's decision. A rider row
  * filed by `apply_as_rider` sits at status 'pending' until an admin approves
  * or refuses it here. The read is a direct table read — the staff policy on
  * `rider_profiles` already covers it — with the applicant's account name and

@@ -37,7 +37,7 @@ export function useRiderBoard() {
 }
 
 /**
- * The caller's own rider row in whatever state it is in (Batch 77). The board
+ * The caller's own rider row in whatever state it is in. The board
  * refuses an applicant, so this read is how the dashboard knows whether to
  * offer the application form or show the application under review.
  */
@@ -60,7 +60,7 @@ export function useRiderHistory() {
   });
 }
 
-/** The rider's COD cash position: held for the desk vs already handed over (Batch 42). */
+/** The rider's COD cash position: held for the desk vs already handed over. */
 export function useRiderCodSummary() {
   const userId = useRiderScope();
   return useQuery({
@@ -106,7 +106,7 @@ export function useRiderActions() {
       onSuccess: refresh,
     }),
     /**
-     * Files the caller's rider application (Batch 77). The application read
+     * Files the caller's rider application. The application read
      * re-runs so the panel flips to its under-review state from the row the
      * database now holds, and the board re-reads too — it still refuses a
      * pending applicant, but after an approval the same button finds a route.

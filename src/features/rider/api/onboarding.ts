@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { asRecord, rpcFailed, text } from './rider-client';
 
 /**
- * Rider self-serve onboarding (Batch 77). An account the desk has not given a
+ * Rider self-serve onboarding. An account the desk has not given a
  * rider profile can apply from the rider workspace itself: `apply_as_rider`
  * files the row as 'pending' and grants the role, `rider_delivery_board`
  * keeps refusing until an admin approves on the Fleet page, and the panel
@@ -56,7 +56,7 @@ function mapApplication(value: unknown): RiderApplication | null {
     fullName: text(row.full_name),
     phone: text(row.phone),
     vehicleType: text(row.vehicle_type),
-    // The city/plate columns arrive with the Batch 77 migration; a database
+    // The city/plate columns arrive with the migration; a database
     // that has not run it simply has nothing to show for them yet.
     city: text(row.city),
     vehiclePlate: text(row.vehicle_plate),

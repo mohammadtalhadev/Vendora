@@ -12,7 +12,7 @@ import { ContactPage } from './ContactPage';
 import { supabaseDouble } from '../test/supabase-double';
 
 /**
- * Batch 45: the footer newsletter and the contact form write to the real
+ * the footer newsletter and the contact form write to the real
  * public inboxes — the old versions showed success and discarded the data
  * (newsletter) or only composed a mailto: link (contact).
  */

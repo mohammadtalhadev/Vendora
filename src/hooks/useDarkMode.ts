@@ -26,7 +26,7 @@ export function useDarkMode(): boolean {
   return dark;
 }
 
-/** Scheme-aware Recharts tokens (Batch 81 dark scheme). */
+/** Scheme-aware Recharts tokens (dark scheme). */
 export const chartTheme = {
   gridStroke: (dark: boolean) => (dark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'),
   tickFill: (dark: boolean) => (dark ? '#a1a1aa' : '#64748b'),

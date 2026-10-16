@@ -442,7 +442,7 @@ describe('Seller Onboarding & Application Workflow', () => {
       ).toBeInTheDocument();
       expect(screen.getByText(/automated split/i)).toBeInTheDocument();
 
-      // Benefit 3: Platform Reach — Batch 51 removed the fabricated
+      // Benefit 3: Platform Reach — removed the fabricated
       // "500,000+ Buyers" badge (no such count exists); the card now
       // claims only a growing marketplace.
       expect(

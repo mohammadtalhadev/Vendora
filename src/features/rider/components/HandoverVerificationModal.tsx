@@ -25,7 +25,7 @@ export interface HandoverVerificationModalProps {
   /** A verification is in flight. */
   submitting?: boolean;
   /**
-   * Batch 42 photo proof: when the caller provides this, a successful code
+   * photo proof: when the caller provides this, a successful code
    * check moves the modal to a proof step instead of closing - the rider can
    * attach a photo of the drop before they leave the door. The photo is
    * additional proof, never a blocker: the parcel is already delivered, and

@@ -1,5 +1,5 @@
 /**
- * Product page guard (Batch 126).
+ * Product page guard.
  *
  * The owner flagged the product page's decorative heading icons — the
  * orange Sparkles on "Product Overview", the orange Shield on "Vendora
@@ -68,11 +68,11 @@ describe('product page fabrication pins', () => {
 
 });
 
-describe('product page overlays stay portaled (Batch 127)', () => {
+describe('product page overlays stay portaled', () => {
   // The live-chat overlay rendered inline in the page subtree was captured
   // by an ancestor containing block and opened pinned to the bottom of the
-  // page, clipped (owner screenshot + live guest repro). All three PDP
-  // overlays render through a portal to document.body — the Batch 114
+  // page, clipped (first reproduced live as a guest). All three PDP
+  // overlays render through a portal to document.body — the
   // BackToTopButton pattern — so their fixed positioning is the viewport's.
   it('the live chat, send offer and zoom overlays all use createPortal', () => {
     expect(read('features/products/components/LiveChatModal.tsx')).toContain('createPortal');

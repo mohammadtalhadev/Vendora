@@ -3,7 +3,7 @@
  *
  * The platform standard is 2–4 business days: that is what the Terms state,
  * and it remains the fallback everywhere. On top of it, a seller may publish
- * their own delivery times per region tier (Batch 91) from their shipping
+ * their own delivery times per region tier from their shipping
  * settings; buyers then see the seller's figures for their tier instead of
  * the standard. Regions are tiers — same city, same province, rest of
  * Pakistan — because both the seller's origin and the buyer's address carry

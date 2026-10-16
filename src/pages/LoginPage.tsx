@@ -29,7 +29,7 @@ export const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   // The raw redirect is never navigated to directly — it is judged by
   // resolvePostLoginLanding, which runs it through safeRedirect and checks
-  // it against the roles the backend actually gave this account (Batch 63).
+  // it against the roles the backend actually gave this account.
   const rawRedirect = searchParams.get('redirect');
 
   const { user, loading, signIn, signInAsDemo, signInWithProvider, signOut } = useAuth();
@@ -56,7 +56,7 @@ export const LoginPage: React.FC = () => {
   const resetHintTriggerRef = useRef<HTMLButtonElement>(null);
   const demoTriggerRef = useRef<HTMLButtonElement>(null);
 
-  // Already signed-in visitors never see this form (Batch 63): once the
+  // Already signed-in visitors never see this form: once the
   // session's profile is resolved, the same precedence as a fresh sign-in
   // decides where they belong — the redirect they arrived with first, then
   // their remembered workspace or the chooser. While auth is loading (and
@@ -102,7 +102,7 @@ export const LoginPage: React.FC = () => {
       // effect above must not re-decide it when the session lands in state.
       landingHandledRef.current = loggedInUser.id;
 
-      // Post-login precedence (Batch 63, shared with the chooser and the
+      // Post-login precedence (shared with the chooser and the
       // guards via features/auth/api/destinations):
       //   1. A ?redirect= the account's roles cover wins outright. One they
       //      do NOT cover is a dead end with an explanation (/no-access) —
@@ -112,7 +112,7 @@ export const LoginPage: React.FC = () => {
       //      the merchant console, and an account with no vendor role at all
       //      is still refused on that path (below) — Buyer carries no
       //      workspace intent, so precedence falls through to the account.
-      //   3. Rider/support-only accounts keep their Batch 59 auto-landing;
+      // 3. Rider/support-only accounts keep their auto-landing;
       //      a multi-workspace account goes to its remembered workspace or
       //      the workspace chooser; everyone else to the storefront.
       // The user object here is the profile signIn() just loaded fresh from

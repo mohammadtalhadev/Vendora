@@ -12,7 +12,7 @@ import { MemoryRouter } from 'react-router-dom';
  *      "₨ 2,769,191" must never come back;
  *  (c) with a foreign display currency, typed amounts convert to PKR at the
  *      store's rate on commit and the empty state quotes the typed display
- *      values back — the live-verified residual from Batch 3, where a USD
+ * values back — the live-verified residual from where a USD
  *      shopper's "10000" was silently treated as ₨10,000.
  */
 const catalog = vi.hoisted(() => ({
@@ -156,7 +156,7 @@ describe('ProductsPage price filter', () => {
   });
 });
 
-describe('ProductsPage facets (Batch 46)', () => {
+describe('ProductsPage facets', () => {
   it('forwards brand, rating, stock and sale URL params to the catalog query', async () => {
     renderPage('/products?brand=Sony&rating=4.5&stock=1&sale=1');
 
@@ -170,7 +170,7 @@ describe('ProductsPage facets (Batch 46)', () => {
   });
 });
 
-describe('ProductsPage category facet (Batch 132)', () => {
+describe('ProductsPage category facet', () => {
   const TAXONOMY = [
     { id: 'cat-audio', name: 'Audio & Wearables', slug: 'audio-wearables', parentId: null },
     { id: 'cat-elec', name: 'Electronics', slug: 'electronics', parentId: null },
@@ -225,7 +225,7 @@ describe('ProductsPage category facet (Batch 132)', () => {
   });
 });
 
-describe('ProductsPage facets (Batch 46)', () => {
+describe('ProductsPage facets', () => {
   it('reset clears every facet, including a category that arrived via the URL', async () => {
     renderPage('/products?category=audio&brand=Sony&min=100&max=900');
 

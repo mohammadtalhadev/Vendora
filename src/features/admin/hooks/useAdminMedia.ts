@@ -14,7 +14,7 @@ import {
 import { adminKeys, useAdminScope } from './admin-keys';
 
 /**
- * Batch 61: the admin side of the shared media view gets the same mutation
+ * the admin side of the shared media view gets the same mutation
  * shape the vendor workspace uses - every success invalidates
  * `adminKeys.media(userId)`, which is the query both the library list and the
  * folder rows hang off, so the screen repaints from the rows now stored.
@@ -78,7 +78,7 @@ export function useDeleteAdminMedia() {
   });
 }
 
-/** A folder for a store, or for the platform itself when vendorId is null (Batch 72). */
+/** A folder for a store, or for the platform itself when vendorId is null. */
 export function useCreateAdminMediaFolder() {
   const refresh = useRefreshAdminMedia();
   return useMutation({
@@ -113,7 +113,7 @@ export function useDeleteAdminMediaFolder() {
   });
 }
 
-/** A staff upload to the platform's own library or a store's (Batch 72). */
+/** A staff upload to the platform's own library or a store's. */
 export function useUploadAdminMedia() {
   const refresh = useRefreshAdminMedia();
   return useMutation({

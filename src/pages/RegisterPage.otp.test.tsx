@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/auth-store';
 import { supabaseDouble } from '../test/supabase-double';
 
 /**
- * The email-code (OTP) path on the register page (Batch 36): when sign-up
+ * The email-code (OTP) path on the register page: when sign-up
  * waits on verification, the panel offers six code boxes beside the link;
  * a correct code verifies through Supabase and lands the new customer on
  * the storefront, a wrong one explains itself and stays put.
@@ -43,7 +43,7 @@ function fillCustomerForm() {
   const passwordInputs = screen.getAllByPlaceholderText('••••••••••••');
   fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
   fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
-  // Terms start unticked (Batch 45) and the submit stays disabled until agreed.
+  // Terms start unticked and the submit stays disabled until agreed.
   fireEvent.click(screen.getByRole('checkbox'));
 }
 

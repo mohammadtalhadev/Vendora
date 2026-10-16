@@ -36,7 +36,7 @@ interface QuickAddContentProps {
 }
 
 /**
- * Quick add (Batch 48) — deliberately NOT a second product form.
+ * Quick add — deliberately NOT a second product form.
  *
  * This modal used to be a full three-tab clone of VendorAddProductPage
  * (details / pricing & delivery / variant generator), so every field rule

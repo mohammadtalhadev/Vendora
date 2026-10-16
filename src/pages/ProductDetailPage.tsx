@@ -131,7 +131,7 @@ export const ProductDetailPage: React.FC = () => {
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Batch 121 — desktop quick-add pill: shown only once the buy box has
+  // desktop quick-add pill: shown only once the buy box has
   // scrolled up out of view (same rule as Ronin's sticky bar). The mobile
   // sticky buy bar below is untouched and covers small screens.
   const buyBoxRef = useRef<HTMLDivElement>(null);
@@ -150,7 +150,7 @@ export const ProductDetailPage: React.FC = () => {
     // detail query resolves, so a mount-only effect would never observe it.
   }, [product]);
 
-  // Batch 133 — Ronin's second rule for the quick-add pill: it hides
+  // Ronin's second rule for the quick-add pill: it hides
   // again as the footer approaches (their observer uses a 200px top
   // root margin), so the pill never fights the footer for the bottom
   // of the viewport.
@@ -334,7 +334,7 @@ export const ProductDetailPage: React.FC = () => {
   const reviewsQuery = useProductReviews(product?.id);
 
   // The delivery estimate is the SELLER's, from the times they published
-  // (Batch 91). The buyer's region is not known on this page, so the quote
+  //. The buyer's region is not known on this page, so the quote
   // is the span across the seller's tiers; a seller who set nothing — or a
   // database without the times view yet — resolves to the standard quote.
   const sellerTimesQuery = useSellerDeliveryTimes(product?.sellerId ? [product.sellerId] : []);
@@ -557,7 +557,7 @@ export const ProductDetailPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Seller Store Card — the LISTING's seller (Batch 123):
+                {/* Seller Store Card — the LISTING's seller:
                     real store logo, the seller's OWN rating rollup, and
                     seller facts only. An accepted offer from another
                     seller never relabels this card. */}
@@ -601,12 +601,11 @@ export const ProductDetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Seller facts (Batch 123, owner order — the product-tag
-                      pills that used to sit here are gone): the seller's
-                      published delivery window, the same range the buy
-                      box quotes, and the ships-from city when published.
-                      No response-time or orders-delivered tiles: the
-                      system does not record them, so none are shown. */}
+                  {/* Seller facts: the seller's published delivery window,
+                      the same range the buy box quotes, and the ships-from
+                      city when published. No response-time or
+                      orders-delivered tiles: the system does not record
+                      them, so none are shown. */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 space-y-0.5">
                       <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -709,7 +708,7 @@ export const ProductDetailPage: React.FC = () => {
                   <div className="font-outfit text-sm font-black tracking-tight text-slate-900">
                     {marketingHeadline}
                   </div>
-                  {/* Batch 133 — clamped to 3 lines: the full description
+                  {/* clamped to 3 lines: the full description
                       lives once, in the dossier below (it previously
                       rendered in full here AND in full again there). */}
                   <p className="text-xs sm:text-[13px] leading-relaxed text-slate-700 font-medium line-clamp-3">
@@ -897,7 +896,7 @@ export const ProductDetailPage: React.FC = () => {
                       region is unknown on this page), falling back to the
                       standard window. The word "Estimated" in the label
                       itself carries that it is an estimate — no trailing
-                      repeat of the word (Batch 122, owner screenshot).
+                      repeat of the word (owner screenshot).
                       Digital products deliver instantly instead. */}
                   {product.type === 'physical' && shippingOption === 'delivery' && (
                     <p className="flex flex-nowrap items-center gap-1.5 text-[11px] font-semibold text-slate-600">
@@ -970,7 +969,7 @@ export const ProductDetailPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Batch 122 — Amazon-style seller details under the CTAs
+                  {/* Amazon-style seller details under the CTAs
                       (owner order). Every value is real page data: the
                       current seller name (an accepted offer names its own
                       seller, who has no store id in page state, so plain
@@ -1043,7 +1042,7 @@ export const ProductDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Batch 121 — sticky section-nav pill (Overview / Specs / Reviews) */}
+            {/* sticky section-nav pill (Overview / Specs / Reviews) */}
             <ProductSectionNav />
 
             {/* ========================================================= */}
@@ -1077,9 +1076,9 @@ export const ProductDetailPage: React.FC = () => {
             />
 
             {/* ========================================================= */}
-            {/* PRODUCT FAQs (Batch 133) — answers grounded in the real  */}
+            {/* PRODUCT FAQs — answers grounded in the real */}
             {/* policies/flows only; completes the section-nav pill's    */}
-            {/* FAQ's tab, which Batch 121/129 held back until a real    */}
+            {/* FAQ's tab, which held back until a real */}
             {/* FAQ section existed.                                     */}
             {/* ========================================================= */}
             <PdpFaqSection
@@ -1109,7 +1108,7 @@ export const ProductDetailPage: React.FC = () => {
             {/* Spacer so the mobile sticky bar never covers page content */}
             <div className="h-24 lg:hidden" aria-hidden="true" />
 
-            {/* Batch 121/133 — desktop quick-add pill: stays mounted and
+            {/* desktop quick-add pill: stays mounted and
                 animates in once the buy box scrolls away (Ronin rule 1),
                 out again as the footer approaches (Ronin rule 2) or
                 while the zoom lightbox is open. */}
@@ -1181,7 +1180,7 @@ export const ProductDetailPage: React.FC = () => {
             {/* INTERACTIVE MODALS                                        */}
             {/* ========================================================= */}
             {/* 1. Zoom Lightbox Modal — portaled to document.body like the
-                page's other overlays (Batch 127): inline, a fixed overlay in
+                page's other overlays: inline, a fixed overlay in
                 this subtree can be captured by an ancestor containing block
                 and land at the bottom of the page instead of the viewport. */}
             {isZoomOpen &&

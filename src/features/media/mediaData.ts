@@ -96,7 +96,7 @@ export function folderLabel(folder: string): string {
 }
 
 /**
- * The canonical library sections (Batch 80). A seller's library is organised
+ * The canonical library sections. A seller's library is organised
  * as the store itself, then one subfolder per kind of asset; the subfolder IS
  * the row's `folder` label (and its storage path segment), so no new storage
  * concept exists - these are simply the folder names the upload flows file

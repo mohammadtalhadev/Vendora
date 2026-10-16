@@ -495,7 +495,7 @@ export const PrivacyPolicyPage: React.FC = () => {
       </Dialog>
 
       {/* ── Toast Notification ─────────────────────────────────────── */}
-      {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+      {/* Shared toast — replaces this page's private pill. */}
       <Toast toast={toast} onDismiss={hideToast} />
     </>
   );

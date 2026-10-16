@@ -57,7 +57,7 @@ const SettlementRow: React.FC<{
 );
 
 /**
- * COD cash settlements (Batch 42): the desk's half of the cash trail. A row
+ * COD cash settlements: the desk's half of the cash trail. A row
  * sits in "awaiting handover" from the moment the rider stamps the cash they
  * collected until an admin confirms here that the desk physically received
  * it - `confirm_cod_handover` writes that stamp (and refuses a second one).

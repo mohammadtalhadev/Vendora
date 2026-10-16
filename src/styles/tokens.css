@@ -243,7 +243,7 @@
    5. Skeleton Shimmer — defined ONCE in base.css ("Skeleton Shimmer
    (Shared)"), which owns the keyframes, the light gradient and the
    reduced-motion opt-out. This file previously carried a duplicate
-   copy; Batch 82 removed it so there is a single definition to keep
+   copy; removed it so there is a single definition to keep
    in step. Only the dark-scheme gradient override lives here (§8).
    ========================================================================== */
 
@@ -571,7 +571,7 @@
 }
 
 /* ==========================================================================
-   8. Dark Scheme (Batch 81) — glass tokens on the zinc canvas
+   8. Dark Scheme — glass tokens on the zinc canvas
 
    Every value below is scoped to .dark; the light glass system above is
    untouched. Surfaces: canvas #0a0a0b, glass raised tones #121214 →

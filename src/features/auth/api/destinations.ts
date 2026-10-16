@@ -3,7 +3,7 @@ import { safeRedirect } from '../../../lib/safe-redirect';
 
 /**
  * destinations — the shared workspace model behind the hybrid sign-in flow
- * (Batch 63). One account, several possible workspaces: which ones exist is
+ *. One account, several possible workspaces: which ones exist is
  * decided ONLY by the profile the backend authorized (`profiles.roles` +
  * vendor status), never by anything the client claims. The login pages, the
  * workspace chooser and the Switch-workspace menus all read this module so
@@ -151,7 +151,7 @@ export function setAutoWorkspace(userId: string, on: boolean): void {
 }
 
 // ---------------------------------------------------------------------------
-// Post-login precedence (owner-approved order, Batch 63)
+// Post-login precedence (owner-approved order,)
 // ---------------------------------------------------------------------------
 
 export type LandingDecision =
@@ -186,7 +186,7 @@ export interface LandingOptions {
  *    their console; pending/rejected ones to the status page; accounts with
  *    no vendor role at all are 'not-a-seller' (the caller keeps its refusal).
  * 4. A single-destination account goes straight there. Rider- and
- *    support-only workspace accounts keep their Batch 59 auto-landing.
+ * support-only workspace accounts keep their auto-landing.
  * 5. A multi-destination account goes to its remembered workspace when the
  *    "always" preference is on and the role still covers it — otherwise to
  *    the workspace chooser.

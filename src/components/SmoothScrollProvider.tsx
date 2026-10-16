@@ -41,7 +41,7 @@ export const SmoothScrollProvider: React.FC<SmoothScrollProviderProps> = ({ chil
 
     const lenis = new Lenis({
       autoRaf: true,
-      // Batch 117: duration/easing mode, the exact recipe the owner's
+      // duration/easing mode, the exact recipe the owner's
       // trip-planner site runs ({ lerp: 0.08, duration: 1.2 }) and the
       // feel he asked to match. When `duration` is set, Lenis's Animate
       // runs a TIMED animation (advance() prefers duration+easing over

@@ -351,7 +351,7 @@ const SupportTicketDetailPage = lazyWithRetry(() =>
 );
 
 /**
- * Lazy-route fallback (Batch 47): a page-shaped skeleton — header bar over a
+ * Lazy-route fallback: a page-shaped skeleton — header bar over a
  * card grid — instead of the old centred spinner, so a chunk loading in
  * looks like the page it is about to become and the layout does not jump.
  */
@@ -397,7 +397,7 @@ const lazyWrap = (element: React.ReactNode) => (
 
 
 /**
- * Redirect for legacy alias routes that carried a route param (Batch 55):
+ * Redirect for legacy alias routes that carried a route param:
  * renders the canonical URL built from the matched params, so old links
  * keep working without mounting the page twice.
  */
@@ -610,7 +610,7 @@ export const router = createBrowserRouter([
         element: lazyWrap(<LoginPage />),
       },
       {
-        // Batch 63 hybrid sign-in surfaces: the multi-workspace chooser,
+        // hybrid sign-in surfaces: the multi-workspace chooser,
         // the wrong-workspace dead end, the seller application status page
         // and the suspended/banned landing. All four are unguarded by
         // design — each reads the session itself, and the blocked page

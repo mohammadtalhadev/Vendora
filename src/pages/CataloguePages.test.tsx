@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 /**
- * Batch 52: /new-arrivals and /deals are the shared CatalogBrowser, not
+ * /new-arrivals and /deals are the shared CatalogBrowser, not
  * hand-rolled pages. These tests pin the identities each page lends the
- * browser — New Arrivals is newest-first WITH the B46 facets the owner found
+ * browser — New Arrivals is newest-first WITH the facets the owner found
  * missing, Deals is locked to the sale shelf — and the admin-editable
  * category banner (categories.image) rendering on the category landing.
  */
@@ -59,7 +59,7 @@ beforeEach(() => {
   useCurrencyStore.setState({ currency: 'PKR', rates: FALLBACK_RATES, isLoading: false, lastUpdated: null });
 });
 
-describe('Catalogue pages on the shared browser (Batch 52)', () => {
+describe('Catalogue pages on the shared browser', () => {
   it('New Arrivals renders the shared filter rail and queries newest-first', () => {
     render(
       <MemoryRouter initialEntries={['/new-arrivals']}>

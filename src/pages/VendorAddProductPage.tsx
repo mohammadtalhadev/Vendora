@@ -428,7 +428,7 @@ export const VendorAddProductPage: React.FC = () => {
     >
       <div className="space-y-6 pb-20 font-sans text-slate-900">
         {/* Floating Toast Notification */}
-        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        {/* Shared toast — replaces this page's private pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
 
         {/* Top Header & Action Controls */}

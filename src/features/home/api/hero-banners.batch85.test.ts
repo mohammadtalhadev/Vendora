@@ -21,7 +21,7 @@ beforeEach(() => {
   supabaseDouble.reset();
 });
 
-describe('heroPortraitsFromRows (Batch 85: the rail is a list)', () => {
+describe('heroPortraitsFromRows (the rail is a list)', () => {
   it('collects every usable portrait across rows, in order', () => {
     const portraits = heroPortraitsFromRows([
       contentBlockRow({
@@ -98,7 +98,7 @@ describe('fetchPublishedHeroPortraits', () => {
   });
 });
 
-describe('heroLeftPromoFromRows / fetchPublishedHeroLeftPromo (Batch 85)', () => {
+describe('heroLeftPromoFromRows / fetchPublishedHeroLeftPromo', () => {
   it('maps the first usable left-promo banner', () => {
     const promo = heroLeftPromoFromRows([
       contentBlockRow({

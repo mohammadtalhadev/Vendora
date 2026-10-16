@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 
 /**
  * AccountBlockedPage — where a suspended or banned account lands from
- * every guarded route (Batch 63). The page is deliberately UNguarded: it
+ * every guarded route. The page is deliberately UNguarded: it
  * is the one screen a blocked account can always reach, it explains the
  * state in plain language, and it offers sign-out so the session is never
  * a trap. Public pages stay browsable; every workspace stays closed.

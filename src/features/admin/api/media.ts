@@ -10,17 +10,17 @@ import type { VendorMediaItem } from '../../vendor/api/media';
  * every store's rows, so this read simply does not filter by owner, and joins
  * each row back to the store that owns it.
  *
- * Batch 61 widens the staff writes to full file management. Rename and move
+ * widens the staff writes to full file management. Rename and move
  * ride the same `media_moderate_admin` UPDATE policy the moderation verdict
  * uses (a move also moves the bucket object under the OWNER's slug, exactly
  * like the vendor `moveMedia`). Row deletion goes through the
  * `admin_delete_media` RPC instead: it captures the storage paths, deletes
  * the row and audits the delete in one transaction, and the client then
  * removes the object with the paths it returns. Folders are real rows in
- * `media_folders` since Batch 61, written directly under that table's RLS
+ * `media_folders` since written directly under that table's RLS
  * (owner or admin); renaming one also relabels its files' `folder` column.
  *
- * Batch 72 adds the platform itself as an owner: since migration
+ * adds the platform itself as an owner: since migration
  * 20261017020000 a NULL `vendor_id` IS the platform's own library - its
  * folders, and the banners / CMS assets staff upload into them (objects
  * under the `platform/` path prefix, rows recorded through the guarded
@@ -54,7 +54,7 @@ function mapAdminMedia(
   row: Record<string, unknown>,
   stores: Map<string, { name: string; slug: string }>,
 ): AdminMediaItem {
-  // A NULL vendor_id is a platform-owned row (Batch 72), not a missing store.
+  // A NULL vendor_id is a platform-owned row, not a missing store.
   const vendorId =
     row.vendor_id === null || row.vendor_id === undefined ? null : text(row.vendor_id);
   const store =
@@ -188,7 +188,7 @@ export async function moveAdminMedia(item: AdminMediaItem, targetFolder: string)
     throw rpcFailed('Could not move the asset', 'this demo asset has no file stored in the vendor-assets bucket, so it cannot be moved');
   }
   // The first path segment is the owner: the store's slug, or 'platform' for
-  // the platform's own files (Batch 72). A move only ever takes a folder, so
+  // the platform's own files. A move only ever takes a folder, so
   // an asset can only travel between folders of the same owner, platform
   // included - cross-owner moves stay impossible by construction.
   const ownerSlug = item.vendorId === null ? PLATFORM_STORE_SLUG : item.storeSlug;
@@ -223,7 +223,7 @@ export async function moveAdminMedia(item: AdminMediaItem, targetFolder: string)
 }
 
 /**
- * Batch 72: a staff upload. The object goes to the bucket first at
+ * a staff upload. The object goes to the bucket first at
  * `<owner slug>/<folder>/<timestamp>_<name>` - `platform/...` for the
  * platform's own files, the store's slug for a file uploaded on a seller's
  * behalf - and the row is then recorded through `admin_upload_media`: the
@@ -327,13 +327,13 @@ export async function deleteAdminMedia(id: string): Promise<{ objectPath: string
 }
 
 // ---------------------------------------------------------------------------
-// Folders: real `media_folders` rows since Batch 61, one per (owner, name) -
-// the owner is a store, or the platform itself (NULL) since Batch 72.
+// Folders: real `media_folders` rows since one per (owner, name) -
+// the owner is a store, or the platform itself (NULL).
 // ---------------------------------------------------------------------------
 
 export interface AdminMediaFolder {
   id: string;
-  /** The owning store's id, or null for a platform folder (Batch 72). */
+  /** The owning store's id, or null for a platform folder. */
   vendorId: string | null;
   name: string;
   createdAt: string;
@@ -355,7 +355,7 @@ export interface AdminMediaStore {
 
 /**
  * EVERY store on the platform, whether or not it owns a file yet. The New
- * Folder dialog picks from this list: Batch 61 made folders real rows exactly
+ * Folder dialog picks from this list: made folders real rows exactly
  * so one can be created before any file exists, so the picker must not be
  * derived from the files currently in the library (an empty library used to
  * leave it with nothing to offer and the button disabled).
@@ -395,7 +395,7 @@ export async function listAdminMediaFolders(signal?: AbortSignal): Promise<Admin
 
 /**
  * Creates a folder row for an owner: a store, or the platform itself when
- * `vendorId` is null (Batch 72 - the NULL is the platform's own row, and the
+ * `vendorId` is null (the NULL is the platform's own row, and the
  * platform policies in migration 20261017020000 admit it).
  */
 export async function createAdminMediaFolder(vendorId: string | null, name: string): Promise<AdminMediaFolder> {

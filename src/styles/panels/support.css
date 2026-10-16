@@ -5,7 +5,7 @@
  */
 
 /* Support panel theme variables */
-/* Batch 11: panel variables are scoped to the shell element instead of
+/* panel variables are scoped to the shell element instead of
    :root. Loaded panel CSS is never unloaded, so global declarations
    resolved by navigation history and leaked this panel's theme (e.g.
    admin's indigo --primary) into the storefront and other panels. */

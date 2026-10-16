@@ -16,7 +16,7 @@ interface ProductsYouMayLikeGridProps {
 
 /**
  * "Products You May Like" rail on the product page. This replaces the old
- * "Customers Also Viewed" grid (Batch 121, owner's order): that section had
+ * "Customers Also Viewed" grid (owner's order): that section had
  * its own one-off card design — four across, a blue hover title — while the
  * rest of the storefront uses the shared ProductCard. This rail renders the
  * SAME shared ProductCard as everywhere else, six in one row on desktop

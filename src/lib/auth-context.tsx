@@ -26,7 +26,7 @@ interface AuthContextType {
   hasRole: (role: UserRole) => boolean;
   refreshUser: () => Promise<void>;
   /**
-   * Two-factor state (Batch 64): the session's current assurance level, whether
+   * Two-factor state: the session's current assurance level, whether
    * the account holds a verified TOTP factor, and whether that picture has been
    * read yet. Only staff surfaces consult it — a customer with no factor is
    * simply aal1 with `hasVerifiedTotp: false` and is never MFA-blocked.
@@ -36,7 +36,7 @@ interface AuthContextType {
   mfaLoaded: boolean;
   refreshAal: () => Promise<void>;
   /**
-   * TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+   * TEMPORARY testing exemption — remove with the mfa_exemptions
    * table. True while the signed-in account holds an exemption row; the
    * staff portal, the AAL2 console gate and the step-up dialog all treat it
    * as satisfying the second factor. Loaded with the rest of the two-factor
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [aal, setAal] = useState<AalLevel>('aal1');
   const [hasVerifiedTotp, setHasVerifiedTotp] = useState(false);
   const [mfaLoaded, setMfaLoaded] = useState(false);
-  // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions table.
+  // TEMPORARY testing exemption — remove with the mfa_exemptions table.
   const [mfaExempt, setMfaExempt] = useState(false);
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [level, lists, exempt] = await Promise.all([
       getAalLevel(),
       listTotpFactors(),
-      // TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions table.
+      // TEMPORARY testing exemption — remove with the mfa_exemptions table.
       isMfaExempt(),
     ]);
     setAal(level);
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const departingUserId = useAuthStore.getState().user?.id ?? null;
     await sessionApi.signOut();
     // The step-up freshness proof belongs to the departing session; the next
-    // sign-in must earn its own (Batch 64).
+    // sign-in must earn its own.
     clearStepUp();
     applySession(null, null);
     // Logout hygiene (FE-SEC F3): the query cache holds the departing
@@ -234,7 +234,7 @@ export function useAuth() {
 }
 
 /**
- * TEMPORARY testing exemption (Batch 86) — remove with the mfa_exemptions
+ * TEMPORARY testing exemption — remove with the mfa_exemptions
  * table. The exemption flag for consumers that cannot assume an AuthProvider
  * (the step-up hook is unit-tested bare): outside a provider the answer is
  * false, which is the fail-closed default the whole exemption design wants.

@@ -13,12 +13,12 @@ import { asRecord, json, rpcFailed, text, bool, num } from './admin-client';
 const PLACEMENT = 'homepage_hero';
 
 /**
- * The homepage banner placements the console manages (Batch 85 added the
+ * The homepage banner placements the console manages (added the
  * portrait rail and the promo placement to the original hero carousel).
  * The storefront reads each placement separately; the console lists and
- * writes all three from this one screen. Batch 87: `homepage_left_promo`
+ * writes all three from this one screen. `homepage_left_promo`
  * renders as the left banner of the New Arrivals / Best Seller / Best
- * Offers section, not in the hero (its key keeps the Batch 85 name).
+ * Offers section, not in the hero (its key keeps the name).
  */
 export const BANNER_PLACEMENTS = [
   { value: 'homepage_hero', label: 'Homepage hero — main carousel' },

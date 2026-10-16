@@ -24,7 +24,7 @@ export function useVendorPackages() {
     queryKey: vendorKeys.packages(userId),
     queryFn: ({ signal }) => fetchVendorPackages(signal),
     enabled: Boolean(userId),
-    // The Orders and Returns boards watch this list (Batch 48 freshness standard).
+    // The Orders and Returns boards watch this list (freshness standard).
     ...liveList,
   });
 }

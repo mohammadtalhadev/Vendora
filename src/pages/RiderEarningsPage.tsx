@@ -139,7 +139,7 @@ export const RiderEarningsPage: React.FC = () => {
               />
             </div>
 
-            {/* COD cash position (Batch 42): the stamps on the rider's own delivery
+            {/* COD cash position: the stamps on the rider's own delivery
                 rows, totalled by `rider_cod_summary` - cash still in hand is a
                 liability to the desk until an admin confirms the handover. */}
             {cod.data && (

@@ -199,7 +199,7 @@ export function useHeroPortrait(): HeroPortrait {
 }
 
 /* --------------------------------------------------------------------------
- * Batch 85: the portrait rail is a carousel, not a single banner. Every
+ * the portrait rail is a carousel, not a single banner. Every
  * published `homepage_hero_portrait` row contributes its usable bodies in
  * the console's order, and the rail rotates through them. The single-
  * portrait helpers above stay for compatibility; the homepage uses the
@@ -254,12 +254,12 @@ export function useHeroPortraits(): HeroPortrait[] {
 }
 
 /* --------------------------------------------------------------------------
- * The `homepage_left_promo` placement (added in Batch 85, re-homed in
- * Batch 87): the left promo picture of the homepage's New Arrivals /
+ * The `homepage_left_promo` placement (added in re-homed in
+ *): the left promo picture of the homepage's New Arrivals /
  * Best Seller / Best Offers section (DealsStrip). A published banner
  * replaces that card's built-in Tech Fest creative; no published banner
  * means the section renders its built-in card, exactly as before. (The
- * placement key keeps its Batch 85 name; only its home on the page moved.)
+ * placement key keeps its name; only its home on the page moved.)
  * ------------------------------------------------------------------------ */
 
 const LEFT_PROMO_PLACEMENT = 'homepage_left_promo';

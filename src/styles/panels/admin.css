@@ -5,7 +5,7 @@
  */
 
 /* Admin panel theme variables */
-/* Batch 11: panel variables are scoped to the shell element instead of
+/* panel variables are scoped to the shell element instead of
    :root. Loaded panel CSS is never unloaded, so global declarations
    resolved by navigation history and leaked this panel's theme (e.g.
    admin's indigo --primary) into the storefront and other panels. */
@@ -38,7 +38,7 @@ html.dark .admin-shell {
   --panel-border: rgba(255, 255, 255, 0.09);
   --panel-text: #f4f4f5;
   --panel-text-muted: #a1a1aa;
-  --panel-primary: #FF8A3D; /* Brand orange lifted for dark (Batch 81) */
+  --panel-primary: #FF8A3D; /* Brand orange lifted for dark */
   --panel-primary-hover: #F4761B;
   --panel-primary-light: rgba(255, 122, 26, 0.14);
   --panel-accent: #2DD4EE;
@@ -535,7 +535,7 @@ html.dark .admin-scroll::-webkit-scrollbar-thumb {
 html.dark .admin-scroll::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 138, 61, 0.5);
 }
-/* Batch 81: the primary button's indigo glow belongs to the light Catmin
+/* the primary button's indigo glow belongs to the light Catmin
    accent; in dark the button is brand orange, so the glow follows it. */
 html.dark .admin-btn-primary {
   box-shadow: 0 2px 8px 0 rgba(255, 122, 26, 0.25);

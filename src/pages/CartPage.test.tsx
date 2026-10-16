@@ -66,7 +66,7 @@ const renderPage = () =>
     </MemoryRouter>,
   );
 
-describe('CartPage shipping quote (Batch 57)', () => {
+describe('CartPage shipping quote', () => {
   beforeEach(() => {
     localStorage.clear();
     useCartStore.setState({ items: [ITEM], appliedCoupon: null, error: null });

@@ -107,7 +107,7 @@ export async function uploadMedia(file: File, folder = 'products'): Promise<Vend
   }
 
   // The folder exists as a `media_folders` row as well as a label on the
-  // asset (Batch 61), so the destination the upload filed into is a real
+  // asset, so the destination the upload filed into is a real
   // subfolder of this store in the library tree - created on demand here,
   // exactly as the admin upload creates its destination row. Best-effort:
   // the asset already carries the label, so an existing row (the unique
@@ -123,7 +123,7 @@ export async function uploadMedia(file: File, folder = 'products'): Promise<Vend
 
 /**
  * Files the seller's current profile photo into the library's Profile Images
- * section (Batch 80). The photo itself lives in the `user-avatars` bucket
+ * section. The photo itself lives in the `user-avatars` bucket
  * under the account's uid prefix and `profiles.avatar_url` points at it; this
  * records the same file as a media row for the store the account owns, so it
  * sits in the library alongside the store's other assets. The previous

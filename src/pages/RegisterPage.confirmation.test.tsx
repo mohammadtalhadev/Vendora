@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/auth-store';
 import { supabaseDouble } from '../test/supabase-double';
 
 /**
- * The post-register confirmation state (Batch 24): when the project requires
+ * The post-register confirmation state: when the project requires
  * email verification, the register page must say so unmistakably — a panel
  * naming the address, the next step, a spam note, and a working Resend —
  * instead of firing an email behind a small dismissible notice.
@@ -39,7 +39,7 @@ function fillCustomerForm() {
   const passwordInputs = screen.getAllByPlaceholderText('••••••••••••');
   fireEvent.change(passwordInputs[0], { target: { value: 'ValidPass123!' } });
   fireEvent.change(passwordInputs[1], { target: { value: 'ValidPass123!' } });
-  // Terms start unticked (Batch 45) and the submit stays disabled until agreed.
+  // Terms start unticked and the submit stays disabled until agreed.
   fireEvent.click(screen.getByRole('checkbox'));
 }
 

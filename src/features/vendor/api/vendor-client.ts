@@ -62,7 +62,7 @@ export function asStringList(value: unknown): string[] {
 /**
  * Supabase surfaces an RPC's `raise exception` as an error message; unwrapping it here
  * keeps the wording the database chose, which is written for the person seeing it.
- * The error is tagged (Batch 54) so the friendly-error mapper can recognise
+ * The error is tagged so the friendly-error mapper can recognise
  * it downstream: staff surfaces keep this wording, customer surfaces keep
  * only the operation.
  */

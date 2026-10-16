@@ -14,7 +14,7 @@ import { ViewAllLink } from '../../../components/common/ViewAllLink';
  * on the SHARED ProductCard with live product rows (see
  * useLiveRecentlyViewed for why snapshots alone go stale).
  *
- * Placement (Batch 122, owner's order): this rail used to sit on the
+ * Placement (owner's order): this rail used to sit on the
  * homepage. Personal browsing history does not belong on the landing page;
  * it belongs in the shopping context, so it now leads the /products
  * catalogue — "pick up where you left off" while browsing — with View All

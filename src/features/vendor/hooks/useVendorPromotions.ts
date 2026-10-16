@@ -20,7 +20,7 @@ export function useVendorPromotions() {
     queryKey: vendorKeys.promotions(userId),
     queryFn: ({ signal }) => fetchVendorPromotions(signal),
     enabled: Boolean(userId),
-    // Redemption counts move while the seller watches (Batch 48 freshness standard).
+    // Redemption counts move while the seller watches (freshness standard).
     ...liveList,
   });
 }

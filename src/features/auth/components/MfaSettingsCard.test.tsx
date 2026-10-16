@@ -10,11 +10,11 @@ import { MfaSettingsCard } from './MfaSettingsCard';
 import { supabaseDouble } from '../../../test/supabase-double';
 
 /**
- * Batch 64: the settings card against the double's MFA surface (its one
+ * the settings card against the double's MFA surface (its one
  * accepted code is '123456'). Setup activates a factor from the card, and
  * removal demands a fresh code before the factor is unenrolled.
  */
-describe('MfaSettingsCard (Batch 64)', () => {
+describe('MfaSettingsCard', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     supabaseDouble.seedAdmin();
@@ -37,7 +37,7 @@ describe('MfaSettingsCard (Batch 64)', () => {
     );
   });
 
-  it('Batch 86: an exempt account sees the testing-bypass notice on the card', async () => {
+  it('an exempt account sees the testing-bypass notice on the card', async () => {
     supabaseDouble.seedMfaExemption('admin-1');
     render(<MfaSettingsCard />);
 
@@ -46,7 +46,7 @@ describe('MfaSettingsCard (Batch 64)', () => {
     ).toBeInTheDocument();
   });
 
-  it('Batch 88: an account with a verified factor sees the set-up state and no fresh setup offer', async () => {
+  it('an account with a verified factor sees the set-up state and no fresh setup offer', async () => {
     supabaseDouble.seedMfaFactor('verified');
     render(<MfaSettingsCard />);
 
@@ -58,7 +58,7 @@ describe('MfaSettingsCard (Batch 64)', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('Batch 88: a setup that collides with an existing authenticator lands back on the set-up state', async () => {
+  it('a setup that collides with an existing authenticator lands back on the set-up state', async () => {
     render(<MfaSettingsCard />);
 
     expect(await screen.findByText(/Not set up/i)).toBeInTheDocument();

@@ -26,8 +26,8 @@ import { useReveal } from '../../../hooks/useReveal';
  * problem this rewrite removes. When the directory is empty or fails to
  * load, the section renders nothing rather than placeholder stores.
  *
- * Batch 51 (owner points) asked for orders-delivered and response-time on
- * these cards too. Orders delivered is served since Batch 74 by the public
+ * (owner points) asked for orders-delivered and response-time on
+ * these cards too. Orders delivered is served since by the public
  * `store_order_stats` aggregate view (counts only, no order rows): the card
  * renders it when the store has a row in the view, and the fetch fails soft
  * — before the migration runs on the hosted database the count is simply

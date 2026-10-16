@@ -150,7 +150,7 @@ export async function advanceDrop(subOrderId: string, next: RiderMove, note?: st
 /**
  * The only path to `delivered`: the buyer's code, checked in Postgres against a sha256 hash.
  *
- * Since Batch 42 a wrong code is a returned `invalid_code` payload, not an RPC error:
+ * Since a wrong code is a returned `invalid_code` payload, not an RPC error:
  * `verify_delivery` counts the attempt on the delivery row before answering, and a raised
  * error would roll that counter back with the rest of the transaction - the ten-attempt
  * lockout could never engage. The refusal the rider sees is unchanged.

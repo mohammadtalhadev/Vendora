@@ -210,7 +210,7 @@ export function QueryState({
     }
 
     // The default text is the mapped sentence, never the raw service
-    // message (Batch 54): this one branch is the error text for every
+    // message: this one branch is the error text for every
     // QueryState consumer that does not pass its own.
     const resolvedErrorMessage = errorMessage || friendlyError(error).message;
 

@@ -72,7 +72,7 @@ export const AdminNotificationsPage = () => {
   >(null);
   const [page, setPage] = useState(1);
   // A broadcast lands in every account in the audience at once — it confirms
-  // first (Batch 47), and the send button stays gated until the required
+  // first, and the send button stays gated until the required
   // fields (title + message) are actually filled.
   const [confirmOpen, setConfirmOpen] = useState(false);
 

@@ -54,7 +54,7 @@ const SECTIONS: CookieSection[] = [
  * Cookie Policy (/cookie-policy). Describes the storage this app genuinely
  * uses: the Supabase auth session and the local-storage cart, wishlist and
  * preferences. No analytics or advertising cookies are claimed because none
- * are set. Layout: the shared PolicyShell (Batch 55).
+ * are set. Layout: the shared PolicyShell.
  */
 export const CookiePolicyPage: React.FC = () => (
   <PolicyShell

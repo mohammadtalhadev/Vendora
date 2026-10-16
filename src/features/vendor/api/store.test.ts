@@ -59,7 +59,7 @@ describe('fetchStoreOrderStats', () => {
   });
 
   it('resolves to an empty map when the view is missing (pre-migration hosted database)', async () => {
-    // The Batch 74 view exists only once its migration runs on the hosted
+    // The view exists only once its migration runs on the hosted
     // database; until then the read must fail soft — no throw, no stats.
     supabaseDouble.failures.store_order_stats =
       'relation "public.store_order_stats" does not exist';

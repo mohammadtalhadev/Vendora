@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { CategoryTilesSection, resolveCategoryTileImageUrl } from './CategoryTilesSection';
 import type { SiteSection } from '../../api/sections';
 
-describe('resolveCategoryTileImageUrl (Batch 116)', () => {
+describe('resolveCategoryTileImageUrl', () => {
   it('swaps a legacy full-size local tile PNG for its WebP thumbnail', () => {
     expect(resolveCategoryTileImageUrl('/images/categories/cat_electronics_2k.png')).toBe(
       '/images/categories/cat_electronics_thumb.webp',

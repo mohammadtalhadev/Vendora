@@ -29,7 +29,7 @@ export interface ConfirmDialogProps {
 }
 
 /**
- * The one confirmation for destructive actions (Batch 47). Before this
+ * The one confirmation for destructive actions. Before this
  * component, Clear Cart, Clear Compare, address/payment deletion, admin
  * Force Refund / Administrative Cancel and Broadcast all fired on a single
  * click with no chance to back out. Anything destructive routes through

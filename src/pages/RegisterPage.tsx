@@ -38,7 +38,7 @@ import { linkReferral } from '../features/rewards/api/rewards';
 import { OtpInput } from '../components/ui/otp-input';
 
 /**
- * Best-effort referral link (Batch 39): if the visitor arrived through a
+ * Best-effort referral link: if the visitor arrived through a
  * referral link, the stored code is linked to the new account once a
  * session exists. A failure here must never break sign-up, and the stored
  * code is cleared either way so it cannot link a later, unrelated signup.
@@ -115,7 +115,7 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   // Set when sign-up succeeded but the account waits on email verification:
   // the page swaps the form for an unmistakable check-your-inbox panel
-  // (Batch 24) instead of a small dismissible notice.
+  // instead of a small dismissible notice.
   const [confirmation, setConfirmation] = useState<{ email: string; kind: 'customer' | 'seller' } | null>(null);
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [resendError, setResendError] = useState<string | null>(null);
@@ -137,7 +137,7 @@ export const RegisterPage: React.FC = () => {
     }
   };
 
-  // Email-code (OTP) verification state (Batch 36): the typed alternative to
+  // Email-code (OTP) verification state: the typed alternative to
   // clicking the confirmation link, for projects whose template sends one.
   const [otpCode, setOtpCode] = useState('');
   const [otpVerifying, setOtpVerifying] = useState(false);
@@ -467,7 +467,7 @@ export const RegisterPage: React.FC = () => {
                     </p>
 
                     {/* Email-code (OTP) entry — the typed path to the same
-                        verification the link performs (Batch 36). */}
+                        verification the link performs. */}
                     <div className="mt-6">
                       <span className="mb-2.5 block text-[11px] font-black text-slate-500 dark:text-slate-400">
                         Enter the 6-digit code

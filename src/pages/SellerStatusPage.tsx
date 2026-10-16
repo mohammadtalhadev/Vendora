@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 
 /**
  * SellerStatusPage — the dedicated landing for a seller whose application
- * is not (or no longer) approved (Batch 63). The vendor route guard sends
+ * is not (or no longer) approved. The vendor route guard sends
  * pending / rejected / suspended sellers here instead of the marketing
  * page, whose "apply now" framing is wrong for an application already in
  * flight. The pending card is the same component BecomeSellerPage renders

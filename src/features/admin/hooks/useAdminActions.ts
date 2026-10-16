@@ -59,7 +59,7 @@ export function useAdminActions() {
         refresh();
       },
     }),
-    /** Invites a rider by email (Batch 65); the fleet roster re-reads so the new rider appears. */
+    /** Invites a rider by email; the fleet roster re-reads so the new rider appears. */
     inviteRider: useMutation({
       mutationFn: (input: RiderInviteInput) => inviteRider(input),
       onSuccess: () => {
@@ -68,7 +68,7 @@ export function useAdminActions() {
       },
     }),
     /**
-     * The desk's decision on a rider application (Batch 77): the applications
+     * The desk's decision on a rider application: the applications
      * list and the fleet board both re-read — an approval moves the applicant
      * onto the roster, a rejection takes the application off the desk.
      */

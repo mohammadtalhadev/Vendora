@@ -51,7 +51,7 @@ const PERIOD_DAYS: Record<'30d' | '3m' | '6m' | '1y', number> = {
 /** Money renders through the site's PKR formatter — no local $ strings. */
 const money = (value: number) => formatPrice(value);
 
-/** Compact axis tick (Batch 49 pattern): 12k, not 12,000. Full values live in the tooltip. */
+/** Compact axis tick (pattern): 12k, not 12,000. Full values live in the tooltip. */
 const axisMoney = (value: number) => (value >= 1000 ? `${Math.round(value / 1000)}k` : `${value}`);
 
 /** `round(gmv / nullif(orders, 0))` is NULL until the window has orders: say that, do not print a zero amount. */
@@ -129,7 +129,7 @@ export const AdminDashboardPage: React.FC = () => {
     </div>
   );
 
-  // Monthly series from `admin_dashboard`; Recharts scales it (Batch 49).
+  // Monthly series from `admin_dashboard`; Recharts scales it.
   const monthly = data?.monthly ?? [];
 
   const commissionMax = Math.max(1, ...monthly.map((m) => m.commission));
@@ -177,7 +177,7 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         {/* Floating Toast Notification */}
-        {/* Shared toast (Batch 47) — replaces this page's private pill. */}
+        {/* Shared toast — replaces this page's private pill. */}
         <Toast toast={toast} onDismiss={hideToast} />
 
         {errorBanner}

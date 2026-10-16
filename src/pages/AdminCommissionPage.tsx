@@ -43,7 +43,7 @@ export const AdminCommissionPage: React.FC = () => {
   const [rateError, setRateError] = useState<string | null>(null);
   const [rateSaved, setRateSaved] = useState<string | null>(null);
   const [categoryInputs, setCategoryInputs] = useState<Record<string, string>>({});
-  // Moving the platform's rates is a sensitive staff action (Batch 64): both
+  // Moving the platform's rates is a sensitive staff action: both
   // save paths hand their mutation to requireStepUp, which runs it at once
   // while the two-factor proof is fresh and parks it behind a fresh code
   // when it is not.

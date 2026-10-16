@@ -62,7 +62,7 @@ const PAYOUTS_PAGE_SIZE = 500;
 export async function fetchAdminPayouts(signal?: AbortSignal): Promise<AdminPayout[]> {
   // The ledger is read whole, in pages: this used to stop at `.limit(200)`,
   // so past the 200th payout the page's filters and totals silently covered
-  // only the newest slice of the ledger (Batch 59). Pages are ordered by
+  // only the newest slice of the ledger. Pages are ordered by
   // (created_at, id) so a page boundary can never skip or repeat a row.
   const rows: PayoutRow[] = [];
   for (let from = 0; ; from += PAYOUTS_PAGE_SIZE) {

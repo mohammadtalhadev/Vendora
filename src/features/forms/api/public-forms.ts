@@ -6,7 +6,7 @@ import { supabase } from '../../../lib/supabase';
  * the public — a successful call means the row was stored; there is no read
  * path, by policy design.
  *
- * Field caps (Batch 66): these inboxes accept anonymous inserts, so every
+ * Field caps: these inboxes accept anonymous inserts, so every
  * field is length-capped here AND by CHECK constraints in migration
  * 20261016020000 — the client cap gives the visitor a readable error, the
  * database cap stops a script that skips the client entirely.

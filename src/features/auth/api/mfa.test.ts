@@ -9,13 +9,13 @@ import * as mfa from './mfa';
 import { supabaseDouble } from '../../../test/supabase-double';
 
 /**
- * Batch 64: the MFA API layer against the test double, whose TOTP surface
+ * the MFA API layer against the test double, whose TOTP surface
  * mirrors GoTrue (the one code it accepts is '123456'). These pin the
  * behaviours the staff portal is built on: enrollment activates a factor,
  * a verify raises the session to aal2, a stale unverified enrollment never
  * blocks a fresh one, and a wrong code changes nothing.
  */
-describe('mfa api (Batch 64)', () => {
+describe('mfa api', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     supabaseDouble.seedAdmin();
@@ -84,7 +84,7 @@ describe('mfa api (Batch 64)', () => {
   });
 });
 
-describe('step-up freshness (Batch 64)', () => {
+describe('step-up freshness', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
   });
@@ -115,12 +115,12 @@ describe('step-up freshness (Batch 64)', () => {
 });
 
 /**
- * Batch 86 (TEMPORARY — remove with the mfa_exemptions table): the exemption
+ * (TEMPORARY — remove with the mfa_exemptions table): the exemption
  * check the staff flows consult. It must answer only about the signed-in
  * caller and fail closed: false is the default, the seeded row is the only
  * way to true, and an RPC failure reads as not exempt.
  */
-describe('mfa testing exemption (Batch 86)', () => {
+describe('mfa testing exemption', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     supabaseDouble.seedAdmin();
@@ -153,7 +153,7 @@ describe('mfa testing exemption (Batch 86)', () => {
 });
 
 /**
- * Batch 88: the already-set-up dead end. An account that already holds a
+ * the already-set-up dead end. An account that already holds a
  * VERIFIED factor must never be walked into a fresh enrollment (GoTrue
  * refuses the duplicate friendly name, and that refusal once surfaced as
  * the sign-up "email already exists" sentence). enrollTotp answers with
@@ -161,7 +161,7 @@ describe('mfa testing exemption (Batch 86)', () => {
  * refuses removal degrades to the same honest error — never a lockout,
  * never a misleading one.
  */
-describe('enrollTotp already-set-up handling (Batch 88)', () => {
+describe('enrollTotp already-set-up handling', () => {
   beforeEach(() => {
     supabaseDouble.reset();
     supabaseDouble.seedAdmin();

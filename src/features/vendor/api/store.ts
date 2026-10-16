@@ -192,12 +192,12 @@ export async function fetchStoreDirectory(signal?: AbortSignal): Promise<VendorS
 
 /**
  * Delivered-order counts for a set of stores, from the public
- * `store_order_stats` aggregate view (Batch 74) — one query for the whole
+ * `store_order_stats` aggregate view — one query for the whole
  * set, returned as a vendor_id → count map. Stores with no delivered orders
  * have no row in the view and so no entry in the map; callers render the
  * count only for ids the map contains.
  *
- * This NEVER rejects. The view exists only once the Batch 74 migration has
+ * This NEVER rejects. The view exists only once the migration has
  * run on the hosted database; until then PostgREST answers with a
  * relation-missing error, and the honest outcome is "no stats" — the cards
  * simply omit the count, exactly as they did before the view existed. Any

@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * The one category pill (Batch 51, owner points).
+ * The one category pill (owner points).
  *
  * The homepage used to grow a pill style per section: the Limited Campaign
  * and Best-Sellers tabs filled solid orange when selected, the product

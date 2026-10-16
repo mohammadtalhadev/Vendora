@@ -14,7 +14,7 @@ export interface RevealProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Scroll reveal as a component (Batch 82) — the reusable form of the
+ * Scroll reveal as a component — the reusable form of the
  * homepage's `useReveal` + `.reveal` pattern, for surfaces where a
  * page-level hook is the wrong tool (panel dashboards, shared widgets).
  * The element starts lifted/faded per the `.reveal` styles in base.css

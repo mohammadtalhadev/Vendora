@@ -10,7 +10,7 @@ import { referralLinkFor } from '../features/rewards/api/rewards';
  * Creator & Affiliate Program — now the real referral program.
  *
  * This page used to be an honest "not launched" notice because no backend
- * existed. Batch 39 built one: every account has a referral code, signing
+ * existed. built one: every account has a referral code, signing
  * up through a referral link links the new account to the referrer, and
  * when the referee's first package is delivered Postgres awards the
  * referrer 250 loyalty points. Points convert to real checkout coupons

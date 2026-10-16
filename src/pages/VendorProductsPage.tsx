@@ -155,7 +155,7 @@ export const VendorProductsPage: React.FC = () => {
    * The quick-add modal has already written the listing through
    * `products_insert_vendor` by the time it reports back, so this only
    * acknowledges it - writing again here would book the same listing twice.
-   * Editing is not the modal's job anymore (Batch 48): the row's edit action
+   * Editing is not the modal's job anymore: the row's edit action
    * routes to the full form at `products/:id/edit`, the one complete editor.
    */
   const handleProductSaved = (savedProduct: Product) => {

@@ -137,7 +137,7 @@ describe('HomePage Component - Limited Campaign & Electronics Carousel', { timeo
     expect(screen.getByRole('button', { name: 'Beauty & Personal Care' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Home & Kitchen' })).toBeInTheDocument();
 
-    // Batch 92: only the TOP 5 trending parents (most products on sale)
+    // only the TOP 5 trending parents (most products on sale)
     // become pills, busiest first. The fixtures put 2 on sale in Electronics
     // and Fashion, 1 each in Audio, Beauty, Home & Kitchen and Shoes — so
     // Shoes (1 sale, latest in def order) is the one cut, and the pill
@@ -254,7 +254,7 @@ describe('HomePage Component - Limited Campaign & Electronics Carousel', { timeo
   });
 });
 
-describe('HomePage fabricated-content takedown (Batch 5, Pro-0)', { timeout: 40000 }, () => {
+describe('HomePage fabricated-content takedown (Pro-0)', { timeout: 40000 }, () => {
   beforeEach(() => {
     supabaseDouble.reset();
     localStorage.clear();
@@ -308,7 +308,7 @@ describe('HomePage fabricated-content takedown (Batch 5, Pro-0)', { timeout: 400
     expect(screen.queryByText(/Verified Partnerships/)).not.toBeInTheDocument();
   });
 
-  it('shows orders delivered only for stores the stats view has a row for (Batch 74)', async () => {
+  it('shows orders delivered only for stores the stats view has a row for', async () => {
     supabaseDouble.seedVendorProfile(
       storeRow({
         id: 'store-alpha',
@@ -366,15 +366,15 @@ describe('HomePage fabricated-content takedown (Batch 5, Pro-0)', { timeout: 400
 });
 
 /**
- * Batch 87 — the hero is back to its two planned parts: the slides carousel
+ * the hero is back to its two planned parts: the slides carousel
  * (`homepage_hero`) and the 9:16 portrait carousel (`homepage_hero_portrait`,
- * every published banner). The Batch 85 promo column no longer lives in the
+ * every published banner). The promo column no longer lives in the
  * hero; the `homepage_left_promo` banner became the left picture of the
  * New Arrivals / Best Seller / Best Offers section (DealsStrip) instead.
- * Batch 93 removed that promo column too, so the placement no longer
+ * removed that promo column too, so the placement no longer
  * renders anywhere on the homepage and DealsStrip is products only.
  */
-describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, () => {
+describe('HomePage hero + best seller banner', { timeout: 40000 }, () => {
   beforeEach(() => {
     supabaseDouble.reset();
     localStorage.clear();
@@ -513,7 +513,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(watchImg).toBeInTheDocument();
     expect(beautyImg).toBeInTheDocument();
 
-    // Batch 96: the rail's strict 9:16 box drives the hero row's height —
+    // the rail's strict 9:16 box drives the hero row's height —
     // it keeps its ratio, and neither column self-starts, so the desktop
     // grid stretches both columns to that one height.
     const rail = blockOf(kitchenImg);
@@ -530,7 +530,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(mainBlock.className).toContain('lg:h-full');
     expect(mainBlock.className).not.toContain('self-start');
 
-    // Batch 115: neither hero banner carries a solid fill — the old navy
+    // neither hero banner carries a solid fill — the old navy
     // fill bled through as a hard 1px line along the bottom edge. Both
     // banners rest on the same soft shadow instead, and both images are
     // pinned to their frame's edges (absolute inset-0) rather than laid
@@ -544,7 +544,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(kitchenImg.className).toContain('absolute');
     expect(kitchenImg.className).toContain('inset-0');
 
-    // Batch 93: a published `homepage_left_promo` banner no longer renders
+    // a published `homepage_left_promo` banner no longer renders
     // anywhere on the page — the deals section's promo column is gone.
     const heroSection = sectionOf(slideImg);
     expect(within(heroSection).queryByAltText('Best Seller Category')).not.toBeInTheDocument();
@@ -591,13 +591,13 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     vi.useRealTimers();
   });
 
-  it('main carousel and portrait rail advance on the same tick (Batch 96: one shared clock)', async () => {
+  it('main carousel and portrait rail advance on the same tick (one shared clock)', async () => {
     seedPortraitWatch();
     seedPortraitKitchen();
     seedPortraitBeauty();
     // No CMS slide seeded, so the three built-in slides render from the
     // start while the portraits land with the CMS read. One interval drives
-    // both sides (Batch 96): after a single 6.5s tick the active slide AND
+    // both sides: after a single 6.5s tick the active slide AND
     // the active portrait have each moved exactly one step — the old pair
     // of private timers drifted because each restarted when its own list's
     // read landed.
@@ -630,7 +630,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     vi.useRealTimers();
   });
 
-  it('deals section ignores a published promo banner: no promo column, products full width (Batch 93)', async () => {
+  it('deals section ignores a published promo banner: no promo column, products full width', async () => {
     seedSidePromo();
     renderHome();
 
@@ -650,7 +650,7 @@ describe('HomePage hero + best seller banner (Batch 87)', { timeout: 40000 }, ()
     expect(dealsSection.querySelector('[class*="lg:col-span-9"]')).toBeNull();
   });
 
-  it('deals section tabs are pills and every tab shows one row of six products (Batch 93, widened Batch 100)', async () => {
+  it('deals section tabs are pills and every tab shows one row of six products (widened)', async () => {
     renderHome();
 
     const tab = await screen.findByRole('button', { name: 'Best Seller' });

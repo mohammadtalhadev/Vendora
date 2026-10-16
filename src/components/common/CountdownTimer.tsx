@@ -14,7 +14,7 @@ export interface CountdownTimerProps {
 }
 
 /**
- * The one countdown (Batch 47). The QA found the home page rendering its
+ * The one countdown. The QA found the home page rendering its
  * timers in four different segment counts under two different labels; the
  * sections had in fact already converged on one local widget inside
  * HomePage — this is that widget, extracted so the format is a shared

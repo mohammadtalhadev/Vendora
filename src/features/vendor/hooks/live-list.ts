@@ -1,5 +1,5 @@
 /**
- * The freshness standard for vendor list boards (Batch 48), matching the
+ * The freshness standard for vendor list boards, matching the
  * one the dashboards already run (`useVendorDashboard`, and the admin
  * console's `liveBoard`): a 30-second poll plus a refetch when the tab
  * regains focus, so a seller watching Orders, Returns, Products or

@@ -16,7 +16,7 @@ type PrefsRow = Database['public']['Tables']['vendor_notification_prefs']['Row']
  * logistics facts; checkout prices freight from each product's `shipping_settings`, so
  * changing a rate here does not silently change a live cart total. The delivery times
  * are the exception: they are the store's published estimate, quoted to buyers through
- * the public `store_delivery_times` view (Batch 91).
+ * the public `store_delivery_times` view.
  */
 export interface VendorShippingSettings {
   freeShippingEnabled: boolean;
@@ -114,7 +114,7 @@ function mapShipping(row: ShippingRow): Omit<VendorShippingSettings, 'deliveryTi
 
 /**
  * The store's delivery-times bag, read on its own so a database that has not
- * run the Batch 91 migration yet (no `delivery_times` column) still loads
+ * run the migration yet (no `delivery_times` column) still loads
  * every other setting: the read simply reports "nothing set" and buyers keep
  * the standard quote. Any failure takes the same path — delivery times are
  * an enhancement to this row, never a reason to fail the whole form.
@@ -135,7 +135,7 @@ async function fetchDeliveryTimes(vendorId: string): Promise<SellerDeliveryTimes
   }
 }
 
-/** True when a write failed only because the Batch 91 column is not there yet. */
+/** True when a write failed only because the column is not there yet. */
 function isMissingDeliveryTimesColumn(error: { code?: string; message?: string }): boolean {
   if (error.code === '42703' || error.code === 'PGRST204') return true;
   return (error.message ?? '').includes('delivery_times');
@@ -164,7 +164,7 @@ export async function saveShippingSettings(
   if (error) throw new Error(`Failed to save your shipping settings: ${error.message}`);
 
   if (updates.deliveryTimes !== undefined) {
-    // Written separately from the upsert so a database without the Batch 91
+    // Written separately from the upsert so a database without the
     // column still saves every other setting; only the missing-column
     // failure is swallowed — a refused write (RLS, outage) still surfaces.
     const { error: timesError } = await supabase

@@ -8,7 +8,7 @@ import { Button } from '../components/ui/button';
 
 /**
  * NoAccessPage — the dead end a signed-in user reaches when the link they
- * followed points at a workspace their account does not have (Batch 63).
+ * followed points at a workspace their account does not have.
  *
  * It replaces the old behaviour — bouncing back into the route guard,
  * which bounced them here again — with a plain explanation and the right

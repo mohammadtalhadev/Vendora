@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
 
 /**
- * Designed empty state for home rails/carousels (Batch 22J). A rail that ends
+ * Designed empty state for home rails/carousels. A rail that ends
  * up with zero products renders this instead of a blank gap or a collapsed
  * hole, and category tabs are filtered to categories that actually have
  * products so shoppers never land here by tapping a dead tab.

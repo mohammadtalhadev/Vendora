@@ -8,10 +8,10 @@ import { ViewAllLink } from '../../../../components/common/ViewAllLink';
 const LEGACY_TILE_IMAGE = /^\/images\/categories\/(cat_[a-z0-9_]+)_2k\.png$/;
 
 /**
- * Batch 117: section items stored in the database still carry the legacy
+ * section items stored in the database still carry the legacy
  * full-size tile paths (`/images/categories/cat_*_2k.png`, ~450 KB each)
  * until the owner's VENDORA_B113_IMAGE_URLS.sql repoints them — the
- * built-in fallback list was fixed in Batch 109, but the CMS section is
+ * built-in fallback list was fixed in but the CMS section is
  * the one that actually renders, so live tiles kept decoding the giant
  * PNGs at a 112px display size and scroll stayed heavy. The renderer
  * therefore swaps any legacy local tile path for the right-sized WebP
@@ -25,7 +25,7 @@ export const resolveCategoryTileImageUrl = (url: string): string => {
 
 /**
  * The "Explore Popular Categories" tiles row as a section renderer
- * (Batch 85). The markup is the homepage's original block, unchanged; the
+ *. The markup is the homepage's original block, unchanged; the
  * tiles themselves are the section's items (image, name, catalogue link).
  * HomePage also renders this component with a synthetic section built
  * from its built-in category list, which is the fallback when the

@@ -43,7 +43,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AdminProfilePage } from './AdminProfilePage';
 
 /**
- * Batch 45: the admin profile is the real account or nothing — the old
+ * the admin profile is the real account or nothing — the old
  * page's invented phone number, job title, sessions and audit entries are
  * gone, and every control writes through the real session helpers.
  */

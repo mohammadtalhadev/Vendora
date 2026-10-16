@@ -422,7 +422,7 @@ export const AccountProfilePage: React.FC = () => {
 
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
 
-  // Destructive deletes (address / payment method) confirm first (Batch 47).
+  // Destructive deletes (address / payment method) confirm first.
   const [pendingRemoval, setPendingRemoval] = useState<
     | { kind: 'address'; id: string; label: string }
     | { kind: 'payment'; id: string; label: string }

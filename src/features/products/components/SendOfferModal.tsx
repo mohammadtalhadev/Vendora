@@ -26,7 +26,7 @@ interface SendOfferModalProps {
  * screen promising an emailed reply, priced in a hard-coded dollar sign,
  * for an offer no one ever received.
  *
- * Batch 127: rendered through a portal to document.body, like the live-chat
+ * rendered through a portal to document.body, like the live-chat
  * modal — inline inside the routed page subtree, this fixed overlay family
  * could be captured by an ancestor containing block and land at the bottom
  * of the page instead of centred in the viewport (see LiveChatModal).

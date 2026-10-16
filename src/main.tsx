@@ -13,7 +13,7 @@ import { reloadOnceForNewVersion } from './lib/chunk-recovery';
 import { captureException } from './lib/error-reporter';
 import { queryClient } from './lib/query-client';
 
-// Global error monitoring (Batch 44): render errors are reported by the
+// Global error monitoring: render errors are reported by the
 // ErrorBoundary; everything else lands here.
 window.addEventListener('error', (event) => {
   captureException(event.error ?? event.message, { source: 'window.error' });

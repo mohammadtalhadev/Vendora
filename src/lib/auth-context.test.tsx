@@ -123,7 +123,7 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(useAuthStore.getState().isAuthenticated).toBe(true));
 
     // A token refresh whose profile read is refused (a transient PostgREST
-    // failure) must not be read as a sign-out or a lost role (Batch 59).
+    // failure) must not be read as a sign-out or a lost role.
     supabaseDouble.failures.profiles = 'connection reset by peer';
     act(() =>
       supabaseDouble.emit('TOKEN_REFRESHED', {

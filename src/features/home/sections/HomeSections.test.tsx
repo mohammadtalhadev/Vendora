@@ -36,7 +36,7 @@ beforeEach(() => {
   supabaseDouble.reset();
 });
 
-describe('HomeSectionAnchor (Batch 85)', () => {
+describe('HomeSectionAnchor', () => {
   it('renders the built-in fallback while the sections read is unavailable', async () => {
     // The migration has not run on this host: the table read fails, and the
     // homepage must show its built-in composition instead of a gap.

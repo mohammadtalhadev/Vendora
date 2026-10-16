@@ -128,7 +128,7 @@ export const VendorMessagesPage: React.FC = () => {
   const messagesQuery = useThreadMessages(active?.id ?? '');
   const messages = messagesQuery.data ?? [];
 
-  // Shared toast (Batch 47) — replaces this page's private pill state.
+  // Shared toast — replaces this page's private pill state.
   const { toast, showToast, hideToast } = useToast(3000);
 
   // Opening a thread clears the buyer's unread marks; the mutation refreshes both queries.
@@ -604,7 +604,7 @@ export const VendorMessagesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Shared toast (Batch 47). */}
+      {/* Shared toast. */}
       <Toast toast={toast} onDismiss={hideToast} />
     </WorkspaceLayout>
   );

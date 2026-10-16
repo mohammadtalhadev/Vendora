@@ -246,7 +246,7 @@ describe('TrackingTimeline Component', () => {
       expect(screen.queryByTestId('vertical-stepper')).not.toBeInTheDocument();
       expect(screen.queryByTestId('delivery-code-card')).not.toBeInTheDocument();
 
-      // Batch 57: the asset link goes to the real delivery path (My
+      // the asset link goes to the real delivery path (My
       // Downloads). The old button generated a plain-text note while
       // labelling itself "Download Package (.ZIP)" — gone for good.
       const assetLink = screen.getByTestId('download-asset-link');

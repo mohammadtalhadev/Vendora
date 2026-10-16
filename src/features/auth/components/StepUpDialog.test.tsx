@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Batch 64: the step-up gate at the level the pages use it — a fresh proof
+ * the step-up gate at the level the pages use it — a fresh proof
  * runs the parked action immediately, a stale (or missing) proof opens the
  * dialog and the action does not exist until the code verifies.
  */
@@ -22,7 +22,7 @@ vi.mock('../api/mfa', async () => {
   };
 });
 
-// TEMPORARY testing exemption (Batch 86): the hook reads the flag through
+// TEMPORARY testing exemption: the hook reads the flag through
 // useMfaExempt; the hoisted flag lets a case flip it per test.
 const authFlags = vi.hoisted(() => ({ mfaExempt: false }));
 
@@ -53,7 +53,7 @@ function typeCode(code: string) {
   fireEvent.change(screen.getByLabelText('Code digit 1'), { target: { value: code } });
 }
 
-describe('useStepUp (Batch 64)', () => {
+describe('useStepUp', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     authFlags.mfaExempt = false;
@@ -94,7 +94,7 @@ describe('useStepUp (Batch 64)', () => {
     expect(needsStepUp()).toBe(false);
   });
 
-  it('Batch 86: an exempt account runs the action immediately even with a stale proof — no dialog', async () => {
+  it('an exempt account runs the action immediately even with a stale proof — no dialog', async () => {
     authFlags.mfaExempt = true;
     markStepUpVerified(Date.now() - 11 * 60 * 1000);
     const onAction = vi.fn();

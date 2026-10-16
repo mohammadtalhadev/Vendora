@@ -9,7 +9,7 @@ export const deliveryKeys = {
 /**
  * The seller delivery profiles for the stores on screen (one product page,
  * or every package in a checkout). The fetch never rejects — a store with
- * no published times, or a database without the Batch 91 view yet, simply
+ * no published times, or a database without the view yet, simply
  * has no entry, and the caller quotes the platform standard for it.
  */
 export function useSellerDeliveryTimes(vendorIds: string[]) {
