@@ -2,7 +2,6 @@
 
 > **Author**: Mohammad Talha Javaid  
 > **Version**: 1.0, October 2026  
-> **Prepared for**: Mentor Review  
 > **Live**: https://vendora-plum.vercel.app/  
 > **Stack**: React 19, TypeScript (Strict), Vite, Tailwind CSS v4, TanStack Query, Zustand, React Router, Supabase (PostgreSQL, Auth, RLS, RPCs)
 
