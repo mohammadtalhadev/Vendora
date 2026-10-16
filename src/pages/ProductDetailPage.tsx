@@ -44,6 +44,7 @@ import { ProductDossierSection } from '../features/products/components/ProductDo
 import { useReveal } from '../hooks/useReveal';
 import { CustomerReviewsShowcase } from '../features/products/components/CustomerReviewsShowcase';
 import { ProductSectionNav, ProductQuickAddPill, AddedBurstIcon } from '../features/products/components/PdpStickyBars';
+import { PdpFaqSection } from '../features/products/components/PdpFaqSection';
 import { StoreLogo } from '../features/vendor/components/StoreLogo';
 import { useProductReviews } from '../features/reviews/hooks/useReviews';
 import { ProductsYouMayLikeGrid } from '../features/products/components/ProductsYouMayLikeGrid';
@@ -147,6 +148,22 @@ export const ProductDetailPage: React.FC = () => {
     return () => observer.disconnect();
     // Re-run when the product arrives: the buy box only mounts after the
     // detail query resolves, so a mount-only effect would never observe it.
+  }, [product]);
+
+  // Batch 133 — Ronin's second rule for the quick-add pill: it hides
+  // again as the footer approaches (their observer uses a 200px top
+  // root margin), so the pill never fights the footer for the bottom
+  // of the viewport.
+  const [footerNear, setFooterNear] = useState(false);
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const footer = document.querySelector('footer');
+    if (!footer) return;
+    const observer = new IntersectionObserver(([entry]) => setFooterNear(entry.isIntersecting), {
+      rootMargin: '200px 0px 0px 0px',
+    });
+    observer.observe(footer);
+    return () => observer.disconnect();
   }, [product]);
 
   // The selected variant carries its own stock; another seller's offer and a
@@ -692,7 +709,10 @@ export const ProductDetailPage: React.FC = () => {
                   <div className="font-outfit text-sm font-black tracking-tight text-slate-900">
                     {marketingHeadline}
                   </div>
-                  <p className="text-xs sm:text-[13px] leading-relaxed text-slate-700 font-medium">
+                  {/* Batch 133 — clamped to 3 lines: the full description
+                      lives once, in the dossier below (it previously
+                      rendered in full here AND in full again there). */}
+                  <p className="text-xs sm:text-[13px] leading-relaxed text-slate-700 font-medium line-clamp-3">
                     {marketingDescription}
                   </p>
                 </div>
@@ -1057,6 +1077,17 @@ export const ProductDetailPage: React.FC = () => {
             />
 
             {/* ========================================================= */}
+            {/* PRODUCT FAQs (Batch 133) — answers grounded in the real  */}
+            {/* policies/flows only; completes the section-nav pill's    */}
+            {/* FAQ's tab, which Batch 121/129 held back until a real    */}
+            {/* FAQ section existed.                                     */}
+            {/* ========================================================= */}
+            <PdpFaqSection
+              deliveryWindow={formatDeliveryWindow(new Date(), deliveryRange)}
+              isDigital={product.type === 'digital'}
+            />
+
+            {/* ========================================================= */}
             {/* CUSTOMER REVIEWS & RATINGS SHOWCASE                       */}
             {/* ========================================================= */}
             <CustomerReviewsShowcase
@@ -1078,24 +1109,25 @@ export const ProductDetailPage: React.FC = () => {
             {/* Spacer so the mobile sticky bar never covers page content */}
             <div className="h-24 lg:hidden" aria-hidden="true" />
 
-            {/* Batch 121 — desktop quick-add pill: appears once the buy box
-                scrolls away; hidden while the zoom lightbox is open. */}
-            {showQuickAdd && !isZoomOpen && (
-              <ProductQuickAddPill
-                image={displayImages[selectedImageIndex] || displayImages[0]}
-                title={displayTitle}
-                variantName={selectedVariant?.name}
-                priceLabel={formatPrice(unitPrice)}
-                compareAtLabel={
-                  hasRealSavings && compareAtPrice !== undefined
-                    ? formatPrice(compareAtPrice)
-                    : undefined
-                }
-                inStock={effectiveStock > 0}
-                added={addedAnimation}
-                onAdd={() => handleAddToCart()}
-              />
-            )}
+            {/* Batch 121/133 — desktop quick-add pill: stays mounted and
+                animates in once the buy box scrolls away (Ronin rule 1),
+                out again as the footer approaches (Ronin rule 2) or
+                while the zoom lightbox is open. */}
+            <ProductQuickAddPill
+              image={displayImages[selectedImageIndex] || displayImages[0]}
+              title={displayTitle}
+              variantName={selectedVariant?.name}
+              priceLabel={formatPrice(unitPrice)}
+              compareAtLabel={
+                hasRealSavings && compareAtPrice !== undefined
+                  ? formatPrice(compareAtPrice)
+                  : undefined
+              }
+              inStock={effectiveStock > 0}
+              added={addedAnimation}
+              onAdd={() => handleAddToCart()}
+              visible={showQuickAdd && !footerNear && !isZoomOpen}
+            />
 
             {/* ========================================================= */}
             {/* MOBILE STICKY BUY BAR (< lg) — mirrors the buy box: same

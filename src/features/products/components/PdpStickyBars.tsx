@@ -1,20 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import { ListFilter, ShoppingCart, Sparkles, Star, type LucideIcon } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ClipboardList,
+  FileText,
+  MessageCircleQuestionMark,
+  Plus,
+  ShoppingBag,
+  Star,
+  type LucideIcon,
+} from 'lucide-react';
 
 /**
- * Batch 121 — Ronin-style PDP sticky bars.
+ * Ronin-style PDP sticky bars (Batch 121, rebuilt Batch 133).
  *
  * Two floating aids modelled on the Ronin product page, built only from
  * what this page already knows (real section ids, the real selected
  * variant and price — nothing fabricated):
  *
- * 1. `ProductSectionNav` — a pill that sticks under the navbar and
- *    smooth-scrolls to the PDP's own sections, with scroll-spy
- *    highlighting via IntersectionObserver. There is deliberately no
- *    FAQs entry: this PDP has no FAQ section and no unverified FAQ
- *    claims are introduced to fill one.
- * 2. `ProductQuickAddPill` — a desktop-only quick-add bar that appears
- *    once the buy box has scrolled away, reusing the page's existing
+ * 1. `ProductSectionNav` — a white pill with grey tab chips, laid out in
+ *    the page flow under the hero like Ronin's tab row. Once that row
+ *    scrolls to the top of the viewport it switches to a fixed pill at
+ *    top:16px and rides along; it follows Ronin's scroll-direction rule
+ *    (scrolling down shows it, scrolling up hides it with a 0.3s
+ *    opacity/translate fade — which also hands the top slot back to
+ *    Vendora's smart header, which returns on scroll-up). Clicks
+ *    smooth-scroll to the section; a scroll-spy highlights the tab of
+ *    the section in view. Batch 133 adds the FAQ's tab now that the PDP
+ *    has a real FAQ section (Batch 121 shipped without one because no
+ *    FAQ section existed and unverified FAQ claims were not an option).
+ *    The Batch 121 implementation used `position: sticky`, which never
+ *    engaged: the PDP root carries `overflow-hidden`, and an
+ *    overflow-hidden ancestor silently disables sticky descendants.
+ *
+ * 2. `ProductQuickAddPill` — a desktop-only glass quick-add bar
+ *    (translucent white + backdrop blur, Ronin's frosted look) that
+ *    slides/fades in once the buy box has scrolled away and out again
+ *    when the footer approaches, reusing the page's existing
  *    add-to-cart handler. On mobile the PDP's own sticky buy bar
  *    already covers this, so the pill is `lg:flex` only.
  */
@@ -26,14 +46,24 @@ export interface PdpSectionLink {
 }
 
 export const PDP_SECTION_LINKS: PdpSectionLink[] = [
-  { id: 'pdp-overview', label: 'Overview', icon: Sparkles },
-  { id: 'pdp-specs', label: 'Specs', icon: ListFilter },
+  { id: 'pdp-overview', label: 'Overview', icon: FileText },
+  { id: 'pdp-specs', label: 'Specs', icon: ClipboardList },
+  { id: 'pdp-faqs', label: "FAQ's", icon: MessageCircleQuestionMark },
   { id: 'reviews-section', label: 'Reviews', icon: Star },
 ];
 
+/** Ronin's stuck pill sits at top:16px once the in-flow row reaches it. */
+const STUCK_TOP_PX = 16;
+
 export const ProductSectionNav: React.FC = () => {
   const [activeId, setActiveId] = useState<string>(PDP_SECTION_LINKS[0].id);
+  const [stuck, setStuck] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [navHeight, setNavHeight] = useState(0);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
 
+  // Scroll-spy: highlight the tab whose section crosses mid-viewport.
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
     const targets = PDP_SECTION_LINKS.map((link) => document.getElementById(link.id)).filter(
@@ -53,39 +83,90 @@ export const ProductSectionNav: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Ronin behaviour: the tab row lives in flow; when its placeholder
+  // reaches the top offset the pill goes fixed, then shows on scroll
+  // down and hides on scroll up (0.3s opacity/transform transition).
+  useEffect(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    setNavHeight(navRef.current?.offsetHeight ?? 0);
+
+    let lastY = window.scrollY;
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const y = window.scrollY;
+        const isStuck = anchor.getBoundingClientRect().top <= STUCK_TOP_PX;
+        setStuck(isStuck);
+        if (isStuck) {
+          if (y > lastY + 4) setHidden(false);
+          else if (y < lastY - 4) setHidden(true);
+        } else {
+          setHidden(false);
+        }
+        lastY = y;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const handleClick = (id: string) => {
     setActiveId(id);
+    setHidden(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
-    <div className="sticky top-[84px] sm:top-[92px] z-30 mt-8 flex justify-center pointer-events-none">
-      <nav
-        data-testid="pdp-section-nav"
-        aria-label="Product sections"
-        className="pointer-events-auto flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-lg shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90"
+    <div
+      ref={anchorRef}
+      className="relative z-30 mt-8 flex justify-center"
+      style={stuck && navHeight ? { height: navHeight } : undefined}
+    >
+      <div
+        className={
+          stuck
+            ? 'fixed inset-x-0 top-4 z-40 flex justify-center px-4 pointer-events-none'
+            : 'flex justify-center'
+        }
       >
-        {PDP_SECTION_LINKS.map((link) => {
-          const Icon = link.icon;
-          const isActive = activeId === link.id;
-          return (
-            <button
-              key={link.id}
-              type="button"
-              onClick={() => handleClick(link.id)}
-              aria-current={isActive ? 'true' : undefined}
-              className={`rounded-full px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
-                isActive
-                  ? 'bg-sun-orange text-white shadow-md shadow-orange-500/25'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>{link.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+        <nav
+          ref={navRef}
+          data-testid="pdp-section-nav"
+          data-stuck={stuck ? 'true' : 'false'}
+          aria-label="Product sections"
+          className={`flex items-center gap-2 rounded-full border border-slate-900/5 bg-white p-2 shadow-[0_10px_36px_rgba(15,23,42,0.10)] transition-all duration-300 ease-in-out dark:border-white/10 dark:bg-slate-900 ${
+            stuck && hidden
+              ? '-translate-y-[160%] opacity-0 pointer-events-none'
+              : 'translate-y-0 opacity-100 pointer-events-auto'
+          }`}
+        >
+          {PDP_SECTION_LINKS.map((link) => {
+            const Icon = link.icon;
+            const isActive = activeId === link.id;
+            return (
+              <button
+                key={link.id}
+                type="button"
+                onClick={() => handleClick(link.id)}
+                aria-current={isActive ? 'true' : undefined}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:px-5 sm:text-sm transition-all duration-300 active:scale-95 cursor-pointer ${
+                  isActive
+                    ? 'bg-sun-orange font-bold text-white shadow-md shadow-orange-500/25 hover:bg-sun-orange hover:text-white'
+                    : 'bg-[#f0f0f0] font-medium text-[#464646]/75 hover:bg-[#e4e4e4] hover:text-[#464646] dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15 dark:hover:text-white'
+                }`}
+              >
+                <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+                <span>{link.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 };
@@ -150,6 +231,14 @@ export const AddedBurstIcon: React.FC<AddedBurstIconProps> = ({ className = 'h-4
   );
 };
 
+/** Ronin's sticky-bar button icon: a shopping bag with a plus badge. */
+const BagPlusIcon: React.FC<{ className?: string }> = ({ className = 'h-4 w-4' }) => (
+  <span className={`relative inline-flex shrink-0 ${className}`} aria-hidden="true">
+    <ShoppingBag className="h-full w-full" />
+    <Plus className="absolute -bottom-[3px] -right-[5px] h-3 w-3 stroke-[3.5]" />
+  </span>
+);
+
 export interface ProductQuickAddPillProps {
   image: string;
   title: string;
@@ -159,6 +248,12 @@ export interface ProductQuickAddPillProps {
   inStock: boolean;
   added: boolean;
   onAdd: () => void;
+  /**
+   * Batch 133 — the pill stays mounted and animates between shown and
+   * hidden (Ronin's slide/fade), instead of popping in and out of the
+   * DOM. The page drives this from the buy-box and footer observers.
+   */
+  visible?: boolean;
 }
 
 export const ProductQuickAddPill: React.FC<ProductQuickAddPillProps> = ({
@@ -170,44 +265,51 @@ export const ProductQuickAddPill: React.FC<ProductQuickAddPillProps> = ({
   inStock,
   added,
   onAdd,
+  visible = true,
 }) => {
   return (
     <div
       data-testid="pdp-quick-add-pill"
-      className="fixed bottom-6 left-1/2 z-40 hidden -translate-x-1/2 items-center gap-3 rounded-full border border-slate-200/80 bg-white/95 p-2 shadow-2xl shadow-slate-900/15 backdrop-blur-xl animate-fade-in dark:border-white/10 dark:bg-slate-900/95 lg:flex"
+      data-visible={visible ? 'true' : 'false'}
+      aria-hidden={!visible}
+      className={`fixed bottom-[30px] left-1/2 z-40 hidden -translate-x-1/2 items-center gap-3 rounded-full border border-white/60 bg-white/60 p-1.5 shadow-[0_18px_44px_rgba(15,23,42,0.20)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 ease-out dark:border-white/15 dark:bg-slate-900/60 lg:flex ${
+        visible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-8 opacity-0'
+      }`}
     >
       <img
         src={image}
         alt=""
-        className="h-11 w-11 shrink-0 rounded-full object-cover border border-slate-200/70"
+        className="h-12 w-12 shrink-0 rounded-full object-cover border border-white/70 shadow-sm"
       />
 
-      <div className="min-w-0">
+      <div className="min-w-0 pr-1">
         <p className="max-w-[240px] truncate text-sm font-bold text-slate-900 dark:text-white">
           {title}
+          {variantName && (
+            <span className="font-medium text-slate-500 dark:text-slate-300"> — {variantName}</span>
+          )}
         </p>
-        {variantName && (
-          <p className="truncate text-[11px] text-slate-500">{variantName}</p>
-        )}
-      </div>
-
-      <div className="shrink-0 text-right">
-        <span className="font-outfit text-base font-black text-slate-900 dark:text-white">
-          {priceLabel}
-        </span>
-        {compareAtLabel && (
-          <span className="block text-[11px] text-slate-400 line-through">{compareAtLabel}</span>
-        )}
+        <p className="flex items-baseline gap-1.5">
+          <span className="font-outfit text-sm font-black text-slate-900 dark:text-white">
+            {priceLabel}
+          </span>
+          {compareAtLabel && (
+            <span className="text-xs text-slate-500 line-through opacity-60 dark:text-slate-300">
+              {compareAtLabel}
+            </span>
+          )}
+        </p>
       </div>
 
       <button
         type="button"
         onClick={onAdd}
         disabled={!inStock}
-        className={`flex shrink-0 items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all active:scale-95 cursor-pointer ${
+        tabIndex={visible ? 0 : -1}
+        className={`flex shrink-0 items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-bold transition-all duration-300 active:scale-95 cursor-pointer ${
           added
-            ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25'
-            : 'bg-sun-orange hover:bg-sun-orange-600 shadow-orange-500/25'
+            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 hover:bg-emerald-700'
+            : 'border border-slate-900/5 bg-white text-[#464646] shadow-[0_6px_20px_rgba(15,23,42,0.12)] hover:bg-[#f0f0f0]'
         } ${!inStock ? 'cursor-not-allowed opacity-50' : ''}`}
       >
         {added ? (
@@ -217,7 +319,7 @@ export const ProductQuickAddPill: React.FC<ProductQuickAddPillProps> = ({
           </>
         ) : (
           <>
-            <ShoppingCart className="h-4 w-4" />
+            <BagPlusIcon className="h-4 w-4" />
             <span>{inStock ? 'Add to Cart' : 'Out of Stock'}</span>
           </>
         )}

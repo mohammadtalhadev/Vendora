@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export interface KeyFactItem {
   label: string;
@@ -33,8 +33,15 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
 
   const factsToRender = keyFacts && keyFacts.length > 0 ? keyFacts : defaultKeyFacts;
 
+  // Batch 133 — long seller descriptions collapse behind a Read more
+  // toggle so the dossier no longer reads as a wall of text (owner:
+  // "text bht overload ha"). Nothing is removed: the full text is one
+  // click away, and short descriptions render whole as before.
+  const [descExpanded, setDescExpanded] = useState(false);
+  const isLongDescription = mechanismText.length > 480;
+
   return (
-    <section id="pdp-overview" className="reveal mt-12 scroll-mt-40 rounded-3xl border border-slate-200/80 bg-white/90 p-6 sm:p-9 shadow-2xs backdrop-blur-md space-y-8">
+    <section id="pdp-overview" className="reveal mt-12 scroll-mt-24 rounded-3xl border border-slate-200/80 bg-white/90 p-6 sm:p-9 shadow-2xs backdrop-blur-md space-y-8">
       {/* ── Section Header ────────────────────────────────────────── */}
       <div className="border-b border-slate-100 pb-6">
         <h3 className="font-outfit text-2xl font-black text-slate-900 tracking-tight">
@@ -47,9 +54,23 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
         <h4 className="font-outfit text-base sm:text-lg font-black text-slate-900 tracking-tight">
           {mechanismHeadline}
         </h4>
-        <p className="text-xs sm:text-sm leading-relaxed text-slate-600 font-normal">
+        <p
+          className={`text-xs sm:text-sm leading-relaxed text-slate-600 font-normal ${
+            isLongDescription && !descExpanded ? 'line-clamp-5' : ''
+          }`}
+        >
           {mechanismText}
         </p>
+        {isLongDescription && (
+          <button
+            type="button"
+            onClick={() => setDescExpanded((v) => !v)}
+            aria-expanded={descExpanded}
+            className="text-xs font-bold text-sun-orange hover:text-[#EA580C] hover:underline cursor-pointer"
+          >
+            {descExpanded ? 'Show less' : 'Read more'}
+          </button>
+        )}
       </div>
 
       {/* ── Sub-Section 2: Vendora 3-Step Buyer Assurance ──────────── */}
@@ -102,7 +123,7 @@ export const ProductDossierSection: React.FC<ProductDossierSectionProps> = ({
       </div>
 
       {/* ── Sub-Section 3: Technical Specifications & Key Facts ───── */}
-      <div id="pdp-specs" className="space-y-4 pt-2 scroll-mt-40">
+      <div id="pdp-specs" className="space-y-4 pt-2 scroll-mt-24">
         <h4 className="font-outfit text-base sm:text-lg font-black text-slate-900 tracking-tight">
           Technical Specifications &amp; Key Facts
         </h4>

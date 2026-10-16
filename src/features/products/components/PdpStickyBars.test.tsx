@@ -12,7 +12,7 @@ import { ProductSectionNav, ProductQuickAddPill, PDP_SECTION_LINKS } from './Pdp
  * disabled with an Out of Stock label when the selection has no stock.
  */
 
-const SECTION_IDS = ['pdp-overview', 'pdp-specs', 'reviews-section'];
+const SECTION_IDS = ['pdp-overview', 'pdp-specs', 'pdp-faqs', 'reviews-section'];
 
 describe('ProductSectionNav (Batch 121)', () => {
   const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
@@ -40,7 +40,22 @@ describe('ProductSectionNav (Batch 121)', () => {
     }
     expect(screen.getByRole('button', { name: /Overview/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Specs/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /FAQ/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Reviews/ })).toBeInTheDocument();
+  });
+
+  it('ships the four Ronin tabs in order, FAQ included (Batch 133)', () => {
+    expect(PDP_SECTION_LINKS.map((l) => l.id)).toEqual([
+      'pdp-overview',
+      'pdp-specs',
+      'pdp-faqs',
+      'reviews-section',
+    ]);
+  });
+
+  it('starts unstuck in the page flow (Batch 133 fixed-pill rebuild)', () => {
+    renderNavWithTargets();
+    expect(screen.getByTestId('pdp-section-nav')).toHaveAttribute('data-stuck', 'false');
   });
 
   it('clicking Specs smooth-scrolls to the specs section', () => {
@@ -83,7 +98,7 @@ describe('ProductQuickAddPill (Batch 121)', () => {
     render(<ProductQuickAddPill {...baseProps} variantName="Beige" />);
     expect(screen.getByTestId('pdp-quick-add-pill')).toBeInTheDocument();
     expect(screen.getByText('Test Headphones')).toBeInTheDocument();
-    expect(screen.getByText('Beige')).toBeInTheDocument();
+    expect(screen.getByText(/— Beige/)).toBeInTheDocument();
     expect(screen.getByText('Rs 4,995')).toBeInTheDocument();
   });
 
@@ -108,6 +123,22 @@ describe('ProductQuickAddPill (Batch 121)', () => {
 
     rerender(<ProductQuickAddPill {...baseProps} added={false} />);
     expect(screen.queryByTestId('added-burst-icon')).not.toBeInTheDocument();
+  });
+
+  it('wears the Ronin glass finish (Batch 133)', () => {
+    render(<ProductQuickAddPill {...baseProps} />);
+    const pill = screen.getByTestId('pdp-quick-add-pill');
+    expect(pill.className).toContain('bg-white/60');
+    expect(pill.className).toContain('backdrop-blur-xl');
+    expect(pill.className).toContain('rounded-full');
+  });
+
+  it('hidden state stays mounted but inert (Batch 133 slide/fade)', () => {
+    render(<ProductQuickAddPill {...baseProps} visible={false} />);
+    const pill = screen.getByTestId('pdp-quick-add-pill');
+    expect(pill).toHaveAttribute('data-visible', 'false');
+    expect(pill.className).toContain('opacity-0');
+    expect(pill.className).toContain('pointer-events-none');
   });
 
   it('is disabled and labelled Out of Stock when there is no stock', () => {
